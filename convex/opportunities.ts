@@ -1,0 +1,382 @@
+import { v } from 'convex/values'
+import { mutation, query } from './_generated/server'
+import type { Doc, Id } from './_generated/dataModel'
+import type { MutationCtx } from './lib/withUser'
+import { requireUser } from './lib/withUser'
+
+/**
+ * Domaine opportunities · coeur du produit.
+ *
+ * Multi-tenant strict : chaque fonction commence par `requireUser` et scope via
+ * un index `by_user*`. Aucune lecture/ecriture sans filtre `userId`.
+ */
+
+const stageValidator = v.union(
+  v.literal('lead'),
+  v.literal('contacted'),
+  v.literal('applied'),
+  v.literal('interview'),
+  v.literal('negotiation'),
+  v.literal('won'),
+  v.literal('lost'),
+)
+
+const typeValidator = v.union(
+  v.literal('job_offer'),
+  v.literal('spontaneous'),
+  v.literal('prospect'),
+  v.literal('mission'),
+)
+
+const priorityValidator = v.union(
+  v.literal('low'),
+  v.literal('medium'),
+  v.literal('high'),
+)
+
+type Stage = Doc<'opportunities'>['stage']
+
+const STAGES: Stage[] = [
+  'lead',
+  'contacted',
+  'applied',
+  'interview',
+  'negotiation',
+  'won',
+  'lost',
+]
+
+const STAGE_LABELS: Record<Stage, string> = {
+  lead: 'Piste',
+  contacted: 'Contacté',
+  applied: 'Candidature envoyée',
+  interview: 'Entretien',
+  negotiation: 'Négociation',
+  won: 'Gagné',
+  lost: 'Perdu',
+}
+
+/** Charge une opportunité et vérifie la propriété du user courant. */
+async function ownedOpportunity(
+  ctx: MutationCtx,
+  userId: string,
+  id: Id<'opportunities'>,
+): Promise<Doc<'opportunities'>> {
+  const doc = await ctx.db.get(id)
+  if (!doc) throw new Error('Introuvable')
+  if (doc.userId !== userId) throw new Error('Non autorisé')
+  return doc
+}
+
+/** Position suivante (max + 1) dans une colonne donnée du kanban. */
+async function nextOrderInStage(
+  ctx: MutationCtx,
+  userId: string,
+  stage: Stage,
+): Promise<number> {
+  const inStage = await ctx.db
+    .query('opportunities')
+    .withIndex('by_user_stage', (q) =>
+      q.eq('userId', userId).eq('stage', stage),
+    )
+    .collect()
+  return inStage.reduce((max, o) => Math.max(max, o.order), -1) + 1
+}
+
+/** Journalise un changement de stage dans la timeline (même transaction). */
+async function logStatusChange(
+  ctx: MutationCtx,
+  userId: string,
+  opportunityId: Id<'opportunities'>,
+  from: Stage,
+  to: Stage,
+): Promise<void> {
+  if (from === to) return
+  await ctx.db.insert('activities', {
+    userId,
+    opportunityId,
+    kind: 'status_change',
+    content: `Étape changée : ${STAGE_LABELS[from]} → ${STAGE_LABELS[to]}`,
+    createdAt: Date.now(),
+  })
+}
+
+export const list = query({
+  args: {
+    stage: v.optional(stageValidator),
+    type: v.optional(typeValidator),
+    search: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireUser(ctx)
+
+    let rows: Doc<'opportunities'>[]
+    if (args.stage) {
+      rows = await ctx.db
+        .query('opportunities')
+        .withIndex('by_user_stage', (q) =>
+          q.eq('userId', userId).eq('stage', args.stage!),
+        )
+        .collect()
+    } else if (args.type) {
+      rows = await ctx.db
+        .query('opportunities')
+        .withIndex('by_user_type', (q) =>
+          q.eq('userId', userId).eq('type', args.type!),
+        )
+        .collect()
+    } else {
+      rows = await ctx.db
+        .query('opportunities')
+        .withIndex('by_user', (q) => q.eq('userId', userId))
+        .collect()
+    }
+
+    // Filtres secondaires en mémoire (déjà scopés au user).
+    if (args.type && args.stage) {
+      rows = rows.filter((o) => o.type === args.type)
+    }
+    const search = args.search?.trim().toLowerCase()
+    if (search) {
+      rows = rows.filter(
+        (o) =>
+          o.title.toLowerCase().includes(search) ||
+          (o.compensation?.toLowerCase().includes(search) ?? false) ||
+          (o.location?.toLowerCase().includes(search) ?? false) ||
+          o.tags.some((t) => t.toLowerCase().includes(search)),
+      )
+    }
+
+    return rows.sort((a, b) => b.createdAt - a.createdAt)
+  },
+})
+
+export const board = query({
+  args: {},
+  handler: async (ctx) => {
+    const { userId } = await requireUser(ctx)
+    const rows = await ctx.db
+      .query('opportunities')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .collect()
+
+    const grouped = {} as Record<Stage, Doc<'opportunities'>[]>
+    for (const stage of STAGES) grouped[stage] = []
+    for (const row of rows) grouped[row.stage].push(row)
+    for (const stage of STAGES) {
+      grouped[stage].sort((a, b) => a.order - b.order)
+    }
+    return grouped
+  },
+})
+
+export const get = query({
+  args: { id: v.id('opportunities') },
+  handler: async (ctx, args) => {
+    const { userId } = await requireUser(ctx)
+    const doc = await ctx.db.get(args.id)
+    if (!doc) throw new Error('Introuvable')
+    if (doc.userId !== userId) throw new Error('Non autorisé')
+
+    const company = doc.companyId ? await ctx.db.get(doc.companyId) : null
+    const contact = doc.contactId ? await ctx.db.get(doc.contactId) : null
+
+    return {
+      ...doc,
+      company: company && company.userId === userId ? company : undefined,
+      contact: contact && contact.userId === userId ? contact : undefined,
+    }
+  },
+})
+
+export const create = mutation({
+  args: {
+    title: v.string(),
+    type: typeValidator,
+    companyId: v.optional(v.id('companies')),
+    contactId: v.optional(v.id('contacts')),
+    source: v.optional(v.string()),
+    url: v.optional(v.string()),
+    location: v.optional(v.string()),
+    compensation: v.optional(v.string()),
+    stage: v.optional(stageValidator),
+    priority: v.optional(priorityValidator),
+    deadline: v.optional(v.string()),
+    appliedAt: v.optional(v.string()),
+    nextActionAt: v.optional(v.string()),
+    tags: v.optional(v.array(v.string())),
+    description: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireUser(ctx)
+    const stage: Stage = args.stage ?? 'lead'
+    const now = Date.now()
+    const order = await nextOrderInStage(ctx, userId, stage)
+
+    // Construction dynamique : jamais `undefined` dans l'insert.
+    const doc: Record<string, unknown> = {
+      userId,
+      title: args.title,
+      type: args.type,
+      stage,
+      priority: args.priority ?? 'medium',
+      tags: args.tags ?? [],
+      order,
+      createdAt: now,
+      updatedAt: now,
+    }
+    if (args.companyId !== undefined) doc.companyId = args.companyId
+    if (args.contactId !== undefined) doc.contactId = args.contactId
+    if (args.source !== undefined) doc.source = args.source
+    if (args.url !== undefined) doc.url = args.url
+    if (args.location !== undefined) doc.location = args.location
+    if (args.compensation !== undefined) doc.compensation = args.compensation
+    if (args.deadline !== undefined) doc.deadline = args.deadline
+    if (args.appliedAt !== undefined) doc.appliedAt = args.appliedAt
+    if (args.nextActionAt !== undefined) doc.nextActionAt = args.nextActionAt
+    if (args.description !== undefined) doc.description = args.description
+
+    return ctx.db.insert(
+      'opportunities',
+      doc as unknown as Omit<
+        Doc<'opportunities'>,
+        '_id' | '_creationTime'
+      >,
+    )
+  },
+})
+
+export const update = mutation({
+  args: {
+    id: v.id('opportunities'),
+    title: v.optional(v.string()),
+    type: v.optional(typeValidator),
+    companyId: v.optional(v.id('companies')),
+    contactId: v.optional(v.id('contacts')),
+    source: v.optional(v.string()),
+    url: v.optional(v.string()),
+    location: v.optional(v.string()),
+    compensation: v.optional(v.string()),
+    priority: v.optional(priorityValidator),
+    deadline: v.optional(v.string()),
+    appliedAt: v.optional(v.string()),
+    nextActionAt: v.optional(v.string()),
+    tags: v.optional(v.array(v.string())),
+    description: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireUser(ctx)
+    await ownedOpportunity(ctx, userId, args.id)
+
+    const patch: Record<string, unknown> = { updatedAt: Date.now() }
+    const { id, ...fields } = args
+    for (const [key, value] of Object.entries(fields)) {
+      if (value !== undefined) patch[key] = value
+    }
+    await ctx.db.patch(
+      id,
+      patch as Partial<Doc<'opportunities'>>,
+    )
+    return null
+  },
+})
+
+export const move = mutation({
+  args: {
+    id: v.id('opportunities'),
+    stage: stageValidator,
+    order: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireUser(ctx)
+    const doc = await ownedOpportunity(ctx, userId, args.id)
+    const previousStage = doc.stage
+
+    await ctx.db.patch(args.id, {
+      stage: args.stage,
+      order: args.order,
+      updatedAt: Date.now(),
+    })
+    await logStatusChange(ctx, userId, args.id, previousStage, args.stage)
+    return null
+  },
+})
+
+export const reorder = mutation({
+  args: {
+    stage: stageValidator,
+    orderedIds: v.array(v.id('opportunities')),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireUser(ctx)
+    const now = Date.now()
+    let order = 0
+    for (const id of args.orderedIds) {
+      const doc = await ctx.db.get(id)
+      if (!doc || doc.userId !== userId) continue
+      await ctx.db.patch(id, { stage: args.stage, order, updatedAt: now })
+      order += 1
+    }
+    return null
+  },
+})
+
+export const setStage = mutation({
+  args: { id: v.id('opportunities'), stage: stageValidator },
+  handler: async (ctx, args) => {
+    const { userId } = await requireUser(ctx)
+    const doc = await ownedOpportunity(ctx, userId, args.id)
+    const previousStage = doc.stage
+    const order = await nextOrderInStage(ctx, userId, args.stage)
+
+    await ctx.db.patch(args.id, {
+      stage: args.stage,
+      order,
+      updatedAt: Date.now(),
+    })
+    await logStatusChange(ctx, userId, args.id, previousStage, args.stage)
+    return null
+  },
+})
+
+export const remove = mutation({
+  args: { id: v.id('opportunities') },
+  handler: async (ctx, args) => {
+    const { userId } = await requireUser(ctx)
+    await ownedOpportunity(ctx, userId, args.id)
+
+    // Cascade : supprime les activités liées.
+    const activities = await ctx.db
+      .query('activities')
+      .withIndex('by_opportunity', (q) => q.eq('opportunityId', args.id))
+      .collect()
+    for (const activity of activities) {
+      if (activity.userId === userId) await ctx.db.delete(activity._id)
+    }
+
+    // Détache les relances liées.
+    const followups = await ctx.db
+      .query('followups')
+      .withIndex('by_opportunity', (q) => q.eq('opportunityId', args.id))
+      .collect()
+    for (const followup of followups) {
+      if (followup.userId === userId) {
+        await ctx.db.patch(followup._id, { opportunityId: undefined })
+      }
+    }
+
+    // Détache les documents liés.
+    const documents = await ctx.db
+      .query('documents')
+      .withIndex('by_opportunity', (q) => q.eq('opportunityId', args.id))
+      .collect()
+    for (const document of documents) {
+      if (document.userId === userId) {
+        await ctx.db.patch(document._id, { opportunityId: undefined })
+      }
+    }
+
+    await ctx.db.delete(args.id)
+    return null
+  },
+})

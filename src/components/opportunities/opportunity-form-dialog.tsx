@@ -1,0 +1,84 @@
+import { useState } from 'react'
+import { useMutation } from 'convex/react'
+import { Plus } from 'lucide-react'
+import { api } from '../../../convex/_generated/api'
+import { Button } from '~/components/ui/button'
+import { toast } from '~/components/ui/sonner'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '~/components/ui/dialog'
+import {
+  OpportunityForm,
+  type OpportunityFormSubmit,
+} from './opportunity-form'
+
+/** Dialog de création d'une opportunité. Déclenché par un bouton primaire. */
+export function OpportunityFormDialog({
+  trigger,
+}: {
+  trigger?: React.ReactNode
+}) {
+  const [open, setOpen] = useState(false)
+  const [pending, setPending] = useState(false)
+  const create = useMutation(api.opportunities.create)
+
+  async function handleSubmit(values: OpportunityFormSubmit) {
+    setPending(true)
+    try {
+      // Construction dynamique : aucun champ undefined transmis à Convex.
+      const args: Record<string, unknown> = {
+        title: values.title,
+        type: values.type,
+        stage: values.stage,
+        tags: values.tags,
+      }
+      if (values.source) args.source = values.source
+      if (values.url) args.url = values.url
+      if (values.location) args.location = values.location
+      if (values.compensation) args.compensation = values.compensation
+      if (values.deadline) args.deadline = values.deadline
+      if (values.nextActionAt) args.nextActionAt = values.nextActionAt
+      if (values.description) args.description = values.description
+
+      await create(args as Parameters<typeof create>[0])
+      toast.success('Opportunité ajoutée.')
+      setOpen(false)
+    } catch {
+      toast.error("Impossible d'ajouter l'opportunité.")
+    } finally {
+      setPending(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        {trigger ?? (
+          <Button>
+            <Plus className="size-4" />
+            Ajouter une opportunité
+          </Button>
+        )}
+      </DialogTrigger>
+      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Ajouter une opportunité</DialogTitle>
+          <DialogDescription>
+            Une nouvelle piste à suivre dans votre pipeline.
+          </DialogDescription>
+        </DialogHeader>
+        <OpportunityForm
+          submitLabel="Ajouter"
+          onSubmit={handleSubmit}
+          onCancel={() => setOpen(false)}
+          pending={pending}
+        />
+      </DialogContent>
+    </Dialog>
+  )
+}
