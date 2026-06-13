@@ -13,6 +13,7 @@ import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import { Skeleton } from '~/components/ui/skeleton'
 import { toast } from '~/components/ui/sonner'
+import { PageToolbar } from '~/components/app/page-toolbar'
 import { CompanyCard } from '~/components/companies/company-card'
 import { CompanyFormDialog } from '~/components/companies/company-form-dialog'
 import { ContactFormDialog } from '~/components/companies/contact-form-dialog'
@@ -103,19 +104,29 @@ function EntreprisesPage() {
   // garde-fou visuel via le bloc error si un jour la query renvoie null.
 
   return (
-    <div className="flex flex-col gap-6">
-      <Header onAdd={openCreateCompany} />
-
-      <div className="relative">
-        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fg-subtle" />
-        <Input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Rechercher une entreprise, un secteur, une ville..."
-          className="pl-9"
-          aria-label="Rechercher une entreprise"
-        />
-      </div>
+    <div className="flex flex-col">
+      <PageToolbar
+        title="Entreprises"
+        subtitle="Vos entreprises ciblées et leurs contacts, reliés à vos opportunités."
+        actions={
+          <Button onClick={openCreateCompany}>
+            <Plus className="size-4" />
+            Ajouter une entreprise
+          </Button>
+        }
+        sticky
+      >
+        <div className="relative max-w-md">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fg-subtle" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Rechercher une entreprise, un secteur, une ville..."
+            className="h-11 pl-9"
+            aria-label="Rechercher une entreprise"
+          />
+        </div>
+      </PageToolbar>
 
       {isLoading ? (
         <LoadingState />
@@ -179,25 +190,6 @@ function EntreprisesPage() {
         }
         onConfirm={confirmDeleteContact}
       />
-    </div>
-  )
-}
-
-function Header({ onAdd }: { onAdd: () => void }) {
-  return (
-    <div className="flex flex-wrap items-start justify-between gap-3">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-[-0.02em] text-fg">
-          Entreprises
-        </h1>
-        <p className="mt-1 text-sm text-fg-muted">
-          Vos entreprises ciblees et leurs contacts, relies a vos opportunites.
-        </p>
-      </div>
-      <Button onClick={onAdd}>
-        <Plus className="size-4" />
-        Ajouter une entreprise
-      </Button>
     </div>
   )
 }

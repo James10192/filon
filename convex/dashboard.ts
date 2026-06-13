@@ -56,6 +56,26 @@ async function loadOpportunities(
 }
 
 /**
+ * Extrait une valeur numérique tolérante du champ libre `compensation`
+ * (ex. « 45 000 », « 1 200 000 XOF », « 45k », « ~80 000 / mois »).
+ * Retourne 0 si rien d'exploitable. Reste prudent : on prend la première
+ * suite de chiffres significative, on gère le suffixe « k » (milliers).
+ */
+function parseCompensation(raw?: string): number {
+  if (!raw) return 0
+  const text = raw.toLowerCase()
+  // Capture un nombre éventuellement espacé/ponctué, suivi d'un « k » optionnel.
+  const match = text.match(/(\d[\d\s.,]*)\s*(k)?/)
+  if (!match) return 0
+  const digits = match[1].replace(/[^\d]/g, '')
+  if (!digits) return 0
+  let value = Number.parseInt(digits, 10)
+  if (Number.isNaN(value)) return 0
+  if (match[2] === 'k') value *= 1000
+  return value
+}
+
+/**
  * KPIs de pilotage. Forme figée par docs/API-CONTRACT.md.
  */
 export const summary = query({
@@ -170,6 +190,56 @@ export const pipeline = query({
     for (const opp of opportunities) counts[opp.stage] += 1
 
     return STAGES.map((stage) => ({ stage, count: counts[stage] }))
+  },
+})
+
+/**
+ * Entonnoir du pipeline : compte ET valeur cumulée (depuis `compensation`)
+ * par étape, dans l'ordre canonique (lead → lost). Fournit aussi les totaux
+ * pour le hero du tableau de bord :
+ * - `totalCount` / `totalValue` : toutes étapes confondues.
+ * - `activeCount` / `activeValue` : étapes ouvertes (ni gagné, ni perdu).
+ * - `wonValue` : valeur des opportunités gagnées (valeur réalisée).
+ */
+export const funnel = query({
+  args: {},
+  handler: async (ctx) => {
+    const { userId } = await requireUser(ctx)
+    const opportunities = await loadOpportunities(ctx, userId)
+
+    const counts = Object.fromEntries(STAGES.map((s) => [s, 0])) as Record<
+      Stage,
+      number
+    >
+    const values = Object.fromEntries(STAGES.map((s) => [s, 0])) as Record<
+      Stage,
+      number
+    >
+
+    for (const opp of opportunities) {
+      counts[opp.stage] += 1
+      values[opp.stage] += parseCompensation(opp.compensation)
+    }
+
+    const stages = STAGES.map((stage) => ({
+      stage,
+      count: counts[stage],
+      value: values[stage],
+    }))
+
+    const totalCount = opportunities.length
+    const totalValue = STAGES.reduce((sum, s) => sum + values[s], 0)
+    const activeCount = STAGES.filter((s) => ACTIVE_STAGES.has(s)).reduce(
+      (sum, s) => sum + counts[s],
+      0,
+    )
+    const activeValue = STAGES.filter((s) => ACTIVE_STAGES.has(s)).reduce(
+      (sum, s) => sum + values[s],
+      0,
+    )
+    const wonValue = values.won
+
+    return { stages, totalCount, totalValue, activeCount, activeValue, wonValue }
   },
 })
 

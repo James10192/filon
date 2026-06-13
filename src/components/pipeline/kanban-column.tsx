@@ -49,27 +49,27 @@ export function KanbanColumn({
     <section
       aria-label={`Colonne ${meta.label}`}
       className={cn(
-        'flex w-[300px] shrink-0 snap-start flex-col rounded-[var(--radius-lg)] bg-surface-2 transition-opacity',
+        'group/col flex w-[272px] shrink-0 snap-start flex-col rounded-[var(--radius-lg)] bg-surface-2 transition-opacity',
         isClosing && draggingId === null && 'opacity-80',
       )}
     >
-      {/* En-tête */}
-      <header className="flex items-center gap-2 px-3 pt-3 pb-2">
+      {/* En-tête : pastille + nom + compte + valeur cumulée */}
+      <header className="flex items-center gap-1.5 px-2.5 pt-2.5 pb-1.5">
         <span
           className={cn('size-2 shrink-0 rounded-full', meta.dotClass)}
           aria-hidden
         />
-        <h2 className="truncate text-sm font-semibold text-fg">
+        <h2 className="truncate text-[13px] font-semibold tracking-[-0.01em] text-fg">
           {meta.label}
         </h2>
-        <span className="text-xs font-medium tabular-nums text-fg-subtle">
+        <span className="rounded-full bg-surface px-1.5 text-xs font-medium tabular-nums text-fg-muted">
           {items.length}
         </span>
-        <div className="ml-auto flex items-center gap-1">
+        <div className="ml-auto flex shrink-0 items-center gap-0.5">
           {potential && (
             <span
-              className="rounded-[var(--radius-sm)] bg-surface px-1.5 py-0.5 text-xs font-medium tabular-nums text-fg-muted"
-              title="CA potentiel estimé sur cette colonne"
+              className="text-xs font-semibold tabular-nums text-fg-muted"
+              title={`Valeur potentielle cumulée sur « ${meta.label} »`}
             >
               {potential}
             </span>
@@ -77,6 +77,7 @@ export function KanbanColumn({
           <Button
             variant="ghost"
             size="icon-sm"
+            className="opacity-60 transition-opacity hover:opacity-100 focus-visible:opacity-100 md:opacity-0 md:group-hover/col:opacity-100"
             aria-label={`Ajouter une opportunité dans « ${meta.label} »`}
             onClick={() => onQuickAdd(stage)}
           >
@@ -88,8 +89,8 @@ export function KanbanColumn({
       {/* Corps : zone de dépôt scrollable */}
       <div
         className={cn(
-          'flex min-h-[120px] flex-1 flex-col gap-2.5 overflow-y-auto rounded-b-[var(--radius-lg)] p-2 transition-colors',
-          'max-h-[calc(100dvh-15rem)]',
+          'flex min-h-[100px] flex-1 flex-col gap-2 overflow-y-auto rounded-b-[var(--radius-lg)] p-2 transition-colors',
+          'max-h-[calc(100dvh-14rem)]',
           isDropTarget &&
             'bg-accent-soft ring-2 ring-inset ring-[var(--color-accent-ring)]',
         )}

@@ -33,6 +33,17 @@ export const STAGE_LABEL: Record<Stage, string> = {
   lost: 'Perdu',
 }
 
+/** Libellé court du stage (pour les zones denses : segments, axes). */
+export const STAGE_SHORT: Record<Stage, string> = {
+  lead: 'Piste',
+  contacted: 'Contacté',
+  applied: 'Envoyée',
+  interview: 'Entretien',
+  negotiation: 'Négo.',
+  won: 'Gagné',
+  lost: 'Perdu',
+}
+
 /** Variable CSS de couleur d'identification du stage (cf. tokens DESIGN.md). */
 export const STAGE_COLOR_VAR: Record<Stage, string> = {
   lead: 'var(--color-stage-lead)',
@@ -55,6 +66,23 @@ export function formatNumber(value: number): string {
 /** Formate un pourcentage 0..1 -> « 42 % ». */
 export function formatPercent(ratio: number): string {
   return `${Math.round(ratio * 100)} %`
+}
+
+/**
+ * Formate une valeur monétaire de maniere compacte (ex. 1 200 000 -> « 1,2 M »,
+ * 45000 -> « 45 k »). Renvoie « 0 » pour les valeurs nulles. Sans symbole de
+ * devise : l'appelant ajoute « XOF » s'il le souhaite.
+ */
+export function formatCompactValue(value: number): string {
+  if (!value) return '0'
+  if (value >= 1_000_000) {
+    const m = value / 1_000_000
+    return `${m.toFixed(m >= 10 ? 0 : 1).replace('.', ',')} M`
+  }
+  if (value >= 1_000) {
+    return `${Math.round(value / 1_000)} k`
+  }
+  return formatNumber(value)
 }
 
 /**

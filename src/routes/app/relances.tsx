@@ -4,6 +4,7 @@ import { AlertTriangle, BellRing, CheckCircle2 } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import { Skeleton } from '~/components/ui/skeleton'
 import { Badge } from '~/components/ui/badge'
+import { PageToolbar } from '~/components/app/page-toolbar'
 import {
   FollowupItem,
   type Followup,
@@ -26,30 +27,17 @@ function RelancesPage() {
   const groups = useQuery(api.followups.due, {}) as DueGroups | undefined
 
   return (
-    <div className="flex flex-col gap-6">
-      <PageHeader />
+    <div className="flex flex-col">
+      <PageToolbar
+        title="Relances"
+        subtitle="Ce qu'il faut relancer, classé par échéance. Ne laissez plus filer une piste faute de suivi."
+        actions={<NewFollowupDialog />}
+      />
       {groups === undefined ? (
         <LoadingState />
       ) : (
         <Content groups={groups} />
       )}
-    </div>
-  )
-}
-
-function PageHeader() {
-  return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-[-0.02em] text-fg">
-          Relances
-        </h1>
-        <p className="mt-1 text-sm text-fg-muted">
-          Ce qu'il faut relancer, classé par échéance. Ne laissez plus filer une
-          piste faute de suivi.
-        </p>
-      </div>
-      <NewFollowupDialog />
     </div>
   )
 }

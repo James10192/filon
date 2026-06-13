@@ -96,6 +96,22 @@ export const STAGE_META: Record<Stage, StageMeta> = {
   },
 }
 
+type PriorityMeta = {
+  label: string
+  /** Classe de point (couleur sémantique, tokens existants). */
+  dotClass: string
+}
+
+/**
+ * Priorités d'une opportunité. `medium` reste neutre sur la carte (pas de
+ * point) : seules `high` (warning) et `low` (subtile) portent un indicateur.
+ */
+export const PRIORITY_META: Record<Priority, PriorityMeta> = {
+  low: { label: 'Priorité basse', dotClass: 'bg-[var(--color-fg-subtle)]' },
+  medium: { label: 'Priorité moyenne', dotClass: 'bg-[var(--color-info)]' },
+  high: { label: 'Priorité haute', dotClass: 'bg-[var(--color-warning)]' },
+}
+
 type TypeMeta = {
   label: string
   icon: LucideIcon

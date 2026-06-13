@@ -174,3 +174,41 @@
   }
   .skip-link:focus { transform: translateY(0); }
 }
+
+/* ---------------------------------------------------------------------------
+   Tokens de densite (append only, atelier facon Linear / Attio).
+   Reutilisables par les pages app/* pour un rythme serre et coherent.
+   Ne modifie aucune valeur existante ci-dessus.
+   --------------------------------------------------------------------------- */
+@theme {
+  /* Hauteurs de lignes de tableau dense */
+  --row-h: 2.5rem;       /* 40px : ligne de tableau standard */
+  --row-h-sm: 2.25rem;   /* 36px : ligne compacte */
+
+  /* Paddings horizontaux des cellules / lignes */
+  --cell-px: 0.75rem;    /* 12px */
+
+  /* Hauteur de l'en-tete de page (PageToolbar) et de la topbar */
+  --toolbar-h: 4rem;     /* 64px : aligne sur la topbar (h-16) */
+
+  /* Tailles de titres */
+  --title-page: 1.1875rem;  /* 19px : titre de PageToolbar */
+  --title-section: 0.9375rem; /* 15px : titre de section */
+}
+
+@layer components {
+  /* Intitule de groupe / section en petites capitales mono-style. */
+  .eyebrow {
+    font-size: 0.625rem;            /* 10px */
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-fg-subtle);
+  }
+
+  /* Ligne de tableau dense reutilisable. */
+  .row-dense {
+    height: var(--row-h);
+    padding-inline: var(--cell-px);
+  }
+}

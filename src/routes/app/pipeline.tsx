@@ -6,9 +6,16 @@ import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { Button } from '~/components/ui/button'
 import { Skeleton } from '~/components/ui/skeleton'
+import { PageToolbar } from '~/components/app/page-toolbar'
+import { useQuickCapture } from '~/components/app/quick-capture'
 import { KanbanBoard } from '~/components/pipeline/kanban-board'
 import { QuickAddDialog } from '~/components/pipeline/quick-add-dialog'
-import { STAGE_ORDER, type Stage } from '~/components/pipeline/pipeline-meta'
+import {
+  STAGE_ORDER,
+  formatPotential,
+  parseCompensation,
+  type Stage,
+} from '~/components/pipeline/pipeline-meta'
 import type { Board } from '~/components/pipeline/types'
 
 export const Route = createFileRoute('/app/pipeline')({
@@ -20,11 +27,22 @@ function PipelinePage() {
   const board = useQuery(api.opportunities.board, {}) as Board | undefined
   const [quickAddOpen, setQuickAddOpen] = useState(false)
   const [quickAddStage, setQuickAddStage] = useState<Stage>('lead')
+  const quickCapture = useQuickCapture()
   const navigate = useNavigate()
 
-  const total = useMemo(() => {
-    if (!board) return 0
-    return STAGE_ORDER.reduce((n, s) => n + (board[s]?.length ?? 0), 0)
+  const { total, totalValue } = useMemo(() => {
+    if (!board) return { total: 0, totalValue: 0 }
+    let count = 0
+    let value = 0
+    for (const s of STAGE_ORDER) {
+      const items = board[s] ?? []
+      count += items.length
+      // Le pipeline actif exclut les opportunités perdues du potentiel.
+      if (s !== 'lost') {
+        for (const o of items) value += parseCompensation(o.compensation)
+      }
+    }
+    return { total: count, totalValue: value }
   }, [board])
 
   function openQuickAdd(stage: Stage) {
@@ -36,17 +54,37 @@ function PipelinePage() {
     navigate({ to: '/app/opportunites/$id', params: { id } })
   }
 
+  const potential = formatPotential(totalValue)
+
   return (
-    <div className="flex flex-col gap-5">
-      <PageHeader
-        count={board ? total : null}
-        onCreate={() => openQuickAdd('lead')}
+    <div className="flex flex-col">
+      <PageToolbar
+        title="Pipeline"
+        subtitle="De la piste au contrat signé, tout au même endroit."
+        actions={
+          <>
+            {board && potential && (
+              <span
+                className="hidden h-9 items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-surface px-2.5 text-sm font-medium tabular-nums text-fg-muted sm:inline-flex"
+                title="Valeur potentielle cumulée du pipeline actif"
+              >
+                <span className="text-fg-subtle">Potentiel</span>
+                <span className="text-fg">{potential}</span>
+              </span>
+            )}
+            <Button onClick={() => quickCapture.open()}>
+              <Plus className="size-4" />
+              <span className="hidden sm:inline">Ajouter une opportunité</span>
+              <span className="sm:hidden">Ajouter</span>
+            </Button>
+          </>
+        }
       />
 
       {board === undefined ? (
         <BoardSkeleton />
       ) : total === 0 ? (
-        <EmptyState onCreate={() => openQuickAdd('lead')} />
+        <EmptyState onCreate={() => quickCapture.open()} />
       ) : (
         <KanbanBoard
           board={board}
@@ -64,58 +102,29 @@ function PipelinePage() {
   )
 }
 
-function PageHeader({
-  count,
-  onCreate,
-}: {
-  count: number | null
-  onCreate: () => void
-}) {
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-3">
-      <div className="min-w-0">
-        <h1 className="text-2xl font-semibold tracking-[-0.02em] text-fg">
-          Pipeline
-        </h1>
-        <p className="mt-0.5 text-sm text-fg-muted">
-          {count === null
-            ? 'Chargement de vos opportunités...'
-            : count === 0
-              ? 'Suivez chaque opportunité de la piste au contrat signé.'
-              : `${count} opportunité${count > 1 ? 's' : ''} dans votre pipeline.`}
-        </p>
-      </div>
-      <Button onClick={onCreate}>
-        <Plus className="size-4" />
-        Ajouter une opportunité
-      </Button>
-    </div>
-  )
-}
-
 function BoardSkeleton() {
   return (
     <div className="-mx-4 overflow-hidden px-4 md:-mx-6 md:px-6 lg:-mx-8 lg:px-8">
-      <div className="flex gap-4">
+      <div className="flex gap-3">
         {STAGE_ORDER.slice(0, 5).map((stage) => (
           <div
             key={stage}
-            className="flex w-[300px] shrink-0 flex-col rounded-[var(--radius-lg)] bg-surface-2"
+            className="flex w-[272px] shrink-0 flex-col rounded-[var(--radius-lg)] bg-surface-2"
           >
-            <div className="flex items-center gap-2 px-3 pt-3 pb-2">
+            <div className="flex items-center gap-2 px-2.5 pt-2.5 pb-2">
               <Skeleton className="size-2 rounded-full" />
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="ml-auto h-5 w-9 rounded-[var(--radius-sm)]" />
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="ml-auto h-4 w-12 rounded-[var(--radius-sm)]" />
             </div>
-            <div className="flex flex-col gap-2.5 p-2">
+            <div className="flex flex-col gap-2 p-2">
               {Array.from({ length: stage === 'lead' ? 3 : 2 }).map((_, i) => (
                 <div
                   key={i}
-                  className="rounded-[var(--radius)] border border-border bg-surface p-4"
+                  className="rounded-[var(--radius)] border border-border bg-surface p-3"
                 >
                   <Skeleton className="h-4 w-4/5" />
-                  <Skeleton className="mt-3 h-5 w-24 rounded-[var(--radius-sm)]" />
-                  <Skeleton className="mt-3 h-3 w-1/2" />
+                  <Skeleton className="mt-2.5 h-5 w-20 rounded-[var(--radius-sm)]" />
+                  <Skeleton className="mt-2.5 h-3 w-1/2" />
                 </div>
               ))}
             </div>
@@ -139,7 +148,7 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
         Ajoutez votre première piste pour démarrer. Candidatures, propositions
         et missions vivent toutes dans ce tableau.
       </p>
-      <Button className="mt-6" onClick={onCreate}>
+      <Button className="mt-6 h-11" onClick={onCreate}>
         <Plus className="size-4" />
         Ajouter une opportunité
       </Button>

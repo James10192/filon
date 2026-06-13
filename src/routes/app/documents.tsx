@@ -7,6 +7,7 @@ import type { Doc } from '../../../convex/_generated/dataModel'
 import { Button } from '~/components/ui/button'
 import { Skeleton } from '~/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
+import { PageToolbar } from '~/components/app/page-toolbar'
 import { DocumentCard } from '~/components/documents/document-card'
 import { DocumentRenameDialog } from '~/components/documents/document-rename-dialog'
 import { DocumentUpload } from '~/components/documents/document-upload'
@@ -65,21 +66,20 @@ function DocumentsPage() {
   const hasDocuments = documents !== undefined && documents.length > 0
 
   return (
-    <div className="flex flex-col gap-6">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-[-0.02em] text-fg">
-          Documents
-        </h1>
-        <p className="text-sm text-fg-muted">
-          Votre bibliotheque de CV, lettres, portfolios et contrats, prete a
-          accompagner chaque candidature et chaque proposition.
-        </p>
-      </header>
+    <div className="flex flex-col">
+      <PageToolbar
+        title="Documents"
+        subtitle="Votre bibliothèque de CV, lettres, portfolios et contrats, prête à accompagner chaque candidature et chaque proposition."
+      />
 
       {/* La zone d'upload est toujours visible. Compacte des qu'il y a des docs. */}
       <DocumentUpload compact={hasDocuments} />
 
-      <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)}>
+      <Tabs
+        value={tab}
+        onValueChange={(v) => setTab(v as TabValue)}
+        className="mt-6"
+      >
         <TabsList className="w-full justify-start overflow-x-auto sm:w-auto">
           <TabsTrigger value="all">
             Tous

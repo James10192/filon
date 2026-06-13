@@ -7,6 +7,7 @@ import type { Doc } from '../../../convex/_generated/dataModel'
 import { Button } from '~/components/ui/button'
 import { Skeleton } from '~/components/ui/skeleton'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '~/components/ui/tabs'
+import { PageToolbar } from '~/components/app/page-toolbar'
 import { ProposalCard } from '~/components/proposals/proposal-card'
 import { ProposalFormDialog } from '~/components/proposals/proposal-form-dialog'
 import {
@@ -67,36 +68,32 @@ function PropositionsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-[-0.02em] text-fg">
-            Propositions
-          </h1>
-          <p className="mt-1 text-sm text-fg-muted">
-            Suivez vos propositions spontanees et votre demarchage, du brouillon
-            a la signature.
-          </p>
-        </div>
-        <Button onClick={openCreate} className="shrink-0">
-          <Plus className="size-4" />
-          Nouvelle proposition
-        </Button>
-      </header>
-
+    <div className="flex flex-col">
       <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)}>
-        <TabsList className="w-full justify-start overflow-x-auto sm:w-auto">
-          <TabsTrigger value="all">
-            Toutes
-            <Count n={counts.all} active={tab === 'all'} />
-          </TabsTrigger>
-          {PROPOSAL_STATUSES.map((status) => (
-            <TabsTrigger key={status} value={status}>
-              {STATUS_LABELS[status]}
-              <Count n={counts[status]} active={tab === status} />
+        <PageToolbar
+          title="Propositions"
+          subtitle="Suivez vos propositions spontanées et votre démarchage, du brouillon à la signature."
+          actions={
+            <Button onClick={openCreate} className="shrink-0">
+              <Plus className="size-4" />
+              Nouvelle proposition
+            </Button>
+          }
+          sticky
+        >
+          <TabsList className="w-full justify-start overflow-x-auto sm:w-auto">
+            <TabsTrigger value="all">
+              Toutes
+              <Count n={counts.all} active={tab === 'all'} />
             </TabsTrigger>
-          ))}
-        </TabsList>
+            {PROPOSAL_STATUSES.map((status) => (
+              <TabsTrigger key={status} value={status}>
+                {STATUS_LABELS[status]}
+                <Count n={counts[status]} active={tab === status} />
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </PageToolbar>
 
         <TabsContent value={tab}>
           <PropositionsBody

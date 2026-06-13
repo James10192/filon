@@ -158,7 +158,7 @@ export function KanbanBoard({
 
   return (
     <div className="-mx-4 overflow-x-auto px-4 pb-2 [scrollbar-width:thin] md:-mx-6 md:px-6 lg:-mx-8 lg:px-8">
-      <div className="flex snap-x snap-mandatory gap-4">
+      <div className="flex snap-x snap-mandatory gap-3">
         {STAGE_ORDER.map((stage) => (
           <KanbanColumn
             key={stage}

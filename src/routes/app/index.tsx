@@ -1,26 +1,20 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
-import {
-  Target,
-  Send,
-  Users as UsersIcon,
-  Trophy,
-  Percent,
-  AlertTriangle,
-  Compass,
-  Plus,
-  RotateCcw,
-} from 'lucide-react'
+import { AlertTriangle, Compass, Plus, RotateCcw } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import { Button } from '~/components/ui/button'
-import { KpiCard, KpiCardSkeleton } from '~/components/dashboard/kpi-card'
+import { PageToolbar } from '~/components/app/page-toolbar'
+import { useQuickCapture } from '~/components/app/quick-capture'
 import {
-  StageBreakdown,
-  StageBreakdownSkeleton,
-} from '~/components/dashboard/stage-breakdown'
-import { FollowupsDue } from '~/components/dashboard/followups-due'
+  PipelineFunnel,
+  PipelineFunnelSkeleton,
+} from '~/components/dashboard/pipeline-funnel'
+import { TodayStack, TodayStackSkeleton } from '~/components/dashboard/today-stack'
+import {
+  SecondaryKpis,
+  SecondaryKpisSkeleton,
+} from '~/components/dashboard/secondary-kpis'
 import { RecentActivity } from '~/components/dashboard/recent-activity'
-import { formatPercent } from '~/components/dashboard/pipeline-meta'
 
 export const Route = createFileRoute('/app/')({
   component: DashboardPage,
@@ -30,10 +24,11 @@ export const Route = createFileRoute('/app/')({
 
 function DashboardError({ reset }: { reset: () => void }) {
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold tracking-[-0.02em] text-fg">
-        Tableau de bord
-      </h1>
+    <div className="flex flex-col">
+      <PageToolbar
+        title="Tableau de bord"
+        subtitle="Vos priorités du jour et la forme de votre pipeline."
+      />
       <div className="flex flex-col items-center gap-4 rounded-[var(--radius-lg)] border border-danger/40 bg-danger-soft px-6 py-12 text-center">
         <span className="flex size-12 items-center justify-center rounded-full bg-surface text-danger">
           <AlertTriangle className="size-6" />
@@ -58,130 +53,84 @@ function DashboardError({ reset }: { reset: () => void }) {
 
 function DashboardPage() {
   const summary = useQuery(api.dashboard.summary, {})
+  const quickCapture = useQuickCapture()
 
   if (summary === undefined) return <DashboardSkeleton />
 
   // Onboarding : aucune opportunité encore créée.
-  if (summary.totalOpportunities === 0) return <OnboardingState />
+  if (summary.totalOpportunities === 0) {
+    return <OnboardingState onCreate={quickCapture.open} />
+  }
 
   return (
-    <div className="flex flex-col gap-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-[-0.02em] text-fg">
-            Tableau de bord
-          </h1>
-          <p className="text-sm text-fg-muted">
-            Vue d'ensemble de votre pipeline et de vos actions du jour.
-          </p>
-        </div>
-        <Button asChild>
-          <Link to="/app/opportunites">
+    <div className="flex flex-col">
+      <PageToolbar
+        title="Tableau de bord"
+        subtitle="Vos priorités du jour et la forme de votre pipeline."
+        actions={
+          <Button onClick={quickCapture.open}>
             <Plus className="size-4" />
-            Ajouter une opportunité
-          </Link>
-        </Button>
-      </header>
+            Nouvelle opportunité
+          </Button>
+        }
+      />
 
-      <section
-        aria-label="Indicateurs clés"
-        className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4"
-      >
-        <KpiCard
-          label="Opportunités actives"
-          value={summary.activeCount}
-          icon={Target}
-          tone="accent"
-          hint={`${summary.totalOpportunities} au total`}
-        />
-        <KpiCard
-          label="Candidatures envoyées"
-          value={summary.byStage.applied}
-          icon={Send}
-          hint={`${summary.proposalsSent} proposition${summary.proposalsSent > 1 ? 's' : ''} envoyée${summary.proposalsSent > 1 ? 's' : ''}`}
-        />
-        <KpiCard
-          label="Entretiens"
-          value={summary.byStage.interview}
-          icon={UsersIcon}
-          hint={`${summary.byStage.negotiation} en négociation`}
-        />
-        <KpiCard
-          label="Taux de conversion"
-          value={formatPercent(summary.winRate)}
-          icon={Percent}
-          tone={summary.winRate >= 0.5 ? 'success' : 'neutral'}
-          hint={`${summary.wonCount} gagnée${summary.wonCount > 1 ? 's' : ''} · ${summary.lostCount} perdue${summary.lostCount > 1 ? 's' : ''}`}
-        />
-        <KpiCard
-          label="Gagnées"
-          value={summary.wonCount}
-          icon={Trophy}
-          tone="success"
-          hint="Postes et contrats obtenus"
-        />
-        <KpiCard
-          label="Relances du jour"
-          value={summary.followupsUpcoming}
-          icon={Send}
-          tone={summary.followupsUpcoming > 0 ? 'warning' : 'neutral'}
-          hint="À faire sous 7 jours"
-        />
-        <KpiCard
-          label="Relances en retard"
-          value={summary.followupsOverdue}
-          icon={AlertTriangle}
-          tone={summary.followupsOverdue > 0 ? 'danger' : 'neutral'}
-          hint={
-            summary.followupsOverdue > 0 ? 'À traiter en priorité' : 'Tout est à jour'
-          }
-        />
-        <KpiCard
-          label="Carnet"
-          value={summary.companiesCount}
-          icon={UsersIcon}
-          hint={`${summary.contactsCount} contact${summary.contactsCount > 1 ? 's' : ''} · ${summary.documentsCount} document${summary.documentsCount > 1 ? 's' : ''}`}
-        />
-      </section>
+      <div className="flex flex-col gap-5">
+        {/* Hero : entonnoir du pipeline (compte + valeur par étape) */}
+        <PipelineFunnel />
 
-      <section className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="flex flex-col gap-6 lg:col-span-2">
-          <FollowupsDue />
+        {/* Priorités du jour + activité récente */}
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+          <TodayStack />
           <RecentActivity />
         </div>
-        <div className="flex flex-col gap-6">
-          <StageBreakdown byStage={summary.byStage} />
-        </div>
-      </section>
+
+        {/* KPI secondaires compacts */}
+        <SecondaryKpis summary={summary} />
+      </div>
     </div>
   )
 }
 
-function OnboardingState() {
+function OnboardingState({ onCreate }: { onCreate: () => void }) {
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold tracking-[-0.02em] text-fg">
-        Tableau de bord
-      </h1>
-      <div className="flex flex-col items-center gap-5 rounded-[var(--radius-lg)] border border-border bg-surface px-6 py-16 text-center shadow-[var(--shadow-card)]">
-        <span className="flex size-14 items-center justify-center rounded-full bg-accent-soft text-accent">
-          <Compass className="size-7" />
+    <div className="flex flex-col">
+      <PageToolbar
+        title="Tableau de bord"
+        subtitle="Vos priorités du jour et la forme de votre pipeline."
+        actions={
+          <Button onClick={onCreate}>
+            <Plus className="size-4" />
+            Nouvelle opportunité
+          </Button>
+        }
+      />
+      <div className="flex flex-col items-center gap-5 rounded-[var(--radius-lg)] border border-border bg-surface px-6 py-14 text-center shadow-[var(--shadow-card)]">
+        <span className="flex size-12 items-center justify-center rounded-full bg-accent-soft text-accent">
+          <Compass className="size-6" />
         </span>
         <div className="flex max-w-md flex-col gap-2">
-          <h2 className="text-lg font-semibold text-fg">
+          <h2 className="text-lg font-semibold tracking-[-0.02em] text-fg">
             Ajoutez votre première opportunité
           </h2>
           <p className="text-sm text-fg-muted">
-            Aucune opportunité pour l'instant. Ajoutez votre première piste pour
-            voir vos indicateurs, vos relances et votre activité s'animer ici.
+            Dès votre première piste, votre entonnoir, vos relances du jour et
+            votre activité s'animent ici. Capture rapide avec la touche{' '}
+            <kbd className="rounded border border-border bg-surface-2 px-1.5 py-0.5 font-mono text-xs text-fg-muted">
+              n
+            </kbd>
+            .
           </p>
         </div>
-        <Button asChild size="lg">
-          <Link to="/app/opportunites">
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <Button size="lg" onClick={onCreate}>
             <Plus className="size-4" />
-            Ajouter une opportunité
-          </Link>
-        </Button>
+            Nouvelle opportunité
+          </Button>
+          <Button variant="outline" size="lg" asChild>
+            <Link to="/app/pipeline">Voir le pipeline</Link>
+          </Button>
+        </div>
       </div>
     </div>
   )
@@ -189,28 +138,19 @@ function OnboardingState() {
 
 function DashboardSkeleton() {
   return (
-    <div className="flex flex-col gap-6">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-[-0.02em] text-fg">
-          Tableau de bord
-        </h1>
-        <p className="text-sm text-fg-muted">
-          Vue d'ensemble de votre pipeline et de vos actions du jour.
-        </p>
-      </header>
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <KpiCardSkeleton key={i} />
-        ))}
-      </section>
-      <section className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="flex flex-col gap-6 lg:col-span-2">
-          <StageBreakdownSkeleton />
+    <div className="flex flex-col">
+      <PageToolbar
+        title="Tableau de bord"
+        subtitle="Vos priorités du jour et la forme de votre pipeline."
+      />
+      <div className="flex flex-col gap-5">
+        <PipelineFunnelSkeleton />
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+          <TodayStackSkeleton />
+          <TodayStackSkeleton />
         </div>
-        <div className="flex flex-col gap-6">
-          <StageBreakdownSkeleton />
-        </div>
-      </section>
+        <SecondaryKpisSkeleton />
+      </div>
     </div>
   )
 }
