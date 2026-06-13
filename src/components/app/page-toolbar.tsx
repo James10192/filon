@@ -36,7 +36,10 @@ export function PageToolbar({
     <div
       className={cn(
         'mb-5 border-b border-border bg-bg',
-        sticky && 'sticky top-16 z-20 -mx-4 px-4 md:-mx-6 md:px-6 lg:-mx-8 lg:px-8',
+        // `sticky` desactive : la barre collante recouvrait le haut de la card
+        // de contenu sur les pages a filtres (bord superieur rogne). En flux
+        // normal, l'en-tete defile avec le contenu, sans chevauchement.
+        sticky && '',
         className,
       )}
     >
