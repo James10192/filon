@@ -1,8 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { PageToolbar } from '~/components/app/page-toolbar'
-import { ProfileSection } from '~/components/settings/profile-section'
-import { PreferencesSection } from '~/components/settings/preferences-section'
-import { AccountSection } from '~/components/settings/account-section'
+import { SettingsLayout } from '~/components/settings/settings-layout'
 
 export const Route = createFileRoute('/app/parametres')({
   component: ParametresPage,
@@ -10,9 +8,10 @@ export const Route = createFileRoute('/app/parametres')({
 })
 
 /**
- * Page Parametres : profil, preferences (devise + libelles du pipeline) et
- * zone compte (deconnexion). Chaque section gere ses propres etats
- * (loading/erreur/succes) et affiche un toast sur action.
+ * Page Parametres : navigation par sections (Compte / Preferences) avec un
+ * rail a gauche et le contenu a droite, dans une largeur contenue qui occupe
+ * l'espace disponible. Chaque section gere ses propres etats (loading / erreur
+ * / succes) et affiche un toast sur action.
  */
 function ParametresPage() {
   return (
@@ -21,12 +20,7 @@ function ParametresPage() {
         title="Paramètres"
         subtitle="Gérez votre profil, vos préférences de pipeline et votre compte."
       />
-
-      <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
-        <ProfileSection />
-        <PreferencesSection />
-        <AccountSection />
-      </div>
+      <SettingsLayout />
     </div>
   )
 }
