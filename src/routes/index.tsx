@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { MarketingHeader } from '~/components/marketing/marketing-header'
 import { MarketingFooter } from '~/components/marketing/marketing-footer'
@@ -45,6 +45,18 @@ export const Route = createFileRoute('/')({
 function LandingPage() {
   const scopeRef = useRef<HTMLDivElement | null>(null)
   useLandingMotion(scopeRef)
+
+  // Surface marketing sombre : le conteneur ScrollSmoother est en position
+  // fixed, le fond blanc du body pourrait transparaître sous le contenu
+  // transformé. On force le body en sombre tant que la landing est montée,
+  // restauré au démontage (l'app reste light-first).
+  useEffect(() => {
+    const prev = document.body.style.backgroundColor
+    document.body.style.backgroundColor = '#09090b'
+    return () => {
+      document.body.style.backgroundColor = prev
+    }
+  }, [])
 
   return (
     <div ref={scopeRef} className="dark bg-bg text-fg">
