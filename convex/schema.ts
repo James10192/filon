@@ -124,10 +124,11 @@ export default defineSchema({
     .index('by_user_opportunity', ['userId', 'opportunityId'])
     .index('by_user_created', ['userId', 'createdAt']),
 
-  // Relances datées, éventuellement liées à une opportunité.
+  // Relances datées, éventuellement liées à une opportunité ou une proposition.
   followups: defineTable({
     userId: v.string(),
     opportunityId: v.optional(v.id('opportunities')),
+    proposalId: v.optional(v.id('proposals')),
     label: v.string(),
     dueDate: v.string(),
     done: v.boolean(),
@@ -138,7 +139,8 @@ export default defineSchema({
     .index('by_user_done', ['userId', 'done'])
     .index('by_user_due', ['userId', 'dueDate'])
     .index('by_user_done_due', ['userId', 'done', 'dueDate'])
-    .index('by_opportunity', ['opportunityId']),
+    .index('by_opportunity', ['opportunityId'])
+    .index('by_proposal', ['proposalId']),
 
   // Propositions spontanées / démarchage.
   proposals: defineTable({

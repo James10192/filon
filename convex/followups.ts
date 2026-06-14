@@ -57,6 +57,17 @@ async function assertOwnedOpportunity(
   if (opp.userId !== userId) throw new Error('Non autorisé')
 }
 
+/** Vérifie qu'une proposition existe et appartient au user. Throw sinon. */
+async function assertOwnedProposal(
+  ctx: MutationCtx,
+  userId: string,
+  proposalId: Id<'proposals'>,
+): Promise<void> {
+  const proposal = await ctx.db.get(proposalId)
+  if (!proposal) throw new Error('Introuvable')
+  if (proposal.userId !== userId) throw new Error('Non autorisé')
+}
+
 /**
  * `api.followups.list` — toutes les relances du user, triées `dueDate asc`.
  * Filtres optionnels : `done` (état) et `opportunityId` (relances d'une piste).
@@ -65,12 +76,20 @@ export const list = query({
   args: {
     done: v.optional(v.boolean()),
     opportunityId: v.optional(v.id('opportunities')),
+    proposalId: v.optional(v.id('proposals')),
   },
   handler: async (ctx, args) => {
     const { userId } = await requireUser(ctx)
 
     let rows: Doc<'followups'>[]
-    if (args.opportunityId !== undefined) {
+    if (args.proposalId !== undefined) {
+      const proposalId = args.proposalId
+      rows = await ctx.db
+        .query('followups')
+        .withIndex('by_proposal', (q) => q.eq('proposalId', proposalId))
+        .collect()
+      rows = rows.filter((f) => f.userId === userId)
+    } else if (args.opportunityId !== undefined) {
       const opportunityId = args.opportunityId
       rows = await ctx.db
         .query('followups')
@@ -94,7 +113,10 @@ export const list = query({
         .collect()
     }
 
-    if (args.opportunityId !== undefined && args.done !== undefined) {
+    if (
+      (args.opportunityId !== undefined || args.proposalId !== undefined) &&
+      args.done !== undefined
+    ) {
       rows = rows.filter((f) => f.done === args.done)
     }
 
@@ -207,6 +229,7 @@ export const create = mutation({
     label: v.string(),
     dueDate: v.string(),
     opportunityId: v.optional(v.id('opportunities')),
+    proposalId: v.optional(v.id('proposals')),
   },
   handler: async (ctx, args) => {
     const { userId } = await requireUser(ctx)
@@ -218,6 +241,9 @@ export const create = mutation({
     if (args.opportunityId !== undefined) {
       await assertOwnedOpportunity(ctx, userId, args.opportunityId)
     }
+    if (args.proposalId !== undefined) {
+      await assertOwnedProposal(ctx, userId, args.proposalId)
+    }
 
     const doc: {
       userId: string
@@ -226,6 +252,7 @@ export const create = mutation({
       done: boolean
       createdAt: number
       opportunityId?: Id<'opportunities'>
+      proposalId?: Id<'proposals'>
     } = {
       userId,
       label,
@@ -235,6 +262,9 @@ export const create = mutation({
     }
     if (args.opportunityId !== undefined) {
       doc.opportunityId = args.opportunityId
+    }
+    if (args.proposalId !== undefined) {
+      doc.proposalId = args.proposalId
     }
 
     return ctx.db.insert('followups', doc)

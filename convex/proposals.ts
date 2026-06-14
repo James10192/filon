@@ -222,6 +222,75 @@ export const setStatus = mutation({
   },
 })
 
+/**
+ * Convertit une proposition acceptee en opportunite de type `mission`
+ * (stage `won`) dans le pipeline. La proposition reste inchangee. Retourne
+ * l'id de l'opportunite creee. Verifie la propriete.
+ */
+export const convertToOpportunity = mutation({
+  args: { id: v.id('proposals') },
+  handler: async (ctx, args): Promise<Id<'opportunities'>> => {
+    const { userId } = await requireUser(ctx)
+    const proposal = await getOwnedProposal(ctx, userId, args.id)
+
+    const now = Date.now()
+
+    // Position en fin de colonne « Gagné » (meme convention que opportunities).
+    const wonColumn = await ctx.db
+      .query('opportunities')
+      .withIndex('by_user_stage', (q) =>
+        q.eq('userId', userId).eq('stage', 'won'),
+      )
+      .collect()
+    const order = wonColumn.reduce((max, o) => Math.max(max, o.order), -1) + 1
+
+    const doc: {
+      userId: string
+      title: string
+      type: 'mission'
+      stage: 'won'
+      priority: 'medium'
+      tags: string[]
+      order: number
+      description: string
+      createdAt: number
+      updatedAt: number
+      companyId?: Id<'companies'>
+      compensation?: string
+    } = {
+      userId,
+      title: proposal.title,
+      type: 'mission',
+      stage: 'won',
+      priority: 'medium',
+      tags: [],
+      order,
+      description: proposal.pitch,
+      createdAt: now,
+      updatedAt: now,
+    }
+    if (proposal.companyId !== undefined) doc.companyId = proposal.companyId
+
+    if (proposal.amount !== undefined) {
+      const code = proposal.currency ?? 'XOF'
+      doc.compensation = `${new Intl.NumberFormat('fr-FR').format(proposal.amount)} ${code}`
+    }
+
+    const opportunityId = await ctx.db.insert('opportunities', doc)
+
+    // Journalise la creation dans la timeline (meme transaction).
+    await ctx.db.insert('activities', {
+      userId,
+      opportunityId,
+      kind: 'other',
+      content: `Mission créée depuis la proposition : ${proposal.title}`,
+      createdAt: now,
+    })
+
+    return opportunityId
+  },
+})
+
 /** Supprime une proposition. Verifie la propriete. */
 export const remove = mutation({
   args: { id: v.id('proposals') },
