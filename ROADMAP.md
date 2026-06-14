@@ -68,6 +68,15 @@ Pendant la review Paystack (~7 j). Tout testable sans charge réelle, bascule li
 > Note récurrence : les vraies souscriptions Paystack (Plans + autorisation réutilisable) sont **carte uniquement**. Le mobile money (Wave / OM / MoMo) ne donne pas d'autorisation réutilisable : il est traité comme un **paiement ponctuel** couvrant la période choisie, avec relance de ré-abonnement à l'échéance. La copie de la page Tarifs le dit honnêtement.
 > Webhook à enregistrer (dashboard Paystack) : `https://decisive-mongoose-364.convex.site/paystack/webhook`.
 
+#### Conversion intelligente (couche d'upsell, anti-nag)
+Vendre le résultat au moment de la valeur ou de la friction, jamais à froid. Tier-aware : free → push Pro ; pro → teasers Pro+ IA sur l'IA uniquement ; pro_ai → rien.
+
+- [x] **Cerveau central** `useUpsell()` + catalogue déclaratif (`conversion.ts`) + mémoire de dismissal & cap journalier (`dismissal.ts`, localStorage) — livré 2026-06-14
+- [x] **Composants réutilisables** : `<LockedFeature>` (ghosting + badge), `<UpgradeNudge>` (bandeau dismissible), `<UsageMeter>` (compteur `.assay` qui escalade), `<UpgradeDialog>` (surface d'upgrade unique) — livré 2026-06-14
+- [x] **Hooks par page** : veille auto verrouillée (hook fort), compteur d'opportunités actives + score IA teasé (Opportunités), brouillon IA teasé (détail), bandeau contextuel unique (dashboard), entrée « Améliorer » discrète (menu) — livré 2026-06-14
+- [x] **Déclencheurs de valeur mérités** : nudge après un import réussi et après une opportunité gagnée — livré 2026-06-14
+- [x] **GSAP de séduction** (<300ms, reduced-motion respecté) sur les teasers verrouillés et l'entrée des nudges de valeur uniquement — livré 2026-06-14
+
 ### Phase 3 — Super premium IA
 Industrialise le savoir-faire manuel (kits de candidature). Coût variable → métrage.
 
