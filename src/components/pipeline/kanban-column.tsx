@@ -89,7 +89,7 @@ export function KanbanColumn({
       {/* Corps : zone de dépôt scrollable */}
       <div
         className={cn(
-          'flex min-h-[100px] flex-1 flex-col gap-2 overflow-y-auto rounded-b-[var(--radius-lg)] p-2 transition-colors',
+          'flex min-h-[calc(100dvh-14rem)] flex-1 flex-col gap-2 overflow-y-auto rounded-b-[var(--radius-lg)] p-2 transition-colors',
           'max-h-[calc(100dvh-14rem)]',
           isDropTarget &&
             'bg-accent-soft ring-2 ring-inset ring-[var(--color-accent-ring)]',

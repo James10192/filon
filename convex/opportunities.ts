@@ -236,13 +236,24 @@ export const create = mutation({
     if (args.nextActionAt !== undefined) doc.nextActionAt = args.nextActionAt
     if (args.description !== undefined) doc.description = args.description
 
-    return ctx.db.insert(
+    const opportunityId = await ctx.db.insert(
       'opportunities',
       doc as unknown as Omit<
         Doc<'opportunities'>,
         '_id' | '_creationTime'
       >,
     )
+
+    // Journalise la création dans la timeline (même transaction).
+    await ctx.db.insert('activities', {
+      userId,
+      opportunityId,
+      kind: 'other',
+      content: `Opportunité créée : ${args.title}`,
+      createdAt: now,
+    })
+
+    return opportunityId
   },
 })
 
