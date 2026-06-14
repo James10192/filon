@@ -45,11 +45,11 @@ export function PricingPlans() {
 
       <IntervalToggle value={interval} onChange={setInterval} />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid items-stretch gap-4 sm:auto-rows-fr sm:grid-cols-2 xl:grid-cols-4">
         {PLAN_CARDS.map((card, i) => (
           <div
             key={card.key}
-            className="reveal"
+            className="reveal h-full"
             style={{ '--reveal-i': i } as React.CSSProperties}
           >
             <PlanCard
