@@ -15,6 +15,7 @@ import { Button } from '~/components/ui/button'
 import { MarketingHeader } from '~/components/marketing/marketing-header'
 import { MarketingFooter } from '~/components/marketing/marketing-footer'
 import { PipelinePreview } from '~/components/marketing/pipeline-preview'
+import { PricingSection } from '~/components/marketing/pricing-section'
 
 export const Route = createFileRoute('/')({
   component: LandingPage,
@@ -87,6 +88,7 @@ function LandingPage() {
         <Problem />
         <Features />
         <Audiences />
+        <PricingSection />
         <FinalCta />
       </main>
       <MarketingFooter />

@@ -17,6 +17,7 @@ import { cn } from '~/lib/utils'
 const NAV = [
   { href: '#fonctionnalites', label: 'Fonctionnalités' },
   { href: '#pour-qui', label: 'Pour qui' },
+  { href: '#tarifs', label: 'Tarifs' },
 ] as const
 
 /** En-tête public, sticky, sobre. CTA vers /connexion et /inscription. */
