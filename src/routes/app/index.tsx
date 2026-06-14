@@ -135,7 +135,9 @@ function OnboardingState({ onCreate }: { onCreate: () => void }) {
             Nouvelle opportunité
           </Button>
           <Button variant="outline" size="lg" asChild>
-            <Link to="/app/pipeline">Voir le pipeline</Link>
+            <Link to="/app/opportunites" search={{ view: 'tableau' }}>
+              Voir le pipeline
+            </Link>
           </Button>
         </div>
       </div>

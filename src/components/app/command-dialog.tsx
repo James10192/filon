@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from 'convex/react'
-import { FileDown, FilePlus2, Plus } from 'lucide-react'
+import { Calendar, FileDown, FilePlus2, KanbanSquare, Plus } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { GlobalSearchResult } from '../../../convex/search'
 import {
@@ -54,6 +54,8 @@ export function CommandPaletteDialog({
   onNewOpportunity,
   onNewProposal,
   onImportOffer,
+  onOpenBoard,
+  onOpenCalendar,
 }: {
   isOpen: boolean
   setIsOpen: (open: boolean) => void
@@ -62,6 +64,8 @@ export function CommandPaletteDialog({
   onNewOpportunity: () => void
   onNewProposal: () => void
   onImportOffer: () => void
+  onOpenBoard: () => void
+  onOpenCalendar: () => void
 }) {
   const [query, setQuery] = useState('')
   const [debounced, setDebounced] = useState('')
@@ -112,8 +116,28 @@ export function CommandPaletteDialog({
         icon: FileDown,
         run: onImportOffer,
       },
+      {
+        id: 'open-board',
+        label: 'Pipeline (vue Tableau)',
+        keywords: 'kanban board colonnes etapes pipeline tableau opportunites',
+        icon: KanbanSquare,
+        run: onOpenBoard,
+      },
+      {
+        id: 'open-calendar',
+        label: 'Opportunités (vue Calendrier)',
+        keywords: 'agenda echeances relances calendrier dates opportunites',
+        icon: Calendar,
+        run: onOpenCalendar,
+      },
     ],
-    [onNewOpportunity, onNewProposal, onImportOffer],
+    [
+      onNewOpportunity,
+      onNewProposal,
+      onImportOffer,
+      onOpenBoard,
+      onOpenCalendar,
+    ],
   )
 
   const term = normalize(query.trim())

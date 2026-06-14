@@ -126,7 +126,9 @@ export function PipelineFunnel() {
               maxBarSize={26}
               className="cursor-pointer"
               isAnimationActive={false}
-              onClick={() => navigate({ to: '/app/pipeline' })}
+              onClick={() =>
+                navigate({ to: '/app/opportunites', search: { view: 'tableau' } })
+              }
             >
               {rows.map((r) => (
                 <Cell key={r.stage} fill={STAGE_COLOR_VAR[r.stage]} />

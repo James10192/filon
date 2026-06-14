@@ -57,6 +57,8 @@ export function CommandPaletteProvider({
         }}
         onNewProposal={() => go('/app/propositions', { nouveau: true })}
         onImportOffer={() => go('/app/veille', { import: true })}
+        onOpenBoard={() => go('/app/opportunites', { view: 'tableau' })}
+        onOpenCalendar={() => go('/app/opportunites', { view: 'calendrier' })}
       />
     </CommandPaletteContext.Provider>
   )

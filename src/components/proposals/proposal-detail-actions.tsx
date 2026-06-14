@@ -93,7 +93,10 @@ export function ProposalDetailActions({
       const opportunityId = await convert({ id: proposal._id })
       toast.success('Convertie en mission dans le pipeline.')
       setConfirmConvert(false)
-      navigate({ to: '/app/opportunites/$id', params: { id: opportunityId } })
+      navigate({
+        to: '/app/opportunites',
+        search: { view: 'liste', id: opportunityId },
+      })
     } catch {
       toast.error('La conversion a échoué.')
       setBusy(false)

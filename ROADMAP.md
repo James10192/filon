@@ -44,15 +44,15 @@ monétisé per-user, sans rien casser. On ne paie le coût des fonctionnalités 
 
 ## Phases
 
-### Phase 1 — Espace Opportunités unifié (UX) · EN COURS
+### Phase 1 — Espace Opportunités unifié (UX) · LIVRÉ
 Zéro dépendance externe, buildable tout de suite.
 
-- [ ] Fusionner Pipeline + Opportunités en un espace unique avec sélecteur de vue
-- [ ] Vue **Liste** (table dense, tri/filtre, chips de filtres actifs)
-- [ ] Vue **Tableau** (kanban dnd-kit) intégrée au switcher
-- [ ] Vue **Calendrier** (échéances `deadline`/`nextActionAt` + relances)
-- [ ] **Panneau split master-detail** (deep-link URL, sheet plein écran mobile)
-- [ ] Nettoyage nav sidebar + cibles ⌘K cohérentes
+- [x] Fusionner Pipeline + Opportunités en un espace unique avec sélecteur de vue — livré 2026-06-14
+- [x] Vue **Liste** (table dense, tri/filtre, chips de filtres actifs) — livré 2026-06-14
+- [x] Vue **Tableau** (kanban dnd-kit) intégrée au switcher — livré 2026-06-14
+- [x] Vue **Calendrier** (échéances `deadline`/`nextActionAt` + relances) — livré 2026-06-14
+- [x] **Panneau split master-detail** (deep-link URL, sheet plein écran mobile) — livré 2026-06-14
+- [x] Nettoyage nav sidebar + cibles ⌘K cohérentes — livré 2026-06-14
 
 ### Phase 2 — Abonnements & paliers (Paystack, test mode)
 Pendant la review Paystack (~7 j). Tout testable sans charge réelle, bascule live keys à l'activation.

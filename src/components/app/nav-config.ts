@@ -1,6 +1,5 @@
 import {
   LayoutDashboard,
-  KanbanSquare,
   Briefcase,
   Rss,
   Building2,
@@ -51,18 +50,12 @@ export const NAV_GROUPS: NavGroup[] = [
     title: 'Pipeline',
     items: [
       {
-        to: '/app/pipeline',
-        label: 'Pipeline',
-        icon: KanbanSquare,
-        exact: false,
-        keywords: 'kanban etapes board colonnes',
-      },
-      {
         to: '/app/opportunites',
         label: 'Opportunités',
         icon: Briefcase,
         exact: false,
-        keywords: 'pistes candidatures missions offres',
+        keywords:
+          'pistes candidatures missions offres pipeline kanban tableau liste calendrier',
       },
       {
         to: '/app/veille',

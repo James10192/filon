@@ -146,8 +146,8 @@ function ActionRow({
         <span className="flex items-center gap-1 truncate text-xs text-fg-subtle">
           {followup.opportunityId && followup.opportunityTitle ? (
             <Link
-              to="/app/opportunites/$id"
-              params={{ id: followup.opportunityId }}
+              to="/app/opportunites"
+              search={{ view: 'liste', id: followup.opportunityId }}
               className="inline-flex items-center gap-0.5 truncate hover:text-fg hover:underline"
             >
               {followup.opportunityTitle}

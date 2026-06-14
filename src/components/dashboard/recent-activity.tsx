@@ -102,8 +102,8 @@ function TimelineRow({
       <div className="flex min-w-0 flex-1 flex-col pb-4 pt-1">
         <div className="flex items-baseline justify-between gap-2">
           <Link
-            to="/app/opportunites/$id"
-            params={{ id: activity.opportunityId }}
+            to="/app/opportunites"
+            search={{ view: 'liste', id: activity.opportunityId }}
             className="truncate text-sm font-medium text-fg hover:underline"
           >
             {activity.opportunityTitle}
