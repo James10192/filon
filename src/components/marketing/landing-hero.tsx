@@ -15,7 +15,7 @@ export function LandingHero() {
 
   return (
     <section className="relative overflow-hidden">
-      {/* Veine décorative : lignes fines (SVG), pur transform, aria-hidden. */}
+      {/* Signature : faisceau spotlight + veine décorative discrète (aria-hidden). */}
       <VeinBackdrop />
 
       <div className="relative mx-auto w-full max-w-screen-xl px-4 pb-20 pt-16 md:px-6 md:pb-28 md:pt-24 lg:px-8">
@@ -120,9 +120,11 @@ function Stat({
 }
 
 /**
- * Fond « veine de minerai » : fines lignes diagonales + halo accent discret.
- * 100% SVG/CSS (pas d'image lourde), purement décoratif. Le parallax léger est
- * appliqué via [data-parallax] (transform-only).
+ * Fond du hero : UNE signature « spotlight » (faisceau de lumière depuis le
+ * haut, style Aceternity, dosé) + une veine décorative discrète (fines lignes +
+ * halo accent). 100% SVG/CSS (pas d'image lourde), purement décoratif. Le
+ * spotlight s'anime en CSS au load (opacité + léger skew, <800ms), statique sous
+ * prefers-reduced-motion. Le halo a un parallax léger via [data-parallax].
  */
 function VeinBackdrop() {
   return (
@@ -130,6 +132,8 @@ function VeinBackdrop() {
       aria-hidden="true"
       className="pointer-events-none absolute inset-0 overflow-hidden"
     >
+      {/* Faisceau spotlight : signature unique, entrée CSS-only, SSR-safe. */}
+      <div className="hero-spotlight" />
       <div
         data-parallax="6"
         className="absolute -right-32 -top-40 size-[34rem] rounded-full opacity-[0.18] blur-3xl"

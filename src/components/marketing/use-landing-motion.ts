@@ -187,42 +187,12 @@ export function useLandingMotion(scopeRef: React.RefObject<HTMLElement | null>) 
           })
         })
 
-        // ── SHOWCASE — pin + scrub : surbrillance progressive des vues ─────
-        const showcase = scope.querySelector<HTMLElement>('[data-showcase]')
-        const views = gsap.utils.toArray<HTMLElement>('[data-showcase-view]')
-        const panels = gsap.utils.toArray<HTMLElement>('[data-showcase-panel]')
-        if (showcase && views.length && views.length === panels.length) {
-          gsap.set(panels, { autoAlpha: 0, scale: 0.985 })
-          gsap.set(panels[0]!, { autoAlpha: 1, scale: 1 })
-          const activate = (i: number) => {
-            views.forEach((v, vi) =>
-              v.setAttribute('data-active', vi === i ? 'true' : 'false'),
-            )
-            panels.forEach((p, pi) =>
-              gsap.to(p, {
-                autoAlpha: pi === i ? 1 : 0,
-                scale: pi === i ? 1 : 0.985,
-                duration: 0.4,
-                ease: 'power2.out',
-                overwrite: true,
-              }),
-            )
-          }
-          activate(0)
-          const tl = gsap.timeline({
-            scrollTrigger: {
-              trigger: showcase,
-              start: 'top top',
-              end: () => `+=${views.length * 100}%`,
-              pin: true,
-              scrub: 0.6,
-              anticipatePin: 1,
-            },
-          })
-          views.forEach((_, i) => {
-            tl.call(activate, [i], i / views.length)
-          })
-        }
+        // ── SHOWCASE ───────────────────────────────────────────────────────
+        // La vitrine est désormais un sélecteur d'onglets interactif (cf.
+        // landing-showcase.tsx + use-showcase-tabs.ts) : crossfade en pure
+        // opacité CSS, AUCUN pin/sticky ScrollTrigger (qui entrait en conflit
+        // avec ScrollSmoother → zone morte mobile, recouvrement desktop). Elle
+        // se révèle au scroll via le pattern [data-reveal] partagé ci-dessus.
 
         // ScrollSmoother s'initialise sur quelques frames : un refresh synchrone
         // calcule les positions trop tôt (triggers jamais déclenchés). On

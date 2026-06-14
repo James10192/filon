@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { KanbanSquare, Menu, X, LayoutDashboard, Settings, LogOut } from 'lucide-react'
+import { KanbanSquare, Menu, LayoutDashboard, Settings, LogOut } from 'lucide-react'
 import { authClient, useSession } from '~/lib/auth/auth-client'
 import { Button } from '~/components/ui/button'
 import { Avatar, AvatarFallback } from '~/components/ui/avatar'
@@ -12,7 +12,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu'
-import { cn } from '~/lib/utils'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '~/components/ui/sheet'
 
 const NAV = [
   { href: '#produit', label: 'Produit' },
@@ -75,65 +81,99 @@ export function MarketingHeader() {
           )}
         </div>
 
+        <MobileMenu open={open} setOpen={setOpen} authed={authed} />
+      </div>
+    </header>
+  )
+}
+
+/**
+ * Menu mobile en panneau latéral (shadcn Sheet, côté droit). Grandes cibles
+ * tactiles (h-12), liens de navigation + CTA auth-aware. Se ferme à la
+ * sélection d'un lien.
+ */
+function MobileMenu({
+  open,
+  setOpen,
+  authed,
+}: {
+  open: boolean
+  setOpen: (v: boolean) => void
+  authed: boolean
+}) {
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
         <Button
           variant="ghost"
           size="icon"
           className="ml-auto md:hidden"
-          aria-label={open ? 'Fermer le menu' : 'Ouvrir le menu'}
-          aria-expanded={open}
-          onClick={() => setOpen((v) => !v)}
+          aria-label="Ouvrir le menu"
         >
-          {open ? <X className="size-5" /> : <Menu className="size-5" />}
+          <Menu className="size-5" />
         </Button>
-      </div>
+      </SheetTrigger>
+      <SheetContent side="right" className="w-[min(20rem,85vw)] gap-0 p-0">
+        <SheetHeader className="border-b border-border px-5 py-4">
+          <SheetTitle className="flex items-center gap-2.5">
+            <span className="flex size-8 items-center justify-center rounded-[var(--radius-sm)] bg-accent text-accent-fg">
+              <KanbanSquare className="size-4.5" />
+            </span>
+            <span className="text-lg font-semibold tracking-[-0.02em] text-fg">
+              Filon
+            </span>
+          </SheetTitle>
+        </SheetHeader>
 
-      <div
-        className={cn(
-          'overflow-hidden border-t border-border bg-bg md:hidden',
-          open ? 'block' : 'hidden',
-        )}
-      >
-        <div className="flex flex-col gap-1 px-4 py-3">
+        <nav className="flex flex-col gap-1 px-3 py-4">
           {NAV.map((item) => (
             <a
               key={item.href}
               href={item.href}
               onClick={() => setOpen(false)}
-              className="flex h-11 items-center rounded-[var(--radius)] px-3 text-sm font-medium text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg"
+              className="flex h-12 items-center rounded-[var(--radius)] px-3 text-base font-medium text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg"
             >
               {item.label}
             </a>
           ))}
-          <div className="mt-2 flex flex-col gap-2">
-            {authed ? (
-              <>
-                <Button asChild>
-                  <Link to="/app" onClick={() => setOpen(false)}>
-                    Mon espace
-                  </Link>
-                </Button>
-                <Button variant="outline" onClick={() => { setOpen(false); signOut() }}>
-                  Déconnexion
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button variant="outline" asChild>
-                  <Link to="/connexion" onClick={() => setOpen(false)}>
-                    Se connecter
-                  </Link>
-                </Button>
-                <Button asChild>
-                  <Link to="/inscription" onClick={() => setOpen(false)}>
-                    Commencer gratuitement
-                  </Link>
-                </Button>
-              </>
-            )}
-          </div>
+        </nav>
+
+        <div className="mt-auto flex flex-col gap-2.5 border-t border-border px-5 py-5">
+          {authed ? (
+            <>
+              <Button size="lg" asChild>
+                <Link to="/app" onClick={() => setOpen(false)}>
+                  Mon espace
+                </Link>
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => {
+                  setOpen(false)
+                  signOut()
+                }}
+              >
+                Déconnexion
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button size="lg" variant="outline" asChild>
+                <Link to="/connexion" onClick={() => setOpen(false)}>
+                  Se connecter
+                </Link>
+              </Button>
+              <Button size="lg" asChild>
+                <Link to="/inscription" onClick={() => setOpen(false)}>
+                  Commencer gratuitement
+                </Link>
+              </Button>
+            </>
+          )}
         </div>
-      </div>
-    </header>
+      </SheetContent>
+    </Sheet>
   )
 }
 

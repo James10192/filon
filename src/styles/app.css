@@ -465,4 +465,49 @@
   .filon-board::-webkit-scrollbar-thumb:hover {
     background: var(--color-border-strong);
   }
+
+  /* SIGNATURE : faisceau "spotlight" (style Aceternity), dosé et unique, sur le
+     hero. Cône de lumière depuis le haut, monochrome blanc -> transparent +
+     soupçon d'accent, très faible opacité. Entrée CSS-only (opacité + léger
+     skew/translate, <800ms) : visible dès le SSR sans JS. aria-hidden côté DOM.
+     Sous prefers-reduced-motion : rendu statique, pas d'animation. */
+  .hero-spotlight {
+    position: absolute;
+    pointer-events: none;
+    width: 60rem;
+    height: 70rem;
+    left: -10%;
+    top: -28rem;
+    opacity: 0;
+    transform: translateY(-3rem) rotate(-14deg);
+    transform-origin: top left;
+    filter: blur(8px);
+    background:
+      radial-gradient(
+        closest-side at 50% 0%,
+        oklch(0.585 0.205 277 / 0.16),
+        transparent 70%
+      ),
+      conic-gradient(
+        from 215deg at 0% 0%,
+        transparent 0deg,
+        rgba(255, 255, 255, 0.1) 8deg,
+        rgba(255, 255, 255, 0.04) 18deg,
+        transparent 30deg
+      );
+    animation: hero-spotlight-in 760ms var(--ease-out-soft, cubic-bezier(0.22, 1, 0.36, 1)) 80ms forwards;
+  }
+  @keyframes hero-spotlight-in {
+    to {
+      opacity: 1;
+      transform: translateY(0) rotate(-10deg);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hero-spotlight {
+      animation: none;
+      opacity: 1;
+      transform: rotate(-10deg);
+    }
+  }
 }
