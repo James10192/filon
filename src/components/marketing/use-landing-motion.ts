@@ -146,34 +146,22 @@ export function useLandingMotion(scopeRef: React.RefObject<HTMLElement | null>) 
           })
         }
 
-        // ── RÉVÉLATIONS AU SCROLL — batch (peu de triggers, groupées) ──────
+        // ── RÉVÉLATIONS AU SCROLL — une par élément (fiable avec ScrollSmoother) ──
+        // gsap.from gère l'état caché initial (immediateRender) ET le révèle via
+        // ScrollTrigger : les éléments déjà dans le viewport se montrent dès le
+        // refresh, on ne laisse jamais un bloc coincé en autoAlpha:0 (le bug du
+        // batch, dont l'onEnter ne se déclenchait pas après l'init asynchrone de
+        // ScrollSmoother).
         const reveals = gsap.utils.toArray<HTMLElement>('[data-reveal]')
-        if (reveals.length) {
-          gsap.set(reveals, { y: 28, autoAlpha: 0 })
-          ScrollTrigger.batch(reveals, {
-            start: 'top 85%',
-            once: true,
-            onEnter: (batch) => {
-              gsap.to(batch, {
-                y: 0,
-                autoAlpha: 1,
-                duration: 0.6,
-                ease: 'power2.out',
-                stagger: 0.08,
-                overwrite: true,
-                // will-change uniquement pendant l'animation.
-                onStart: () =>
-                  batch.forEach((el) => {
-                    ;(el as HTMLElement).style.willChange = 'transform, opacity'
-                  }),
-                onComplete: () =>
-                  batch.forEach((el) => {
-                    ;(el as HTMLElement).style.willChange = 'auto'
-                  }),
-              })
-            },
+        reveals.forEach((el) => {
+          gsap.from(el, {
+            y: 28,
+            autoAlpha: 0,
+            duration: 0.6,
+            ease: 'power2.out',
+            scrollTrigger: { trigger: el, start: 'top 85%', once: true },
           })
-        }
+        })
 
         // ── PARALLAX subtil sur les éléments marqués (transform-only) ──────
         const parallax = gsap.utils.toArray<HTMLElement>('[data-parallax]')
@@ -228,7 +216,19 @@ export function useLandingMotion(scopeRef: React.RefObject<HTMLElement | null>) 
           })
         }
 
+        // ScrollSmoother s'initialise sur quelques frames : un refresh synchrone
+        // calcule les positions trop tôt (triggers jamais déclenchés). On
+        // rafraîchit aussi après le paint ET après le chargement des polices
+        // (qui décale la mise en page), pour fiabiliser les révélations.
         ScrollTrigger.refresh()
+        requestAnimationFrame(() => {
+          if (!cancelled) ScrollTrigger.refresh()
+        })
+        if (document.fonts?.ready) {
+          void document.fonts.ready.then(() => {
+            if (!cancelled) ScrollTrigger.refresh()
+          })
+        }
       }, scope)
     })()
 
