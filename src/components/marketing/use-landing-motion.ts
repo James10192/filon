@@ -90,24 +90,22 @@ export function useLandingMotion(scopeRef: React.RefObject<HTMLElement | null>) 
         // ── HERO — moment signature : révélation mot par mot du titre ──────
         const heading = scope.querySelector<HTMLElement>('[data-hero-title]')
         if (heading) {
-          // SplitText gère lui-même l'accessibilité (aria: 'auto' garde le
-          // texte lisible aux lecteurs d'écran). onSplit + return de la
-          // timeline => revert propre géré par le plugin.
-          SplitText.create(heading, {
-            type: 'words,lines',
-            mask: 'lines',
+          // Split synchrone (SANS autoSplit, dont le re-split au chargement des
+          // polices laissait le titre coincé invisible sous le masque de lignes)
+          // + gsap.from DIRECT (pas de masque qui clippe) : se révèle de façon
+          // fiable au load, comme le reste du hero. aria:'auto' garde le texte
+          // lisible aux lecteurs d'écran.
+          const split = SplitText.create(heading, {
+            type: 'words',
             aria: 'auto',
-            autoSplit: true,
-            onSplit: (self: { words: Element[] }) => {
-              return gsap.from(self.words, {
-                yPercent: 110,
-                opacity: 0,
-                duration: 0.7,
-                ease: 'power3.out',
-                stagger: 0.05,
-                delay: 0.05,
-              })
-            },
+          }) as unknown as { words: Element[] }
+          gsap.from(split.words, {
+            yPercent: 60,
+            opacity: 0,
+            duration: 0.7,
+            ease: 'power3.out',
+            stagger: 0.04,
+            delay: 0.05,
           })
         }
 

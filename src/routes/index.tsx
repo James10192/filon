@@ -53,8 +53,8 @@ function LandingPage() {
       </a>
       <MarketingHeader />
 
-      <div id="smooth-wrapper">
-        <div id="smooth-content">
+      <div id="smooth-wrapper" className="bg-bg">
+        <div id="smooth-content" className="bg-bg text-fg">
           <main id="contenu" className="flex min-h-[100dvh] flex-col">
             <LandingHero />
             <LandingProblem />
