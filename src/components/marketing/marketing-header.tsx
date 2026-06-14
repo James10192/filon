@@ -15,12 +15,16 @@ import {
 import { cn } from '~/lib/utils'
 
 const NAV = [
-  { href: '#fonctionnalites', label: 'Fonctionnalités' },
-  { href: '#pour-qui', label: 'Pour qui' },
+  { href: '#produit', label: 'Produit' },
+  { href: '#vues', label: 'Vues' },
   { href: '#tarifs', label: 'Tarifs' },
 ] as const
 
-/** En-tête public, sticky, sobre. CTA vers /connexion et /inscription. */
+/**
+ * En-tête public, sticky, raffiné (zed-style). Reste HORS du conteneur
+ * ScrollSmoother (cf. index.tsx) pour rester fixe. Auth-aware : menu profil si
+ * connecté, sinon CTA connexion/inscription.
+ */
 export function MarketingHeader() {
   const [open, setOpen] = useState(false)
   const { data: session, isPending } = useSession()
@@ -29,7 +33,7 @@ export function MarketingHeader() {
   const authed = !isPending && Boolean(session)
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-bg/85 backdrop-blur">
+    <header className="sticky top-0 z-50 border-b border-border bg-bg/70 backdrop-blur-xl">
       <div className="mx-auto flex h-16 w-full max-w-screen-xl items-center gap-4 px-4 md:px-6 lg:px-8">
         <Link
           to="/"
@@ -44,7 +48,7 @@ export function MarketingHeader() {
           </span>
         </Link>
 
-        <nav className="ml-4 hidden items-center gap-1 md:flex">
+        <nav className="ml-6 hidden items-center gap-1 md:flex">
           {NAV.map((item) => (
             <a
               key={item.href}

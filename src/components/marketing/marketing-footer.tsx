@@ -4,7 +4,7 @@ import { KanbanSquare } from 'lucide-react'
 const COLUMNS = [
   {
     title: 'Produit',
-    links: ['Fonctionnalités', 'Tarifs', 'Nouveautés'],
+    links: ['Piliers', 'Vues', 'Tarifs'],
   },
   {
     title: 'Ressources',

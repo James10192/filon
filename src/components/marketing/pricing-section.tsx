@@ -70,15 +70,13 @@ export function PricingSection() {
       id="tarifs"
       className="scroll-mt-20 border-t border-border bg-surface"
     >
-      <div className="mx-auto w-full max-w-screen-xl px-4 py-16 md:px-6 md:py-24 lg:px-8">
+      <div className="mx-auto w-full max-w-screen-xl px-4 py-20 md:px-6 md:py-28 lg:px-8">
         <div className="max-w-2xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.06em] text-accent">
-            Tarifs
-          </p>
-          <h2 className="mt-3 text-balance text-2xl font-semibold tracking-[-0.02em] text-fg md:text-3xl">
+          <p className="eyebrow">Tarifs</p>
+          <h2 className="mt-3 text-balance text-3xl font-semibold leading-[1.1] tracking-[-0.025em] text-fg md:text-[2.5rem]">
             Un palier pour chaque étape de votre prospection.
           </h2>
-          <p className="mt-3 text-base text-fg-muted">
+          <p className="mt-4 text-base text-fg-muted">
             Commencez gratuitement. Passez à un palier supérieur quand vous
             voulez, sans engagement.
           </p>
