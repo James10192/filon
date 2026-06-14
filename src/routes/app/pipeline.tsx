@@ -65,11 +65,14 @@ function PipelinePage() {
           <>
             {board && potential && (
               <span
-                className="hidden h-9 items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-surface px-2.5 text-sm font-medium tabular-nums text-fg-muted sm:inline-flex"
+                className="hidden h-9 items-center gap-2 rounded-full border border-border bg-surface pl-2.5 pr-3 text-sm font-medium sm:inline-flex"
                 title="Valeur potentielle cumulée du pipeline actif"
               >
+                <span className="size-1.5 rounded-full bg-accent" aria-hidden />
                 <span className="text-fg-subtle">Potentiel</span>
-                <span className="text-fg">{potential}</span>
+                <span className="font-semibold tabular-nums text-fg">
+                  {potential}
+                </span>
               </span>
             )}
             <Button onClick={() => quickCapture.open()}>
@@ -105,18 +108,19 @@ function PipelinePage() {
 function BoardSkeleton() {
   return (
     <div className="-mx-4 overflow-hidden px-4 md:-mx-6 md:px-6 lg:-mx-8 lg:px-8">
-      <div className="flex gap-3">
+      <div className="flex gap-4">
         {STAGE_ORDER.slice(0, 5).map((stage) => (
           <div
             key={stage}
-            className="flex w-[272px] shrink-0 flex-col rounded-[var(--radius-lg)] bg-surface-2"
+            className="flex w-[300px] shrink-0 flex-col overflow-hidden rounded-xl border border-border bg-surface-2/60"
           >
-            <div className="flex items-center gap-2 px-2.5 pt-2.5 pb-2">
+            <Skeleton className="h-[3px] w-full rounded-none" />
+            <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2.5">
               <Skeleton className="size-2 rounded-full" />
               <Skeleton className="h-4 w-20" />
               <Skeleton className="ml-auto h-4 w-12 rounded-[var(--radius-sm)]" />
             </div>
-            <div className="flex flex-col gap-2 p-2">
+            <div className="flex flex-col gap-2.5 p-2.5">
               {Array.from({ length: stage === 'lead' ? 3 : 2 }).map((_, i) => (
                 <div
                   key={i}

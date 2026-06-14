@@ -211,4 +211,22 @@
     height: var(--row-h);
     padding-inline: var(--cell-px);
   }
+
+  /* Scrollbar horizontale fine et discrete pour le board pipeline. */
+  .filon-board {
+    scrollbar-color: var(--color-border) transparent;
+  }
+  .filon-board::-webkit-scrollbar {
+    height: 8px;
+  }
+  .filon-board::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .filon-board::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 9999px;
+  }
+  .filon-board::-webkit-scrollbar-thumb:hover {
+    background: var(--color-border-strong);
+  }
 }

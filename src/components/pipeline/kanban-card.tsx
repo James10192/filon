@@ -8,6 +8,17 @@ import {
 } from './pipeline-meta'
 import type { Opportunity } from './types'
 
+/** Couleur du liseré gauche de la carte selon l'étape (var --color-stage-*). */
+const STAGE_LEFT_VAR: Record<Opportunity['stage'], string> = {
+  lead: 'var(--color-stage-lead)',
+  contacted: 'var(--color-stage-contacted)',
+  applied: 'var(--color-stage-applied)',
+  interview: 'var(--color-stage-interview)',
+  negotiation: 'var(--color-stage-negotiation)',
+  won: 'var(--color-stage-won)',
+  lost: 'var(--color-stage-lost)',
+}
+
 const TONE_DOT: Record<'overdue' | 'today' | 'upcoming', string> = {
   overdue: 'bg-danger',
   today: 'bg-warning',
@@ -61,9 +72,10 @@ export function KanbanCard({
           onOpen?.(opportunity._id)
         }
       }}
+      style={{ borderLeftColor: STAGE_LEFT_VAR[opportunity.stage] }}
       className={cn(
-        'group cursor-grab select-none rounded-[var(--radius)] border border-border bg-surface p-2.5 text-left shadow-[var(--shadow-card)] outline-none transition-[transform,box-shadow,border-color] duration-150',
-        'hover:-translate-y-px hover:border-border-strong hover:shadow-[var(--shadow-pop)]',
+        'group cursor-grab select-none rounded-lg border border-border border-l-[3px] bg-surface p-3.5 text-left shadow-[var(--shadow-card)] outline-none transition duration-150',
+        'hover:-translate-y-0.5 hover:border-border-strong hover:shadow-[var(--shadow-pop)]',
         'focus-visible:ring-2 focus-visible:ring-[var(--color-accent-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface-2)]',
         'active:cursor-grabbing',
         dragging && 'rotate-[1deg] opacity-60 shadow-[var(--shadow-pop)]',
@@ -105,9 +117,9 @@ export function KanbanCard({
       {hasFooter && (
         <div className="mt-2 flex items-center justify-between gap-2 text-xs">
           {opportunity.compensation ? (
-            <span className="inline-flex min-w-0 items-center gap-1 text-fg-muted">
-              <Coins className="size-3.5 shrink-0 text-fg-subtle" />
-              <span className="truncate font-medium tabular-nums">
+            <span className="inline-flex min-w-0 items-center gap-1 text-accent">
+              <Coins className="size-3.5 shrink-0 opacity-80" />
+              <span className="truncate font-semibold tabular-nums">
                 {opportunity.compensation}
               </span>
             </span>

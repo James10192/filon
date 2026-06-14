@@ -49,12 +49,18 @@ export function KanbanColumn({
     <section
       aria-label={`Colonne ${meta.label}`}
       className={cn(
-        'group/col flex w-[272px] shrink-0 snap-start flex-col rounded-[var(--radius-lg)] bg-surface-2 transition-opacity',
-        isClosing && draggingId === null && 'opacity-80',
+        'group/col flex w-[300px] shrink-0 snap-start flex-col overflow-hidden rounded-xl border border-border bg-surface-2/60 transition-opacity',
+        isClosing && draggingId === null && 'opacity-75',
       )}
     >
-      {/* En-tête : pastille + nom + compte + valeur cumulée */}
-      <header className="flex items-center gap-1.5 px-2.5 pt-2.5 pb-1.5">
+      {/* Liseré supérieur coloré (couleur de l'étape). */}
+      <div
+        className={cn('h-[3px] w-full shrink-0', meta.dotClass)}
+        aria-hidden
+      />
+
+      {/* En-tête sticky : pastille + nom + compte + valeur cumulée + quick-add */}
+      <header className="sticky top-0 z-10 flex items-center gap-1.5 border-b border-border/60 bg-surface-2/80 px-3 py-2.5 backdrop-blur">
         <span
           className={cn('size-2 shrink-0 rounded-full', meta.dotClass)}
           aria-hidden
@@ -62,10 +68,10 @@ export function KanbanColumn({
         <h2 className="truncate text-[13px] font-semibold tracking-[-0.01em] text-fg">
           {meta.label}
         </h2>
-        <span className="rounded-full bg-surface px-1.5 text-xs font-medium tabular-nums text-fg-muted">
+        <span className="rounded-full bg-surface px-1.5 text-xs font-medium tabular-nums text-fg-muted ring-1 ring-border/60">
           {items.length}
         </span>
-        <div className="ml-auto flex shrink-0 items-center gap-0.5">
+        <div className="ml-auto flex shrink-0 items-center gap-1">
           {potential && (
             <span
               className="text-xs font-semibold tabular-nums text-fg-muted"
@@ -77,7 +83,7 @@ export function KanbanColumn({
           <Button
             variant="ghost"
             size="icon-sm"
-            className="opacity-60 transition-opacity hover:opacity-100 focus-visible:opacity-100 md:opacity-0 md:group-hover/col:opacity-100"
+            className="text-fg-subtle opacity-70 transition-opacity hover:text-fg hover:opacity-100 focus-visible:opacity-100 md:opacity-0 md:group-hover/col:opacity-100"
             aria-label={`Ajouter une opportunité dans « ${meta.label} »`}
             onClick={() => onQuickAdd(stage)}
           >
@@ -89,10 +95,10 @@ export function KanbanColumn({
       {/* Corps : zone de dépôt scrollable */}
       <div
         className={cn(
-          'flex min-h-[calc(100dvh-14rem)] flex-1 flex-col gap-2 overflow-y-auto rounded-b-[var(--radius-lg)] p-2 transition-colors',
-          'max-h-[calc(100dvh-14rem)]',
+          'flex min-h-[calc(100dvh-13rem)] flex-1 flex-col gap-2.5 overflow-y-auto p-2.5 transition-colors [scrollbar-width:thin]',
+          'max-h-[calc(100dvh-13rem)]',
           isDropTarget &&
-            'bg-accent-soft ring-2 ring-inset ring-[var(--color-accent-ring)]',
+            'bg-accent-soft/60 ring-2 ring-inset ring-[var(--color-accent-ring)]',
         )}
         onDragOver={(e) => {
           e.preventDefault()
@@ -112,8 +118,15 @@ export function KanbanColumn({
         }}
       >
         {items.length === 0 ? (
-          <div className="flex flex-1 items-center justify-center rounded-[var(--radius)] border border-dashed border-border px-3 py-6 text-center">
-            <p className="text-sm text-fg-muted">Rien ici pour le moment.</p>
+          <div
+            className={cn(
+              'flex flex-1 items-center justify-center rounded-[var(--radius)] border border-dashed px-3 py-8 text-center transition-colors',
+              isDropTarget
+                ? 'border-[var(--color-accent)] text-accent'
+                : 'border-border/70 text-fg-subtle',
+            )}
+          >
+            <p className="text-xs">Glissez une opportunité ici</p>
           </div>
         ) : (
           items.map((opportunity, index) => (
