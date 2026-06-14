@@ -47,7 +47,13 @@ export function ProposalDetailContent({
   return (
     <div className="flex flex-col gap-5">
       <header className="flex flex-col gap-4 rounded-[var(--radius-lg)] border border-border bg-surface p-5 shadow-[var(--shadow-card)]">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div
+          className={
+            isPage
+              ? 'flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between'
+              : 'flex flex-col gap-4'
+          }
+        >
           <div className="min-w-0 space-y-2">
             <Badge variant={STATUS_BADGE[status]} className="shrink-0">
               {STATUS_LABELS[status]}
