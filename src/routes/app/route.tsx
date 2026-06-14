@@ -160,7 +160,7 @@ function ShellLayout({
   return (
     // La cle force un remontage propre quand l'etat persiste est resolu cote
     // client, pour appliquer le repli sans mismatch d'hydratation.
-    <SidebarProvider key={ready ? 'ready' : 'ssr'} defaultOpen={defaultOpen}>
+    <SidebarProvider key={ready ? 'ready' : 'ssr'} defaultOpen={defaultOpen} className="h-svh overflow-hidden">
       <AppSidebar displayName={displayName} email={email} />
       {/* La coquille est fixe ; seul le contenu defile (SidebarInset). */}
       <SidebarInset className="h-svh overflow-hidden">
