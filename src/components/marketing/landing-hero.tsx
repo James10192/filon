@@ -88,7 +88,7 @@ export function LandingHero() {
             </dl>
           </div>
 
-          <div data-hero-visual className="lg:translate-x-2">
+          <div data-hero-visual className="min-w-0 lg:translate-x-2">
             <PipelinePreview />
           </div>
         </div>

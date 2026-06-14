@@ -112,7 +112,7 @@ export function PipelinePreview({ className }: { className?: string }) {
         className,
       )}
     >
-      <div className="flex gap-3 overflow-hidden">
+      <div className="flex gap-3 overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {COLUMNS.map((col) => (
           <div
             key={col.label}
