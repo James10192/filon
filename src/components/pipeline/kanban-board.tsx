@@ -1,36 +1,27 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import {
+  DndContext,
+  DragOverlay,
+  KeyboardSensor,
+  PointerSensor,
+  closestCorners,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragOverEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core'
+import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { useMutation } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { toast } from '~/components/ui/sonner'
+import { KanbanCardContent } from './kanban-card'
 import { KanbanColumn } from './kanban-column'
 import { STAGE_META, STAGE_ORDER } from './pipeline-meta'
 import type { Stage } from './pipeline-meta'
 import type { Board, Opportunity } from './types'
-
-type DragState = { id: string; from: Stage } | null
-
-function emptyBoard(): Board {
-  return {
-    lead: [],
-    contacted: [],
-    applied: [],
-    interview: [],
-    negotiation: [],
-    won: [],
-    lost: [],
-  }
-}
-
-/** Recompose un board complet à partir d'une source serveur partielle. */
-function normalizeBoard(source: Board | undefined): Board {
-  const base = emptyBoard()
-  if (!source) return base
-  for (const stage of STAGE_ORDER) {
-    base[stage] = source[stage] ? [...source[stage]] : []
-  }
-  return base
-}
+import { applyMove, locate, normalizeBoard, stageOf } from './board-utils'
 
 export function KanbanBoard({
   board: serverBoard,
@@ -47,109 +38,72 @@ export function KanbanBoard({
   const reorder = useMutation(api.opportunities.reorder)
 
   // Copie locale pour l'optimistic UI ; resynchronisée sur le serveur tant
-  // qu'aucun drag n'est en cours.
+  // qu'aucun glisser n'est en cours.
   const [local, setLocal] = useState<Board>(() => normalizeBoard(serverBoard))
-  const drag = useRef<DragState>(null)
-  const [draggingId, setDraggingId] = useState<string | null>(null)
-  const [overStage, setOverStage] = useState<Stage | null>(null)
-  const [overIndex, setOverIndex] = useState<number | null>(null)
+  const [activeId, setActiveId] = useState<string | null>(null)
 
   useEffect(() => {
-    if (draggingId === null) setLocal(normalizeBoard(serverBoard))
-  }, [serverBoard, draggingId])
+    if (activeId === null) setLocal(normalizeBoard(serverBoard))
+  }, [serverBoard, activeId])
+
+  const sensors = useSensors(
+    // Petit seuil : un clic n'amorce pas un glisser (l'ouverture reste possible).
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
 
   const byId = useMemo(() => {
     const m = new Map<string, Opportunity>()
-    for (const stage of STAGE_ORDER) {
-      for (const o of local[stage]) m.set(o._id, o)
-    }
+    for (const stage of STAGE_ORDER) for (const o of local[stage]) m.set(o._id, o)
     return m
   }, [local])
 
-  function handleCardDragStart(id: string, from: Stage) {
-    drag.current = { id, from }
-    setDraggingId(id)
+  const activeCard = activeId ? byId.get(activeId) : undefined
+  const overStage = activeCard
+    ? (locate(local, activeId!)?.stage ?? null)
+    : null
+
+  function handleDragStart(event: DragStartEvent) {
+    setActiveId(String(event.active.id))
   }
 
-  function handleColumnDragOver(stage: Stage, index: number) {
-    setOverStage(stage)
-    setOverIndex(index)
+  // Réorganise en direct (entre et au sein des colonnes) pour un retour fluide.
+  function handleDragOver(event: DragOverEvent) {
+    const { active, over } = event
+    if (!over) return
+    const activeKey = String(active.id)
+    const toStage = stageOf(local, String(over.id))
+    if (!toStage) return
+    setLocal((prev) => applyMove(prev, activeKey, String(over.id), toStage))
   }
 
-  function handleColumnDragLeave(stage: Stage) {
-    setOverStage((cur) => (cur === stage ? null : cur))
-  }
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    const activeKey = String(active.id)
+    setActiveId(null)
+    if (!over) return
 
-  function resetDrag() {
-    drag.current = null
-    setDraggingId(null)
-    setOverStage(null)
-    setOverIndex(null)
-  }
+    const origin = locate(normalizeBoard(serverBoard), activeKey)
+    const target = locate(local, activeKey)
+    if (!origin || !target) return
 
-  async function handleColumnDrop(toStage: Stage) {
-    const current = drag.current
-    const targetIndex = overIndex
-    if (!current) {
-      resetDrag()
-      return
-    }
-    const card = byId.get(current.id)
-    if (!card) {
-      resetDrag()
-      return
-    }
-
-    // Liste cible sans la carte déplacée (si elle vient de la même colonne).
-    const destSansCard = local[toStage].filter((o) => o._id !== current.id)
-    const insertAt =
-      targetIndex === null
-        ? destSansCard.length
-        : Math.max(0, Math.min(targetIndex, destSansCard.length))
-
-    const sameSpot =
-      current.from === toStage &&
-      local[toStage].findIndex((o) => o._id === current.id) === insertAt
-
-    if (sameSpot) {
-      resetDrag()
-      return
-    }
-
-    // Snapshot pour rollback.
-    const snapshot = normalizeBoard(local)
-
-    // Mise à jour optimiste.
+    const snapshot = normalizeBoard(serverBoard)
     const next = normalizeBoard(local)
-    next[current.from] = next[current.from].filter(
-      (o) => o._id !== current.id,
+    const orderedIds = next[target.stage].map(
+      (o) => o._id as Id<'opportunities'>,
     )
-    const movedCard: Opportunity = { ...card, stage: toStage }
-    const dest = next[toStage].filter((o) => o._id !== current.id)
-    dest.splice(insertAt, 0, movedCard)
-    next[toStage] = dest.map((o, i) => ({ ...o, order: i }))
-    if (current.from !== toStage) {
-      next[current.from] = next[current.from].map((o, i) => ({
-        ...o,
-        order: i,
-      }))
-    }
-    setLocal(next)
-    resetDrag()
-
-    const orderedIds = next[toStage].map((o) => o._id as Id<'opportunities'>)
 
     try {
       await move({
-        id: current.id as Id<'opportunities'>,
-        stage: toStage,
-        order: insertAt,
+        id: activeKey as Id<'opportunities'>,
+        stage: target.stage,
+        order: target.index,
       })
       // Normalise les positions (0..n) de la colonne cible.
-      await reorder({ stage: toStage, orderedIds })
-      if (current.from !== toStage) {
+      await reorder({ stage: target.stage, orderedIds })
+      if (origin.stage !== target.stage) {
         toast.success(
-          `Opportunité déplacée vers « ${STAGE_META[toStage].label} ».`,
+          `Opportunité déplacée vers « ${STAGE_META[target.stage].label} ».`,
         )
       }
     } catch {
@@ -159,27 +113,47 @@ export function KanbanBoard({
   }
 
   return (
-    <div className="filon-board -mx-4 overflow-x-auto px-4 pb-3 [scrollbar-width:thin] md:-mx-6 md:px-6 lg:-mx-8 lg:px-8">
-      <div className="flex snap-x snap-mandatory gap-4">
-        {STAGE_ORDER.map((stage) => (
-          <KanbanColumn
-            key={stage}
-            stage={stage}
-            items={local[stage]}
-            companyNames={companyNames}
-            draggingId={draggingId}
-            isDropTarget={overStage === stage && draggingId !== null}
-            dropIndex={overStage === stage ? overIndex : null}
-            onQuickAdd={onQuickAdd}
-            onCardDragStart={handleCardDragStart}
-            onCardDragEnd={resetDrag}
-            onColumnDragOver={handleColumnDragOver}
-            onColumnDrop={handleColumnDrop}
-            onColumnDragLeave={handleColumnDragLeave}
-            onOpenCard={onOpenCard}
-          />
-        ))}
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCorners}
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDragEnd={handleDragEnd}
+      onDragCancel={() => setActiveId(null)}
+    >
+      <div className="filon-board -mx-4 overflow-x-auto px-4 pb-3 [scrollbar-width:thin] md:-mx-6 md:px-6 lg:-mx-8 lg:px-8">
+        <div className="flex snap-x snap-mandatory gap-4">
+          {STAGE_ORDER.map((stage) => (
+            <KanbanColumn
+              key={stage}
+              stage={stage}
+              items={local[stage]}
+              companyNames={companyNames}
+              isOver={activeId !== null && overStage === stage}
+              isDragActive={activeId !== null}
+              onQuickAdd={onQuickAdd}
+              onOpenCard={onOpenCard}
+            />
+          ))}
+        </div>
       </div>
-    </div>
+
+      {/* Calque de glisser : carte allégée qui suit le pointeur. */}
+      <DragOverlay dropAnimation={null}>
+        {activeCard ? (
+          <div className="w-[280px] opacity-90">
+            <KanbanCardContent
+              opportunity={activeCard}
+              companyName={
+                activeCard.companyId
+                  ? companyNames.get(activeCard.companyId)
+                  : undefined
+              }
+              overlay
+            />
+          </div>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   )
 }

@@ -78,9 +78,7 @@ function PipelinePage() {
               >
                 <span className="size-1.5 rounded-full bg-accent" aria-hidden />
                 <span className="text-fg-subtle">Potentiel</span>
-                <span className="font-semibold tabular-nums text-fg">
-                  {potential}
-                </span>
+                <span className="assay font-semibold text-fg">{potential}</span>
               </span>
             )}
             <Button onClick={() => quickCapture.open()}>
@@ -123,7 +121,7 @@ function BoardSkeleton() {
             key={stage}
             className="flex w-[300px] shrink-0 flex-col overflow-hidden rounded-xl border border-border bg-surface-2/60"
           >
-            <Skeleton className="h-[3px] w-full rounded-none" />
+            <Skeleton className="h-[2px] w-full rounded-none" />
             <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2.5">
               <Skeleton className="size-2 rounded-full" />
               <Skeleton className="h-4 w-20" />

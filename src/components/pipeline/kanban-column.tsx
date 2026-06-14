@@ -1,12 +1,10 @@
-import { Plus } from 'lucide-react'
+import { useDroppable } from '@dnd-kit/core'
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { Inbox, Plus } from 'lucide-react'
 import { cn } from '~/lib/utils'
 import { Button } from '~/components/ui/button'
-import { KanbanCard } from './kanban-card'
-import {
-  STAGE_META,
-  formatPotential,
-  parseCompensation,
-} from './pipeline-meta'
+import { SortableKanbanCard } from './kanban-card'
+import { STAGE_META, formatPotential, parseCompensation } from './pipeline-meta'
 import type { Stage } from './pipeline-meta'
 import type { Opportunity } from './types'
 
@@ -14,29 +12,17 @@ export function KanbanColumn({
   stage,
   items,
   companyNames,
-  draggingId,
-  isDropTarget,
-  dropIndex,
+  isOver,
+  isDragActive,
   onQuickAdd,
-  onCardDragStart,
-  onCardDragEnd,
-  onColumnDragOver,
-  onColumnDrop,
-  onColumnDragLeave,
   onOpenCard,
 }: {
   stage: Stage
   items: Opportunity[]
   companyNames: Map<string, string>
-  draggingId: string | null
-  isDropTarget: boolean
-  dropIndex: number | null
+  isOver: boolean
+  isDragActive: boolean
   onQuickAdd: (stage: Stage) => void
-  onCardDragStart: (id: string, stage: Stage) => void
-  onCardDragEnd: () => void
-  onColumnDragOver: (stage: Stage, index: number) => void
-  onColumnDrop: (stage: Stage) => void
-  onColumnDragLeave: (stage: Stage) => void
   onOpenCard?: (id: Opportunity['_id']) => void
 }) {
   const meta = STAGE_META[stage]
@@ -45,38 +31,48 @@ export function KanbanColumn({
     0,
   )
   const potential = formatPotential(total)
+  // Le « gagné » est la seule colonne à porter l'accent (veine indigo) ;
+  // les autres gardent leur couleur d'étape sobre.
+  const isWon = stage === 'won'
   const isClosing = stage === 'lost'
+  const { setNodeRef } = useDroppable({ id: `col:${stage}`, data: { stage } })
 
   return (
     <section
       aria-label={`Colonne ${meta.label}`}
       className={cn(
-        'group/col flex w-[300px] shrink-0 snap-start flex-col overflow-hidden rounded-xl border border-border bg-surface-2/60 transition-opacity',
-        isClosing && draggingId === null && 'opacity-75',
+        'flex w-[300px] shrink-0 snap-start flex-col overflow-hidden rounded-xl border border-border bg-surface-2/60 transition-opacity',
+        isClosing && !isDragActive && 'opacity-75',
       )}
     >
-      {/* Liseré supérieur coloré (couleur de l'étape). */}
+      {/* Liseré supérieur : couleur d'étape, accent indigo pour « gagné ». */}
       <div
-        className={cn('h-[3px] w-full shrink-0', meta.dotClass)}
+        className={cn(
+          'h-[2px] w-full shrink-0',
+          isWon ? 'bg-accent' : meta.dotClass,
+        )}
         aria-hidden
       />
 
-      {/* En-tête sticky : pastille + nom + compte + valeur cumulée + quick-add */}
-      <header className="sticky top-0 z-10 flex items-center gap-1.5 border-b border-border/60 bg-surface-2/80 px-3 py-2.5 backdrop-blur">
+      {/* En-tête calme : nom + compte mono + valeur cumulée mono + quick-add. */}
+      <header className="group/head sticky top-0 z-10 flex items-center gap-1.5 border-b border-border/60 bg-surface-2/80 px-3 py-2.5 backdrop-blur">
         <span
-          className={cn('size-2 shrink-0 rounded-full', meta.dotClass)}
+          className={cn(
+            'size-2 shrink-0 rounded-full',
+            isWon ? 'bg-accent' : meta.dotClass,
+          )}
           aria-hidden
         />
         <h2 className="truncate text-[13px] font-semibold tracking-[-0.01em] text-fg">
           {meta.label}
         </h2>
-        <span className="rounded-full bg-surface px-1.5 text-xs font-medium tabular-nums text-fg-muted ring-1 ring-border/60">
+        <span className="assay rounded-full bg-surface px-1.5 text-xs font-medium text-fg-muted ring-1 ring-border/60">
           {items.length}
         </span>
         <div className="ml-auto flex shrink-0 items-center gap-1">
           {potential && (
             <span
-              className="text-xs font-semibold tabular-nums text-fg-muted"
+              className="assay text-xs font-semibold text-fg-muted"
               title={`Valeur potentielle cumulée sur « ${meta.label} »`}
             >
               {potential}
@@ -85,7 +81,7 @@ export function KanbanColumn({
           <Button
             variant="ghost"
             size="icon-sm"
-            className="text-fg-subtle opacity-70 transition-opacity hover:text-fg hover:opacity-100 focus-visible:opacity-100 md:opacity-0 md:group-hover/col:opacity-100"
+            className="text-fg-subtle opacity-70 transition-opacity hover:text-fg hover:opacity-100 focus-visible:opacity-100 md:opacity-0 md:group-hover/head:opacity-100"
             aria-label={`Ajouter une opportunité dans « ${meta.label} »`}
             onClick={() => onQuickAdd(stage)}
           >
@@ -94,86 +90,58 @@ export function KanbanColumn({
         </div>
       </header>
 
-      {/* Corps : zone de dépôt scrollable */}
+      {/* Corps : zone de dépôt scrollable, surlignée quand survolée en glisser. */}
       <div
+        ref={setNodeRef}
         className={cn(
           'flex min-h-[7rem] flex-col gap-2.5 overflow-y-auto p-2.5 transition-colors [scrollbar-width:thin]',
           'max-h-[calc(100dvh-13rem)]',
-          isDropTarget &&
-            'bg-accent-soft/60 ring-2 ring-inset ring-[var(--color-accent-ring)]',
+          isOver && 'bg-accent-soft/50 ring-2 ring-inset ring-[var(--color-accent-ring)]',
         )}
-        onDragOver={(e) => {
-          e.preventDefault()
-          e.dataTransfer.dropEffect = 'move'
-          // Sans survol précis d'une carte, on vise la fin de colonne.
-          if (!isDropTarget) onColumnDragOver(stage, items.length)
-        }}
-        onDrop={(e) => {
-          e.preventDefault()
-          onColumnDrop(stage)
-        }}
-        onDragLeave={(e) => {
-          // N'efface que si on quitte réellement la colonne (pas un enfant).
-          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
-            onColumnDragLeave(stage)
-          }
-        }}
       >
-        {items.length === 0 ? (
-          <div
-            className={cn(
-              'flex min-h-[5.5rem] flex-1 items-center justify-center rounded-[var(--radius)] border border-dashed px-3 py-8 text-center transition-colors',
-              isDropTarget
-                ? 'border-[var(--color-accent)] text-accent'
-                : 'border-border/70 text-fg-subtle',
-            )}
-          >
-            <p className="text-xs">Glissez une opportunité ici</p>
-          </div>
-        ) : (
-          items.map((opportunity, index) => (
-            <div key={opportunity._id}>
-              {isDropTarget && dropIndex === index && <DropIndicator />}
-              <div
-                onDragOver={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  const rect = e.currentTarget.getBoundingClientRect()
-                  const after = e.clientY - rect.top > rect.height / 2
-                  onColumnDragOver(stage, after ? index + 1 : index)
-                }}
-              >
-                <KanbanCard
-                  opportunity={opportunity}
-                  companyName={
-                    opportunity.companyId
-                      ? companyNames.get(opportunity.companyId)
-                      : undefined
-                  }
-                  dragging={draggingId === opportunity._id}
-                  onDragStart={() =>
-                    onCardDragStart(opportunity._id, stage)
-                  }
-                  onDragEnd={onCardDragEnd}
-                  onOpen={onOpenCard}
-                />
-              </div>
-            </div>
-          ))
-        )}
-        {isDropTarget && dropIndex === items.length && items.length > 0 && (
-          <DropIndicator />
-        )}
+        <SortableContext
+          items={items.map((o) => o._id)}
+          strategy={verticalListSortingStrategy}
+        >
+          {items.length === 0 ? (
+            <EmptyColumn label={meta.label} isOver={isOver} />
+          ) : (
+            items.map((opportunity) => (
+              <SortableKanbanCard
+                key={opportunity._id}
+                opportunity={opportunity}
+                companyName={
+                  opportunity.companyId
+                    ? companyNames.get(opportunity.companyId)
+                    : undefined
+                }
+                onOpen={onOpenCard}
+              />
+            ))
+          )}
+        </SortableContext>
       </div>
     </section>
   )
 }
 
-function DropIndicator() {
+/** État vide d'une colonne : repère discret, jamais un simple « aucune donnée ». */
+function EmptyColumn({ label, isOver }: { label: string; isOver: boolean }) {
   return (
     <div
-      className="mb-1 h-0.5 rounded-full bg-accent"
-      aria-hidden
-    />
+      className={cn(
+        'flex min-h-[5.5rem] flex-1 flex-col items-center justify-center gap-1.5 rounded-[var(--radius)] border border-dashed px-3 py-8 text-center transition-colors',
+        isOver
+          ? 'border-[var(--color-accent)] text-accent'
+          : 'border-border/70 text-fg-subtle',
+      )}
+    >
+      <Inbox className="size-4 opacity-70" aria-hidden />
+      <p className="text-xs leading-snug">
+        Glissez une opportunité ici
+        <br />
+        <span className="text-fg-subtle/80">{`pour « ${label} »`}</span>
+      </p>
+    </div>
   )
 }
