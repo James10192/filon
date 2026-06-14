@@ -5,6 +5,7 @@ import { ProfileSection } from './profile-section'
 import { PreferencesSection } from './preferences-section'
 import { AppearanceSection } from './appearance-section'
 import { AccountSection } from './account-section'
+import { SubscriptionSection } from './subscription-section'
 
 type SectionKey = 'compte' | 'preferences'
 
@@ -49,6 +50,7 @@ export function SettingsLayout() {
           {active === 'compte' ? (
             <>
               <ProfileSection />
+              <SubscriptionSection />
               <AccountSection />
             </>
           ) : (

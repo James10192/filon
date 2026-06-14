@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from '~/components/ui/select'
 import { toast } from '~/components/ui/sonner'
+import { handlePlanLimit } from '~/lib/billing/upsell'
 import { STAGE_META, STAGE_ORDER, TYPE_META } from './pipeline-meta'
 import type { OppType, Stage } from './pipeline-meta'
 
@@ -69,8 +70,10 @@ export function QuickAddDialog({
       await create({ title: trimmed, type, stage })
       toast.success('Opportunité ajoutée.')
       onOpenChange(false)
-    } catch {
-      toast.error("Impossible d'ajouter l'opportunité.")
+    } catch (error) {
+      if (!handlePlanLimit(error)) {
+        toast.error("Impossible d'ajouter l'opportunité.")
+      }
       setSubmitting(false)
     }
   }

@@ -17,6 +17,7 @@ import { Label } from '~/components/ui/label'
 import { Textarea } from '~/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
 import { toast } from '~/components/ui/sonner'
+import { handlePlanLimit } from '~/lib/billing/upsell'
 import { ImportPreviewForm, type PreviewFields } from './import-preview-form'
 import { sourceFromHost } from './meta'
 
@@ -142,8 +143,10 @@ export function ImportOfferDialog({
       toast.success('Offre importée dans votre pipeline.')
       reset()
       onOpenChange(false)
-    } catch {
-      toast.error("Impossible d'importer l'offre.")
+    } catch (error) {
+      if (!handlePlanLimit(error)) {
+        toast.error("Impossible d'importer l'offre.")
+      }
       setPhase('preview')
     }
   }

@@ -13,6 +13,7 @@ import {
 import { Input } from '~/components/ui/input'
 import { Skeleton } from '~/components/ui/skeleton'
 import { toast } from '~/components/ui/sonner'
+import { handlePlanLimit } from '~/lib/billing/upsell'
 import { SavedSearchRow } from './saved-search-row'
 
 /** Découpe une saisie « développeur, react, laravel » en mots-clés propres. */
@@ -45,8 +46,10 @@ export function SavedSearchManager() {
       await create({ keywords })
       toast.success('Recherche enregistrée. Le moniteur la surveillera.')
       setDraft('')
-    } catch {
-      toast.error("L'enregistrement a échoué.")
+    } catch (error) {
+      if (!handlePlanLimit(error)) {
+        toast.error("L'enregistrement a échoué.")
+      }
     } finally {
       setCreating(false)
     }

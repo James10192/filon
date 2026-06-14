@@ -4,6 +4,7 @@ import { Plus } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import { Button } from '~/components/ui/button'
 import { toast } from '~/components/ui/sonner'
+import { handlePlanLimit } from '~/lib/billing/upsell'
 import {
   Dialog,
   DialogContent,
@@ -48,8 +49,10 @@ export function OpportunityFormDialog({
       await create(args as Parameters<typeof create>[0])
       toast.success('Opportunité ajoutée.')
       setOpen(false)
-    } catch {
-      toast.error("Impossible d'ajouter l'opportunité.")
+    } catch (error) {
+      if (!handlePlanLimit(error)) {
+        toast.error("Impossible d'ajouter l'opportunité.")
+      }
     } finally {
       setPending(false)
     }

@@ -3,6 +3,7 @@ import { useMutation } from 'convex/react'
 import { Zap } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import { toast } from '~/components/ui/sonner'
+import { handlePlanLimit } from '~/lib/billing/upsell'
 import {
   Sheet,
   SheetContent,
@@ -70,8 +71,10 @@ export function QuickCaptureProvider({
       await create(args as Parameters<typeof create>[0])
       toast.success('Opportunite ajoutee.')
       setIsOpen(false)
-    } catch {
-      toast.error("Impossible d'ajouter l'opportunite.")
+    } catch (error) {
+      if (!handlePlanLimit(error)) {
+        toast.error("Impossible d'ajouter l'opportunite.")
+      }
     } finally {
       setPending(false)
     }
