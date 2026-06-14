@@ -33,6 +33,7 @@ export function DataTable<TData>({
   defaultSorting,
   onRowClick,
   getRowId,
+  selectedRowId,
   minWidthClassName = 'min-w-[860px]',
   ariaLabel,
 }: {
@@ -41,6 +42,8 @@ export function DataTable<TData>({
   defaultSorting?: SortingState
   onRowClick?: (row: TData) => void
   getRowId?: (row: TData) => string
+  /** Id de la ligne sélectionnée (panneau split) : marquée d'une veine accent. */
+  selectedRowId?: string
   minWidthClassName?: string
   ariaLabel: string
 }) {
@@ -121,6 +124,7 @@ export function DataTable<TData>({
               key={row.id}
               row={row}
               active={index === activeIndex}
+              selected={selectedRowId !== undefined && row.id === selectedRowId}
               onActivate={() => setActiveIndex(index)}
               onClick={onRowClick ? () => onRowClick(row.original) : undefined}
             />
@@ -134,25 +138,29 @@ export function DataTable<TData>({
 function DataRow<TData>({
   row,
   active,
+  selected,
   onActivate,
   onClick,
 }: {
   row: Row<TData>
   active: boolean
+  selected?: boolean
   onActivate: () => void
   onClick?: () => void
 }) {
   return (
     <TableRow
       role="row"
-      aria-selected={active}
-      data-state={active ? 'selected' : undefined}
+      aria-selected={selected || active}
+      data-state={selected || active ? 'selected' : undefined}
       onMouseEnter={onActivate}
       onClick={onClick}
       className={cn(
         'group border-b border-border transition-colors last:border-0 hover:bg-surface-2',
         onClick && 'cursor-pointer',
-        active && 'bg-surface-2',
+        active && !selected && 'bg-surface-2',
+        selected &&
+          'relative bg-accent-soft/50 before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:bg-accent before:content-[""]',
       )}
     >
       {row.getVisibleCells().map((cell) => (

@@ -1,5 +1,4 @@
-import { useCallback, useMemo } from 'react'
-import { useNavigate } from '@tanstack/react-router'
+import { useMemo } from 'react'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
 import { DataTable } from '~/components/data-table'
 import { OpportunityCard } from './opportunity-card'
@@ -12,27 +11,22 @@ type Opportunity = Doc<'opportunities'>
  *
  * - Tri par colonne (titre, etape, priorite, echeance) via les colonnes.
  * - En-tete collant, survol de ligne, navigation clavier (haut/bas + Entree).
- * - Clic ligne -> detail. < md : bascule en cartes specifiques au domaine.
+ * - Clic ligne -> selection (ouvre le panneau split). < md : cartes domaine.
  */
 export function OpportunitiesTable({
   items,
   companyNames,
+  onSelect,
+  selectedId,
 }: {
   items: Opportunity[]
   companyNames: Map<string, string>
+  onSelect: (id: Id<'opportunities'>) => void
+  selectedId?: Id<'opportunities'> | null
 }) {
-  const navigate = useNavigate()
-
-  const openDetail = useCallback(
-    (id: Id<'opportunities'>) => {
-      navigate({ to: '/app/opportunites/$id', params: { id } })
-    },
-    [navigate],
-  )
-
   const columns = useMemo(
-    () => buildOpportunityColumns({ companyNames, onOpen: openDetail }),
-    [companyNames, openDetail],
+    () => buildOpportunityColumns({ companyNames, onOpen: onSelect }),
+    [companyNames, onSelect],
   )
 
   return (
@@ -40,7 +34,11 @@ export function OpportunitiesTable({
       {/* Vue cartes : mobile (< md). */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:hidden">
         {items.map((opportunity) => (
-          <OpportunityCard key={opportunity._id} opportunity={opportunity} />
+          <OpportunityCard
+            key={opportunity._id}
+            opportunity={opportunity}
+            onSelect={() => onSelect(opportunity._id)}
+          />
         ))}
       </div>
 
@@ -50,8 +48,9 @@ export function OpportunitiesTable({
           data={items}
           columns={columns}
           defaultSorting={[{ id: 'title', desc: false }]}
-          onRowClick={(row) => openDetail(row._id)}
+          onRowClick={(row) => onSelect(row._id)}
           getRowId={(row) => row._id}
+          selectedRowId={selectedId ?? undefined}
           ariaLabel="Tableau des opportunités"
         />
       </div>

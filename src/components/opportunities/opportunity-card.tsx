@@ -1,19 +1,20 @@
-import { Link } from '@tanstack/react-router'
 import { MapPin, Coins } from 'lucide-react'
 import type { Doc } from '../../../convex/_generated/dataModel'
 import { StageChip, TypeChip, DueBadge } from './chips'
 
-/** Carte d'opportunité (vue liste / grille mobile). Clic -> détail. */
+/** Carte d'opportunité (vue liste / grille mobile). Clic -> sélection. */
 export function OpportunityCard({
   opportunity,
+  onSelect,
 }: {
   opportunity: Doc<'opportunities'>
+  onSelect: () => void
 }) {
   return (
-    <Link
-      to="/app/opportunites/$id"
-      params={{ id: opportunity._id }}
-      className="flex flex-col gap-3 rounded-[var(--radius)] border border-border bg-surface p-4 shadow-[var(--shadow-card)] transition-all hover:-translate-y-px hover:border-border-strong hover:shadow-[var(--shadow-pop)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-ring)]"
+    <button
+      type="button"
+      onClick={onSelect}
+      className="flex flex-col gap-3 rounded-[var(--radius)] border border-border bg-surface p-4 text-left shadow-[var(--shadow-card)] transition-all hover:-translate-y-px hover:border-border-strong hover:shadow-[var(--shadow-pop)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-ring)]"
     >
       <div className="flex items-start justify-between gap-2">
         <h3 className="line-clamp-2 text-sm font-semibold text-fg">
@@ -25,7 +26,7 @@ export function OpportunityCard({
       <div className="flex flex-wrap items-center gap-2">
         <TypeChip type={opportunity.type} />
         {opportunity.compensation && (
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-fg-muted tabular-nums">
+          <span className="assay inline-flex items-center gap-1.5 text-xs font-medium text-fg-muted">
             <Coins className="size-3.5" />
             {opportunity.compensation}
           </span>
@@ -43,6 +44,6 @@ export function OpportunityCard({
           <DueBadge date={opportunity.nextActionAt} />
         </div>
       )}
-    </Link>
+    </button>
   )
 }
