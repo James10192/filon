@@ -63,6 +63,10 @@ Pendant la review Paystack (~7 j). Tout testable sans charge réelle, bascule li
 - [x] Intégration **Paystack test mode** : Initialize Transaction + Verify (action serveur, clé secrète en env Convex, XOF ×100, channels carte+mobile money) — livré 2026-06-14
 - [x] **Webhook signé** Paystack → http action Convex `/paystack/webhook` (vérif HMAC-SHA512 du corps brut) qui pose le tier — livré 2026-06-14
 - [x] Application des limites dans les mutations (create opportunité/veille) + UI d'upsell (toast → /app/tarifs) + badge de palier dans les réglages — livré 2026-06-14
+- [x] **Cycle de vie d'abonnement** : champs additifs `autoRenew` + `pendingPlan` + `renewalReminderAt` sur `users` (#17) — livré 2026-06-14
+- [x] **Cron d'échéance quotidien** : applique le `pendingPlan` programmé à l'échéance, sinon rétrograde en `free` (paiement ponctuel = pas de récurrence réelle, cf. #21) ; relance les abonnements à terme sous 3 j (`flagRenewalReminders`, point d'accroche e-mail) (#18) — livré 2026-06-14
+- [x] **Upgrade / downgrade / annulation / réactivation** : upgrade via nouveau paiement (immédiat, efface tout pending) ; downgrade `scheduleDowngrade` (pro_ai→pro à l'échéance) ; `cancelAutoRenew` (accès maintenu jusqu'à l'échéance puis `free`) ; `reactivateAutoRenew` dans la période payée (#19) — livré 2026-06-14
+- [x] **Section « Gérer mon abonnement »** (réglages) : palier, échéance `.assay`, état du renouvellement, changement programmé, actions (changer de palier / programmer downgrade / annuler / réactiver) avec AlertDialog de confirmation (#20) — livré 2026-06-14
 - [ ] Bascule clés live à l'activation du compte (action Marcel : `npx convex env set PAYSTACK_SECRET_KEY …` + enregistrer le webhook ; issue #12)
 
 > Note récurrence : les vraies souscriptions Paystack (Plans + autorisation réutilisable) sont **carte uniquement**. Le mobile money (Wave / OM / MoMo) ne donne pas d'autorisation réutilisable : il est traité comme un **paiement ponctuel** couvrant la période choisie, avec relance de ré-abonnement à l'échéance. La copie de la page Tarifs le dit honnêtement.
