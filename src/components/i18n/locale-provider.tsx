@@ -50,9 +50,16 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
     [locale],
   )
 
+  // `key={locale}` remonte tout le sous-arbre quand la langue change : chaque
+  // appel `m.*()` est reevalue avec la nouvelle locale, SANS rechargement de
+  // page. La cle initiale vaut la baseLocale (fr, ce que le SSR a rendu) : pas
+  // de remontage superflu a l'hydratation quand la locale stockee est deja fr ;
+  // un remontage propre n'a lieu que si l'utilisateur a choisi en, ou bascule.
   return (
     <LocaleContext.Provider value={{ locale, switchLocale, mounted }}>
-      {children}
+      <div key={locale} style={{ display: 'contents' }}>
+        {children}
+      </div>
     </LocaleContext.Provider>
   )
 }
