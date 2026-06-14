@@ -14,6 +14,7 @@ import { Route as ConnexionRouteImport } from './routes/connexion'
 import { Route as AppRouteRouteImport } from './routes/app/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app/index'
+import { Route as AppVeilleRouteImport } from './routes/app/veille'
 import { Route as AppRelancesRouteImport } from './routes/app/relances'
 import { Route as AppPropositionsRouteImport } from './routes/app/propositions'
 import { Route as AppPipelineRouteImport } from './routes/app/pipeline'
@@ -48,6 +49,11 @@ const IndexRoute = IndexRouteImport.update({
 const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppVeilleRoute = AppVeilleRouteImport.update({
+  id: '/veille',
+  path: '/veille',
   getParentRoute: () => AppRouteRoute,
 } as any)
 const AppRelancesRoute = AppRelancesRouteImport.update({
@@ -113,6 +119,7 @@ export interface FileRoutesByFullPath {
   '/app/pipeline': typeof AppPipelineRoute
   '/app/propositions': typeof AppPropositionsRouteWithChildren
   '/app/relances': typeof AppRelancesRoute
+  '/app/veille': typeof AppVeilleRoute
   '/app/': typeof AppIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/app/opportunites/$id': typeof AppOpportunitesIdRoute
@@ -129,6 +136,7 @@ export interface FileRoutesByTo {
   '/app/pipeline': typeof AppPipelineRoute
   '/app/propositions': typeof AppPropositionsRouteWithChildren
   '/app/relances': typeof AppRelancesRoute
+  '/app/veille': typeof AppVeilleRoute
   '/app': typeof AppIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/app/opportunites/$id': typeof AppOpportunitesIdRoute
@@ -147,6 +155,7 @@ export interface FileRoutesById {
   '/app/pipeline': typeof AppPipelineRoute
   '/app/propositions': typeof AppPropositionsRouteWithChildren
   '/app/relances': typeof AppRelancesRoute
+  '/app/veille': typeof AppVeilleRoute
   '/app/': typeof AppIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/app/opportunites/$id': typeof AppOpportunitesIdRoute
@@ -166,6 +175,7 @@ export interface FileRouteTypes {
     | '/app/pipeline'
     | '/app/propositions'
     | '/app/relances'
+    | '/app/veille'
     | '/app/'
     | '/api/auth/$'
     | '/app/opportunites/$id'
@@ -182,6 +192,7 @@ export interface FileRouteTypes {
     | '/app/pipeline'
     | '/app/propositions'
     | '/app/relances'
+    | '/app/veille'
     | '/app'
     | '/api/auth/$'
     | '/app/opportunites/$id'
@@ -199,6 +210,7 @@ export interface FileRouteTypes {
     | '/app/pipeline'
     | '/app/propositions'
     | '/app/relances'
+    | '/app/veille'
     | '/app/'
     | '/api/auth/$'
     | '/app/opportunites/$id'
@@ -248,6 +260,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/app/'
       preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/app/veille': {
+      id: '/app/veille'
+      path: '/veille'
+      fullPath: '/app/veille'
+      preLoaderRoute: typeof AppVeilleRouteImport
       parentRoute: typeof AppRouteRoute
     }
     '/app/relances': {
@@ -355,6 +374,7 @@ interface AppRouteRouteChildren {
   AppPipelineRoute: typeof AppPipelineRoute
   AppPropositionsRoute: typeof AppPropositionsRouteWithChildren
   AppRelancesRoute: typeof AppRelancesRoute
+  AppVeilleRoute: typeof AppVeilleRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
@@ -366,6 +386,7 @@ const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppPipelineRoute: AppPipelineRoute,
   AppPropositionsRoute: AppPropositionsRouteWithChildren,
   AppRelancesRoute: AppRelancesRoute,
+  AppVeilleRoute: AppVeilleRoute,
   AppIndexRoute: AppIndexRoute,
 }
 

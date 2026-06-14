@@ -34,6 +34,13 @@ const priorityValidator = v.union(
   v.literal('high'),
 )
 
+const importSourceValidator = v.union(
+  v.literal('educarriere'),
+  v.literal('linkedin'),
+  v.literal('autre'),
+  v.literal('manuel'),
+)
+
 type Stage = Doc<'opportunities'>['stage']
 
 const STAGES: Stage[] = [
@@ -206,6 +213,9 @@ export const create = mutation({
     nextActionAt: v.optional(v.string()),
     tags: v.optional(v.array(v.string())),
     description: v.optional(v.string()),
+    importSource: v.optional(importSourceValidator),
+    sourceUrl: v.optional(v.string()),
+    importedAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const { userId } = await requireUser(ctx)
@@ -235,6 +245,9 @@ export const create = mutation({
     if (args.appliedAt !== undefined) doc.appliedAt = args.appliedAt
     if (args.nextActionAt !== undefined) doc.nextActionAt = args.nextActionAt
     if (args.description !== undefined) doc.description = args.description
+    if (args.importSource !== undefined) doc.importSource = args.importSource
+    if (args.sourceUrl !== undefined) doc.sourceUrl = args.sourceUrl
+    if (args.importedAt !== undefined) doc.importedAt = args.importedAt
 
     const opportunityId = await ctx.db.insert(
       'opportunities',

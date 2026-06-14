@@ -14,6 +14,7 @@ import {
   LayoutDashboard,
   KanbanSquare,
   Briefcase,
+  Rss,
   Building2,
   Send,
   BellRing,
@@ -90,6 +91,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     items: [
       { to: '/app/pipeline', label: 'Pipeline', icon: KanbanSquare, exact: false },
       { to: '/app/opportunites', label: 'Opportunités', icon: Briefcase, exact: false },
+      { to: '/app/veille', label: 'Veille', icon: Rss, exact: false },
     ],
   },
   {

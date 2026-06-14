@@ -90,6 +90,20 @@ export default defineSchema({
     nextActionAt: v.optional(v.string()),
     tags: v.array(v.string()),
     description: v.optional(v.string()),
+    // Traçabilité d'import (veille educarriere, LinkedIn, saisie manuelle).
+    // Champs additifs : les lignes existantes restent valides.
+    importSource: v.optional(
+      v.union(
+        v.literal('educarriere'),
+        v.literal('linkedin'),
+        v.literal('autre'),
+        v.literal('manuel'),
+      ),
+    ),
+    // URL canonique de l'offre, utilisée pour la déduplication (distincte de
+    // `url`, qui reste librement éditable par le user).
+    sourceUrl: v.optional(v.string()),
+    importedAt: v.optional(v.number()),
     // Position dans la colonne kanban (tri intra-stage).
     order: v.number(),
     createdAt: v.number(),
@@ -101,6 +115,8 @@ export default defineSchema({
     .index('by_user_type', ['userId', 'type'])
     .index('by_user_created', ['userId', 'createdAt'])
     .index('by_user_next_action', ['userId', 'nextActionAt'])
+    // Déduplication des imports : (userId, sourceUrl).
+    .index('by_user_sourceUrl', ['userId', 'sourceUrl'])
     .index('by_company', ['companyId'])
     .index('by_contact', ['contactId']),
 
@@ -194,4 +210,20 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index('by_user', ['userId']),
+
+  // Recherches enregistrées : mots-clés surveillés par le moniteur educarriere.
+  // 1..N par user. Le cron scanne les recherches `enabled` de tous les users.
+  savedSearches: defineTable({
+    userId: v.string(),
+    // Mots-clés normalisés (trim, lowercase, dédupliqués).
+    keywords: v.array(v.string()),
+    enabled: v.boolean(),
+    lastRunAt: v.optional(v.number()),
+    lastMatchCount: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_user', ['userId'])
+    // Le cron itère les recherches actives, tous users confondus.
+    .index('by_enabled', ['enabled']),
 })
