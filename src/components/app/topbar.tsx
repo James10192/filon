@@ -5,6 +5,7 @@ import { SidebarTrigger } from '~/components/ui/sidebar'
 import { Separator } from '~/components/ui/separator'
 import { useCommandPalette } from './command-palette'
 import { useQuickCapture } from './quick-capture'
+import { useShortcutLabel } from './use-shortcut-label'
 import { NAV_ITEMS, isNavItemActive } from './nav-config'
 
 /**
@@ -18,6 +19,7 @@ export function Topbar() {
   const palette = useCommandPalette()
   const quickCapture = useQuickCapture()
   const location = useLocation()
+  const shortcut = useShortcutLabel()
 
   const current = NAV_ITEMS.find((item) =>
     isNavItemActive(location.pathname, item),
@@ -43,7 +45,7 @@ export function Topbar() {
           <Search className="size-4 shrink-0" />
           <span className="flex-1 text-left">Rechercher…</span>
           <kbd className="assay hidden shrink-0 rounded border border-border bg-surface-2 px-1.5 py-0.5 text-[11px] text-fg-subtle sm:inline">
-            ⌘K
+            {shortcut}
           </kbd>
         </button>
 

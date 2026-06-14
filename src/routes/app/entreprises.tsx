@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import {
@@ -19,17 +19,31 @@ import { CompanyFormDialog } from '~/components/companies/company-form-dialog'
 import { ContactFormDialog } from '~/components/companies/contact-form-dialog'
 import { DeleteConfirmDialog } from '~/components/companies/delete-confirm-dialog'
 
+type EntreprisesSearch = { q?: string }
+
 export const Route = createFileRoute('/app/entreprises')({
   component: EntreprisesPage,
   head: () => ({ meta: [{ title: 'Entreprises · Filon' }] }),
+  // `q` permet d'arriver depuis la palette de commandes pre-filtre sur un nom.
+  validateSearch: (search: Record<string, unknown>): EntreprisesSearch => {
+    const q = typeof search.q === 'string' ? search.q : undefined
+    return q ? { q } : {}
+  },
 })
 
 type Company = Doc<'companies'>
 type Contact = Doc<'contacts'>
 
 function EntreprisesPage() {
-  const [search, setSearch] = useState('')
+  const { q } = Route.useSearch()
+  const [search, setSearch] = useState(q ?? '')
   const searchTerm = search.trim()
+
+  // Resynchronise la recherche quand on arrive (ou re-arrive) via la palette
+  // avec un nouveau `q` ; n'ecrase pas une saisie manuelle ulterieure.
+  useEffect(() => {
+    if (q) setSearch(q)
+  }, [q])
 
   const companies = useQuery(
     api.companies.list,
