@@ -1,0 +1,241 @@
+import { useEffect } from 'react'
+
+/**
+ * Orchestration GSAP de la landing publique (centerpiece du redesign zed-style).
+ *
+ * Contraintes de la stack (RÈGLE PROJET, non négociable) :
+ *  - `gsap` BRUT uniquement, JAMAIS `@gsap/react`/`useGSAP` (double React =
+ *    page blanche sur pnpm + TanStack Start).
+ *  - Tout est client-only : guard `typeof window`, `import('gsap')` dynamique +
+ *    import dynamique des plugins (GSAP n'entre jamais dans le graphe SSR, et
+ *    reste code-split hors du bundle critique).
+ *  - `gsap.registerPlugin(...)` côté client, `gsap.context(scope)` pour scoper
+ *    les sélecteurs, cleanup `ctx.revert()` + `ScrollTrigger.kill()` au unmount.
+ *
+ * Performance :
+ *  - On anime UNIQUEMENT transform + opacity (autoAlpha). Aucune propriété de
+ *    layout (width/height/top/left/margin) — zéro reflow.
+ *  - `ScrollTrigger.batch` pour les listes (révélations groupées, peu de triggers).
+ *  - `will-change` posé seulement pendant l'animation, retiré à la fin.
+ *  - Le hero (LCP) peint immédiatement : le contenu est rendu statiquement au
+ *    SSR ; le mouvement enrichit après le mount (SplitText repart d'une baseline
+ *    visible, on n'occulte jamais le titre avant l'animation).
+ *
+ * Accessibilité :
+ *  - `prefers-reduced-motion: reduce` → on ne lance RIEN. Le contenu reste
+ *    entièrement visible et statique (rendu SSR intact).
+ *
+ * Le scope est passé via une ref (l'élément racine de la landing). Toutes les
+ * cibles sont sélectionnées par attributs `data-*` à l'intérieur du scope.
+ */
+export function useLandingMotion(scopeRef: React.RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const scope = scopeRef.current
+    if (!scope) return
+
+    const prefersReduced = window.matchMedia(
+      '(prefers-reduced-motion: reduce)',
+    ).matches
+    if (prefersReduced) return
+
+    let ctx: { revert: () => void } | undefined
+    let smoother: { kill: () => void } | undefined
+    let cancelled = false
+
+    void (async () => {
+      const [{ gsap }, { ScrollTrigger }, { SplitText }] = await Promise.all([
+        import('gsap'),
+        import('gsap/ScrollTrigger'),
+        import('gsap/SplitText'),
+      ])
+      if (cancelled) return
+
+      // ScrollSmoother est optionnel : import isolé pour ne pas tout casser si
+      // l'environnement ne le résout pas. Désactivé sur tactile (scroll natif
+      // plus fiable et performant sur mobile).
+      let ScrollSmoother:
+        | { create: (vars: Record<string, unknown>) => { kill: () => void } }
+        | undefined
+      const isTouch = window.matchMedia('(hover: none)').matches
+      if (!isTouch) {
+        try {
+          const mod = await import('gsap/ScrollSmoother')
+          if (cancelled) return
+          ScrollSmoother = mod.ScrollSmoother as typeof ScrollSmoother
+        } catch {
+          ScrollSmoother = undefined
+        }
+      }
+
+      gsap.registerPlugin(ScrollTrigger, SplitText)
+      if (ScrollSmoother) gsap.registerPlugin(ScrollSmoother)
+
+      ctx = gsap.context(() => {
+        // ── ScrollSmoother (scroll « beurre » + base du parallax) ──────────
+        if (
+          ScrollSmoother &&
+          scope.querySelector('#smooth-wrapper') &&
+          scope.querySelector('#smooth-content')
+        ) {
+          smoother = ScrollSmoother.create({
+            wrapper: '#smooth-wrapper',
+            content: '#smooth-content',
+            smooth: 1,
+            effects: true,
+            normalizeScroll: false,
+          })
+        }
+
+        // ── HERO — moment signature : révélation mot par mot du titre ──────
+        const heading = scope.querySelector<HTMLElement>('[data-hero-title]')
+        if (heading) {
+          // SplitText gère lui-même l'accessibilité (aria: 'auto' garde le
+          // texte lisible aux lecteurs d'écran). onSplit + return de la
+          // timeline => revert propre géré par le plugin.
+          SplitText.create(heading, {
+            type: 'words,lines',
+            mask: 'lines',
+            aria: 'auto',
+            autoSplit: true,
+            onSplit: (self: { words: Element[] }) => {
+              return gsap.from(self.words, {
+                yPercent: 110,
+                opacity: 0,
+                duration: 0.7,
+                ease: 'power3.out',
+                stagger: 0.05,
+                delay: 0.05,
+              })
+            },
+          })
+        }
+
+        // Reste du hero (badge, sous-titre, CTA, stat) : entrée douce post-titre.
+        const heroRise = gsap.utils.toArray<HTMLElement>('[data-hero-rise]')
+        if (heroRise.length) {
+          gsap.from(heroRise, {
+            y: 24,
+            autoAlpha: 0,
+            duration: 0.6,
+            ease: 'power2.out',
+            stagger: 0.08,
+            delay: 0.25,
+          })
+        }
+
+        // Aperçu produit du hero : entrée + léger parallax au scroll.
+        const heroVisual = scope.querySelector<HTMLElement>('[data-hero-visual]')
+        if (heroVisual) {
+          gsap.from(heroVisual, {
+            y: 36,
+            autoAlpha: 0,
+            duration: 0.8,
+            ease: 'power3.out',
+            delay: 0.35,
+          })
+          gsap.to(heroVisual, {
+            yPercent: -6,
+            ease: 'none',
+            scrollTrigger: {
+              trigger: heroVisual,
+              start: 'top 80%',
+              end: 'bottom top',
+              scrub: true,
+            },
+          })
+        }
+
+        // ── RÉVÉLATIONS AU SCROLL — batch (peu de triggers, groupées) ──────
+        const reveals = gsap.utils.toArray<HTMLElement>('[data-reveal]')
+        if (reveals.length) {
+          gsap.set(reveals, { y: 28, autoAlpha: 0 })
+          ScrollTrigger.batch(reveals, {
+            start: 'top 85%',
+            once: true,
+            onEnter: (batch) => {
+              gsap.to(batch, {
+                y: 0,
+                autoAlpha: 1,
+                duration: 0.6,
+                ease: 'power2.out',
+                stagger: 0.08,
+                overwrite: true,
+                // will-change uniquement pendant l'animation.
+                onStart: () =>
+                  batch.forEach((el) => {
+                    ;(el as HTMLElement).style.willChange = 'transform, opacity'
+                  }),
+                onComplete: () =>
+                  batch.forEach((el) => {
+                    ;(el as HTMLElement).style.willChange = 'auto'
+                  }),
+              })
+            },
+          })
+        }
+
+        // ── PARALLAX subtil sur les éléments marqués (transform-only) ──────
+        const parallax = gsap.utils.toArray<HTMLElement>('[data-parallax]')
+        parallax.forEach((el) => {
+          const depth = Number(el.dataset.parallax || '8')
+          gsap.to(el, {
+            yPercent: -depth,
+            ease: 'none',
+            scrollTrigger: {
+              trigger: el,
+              start: 'top bottom',
+              end: 'bottom top',
+              scrub: true,
+            },
+          })
+        })
+
+        // ── SHOWCASE — pin + scrub : surbrillance progressive des vues ─────
+        const showcase = scope.querySelector<HTMLElement>('[data-showcase]')
+        const views = gsap.utils.toArray<HTMLElement>('[data-showcase-view]')
+        const panels = gsap.utils.toArray<HTMLElement>('[data-showcase-panel]')
+        if (showcase && views.length && views.length === panels.length) {
+          gsap.set(panels, { autoAlpha: 0, scale: 0.985 })
+          gsap.set(panels[0]!, { autoAlpha: 1, scale: 1 })
+          const activate = (i: number) => {
+            views.forEach((v, vi) =>
+              v.setAttribute('data-active', vi === i ? 'true' : 'false'),
+            )
+            panels.forEach((p, pi) =>
+              gsap.to(p, {
+                autoAlpha: pi === i ? 1 : 0,
+                scale: pi === i ? 1 : 0.985,
+                duration: 0.4,
+                ease: 'power2.out',
+                overwrite: true,
+              }),
+            )
+          }
+          activate(0)
+          const tl = gsap.timeline({
+            scrollTrigger: {
+              trigger: showcase,
+              start: 'top top',
+              end: () => `+=${views.length * 100}%`,
+              pin: true,
+              scrub: 0.6,
+              anticipatePin: 1,
+            },
+          })
+          views.forEach((_, i) => {
+            tl.call(activate, [i], i / views.length)
+          })
+        }
+
+        ScrollTrigger.refresh()
+      }, scope)
+    })()
+
+    return () => {
+      cancelled = true
+      smoother?.kill()
+      ctx?.revert()
+    }
+  }, [scopeRef])
+}
