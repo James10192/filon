@@ -119,23 +119,23 @@ function BoardSkeleton() {
         {STAGE_ORDER.slice(0, 5).map((stage) => (
           <div
             key={stage}
-            className="flex w-[300px] shrink-0 flex-col overflow-hidden rounded-xl border border-border bg-surface-2/60"
+            className="flex w-[304px] shrink-0 flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface shadow-[var(--shadow-card)]"
           >
-            <Skeleton className="h-[2px] w-full rounded-none" />
-            <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2.5">
-              <Skeleton className="size-2 rounded-full" />
+            <Skeleton className="h-px w-full rounded-none" />
+            <div className="flex items-center gap-2 px-3.5 pb-2.5 pt-3">
+              <Skeleton className="size-1.5 rounded-full" />
               <Skeleton className="h-4 w-20" />
-              <Skeleton className="ml-auto h-4 w-12 rounded-[var(--radius-sm)]" />
+              <Skeleton className="ml-auto h-4 w-10 rounded-[var(--radius-sm)]" />
             </div>
-            <div className="flex flex-col gap-2.5 p-2.5">
+            <div className="flex flex-col gap-2 px-2.5 pb-2.5">
               {Array.from({ length: stage === 'lead' ? 3 : 2 }).map((_, i) => (
                 <div
                   key={i}
-                  className="rounded-[var(--radius)] border border-border bg-surface p-3"
+                  className="rounded-[var(--radius)] border border-border border-l-2 bg-surface px-3 py-2.5"
                 >
-                  <Skeleton className="h-4 w-4/5" />
-                  <Skeleton className="mt-2.5 h-5 w-20 rounded-[var(--radius-sm)]" />
-                  <Skeleton className="mt-2.5 h-3 w-1/2" />
+                  <Skeleton className="h-3 w-1/3" />
+                  <Skeleton className="mt-2 h-4 w-4/5" />
+                  <Skeleton className="mt-2 h-3 w-1/2" />
                 </div>
               ))}
             </div>

@@ -41,24 +41,21 @@ export function KanbanColumn({
     <section
       aria-label={`Colonne ${meta.label}`}
       className={cn(
-        'flex w-[300px] shrink-0 snap-start flex-col overflow-hidden rounded-xl border border-border bg-surface-2/60 transition-opacity',
-        isClosing && !isDragActive && 'opacity-75',
+        'flex w-[304px] shrink-0 snap-start flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface shadow-[var(--shadow-card)] transition-opacity',
+        isClosing && !isDragActive && 'opacity-70',
       )}
     >
-      {/* Liseré supérieur : couleur d'étape, accent indigo pour « gagné ». */}
+      {/* Liseré supérieur fin : couleur d'étape, accent indigo pour « gagné ». */}
       <div
-        className={cn(
-          'h-[2px] w-full shrink-0',
-          isWon ? 'bg-accent' : meta.dotClass,
-        )}
+        className={cn('h-px w-full shrink-0', isWon ? 'bg-accent' : meta.dotClass)}
         aria-hidden
       />
 
       {/* En-tête calme : nom + compte mono + valeur cumulée mono + quick-add. */}
-      <header className="group/head sticky top-0 z-10 flex items-center gap-1.5 border-b border-border/60 bg-surface-2/80 px-3 py-2.5 backdrop-blur">
+      <header className="group/head flex items-center gap-2 px-3.5 pb-2.5 pt-3">
         <span
           className={cn(
-            'size-2 shrink-0 rounded-full',
+            'size-1.5 shrink-0 rounded-full',
             isWon ? 'bg-accent' : meta.dotClass,
           )}
           aria-hidden
@@ -66,10 +63,10 @@ export function KanbanColumn({
         <h2 className="truncate text-[13px] font-semibold tracking-[-0.01em] text-fg">
           {meta.label}
         </h2>
-        <span className="assay rounded-full bg-surface px-1.5 text-xs font-medium text-fg-muted ring-1 ring-border/60">
+        <span className="assay text-xs font-medium tabular-nums text-fg-subtle">
           {items.length}
         </span>
-        <div className="ml-auto flex shrink-0 items-center gap-1">
+        <div className="ml-auto flex shrink-0 items-center gap-1.5">
           {potential && (
             <span
               className="assay text-xs font-semibold text-fg-muted"
@@ -81,7 +78,7 @@ export function KanbanColumn({
           <Button
             variant="ghost"
             size="icon-sm"
-            className="text-fg-subtle opacity-70 transition-opacity hover:text-fg hover:opacity-100 focus-visible:opacity-100 md:opacity-0 md:group-hover/head:opacity-100"
+            className="-mr-1 size-7 text-fg-subtle opacity-70 transition-opacity hover:text-fg hover:opacity-100 focus-visible:opacity-100 md:opacity-0 md:group-hover/head:opacity-100"
             aria-label={`Ajouter une opportunité dans « ${meta.label} »`}
             onClick={() => onQuickAdd(stage)}
           >
@@ -94,9 +91,9 @@ export function KanbanColumn({
       <div
         ref={setNodeRef}
         className={cn(
-          'flex min-h-[7rem] flex-col gap-2.5 overflow-y-auto p-2.5 transition-colors [scrollbar-width:thin]',
-          'max-h-[calc(100dvh-13rem)]',
-          isOver && 'bg-accent-soft/50 ring-2 ring-inset ring-[var(--color-accent-ring)]',
+          'flex min-h-[6rem] flex-1 flex-col gap-2 overflow-y-auto px-2.5 pb-2.5 transition-colors [scrollbar-width:thin]',
+          'max-h-[calc(100dvh-12.5rem)]',
+          isOver && 'bg-accent-soft/40',
         )}
       >
         <SortableContext
@@ -130,17 +127,17 @@ function EmptyColumn({ label, isOver }: { label: string; isOver: boolean }) {
   return (
     <div
       className={cn(
-        'flex min-h-[5.5rem] flex-1 flex-col items-center justify-center gap-1.5 rounded-[var(--radius)] border border-dashed px-3 py-8 text-center transition-colors',
+        'flex min-h-[5rem] flex-1 flex-col items-center justify-center gap-1.5 rounded-[var(--radius)] border border-dashed px-3 py-7 text-center transition-colors',
         isOver
-          ? 'border-[var(--color-accent)] text-accent'
-          : 'border-border/70 text-fg-subtle',
+          ? 'border-[var(--color-accent)] bg-accent-soft/40 text-accent'
+          : 'border-border bg-surface-2/50 text-fg-subtle',
       )}
     >
-      <Inbox className="size-4 opacity-70" aria-hidden />
+      <Inbox className="size-4 opacity-60" aria-hidden />
       <p className="text-xs leading-snug">
         Glissez une opportunité ici
         <br />
-        <span className="text-fg-subtle/80">{`pour « ${label} »`}</span>
+        <span className="text-fg-subtle/70">{`pour « ${label} »`}</span>
       </p>
     </div>
   )

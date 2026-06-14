@@ -141,7 +141,7 @@ export function KanbanBoard({
       {/* Calque de glisser : carte allégée qui suit le pointeur. */}
       <DragOverlay dropAnimation={null}>
         {activeCard ? (
-          <div className="w-[280px] opacity-90">
+          <div className="w-[284px] rotate-[1.5deg]">
             <KanbanCardContent
               opportunity={activeCard}
               companyName={
