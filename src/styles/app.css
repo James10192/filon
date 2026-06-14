@@ -283,8 +283,39 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     color-scheme: light;
+    /* Reserve la gouttiere de scrollbar : ouvrir un overlay (Radix RemoveScroll)
+       ne decale plus la mise en page horizontalement. */
+    scrollbar-gutter: stable;
   }
   html.dark { color-scheme: dark; }
+
+  /* Affordance pointeur (Tailwind v4 a retire le cursor:pointer par defaut sur
+     <button>). Une seule regle globale : couvre navbar, menu mobile, dropdowns,
+     boutons shadcn, etc. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  label[for],
+  summary { cursor: pointer; }
+  button:disabled { cursor: not-allowed; }
+
+  /* Scrollbar discrete et monochrome (light + dark via tokens), pour les zones
+     de scroll de l'app et le scroll natif de la landing. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) transparent;
+  }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-fg-subtle);
+    background-clip: padding-box;
+  }
   body {
     background: var(--color-bg);
     color: var(--color-fg);
