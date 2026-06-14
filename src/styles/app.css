@@ -1,22 +1,29 @@
 @import "tailwindcss";
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+/* Polices chargees via @fontsource (importees dans src/react-global.ts) :
+   - Hanken Grotesk : UI / corps / titres (grotesque distinctive, lisible)
+   - JetBrains Mono : chiffres, montants, identifiants, dates relatives ("assay")
+   Pas d'import Google Fonts : auto-heberge, zero requete reseau bloquante. */
 
 /* Variante dark pilotée par la classe .dark (et non prefers-color-scheme seul) */
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  /* Familles litterales (pas de var() circulaire) : UI = Hanken Grotesk,
+     chiffres / metadonnees / mono = JetBrains Mono. */
+  --font-sans: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
 
-  --radius: 0.625rem;
+  /* Rayon de base 8px (0.5rem), grille 4px. */
+  --radius: 0.5rem;
   --radius-sm: 0.375rem;
   --radius-lg: 0.75rem;
 
-  /* Accent (indigo) */
-  --color-accent: #4f46e5;
-  --color-accent-hover: #4338ca;
+  /* Accent (indigo) - calibre en OKLCH. #4f46e5 ~= oklch(0.511 0.214 277). */
+  --color-accent: oklch(0.511 0.214 277);
+  --color-accent-hover: oklch(0.457 0.205 277);
   --color-accent-fg: #ffffff;
-  --color-accent-soft: #eef2ff;
+  --color-accent-soft: oklch(0.962 0.018 277);
   --color-accent-ring: oklch(0.55 0.21 277 / 0.45);
 
   /* Neutres */
@@ -70,8 +77,9 @@
 
 /* Overrides dark mode : on réassigne les mêmes variables sous .dark */
 .dark {
-  --color-accent: #6366f1;
-  --color-accent-hover: #818cf8;
+  /* Indigo plus lumineux sur fond sombre. #6366f1 ~= oklch(0.585 0.205 277). */
+  --color-accent: oklch(0.585 0.205 277);
+  --color-accent-hover: oklch(0.673 0.182 277);
   --color-accent-fg: #0b0b0f;
   --color-accent-soft: oklch(0.55 0.21 277 / 0.14);
   --color-accent-ring: oklch(0.7 0.16 277 / 0.55);
@@ -118,6 +126,157 @@
   --shadow-pop: 0 8px 24px -8px rgba(0,0,0,0.6), 0 0 0 1px #3f3f46;
 }
 
+/* ---------------------------------------------------------------------------
+   RECONCILIATION shadcn/ui (new-york, base zinc, accent indigo).
+   Les composants shadcn officiels (sidebar, command, table, chart, popover,
+   breadcrumb, etc.) referencent les tokens standard (--color-background,
+   --color-primary, --color-accent, --color-sidebar...). On les mappe ICI sur
+   le systeme zinc + indigo existant, sans toucher aux tokens custom ci-dessus.
+   Convention v4 : variables nues dans :root / .dark, exposees en utilitaires
+   Tailwind via @theme inline. Light-first.
+
+   COLLISIONS volontaires (un seul sens par utilitaire, deja defini en @theme) :
+   - --color-accent  : reste l'indigo de marque (selection / veine active).
+   - --color-border  : reste la bordure 1px zinc existante.
+   On NE les redeclare PAS en @theme inline (sinon double definition).
+   --------------------------------------------------------------------------- */
+:root {
+  /* zinc 50 / 900 */
+  --background: oklch(0.985 0 0);
+  --foreground: oklch(0.21 0.006 285.9);
+
+  /* surfaces : blanc pur (card/popover) */
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.21 0.006 285.9);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.21 0.006 285.9);
+
+  /* primaire = indigo (CTA) */
+  --primary: oklch(0.511 0.214 277);
+  --primary-foreground: oklch(0.985 0 0);
+
+  /* secondaire / muted = zinc 100/200 */
+  --secondary: oklch(0.967 0.001 286.4);
+  --secondary-foreground: oklch(0.21 0.006 285.9);
+  --muted: oklch(0.967 0.001 286.4);
+  --muted-foreground: oklch(0.552 0.014 285.9);
+
+  /* accent shadcn = indigo de marque (selection / hover veine) */
+  --accent: oklch(0.511 0.214 277);
+  --accent-foreground: oklch(0.985 0 0);
+
+  /* destructive = danger zinc->rouge */
+  --destructive: oklch(0.55 0.213 27.3);
+  --destructive-foreground: oklch(0.985 0 0);
+
+  /* bordures / champs / focus */
+  --border: oklch(0.92 0.004 286.3);
+  --input: oklch(0.92 0.004 286.3);
+  --ring: oklch(0.511 0.214 277);
+
+  /* charts : indigo + nuances zinc (monochrome + 1 accent, pas d'arc-en-ciel) */
+  --chart-1: oklch(0.511 0.214 277);
+  --chart-2: oklch(0.585 0.16 277);
+  --chart-3: oklch(0.705 0.1 277);
+  --chart-4: oklch(0.552 0.014 285.9);
+  --chart-5: oklch(0.705 0.015 286);
+
+  /* sidebar : meme systeme, accent indigo pour l'item actif */
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.21 0.006 285.9);
+  --sidebar-primary: oklch(0.511 0.214 277);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.962 0.018 277);
+  --sidebar-accent-foreground: oklch(0.457 0.205 277);
+  --sidebar-border: oklch(0.92 0.004 286.3);
+  --sidebar-ring: oklch(0.511 0.214 277);
+}
+
+.dark {
+  --background: oklch(0.141 0.005 285.8);
+  --foreground: oklch(0.985 0 0);
+
+  --card: oklch(0.21 0.006 285.9);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.21 0.006 285.9);
+  --popover-foreground: oklch(0.985 0 0);
+
+  --primary: oklch(0.585 0.205 277);
+  --primary-foreground: oklch(0.141 0.005 285.8);
+
+  --secondary: oklch(0.274 0.006 286);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.274 0.006 286);
+  --muted-foreground: oklch(0.712 0.013 286.1);
+
+  --accent: oklch(0.585 0.205 277);
+  --accent-foreground: oklch(0.141 0.005 285.8);
+
+  --destructive: oklch(0.704 0.191 22.2);
+  --destructive-foreground: oklch(0.985 0 0);
+
+  --border: oklch(0.274 0.006 286);
+  --input: oklch(0.274 0.006 286);
+  --ring: oklch(0.585 0.205 277);
+
+  --chart-1: oklch(0.585 0.205 277);
+  --chart-2: oklch(0.673 0.16 277);
+  --chart-3: oklch(0.77 0.11 277);
+  --chart-4: oklch(0.712 0.013 286.1);
+  --chart-5: oklch(0.552 0.014 285.9);
+
+  --sidebar: oklch(0.21 0.006 285.9);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.585 0.205 277);
+  --sidebar-primary-foreground: oklch(0.141 0.005 285.8);
+  --sidebar-accent: oklch(0.585 0.205 277 / 0.14);
+  --sidebar-accent-foreground: oklch(0.77 0.11 277);
+  --sidebar-border: oklch(0.274 0.006 286);
+  --sidebar-ring: oklch(0.585 0.205 277);
+}
+
+/* Expose les tokens shadcn nus en utilitaires Tailwind v4.
+   On omet volontairement --color-accent et --color-border (deja en @theme,
+   sens de marque conserve). --color-radius repris du --radius global (0.5rem). */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Rayons derives du --radius global pour les composants shadcn. */
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+}
+
 @layer base {
   * { border-color: var(--color-border); }
   html {
@@ -132,6 +291,11 @@
     font-family: var(--font-sans);
     font-size: 15px;
     line-height: 1.55;
+  }
+  /* Tracking negatif sur les titres (grotesque resserree, facon instrument). */
+  h1, h2, h3, h4 {
+    font-family: var(--font-sans);
+    letter-spacing: -0.02em;
   }
   ::selection { background: var(--color-accent-soft); color: var(--color-accent); }
   :focus-visible {
@@ -204,6 +368,47 @@
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--color-fg-subtle);
+  }
+
+  /* SIGNATURE "assay readout" : chaque chiffre / montant / compteur / date
+     relative / identifiant rend en JetBrains Mono avec tabular-nums.
+     A reutiliser PARTOUT sur les figures (className="assay"). */
+  .assay {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1, 'calt' 0;
+    letter-spacing: -0.01em;
+  }
+  /* Variante plus discrete pour metadonnees (dates, ids) en taille reduite. */
+  .assay-meta {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1, 'calt' 0;
+    font-size: 0.75rem;
+    color: var(--color-fg-muted);
+  }
+
+  /* Revele orchestre au chargement : translation + fondu courts (<200ms),
+     decales par --reveal-i (index). CSS-first, une seule passe a l'arrivee.
+     Respecte prefers-reduced-motion. A poser sur les blocs du cockpit. */
+  .reveal {
+    animation: reveal-in 200ms var(--ease-out-soft) both;
+    animation-delay: calc(var(--reveal-i, 0) * 45ms);
+  }
+  @keyframes reveal-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal {
+      animation: none;
+    }
   }
 
   /* Ligne de tableau dense reutilisable. */
