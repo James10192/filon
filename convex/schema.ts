@@ -34,11 +34,27 @@ export default defineSchema({
     subscriptionRef: v.optional(v.string()),
     // Code client Paystack (customer_code), pour relier les webhooks au user.
     paystackCustomerCode: v.optional(v.string()),
+    // --- Cycle de vie d'abonnement (Phase 2, additif) ---
+    // Renouvellement automatique. Absent = traité comme `true` (les abonnements
+    // existants restent en renouvellement). Mis à `false` par `cancelAutoRenew`.
+    autoRenew: v.optional(v.boolean()),
+    // Palier programmé, appliqué à l'échéance (`planRenewsAt`) par le cron :
+    // soit un downgrade choisi (ex 'pro'), soit 'free' (annulation). Effacé une
+    // fois appliqué, ou par un upgrade / une réactivation.
+    pendingPlan: v.optional(
+      v.union(v.literal('free'), v.literal('pro'), v.literal('pro_ai')),
+    ),
+    // Horodatage de la dernière relance d'échéance envoyée/flaggée (epoch ms),
+    // pour ne pas relancer en boucle. Posé par le cron de rappel.
+    renewalReminderAt: v.optional(v.number()),
   })
     .index('by_authId', ['authId'])
     .index('by_email', ['email'])
     // Résolution d'un user depuis un webhook par son code client Paystack.
-    .index('by_paystackCustomer', ['paystackCustomerCode']),
+    .index('by_paystackCustomer', ['paystackCustomerCode'])
+    // Le cron d'échéance itère les abonnements payants par date de
+    // renouvellement (bornage par `planRenewsAt`, jamais de scan global).
+    .index('by_planRenewsAt', ['planRenewsAt']),
 
   // Entreprises ciblées (employeurs, clients potentiels).
   companies: defineTable({

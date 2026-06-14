@@ -53,6 +53,8 @@ export const myPlan = query({
     plan: Plan
     planInterval: 'monthly' | 'annual' | null
     planRenewsAt: number | null
+    autoRenew: boolean
+    pendingPlan: Plan | null
     limits: (typeof PLAN_LIMITS)[Plan]
   } | null> => {
     const authUser = await (async () => {
@@ -70,8 +72,93 @@ export const myPlan = query({
       plan,
       planInterval: doc?.planInterval ?? null,
       planRenewsAt: doc?.planRenewsAt ?? null,
+      // Absence d'`autoRenew` = renouvellement actif par défaut.
+      autoRenew: doc?.autoRenew ?? true,
+      pendingPlan: doc?.pendingPlan ?? null,
       limits: PLAN_LIMITS[plan],
     }
+  },
+})
+
+/** Ordre des paliers, pour distinguer un downgrade d'un upgrade. */
+const PLAN_RANK: Record<Plan, number> = { free: 0, pro: 1, pro_ai: 2 }
+
+/**
+ * `api.billing.scheduleDowngrade` : programme une rétrogradation de palier
+ * appliquée À L'ÉCHÉANCE (`planRenewsAt`), pas immédiatement. Le user garde ce
+ * qu'il a payé jusqu'à la fin de la période, puis le cron applique `pendingPlan`.
+ *
+ * Cas couverts : pro_ai → pro, et plus généralement tout palier strictement
+ * inférieur au palier courant. Pour rétrograder vers 'free', utiliser plutôt
+ * `cancelAutoRenew` (sémantique d'annulation). Un upgrade, lui, passe par un
+ * nouveau paiement (startCheckout), jamais par ici.
+ */
+export const scheduleDowngrade = mutation({
+  args: { target: planValidator },
+  handler: async (ctx, args): Promise<null> => {
+    const { userId } = await requireUser(ctx)
+    const doc = await userByAuthId(ctx, userId)
+    if (!doc) throw new Error('Profil introuvable')
+
+    const current = planOf(doc.plan ?? null)
+    if (PLAN_RANK[args.target] >= PLAN_RANK[current]) {
+      throw new Error(
+        'Une montée en palier se fait via un paiement, pas une programmation.',
+      )
+    }
+    if (!doc.planRenewsAt) {
+      throw new Error("Aucune période payée en cours à l'échéance de laquelle programmer.")
+    }
+    // Programme le palier cible ; le renouvellement auto reste tel quel (le user
+    // continue de payer, mais le palier baissera). pendingPlan='free' relève de
+    // cancelAutoRenew, pas d'ici.
+    await ctx.db.patch(doc._id, { pendingPlan: args.target })
+    return null
+  },
+})
+
+/**
+ * `api.billing.cancelAutoRenew` : coupe le renouvellement automatique. L'accès
+ * payant reste actif jusqu'à `planRenewsAt`, puis le cron rétrograde en 'free'.
+ * On ne supprime AUCUNE donnée : seuls les champs de palier changent à terme.
+ */
+export const cancelAutoRenew = mutation({
+  args: {},
+  handler: async (ctx): Promise<null> => {
+    const { userId } = await requireUser(ctx)
+    const doc = await userByAuthId(ctx, userId)
+    if (!doc) throw new Error('Profil introuvable')
+    if (planOf(doc.plan ?? null) === 'free') {
+      throw new Error('Aucun abonnement payant à annuler.')
+    }
+    await ctx.db.patch(doc._id, { autoRenew: false, pendingPlan: 'free' })
+    return null
+  },
+})
+
+/**
+ * `api.billing.reactivateAutoRenew` : réactive le renouvellement (annule une
+ * annulation ou un downgrade programmé) TANT QUE la période payée n'est pas
+ * échue. Au-delà, il faut repasser par un paiement.
+ */
+export const reactivateAutoRenew = mutation({
+  args: {},
+  handler: async (ctx): Promise<null> => {
+    const { userId } = await requireUser(ctx)
+    const doc = await userByAuthId(ctx, userId)
+    if (!doc) throw new Error('Profil introuvable')
+    if (planOf(doc.plan ?? null) === 'free') {
+      throw new Error('Aucun abonnement payant à réactiver.')
+    }
+    if (doc.planRenewsAt && doc.planRenewsAt < Date.now()) {
+      throw new Error('Période échue : relancez un paiement pour réactiver.')
+    }
+    await ctx.db.patch(doc._id, {
+      autoRenew: true,
+      pendingPlan: undefined,
+      renewalReminderAt: undefined,
+    })
+    return null
   },
 })
 
@@ -109,7 +196,17 @@ export const applySubscription = internalMutation({
       planRenewsAt?: number
       subscriptionRef?: string
       paystackCustomerCode?: string
-    } = { plan: args.plan }
+      // Un paiement réussi remet le cycle de vie « propre » : on réactive le
+      // renouvellement et on efface tout downgrade/annulation programmé.
+      autoRenew: true
+      pendingPlan: undefined
+      renewalReminderAt: undefined
+    } = {
+      plan: args.plan,
+      autoRenew: true,
+      pendingPlan: undefined,
+      renewalReminderAt: undefined,
+    }
     if (args.planInterval !== undefined) patch.planInterval = args.planInterval
     if (args.planRenewsAt !== undefined) patch.planRenewsAt = args.planRenewsAt
     if (args.subscriptionRef !== undefined) {
