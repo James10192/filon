@@ -1,6 +1,7 @@
 import { v } from 'convex/values'
 import { internalMutation, internalQuery } from '../_generated/server'
 import type { Doc, Id } from '../_generated/dataModel'
+import { limitsFor, planOf } from '../lib/plan'
 
 /**
  * Veille · opérations de données côté cron.
@@ -14,7 +15,13 @@ import type { Doc, Id } from '../_generated/dataModel'
 
 type SavedSearch = Pick<Doc<'savedSearches'>, '_id' | 'userId' | 'keywords'>
 
-/** Toutes les recherches actives, tous users confondus (scan via index). */
+/**
+ * Recherches actives des users éligibles à la veille AUTOMATIQUE (palier
+ * pro / pro_ai). Le moniteur (cron) SAUTE les recherches des users gratuits :
+ * sur le palier Découverte, la veille reste manuelle (import à la demande).
+ * On résout le palier de chaque user via `by_authId` (cache local par userId
+ * pour ne pas relire la même ligne `users`).
+ */
 export const enabledSearches = internalQuery({
   args: {},
   handler: async (ctx): Promise<SavedSearch[]> => {
@@ -22,11 +29,23 @@ export const enabledSearches = internalQuery({
       .query('savedSearches')
       .withIndex('by_enabled', (q) => q.eq('enabled', true))
       .collect()
-    return rows.map((r) => ({
-      _id: r._id,
-      userId: r.userId,
-      keywords: r.keywords,
-    }))
+
+    const autoByUser = new Map<string, boolean>()
+    const out: SavedSearch[] = []
+    for (const r of rows) {
+      let auto = autoByUser.get(r.userId)
+      if (auto === undefined) {
+        const userDoc = await ctx.db
+          .query('users')
+          .withIndex('by_authId', (q) => q.eq('authId', r.userId))
+          .unique()
+        auto = limitsFor(planOf(userDoc?.plan ?? null)).veilleAutoMonitor
+        autoByUser.set(r.userId, auto)
+      }
+      if (!auto) continue
+      out.push({ _id: r._id, userId: r.userId, keywords: r.keywords })
+    }
+    return out
   },
 })
 

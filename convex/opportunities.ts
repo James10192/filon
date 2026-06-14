@@ -2,7 +2,8 @@ import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import type { Doc, Id } from './_generated/dataModel'
 import type { MutationCtx } from './lib/withUser'
-import { requireUser } from './lib/withUser'
+import { currentPlan, requireUser } from './lib/withUser'
+import { ACTIVE_STAGES, limitsFor, planLimitError } from './lib/plan'
 
 /**
  * Domaine opportunities · coeur du produit.
@@ -285,6 +286,29 @@ export const create = mutation({
   handler: async (ctx, args) => {
     const { userId } = await requireUser(ctx)
     const stage: Stage = args.stage ?? 'lead'
+
+    // Gating freemium : plafond d'opportunités actives sur le palier gratuit.
+    // On ne compte que les stages actifs (les gagnées/perdues ne pèsent pas) et
+    // on n'applique le cap que si la nouvelle opportunité est elle-même active.
+    const limit = limitsFor(await currentPlan(ctx, userId)).activeOpportunities
+    if (
+      limit !== null &&
+      (ACTIVE_STAGES as readonly string[]).includes(stage)
+    ) {
+      const all = await ctx.db
+        .query('opportunities')
+        .withIndex('by_user', (q) => q.eq('userId', userId))
+        .collect()
+      const activeCount = all.filter((o) =>
+        (ACTIVE_STAGES as readonly string[]).includes(o.stage),
+      ).length
+      if (activeCount >= limit) {
+        throw planLimitError(
+          `Vous avez atteint la limite de ${limit} opportunités actives du palier Découverte. Passez à Pro pour un pipeline illimité.`,
+        )
+      }
+    }
+
     const now = Date.now()
     const order = await nextOrderInStage(ctx, userId, stage)
 

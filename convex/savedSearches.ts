@@ -1,7 +1,8 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import type { Doc } from './_generated/dataModel'
-import { requireUser } from './lib/withUser'
+import { currentPlan, requireUser } from './lib/withUser'
+import { limitsFor, planLimitError } from './lib/plan'
 
 /**
  * Domaine savedSearches · mots-clés surveillés par le moniteur educarriere.
@@ -44,6 +45,22 @@ export const create = mutation({
   },
   handler: async (ctx, args) => {
     const { userId } = await requireUser(ctx)
+
+    // Gating freemium : nombre de recherches enregistrées plafonné. On compte
+    // les recherches existantes du user et on refuse au-delà de la limite.
+    const limit = limitsFor(await currentPlan(ctx, userId)).savedSearches
+    if (limit !== null) {
+      const existing = await ctx.db
+        .query('savedSearches')
+        .withIndex('by_user', (q) => q.eq('userId', userId))
+        .collect()
+      if (existing.length >= limit) {
+        throw planLimitError(
+          `Le palier Découverte autorise ${limit} recherche de veille. Passez à Pro pour surveiller plusieurs recherches.`,
+        )
+      }
+    }
+
     const now = Date.now()
     return ctx.db.insert('savedSearches', {
       userId,
