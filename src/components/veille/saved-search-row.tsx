@@ -39,12 +39,6 @@ export function SavedSearchRow({ search }: { search: Doc<'savedSearches'> }) {
     }
   }
 
-  const meta = search.lastRunAt
-    ? `Dernière analyse ${formatRelativeTime(search.lastRunAt)} · ${
-        search.lastMatchCount ?? 0
-      } offre(s) trouvée(s)`
-    : 'Aucune analyse pour le moment'
-
   return (
     <div className="flex flex-col gap-3 border-b border-border px-4 py-3.5 last:border-0 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0 space-y-1.5">
@@ -55,7 +49,23 @@ export function SavedSearchRow({ search }: { search: Doc<'savedSearches'> }) {
             </Badge>
           ))}
         </div>
-        <p className="text-xs text-fg-subtle">{meta}</p>
+        <p className="text-xs text-fg-subtle">
+          {search.lastRunAt ? (
+            <>
+              Dernière analyse{' '}
+              <span className="assay-meta text-fg-subtle">
+                {formatRelativeTime(search.lastRunAt)}
+              </span>{' '}
+              ·{' '}
+              <span className="assay-meta text-fg-subtle">
+                {search.lastMatchCount ?? 0}
+              </span>{' '}
+              offre(s) trouvée(s)
+            </>
+          ) : (
+            'Aucune analyse pour le moment'
+          )}
+        </p>
       </div>
 
       <div className="flex shrink-0 items-center gap-2">

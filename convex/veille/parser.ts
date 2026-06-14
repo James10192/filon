@@ -188,6 +188,23 @@ export function parseRawText(text: string): ParsedOffer {
   return offer
 }
 
+/**
+ * Dérive un titre lisible depuis le slug d'une URL educarriere.
+ * `.../offre-150716-assistante-marketing.html` -> "Assistante Marketing".
+ * Retourne `undefined` si le motif `offre-<digits>-<slug>` est absent.
+ */
+function titleFromEducarriereSlug(href: string): string | undefined {
+  const m = href.match(/offre-\d+-([^/?#]+?)(?:\.html?)?(?:[?#].*)?$/i)
+  if (!m?.[1]) return undefined
+  const words = m[1]
+    .split('-')
+    .map((w) => w.trim())
+    .filter((w) => w.length > 0)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+  const title = words.join(' ').trim()
+  return title || undefined
+}
+
 /** Liste des offres d'une page educarriere : ancres `offre-XXXXX`. */
 export function parseEducarriereListing(
   html: string,
@@ -199,7 +216,7 @@ export function parseEducarriereListing(
   let match: RegExpExecArray | null
   while ((match = re.exec(html)) !== null) {
     const href = match[1]
-    const title = stripTags(match[2])
+    const title = titleFromEducarriereSlug(href) ?? stripTags(match[2])
     if (!title) continue
     const sourceUrl = href.startsWith('http')
       ? href
