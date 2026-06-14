@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { Link } from '@tanstack/react-router'
+import { useNavigate } from '@tanstack/react-router'
 import { useMutation } from 'convex/react'
 import {
-  Building2,
   CheckCircle2,
+  Loader2,
   MoreHorizontal,
   Pencil,
   Rocket,
@@ -14,7 +14,6 @@ import {
 } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Doc } from '../../../convex/_generated/dataModel'
-import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import {
   DropdownMenu,
@@ -34,23 +33,20 @@ import {
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
 import { toast } from '~/components/ui/sonner'
-import {
-  formatAmount,
-  formatDate,
-  STATUS_BADGE,
-  STATUS_LABELS,
-  type ProposalStatus,
-} from './proposal-status'
+import { STATUS_LABELS, type ProposalStatus } from './proposal-status'
 
-type ProposalRow = Doc<'proposals'> & { companyName?: string }
-
-export function ProposalCard({
+/**
+ * Barre d'actions de la page détail : actions de statut contextuelles,
+ * conversion en mission, édition, suppression. Confirmations via AlertDialog.
+ */
+export function ProposalDetailActions({
   proposal,
   onEdit,
 }: {
-  proposal: ProposalRow
-  onEdit: (proposal: Doc<'proposals'>) => void
+  proposal: Doc<'proposals'>
+  onEdit: () => void
 }) {
+  const navigate = useNavigate()
   const setStatus = useMutation(api.proposals.setStatus)
   const remove = useMutation(api.proposals.remove)
   const convert = useMutation(api.proposals.convertToOpportunity)
@@ -60,8 +56,6 @@ export function ProposalCard({
   const [confirmConvert, setConfirmConvert] = useState(false)
 
   const status = proposal.status as ProposalStatus
-  const amount = formatAmount(proposal.amount, proposal.currency)
-  const sentAt = formatDate(proposal.sentAt)
 
   async function changeStatus(next: ProposalStatus) {
     if (busy) return
@@ -84,9 +78,9 @@ export function ProposalCard({
     try {
       await remove({ id: proposal._id })
       toast.success('Proposition supprimée.')
+      navigate({ to: '/app/propositions' })
     } catch {
       toast.error('La suppression a échoué.')
-    } finally {
       setBusy(false)
       setConfirmDelete(false)
     }
@@ -96,104 +90,65 @@ export function ProposalCard({
     if (busy) return
     setBusy(true)
     try {
-      await convert({ id: proposal._id })
+      const opportunityId = await convert({ id: proposal._id })
       toast.success('Convertie en mission dans le pipeline.')
+      setConfirmConvert(false)
+      navigate({ to: '/app/opportunites/$id', params: { id: opportunityId } })
     } catch {
       toast.error('La conversion a échoué.')
-    } finally {
       setBusy(false)
       setConfirmConvert(false)
     }
   }
 
   return (
-    <article className="flex flex-col gap-3 rounded-[var(--radius-lg)] border border-border bg-surface p-4 shadow-[var(--shadow-card)] transition-colors hover:border-border-strong sm:p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <Link
-            to="/app/propositions/$id"
-            params={{ id: proposal._id }}
-            className="block truncate text-base font-semibold tracking-[-0.01em] text-fg transition-colors hover:text-accent"
-          >
-            {proposal.title}
-          </Link>
-          {proposal.companyName ? (
-            <p className="mt-0.5 flex items-center gap-1.5 text-sm text-fg-muted">
-              <Building2 className="size-3.5 shrink-0 text-fg-subtle" />
-              <span className="truncate">{proposal.companyName}</span>
-            </p>
-          ) : (
-            <p className="mt-0.5 text-sm text-fg-subtle">
-              Sans entreprise cible
-            </p>
-          )}
-        </div>
-        <Badge variant={STATUS_BADGE[status]} className="shrink-0">
-          {STATUS_LABELS[status]}
-        </Badge>
-      </div>
+    <div className="flex shrink-0 flex-wrap items-center gap-2">
+      <StatusActions status={status} busy={busy} onChange={changeStatus} />
+      {status === 'accepted' && (
+        <Button
+          size="sm"
+          variant="secondary"
+          disabled={busy}
+          onClick={() => setConfirmConvert(true)}
+        >
+          <Rocket className="size-4" />
+          Convertir en mission
+        </Button>
+      )}
 
-      <p className="line-clamp-3 text-sm leading-relaxed text-fg-muted">
-        {proposal.pitch}
-      </p>
+      <Button variant="outline" size="sm" disabled={busy} onClick={onEdit}>
+        <Pencil className="size-4" />
+        Modifier
+      </Button>
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-fg-subtle">
-        {amount && (
-          <span className="font-medium tabular-nums text-fg-muted">
-            {amount}
-          </span>
-        )}
-        {sentAt && <span>Envoyée le {sentAt}</span>}
-      </div>
-
-      <div className="mt-1 flex items-center gap-2">
-        <StatusActions status={status} busy={busy} onChange={changeStatus} />
-        {status === 'accepted' && (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
           <Button
-            size="sm"
-            variant="secondary"
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Plus d'actions"
             disabled={busy}
-            onClick={() => setConfirmConvert(true)}
           >
-            <Rocket className="size-4" />
-            Convertir en mission
+            <MoreHorizontal className="size-4" />
           </Button>
-        )}
-        <div className="ml-auto">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                aria-label="Actions"
-                disabled={busy}
-              >
-                <MoreHorizontal className="size-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onSelect={() => onEdit(proposal)}>
-                <Pencil className="size-4" />
-                Modifier
-              </DropdownMenuItem>
-              {status !== 'draft' && (
-                <DropdownMenuItem onSelect={() => changeStatus('draft')}>
-                  <Undo2 className="size-4" />
-                  Repasser en brouillon
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                variant="destructive"
-                onSelect={() => setConfirmDelete(true)}
-              >
-                <Trash2 className="size-4" />
-                Supprimer
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-52">
+          {status !== 'draft' && (
+            <DropdownMenuItem onSelect={() => changeStatus('draft')}>
+              <Undo2 className="size-4" />
+              Repasser en brouillon
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            variant="destructive"
+            onSelect={() => setConfirmDelete(true)}
+          >
+            <Trash2 className="size-4" />
+            Supprimer
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <AlertDialogContent>
@@ -212,8 +167,9 @@ export function ProposalCard({
                 void handleDelete()
               }}
               disabled={busy}
-              className="bg-danger text-[var(--color-accent-fg)] hover:bg-danger/90"
+              className="bg-danger text-white hover:bg-danger/90"
             >
+              {busy && <Loader2 className="size-4 animate-spin" />}
               Supprimer définitivement
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -239,16 +195,17 @@ export function ProposalCard({
               }}
               disabled={busy}
             >
+              {busy && <Loader2 className="size-4 animate-spin" />}
               Convertir
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </article>
+    </div>
   )
 }
 
-/** Boutons d'action de statut, contextualises selon le statut courant. */
+/** Boutons d'action de statut, contextualisés selon le statut courant. */
 function StatusActions({
   status,
   busy,
@@ -290,6 +247,5 @@ function StatusActions({
       </>
     )
   }
-  // accepted / refused : pas d'action primaire ici (gerees via le menu).
   return null
 }

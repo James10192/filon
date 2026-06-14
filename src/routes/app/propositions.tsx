@@ -25,7 +25,7 @@ type ProposalRow = Doc<'proposals'> & { companyName?: string }
 type TabValue = 'all' | ProposalStatus
 
 function PropositionsPage() {
-  // Une seule requete : tout charger puis filtrer/compter cote client par
+  // Une seule requête : tout charger puis filtrer/compter côté client par
   // onglet (le volume de propositions par user reste modeste).
   const proposals = useQuery(api.proposals.list, {}) as
     | ProposalRow[]
@@ -72,7 +72,7 @@ function PropositionsPage() {
       <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)}>
         <PageToolbar
           title="Propositions"
-          subtitle="Suivez vos propositions spontanées et votre démarchage, du brouillon à la signature."
+          subtitle="Suivez vos propositions spontanées et votre prospection, du brouillon à la signature."
           actions={
             <Button onClick={openCreate} className="shrink-0">
               <Plus className="size-4" />
@@ -128,18 +128,18 @@ function PropositionsBody({
   onCreate: () => void
   onEdit: (proposal: Doc<'proposals'>) => void
 }) {
-  // Etat erreur : Convex propage l'erreur via une exception au rendu ; on
-  // distingue ici le cas "donnees indisponibles" du chargement legitime.
+  // État erreur : Convex propage l'erreur via une exception au rendu ; on
+  // distingue ici le cas « données indisponibles » du chargement légitime.
   if (proposals === undefined) {
     return <ListSkeleton />
   }
 
-  // Etat vide global (aucune proposition du tout).
+  // État vide global (aucune proposition du tout).
   if (proposals.length === 0) {
     return <EmptyState onCreate={onCreate} />
   }
 
-  // Etat vide d'onglet (filtre sans resultat).
+  // État vide d'onglet (filtre sans résultat).
   if (filtered.length === 0) {
     return (
       <div className="flex flex-col items-center gap-2 rounded-[var(--radius-lg)] border border-dashed border-border bg-surface-2/40 px-6 py-12 text-center">
@@ -149,7 +149,7 @@ function PropositionsBody({
             : `Aucune proposition « ${STATUS_LABELS[tab as ProposalStatus].toLowerCase()} ».`}
         </p>
         <p className="max-w-sm text-sm text-fg-muted">
-          Changez d'onglet ou creez une nouvelle proposition.
+          Changez d'onglet ou créez une nouvelle proposition.
         </p>
       </div>
     )
@@ -189,8 +189,8 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
           Aucune proposition pour l'instant
         </h2>
         <p className="mx-auto max-w-md text-sm text-fg-muted">
-          Demarchez les bonnes entreprises sans rien laisser filer. Creez votre
-          premiere proposition spontanee pour la suivre jusqu'a la signature.
+          Démarchez les bonnes entreprises sans rien laisser filer. Créez votre
+          première proposition spontanée pour la suivre jusqu'à la signature.
         </p>
       </div>
       <Button onClick={onCreate}>
@@ -226,8 +226,8 @@ function ListSkeleton() {
 }
 
 /**
- * Encart d'erreur reutilisable (non monte par defaut ici car Convex remonte
- * l'erreur au niveau du router ; conserve pour usage explicite si besoin).
+ * Encart d'erreur réutilisable (non monté par défaut ici car Convex remonte
+ * l'erreur au niveau du router ; conservé pour usage explicite si besoin).
  */
 export function ProposalsError({ onRetry }: { onRetry: () => void }) {
   return (
@@ -237,7 +237,7 @@ export function ProposalsError({ onRetry }: { onRetry: () => void }) {
         Impossible de charger les propositions.
       </p>
       <Button variant="outline" onClick={onRetry}>
-        Reessayer
+        Réessayer
       </Button>
     </div>
   )

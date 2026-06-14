@@ -52,7 +52,7 @@ export function ProposalFormDialog({
   const [submitting, setSubmitting] = useState(false)
   const [errors, setErrors] = useState<{ title?: string; pitch?: string }>({})
 
-  // Reinitialise le formulaire a chaque ouverture (et selon la cible d'edition).
+  // Réinitialise le formulaire à chaque ouverture (et selon la cible d'édition).
   useEffect(() => {
     if (!open) return
     setErrors({})
@@ -75,7 +75,7 @@ export function ProposalFormDialog({
   function validate() {
     const next: { title?: string; pitch?: string } = {}
     if (!title.trim()) next.title = 'Un titre est requis.'
-    if (!pitch.trim()) next.pitch = 'Le pitch ne peut pas etre vide.'
+    if (!pitch.trim()) next.pitch = 'Le pitch ne peut pas être vide.'
     setErrors(next)
     return Object.keys(next).length === 0
   }
@@ -85,11 +85,11 @@ export function ProposalFormDialog({
     if (submitting) return
     if (!validate()) return
 
-    // Args construits dynamiquement : jamais `undefined` envoye a Convex.
+    // Args construits dynamiquement : jamais `undefined` envoyé à Convex.
     const parsedAmount = amount.trim() ? Number(amount.replace(/\s/g, '')) : undefined
     if (parsedAmount !== undefined && Number.isNaN(parsedAmount)) {
       setErrors((e) => ({ ...e }))
-      toast.error('Le montant doit etre un nombre.')
+      toast.error('Le montant doit être un nombre.')
       return
     }
 
@@ -112,7 +112,7 @@ export function ProposalFormDialog({
         if (companyId !== NO_COMPANY) args.companyId = companyId as Id<'companies'>
         if (parsedAmount !== undefined) args.amount = parsedAmount
         await update(args)
-        toast.success('Proposition mise a jour.')
+        toast.success('Proposition mise à jour.')
       } else {
         const args: {
           title: string
@@ -128,13 +128,13 @@ export function ProposalFormDialog({
         if (companyId !== NO_COMPANY) args.companyId = companyId as Id<'companies'>
         if (parsedAmount !== undefined) args.amount = parsedAmount
         await create(args)
-        toast.success('Proposition enregistree.')
+        toast.success('Proposition enregistrée.')
       }
       onOpenChange(false)
     } catch {
       toast.error(
         isEdit
-          ? "La proposition n'a pas pu etre mise a jour."
+          ? "La proposition n'a pas pu être mise à jour."
           : "Impossible d'enregistrer la proposition.",
       )
     } finally {
@@ -151,8 +151,8 @@ export function ProposalFormDialog({
           </DialogTitle>
           <DialogDescription>
             {isEdit
-              ? 'Mettez a jour le pitch, la cible ou le montant.'
-              : 'Decrivez ce que vous proposez et a quelle entreprise.'}
+              ? 'Mettez à jour le pitch, la cible ou le montant.'
+              : 'Décrivez ce que vous proposez et à quelle entreprise.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -178,7 +178,7 @@ export function ProposalFormDialog({
               id="proposal-pitch"
               value={pitch}
               onChange={(e) => setPitch(e.target.value)}
-              placeholder="Ce que vous proposez, la valeur apportee, le contexte..."
+              placeholder="Ce que vous proposez, la valeur apportée, le contexte..."
               className="min-h-28"
               aria-invalid={Boolean(errors.pitch)}
             />
@@ -204,14 +204,14 @@ export function ProposalFormDialog({
             </Select>
             {companies !== undefined && companies.length === 0 && (
               <p className="text-xs text-fg-subtle">
-                Aucune entreprise enregistree pour l'instant.
+                Aucune entreprise enregistrée pour l'instant.
               </p>
             )}
           </div>
 
           <div className="grid grid-cols-[1fr_auto] gap-3">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="proposal-amount">Montant estime</Label>
+              <Label htmlFor="proposal-amount">Montant estimé</Label>
               <Input
                 id="proposal-amount"
                 inputMode="numeric"

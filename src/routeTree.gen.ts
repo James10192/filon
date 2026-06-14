@@ -21,6 +21,7 @@ import { Route as AppParametresRouteImport } from './routes/app/parametres'
 import { Route as AppOpportunitesRouteImport } from './routes/app/opportunites'
 import { Route as AppEntreprisesRouteImport } from './routes/app/entreprises'
 import { Route as AppDocumentsRouteImport } from './routes/app/documents'
+import { Route as AppPropositionsIdRouteImport } from './routes/app/propositions.$id'
 import { Route as AppOpportunitesIdRouteImport } from './routes/app/opportunites.$id'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth.$'
 
@@ -84,6 +85,11 @@ const AppDocumentsRoute = AppDocumentsRouteImport.update({
   path: '/documents',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AppPropositionsIdRoute = AppPropositionsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AppPropositionsRoute,
+} as any)
 const AppOpportunitesIdRoute = AppOpportunitesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -105,11 +111,12 @@ export interface FileRoutesByFullPath {
   '/app/opportunites': typeof AppOpportunitesRouteWithChildren
   '/app/parametres': typeof AppParametresRoute
   '/app/pipeline': typeof AppPipelineRoute
-  '/app/propositions': typeof AppPropositionsRoute
+  '/app/propositions': typeof AppPropositionsRouteWithChildren
   '/app/relances': typeof AppRelancesRoute
   '/app/': typeof AppIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/app/opportunites/$id': typeof AppOpportunitesIdRoute
+  '/app/propositions/$id': typeof AppPropositionsIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -120,11 +127,12 @@ export interface FileRoutesByTo {
   '/app/opportunites': typeof AppOpportunitesRouteWithChildren
   '/app/parametres': typeof AppParametresRoute
   '/app/pipeline': typeof AppPipelineRoute
-  '/app/propositions': typeof AppPropositionsRoute
+  '/app/propositions': typeof AppPropositionsRouteWithChildren
   '/app/relances': typeof AppRelancesRoute
   '/app': typeof AppIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/app/opportunites/$id': typeof AppOpportunitesIdRoute
+  '/app/propositions/$id': typeof AppPropositionsIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -137,11 +145,12 @@ export interface FileRoutesById {
   '/app/opportunites': typeof AppOpportunitesRouteWithChildren
   '/app/parametres': typeof AppParametresRoute
   '/app/pipeline': typeof AppPipelineRoute
-  '/app/propositions': typeof AppPropositionsRoute
+  '/app/propositions': typeof AppPropositionsRouteWithChildren
   '/app/relances': typeof AppRelancesRoute
   '/app/': typeof AppIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/app/opportunites/$id': typeof AppOpportunitesIdRoute
+  '/app/propositions/$id': typeof AppPropositionsIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -160,6 +169,7 @@ export interface FileRouteTypes {
     | '/app/'
     | '/api/auth/$'
     | '/app/opportunites/$id'
+    | '/app/propositions/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -175,6 +185,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/api/auth/$'
     | '/app/opportunites/$id'
+    | '/app/propositions/$id'
   id:
     | '__root__'
     | '/'
@@ -191,6 +202,7 @@ export interface FileRouteTypes {
     | '/app/'
     | '/api/auth/$'
     | '/app/opportunites/$id'
+    | '/app/propositions/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -287,6 +299,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppDocumentsRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/app/propositions/$id': {
+      id: '/app/propositions/$id'
+      path: '/$id'
+      fullPath: '/app/propositions/$id'
+      preLoaderRoute: typeof AppPropositionsIdRouteImport
+      parentRoute: typeof AppPropositionsRoute
+    }
     '/app/opportunites/$id': {
       id: '/app/opportunites/$id'
       path: '/$id'
@@ -316,13 +335,25 @@ const AppOpportunitesRouteWithChildren = AppOpportunitesRoute._addFileChildren(
   AppOpportunitesRouteChildren,
 )
 
+interface AppPropositionsRouteChildren {
+  AppPropositionsIdRoute: typeof AppPropositionsIdRoute
+}
+
+const AppPropositionsRouteChildren: AppPropositionsRouteChildren = {
+  AppPropositionsIdRoute: AppPropositionsIdRoute,
+}
+
+const AppPropositionsRouteWithChildren = AppPropositionsRoute._addFileChildren(
+  AppPropositionsRouteChildren,
+)
+
 interface AppRouteRouteChildren {
   AppDocumentsRoute: typeof AppDocumentsRoute
   AppEntreprisesRoute: typeof AppEntreprisesRoute
   AppOpportunitesRoute: typeof AppOpportunitesRouteWithChildren
   AppParametresRoute: typeof AppParametresRoute
   AppPipelineRoute: typeof AppPipelineRoute
-  AppPropositionsRoute: typeof AppPropositionsRoute
+  AppPropositionsRoute: typeof AppPropositionsRouteWithChildren
   AppRelancesRoute: typeof AppRelancesRoute
   AppIndexRoute: typeof AppIndexRoute
 }
@@ -333,7 +364,7 @@ const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppOpportunitesRoute: AppOpportunitesRouteWithChildren,
   AppParametresRoute: AppParametresRoute,
   AppPipelineRoute: AppPipelineRoute,
-  AppPropositionsRoute: AppPropositionsRoute,
+  AppPropositionsRoute: AppPropositionsRouteWithChildren,
   AppRelancesRoute: AppRelancesRoute,
   AppIndexRoute: AppIndexRoute,
 }
