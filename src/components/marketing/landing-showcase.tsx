@@ -31,7 +31,7 @@ export function LandingShowcase() {
       className="scroll-mt-20 border-t border-border bg-surface"
     >
       <div className="mx-auto grid w-full max-w-screen-xl gap-10 px-4 py-20 md:px-6 md:py-28 lg:grid-cols-[0.85fr_1.15fr] lg:items-center lg:gap-16 lg:px-8">
-        <div className="flex flex-col">
+        <div className="flex min-w-0 flex-col">
           <p data-reveal className="eyebrow">
             Une donnée, quatre angles
           </p>
@@ -97,7 +97,7 @@ export function LandingShowcase() {
           id="showcase-panel"
           role="tabpanel"
           aria-labelledby={`showcase-tab-${active}`}
-          className="relative min-h-[20rem] sm:min-h-[22rem]"
+          className="relative min-h-[20rem] min-w-0 sm:min-h-[22rem]"
         >
           {VIEWS.map((view, i) => {
             const Preview = view.preview
