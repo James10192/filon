@@ -466,48 +466,95 @@
     background: var(--color-border-strong);
   }
 
-  /* SIGNATURE : faisceau "spotlight" (style Aceternity), dosé et unique, sur le
-     hero. Cône de lumière depuis le haut, monochrome blanc -> transparent +
-     soupçon d'accent, très faible opacité. Entrée CSS-only (opacité + léger
-     skew/translate, <800ms) : visible dès le SSR sans JS. aria-hidden côté DOM.
-     Sous prefers-reduced-motion : rendu statique, pas d'animation. */
-  .hero-spotlight {
+  /* Titre hero en dégradé subtil (encre -> indigo), style zed. Le fond dégradé
+     est clippé sur le texte (état SSR / sans JS / reduced-motion : un seul bloc
+     de texte, le dégradé traverse toute la ligne). Lisible en clair (fg
+     quasi-noir -> indigo) comme en sombre (fg quasi-blanc -> indigo lumineux),
+     les tokens s'adaptent. */
+  .hero-title-gradient {
+    background-image: linear-gradient(
+      135deg,
+      var(--color-fg) 0%,
+      var(--color-fg) 42%,
+      var(--color-accent) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+  }
+  /* Quand SplitText enveloppe chaque mot dans un <div> animé par GSAP (transform
+     + couche de compositing), le `background-clip: text` du parent ne peint plus
+     le contenu des enfants (bug Chromium connu : clip + transform = boîte vide).
+     On REND donc chaque mot en couleur pleine indigo-encrée, toujours lisible et
+     stable, et on désactive le clip hérité. Le dégradé reste visible dans l'état
+     non splitté ; après split, on garde une teinte sobre cohérente. */
+  .hero-title-gradient > * {
+    background-image: none !important;
+    -webkit-background-clip: border-box;
+    background-clip: border-box;
+    color: var(--color-fg);
+    -webkit-text-fill-color: var(--color-fg);
+  }
+  /* Dernier mot teinté indigo pour rappeler le dégradé (signature discrète). */
+  .hero-title-gradient > *:last-child {
+    color: var(--color-accent);
+    -webkit-text-fill-color: var(--color-accent);
+  }
+
+  /* SIGNATURE (style zed) : UN glow doux CENTRÉ derrière le titre du hero.
+     Halo radial accent dosé, centré horizontalement, ancré en haut. Lisible en
+     clair (accent indigo subtil sur fond quasi-blanc) comme en sombre (les
+     tokens --color-accent s'adaptent). Entrée CSS-only (opacité + léger scale,
+     <800ms) : visible dès le SSR sans JS. aria-hidden côté DOM. Sous
+     prefers-reduced-motion : rendu statique, pas d'animation. */
+  .hero-glow {
     position: absolute;
     pointer-events: none;
-    width: 60rem;
-    height: 70rem;
-    left: -10%;
-    top: -28rem;
+    left: 50%;
+    top: -16rem;
+    width: 56rem;
+    max-width: 130vw;
+    height: 44rem;
     opacity: 0;
-    transform: translateY(-3rem) rotate(-14deg);
-    transform-origin: top left;
-    filter: blur(8px);
+    transform: translateX(-50%) scale(0.94);
+    transform-origin: center top;
+    filter: blur(4px);
+    /* L'accent brut serait trop saturé : on l'atténue via l'opacité globale. */
     background:
       radial-gradient(
-        closest-side at 50% 0%,
-        oklch(0.585 0.205 277 / 0.16),
+        closest-side at 50% 38%,
+        var(--color-accent) 0%,
         transparent 70%
-      ),
-      conic-gradient(
-        from 215deg at 0% 0%,
-        transparent 0deg,
-        rgba(255, 255, 255, 0.1) 8deg,
-        rgba(255, 255, 255, 0.04) 18deg,
-        transparent 30deg
       );
-    animation: hero-spotlight-in 760ms var(--ease-out-soft, cubic-bezier(0.22, 1, 0.36, 1)) 80ms forwards;
+    animation: hero-glow-in 760ms var(--ease-out-soft, cubic-bezier(0.22, 1, 0.36, 1)) 60ms forwards;
   }
-  @keyframes hero-spotlight-in {
+  @keyframes hero-glow-in {
     to {
-      opacity: 1;
-      transform: translateY(0) rotate(-10deg);
+      opacity: 0.18;
+      transform: translateX(-50%) scale(1);
     }
   }
+  .dark .hero-glow {
+    filter: blur(6px);
+  }
+  @keyframes hero-glow-in-dark {
+    to {
+      opacity: 0.26;
+      transform: translateX(-50%) scale(1);
+    }
+  }
+  .dark .hero-glow {
+    animation-name: hero-glow-in-dark;
+  }
   @media (prefers-reduced-motion: reduce) {
-    .hero-spotlight {
+    .hero-glow {
       animation: none;
-      opacity: 1;
-      transform: rotate(-10deg);
+      opacity: 0.18;
+      transform: translateX(-50%) scale(1);
+    }
+    .dark .hero-glow {
+      opacity: 0.26;
     }
   }
 }

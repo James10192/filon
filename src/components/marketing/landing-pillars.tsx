@@ -13,7 +13,7 @@ export function LandingPillars() {
       className="scroll-mt-20 border-t border-border bg-bg"
     >
       <div className="mx-auto w-full max-w-screen-xl px-4 py-20 md:px-6 md:py-28 lg:px-8">
-        <div className="max-w-2xl">
+        <div className="mx-auto max-w-2xl text-center">
           <p data-reveal className="eyebrow">
             Trois piliers
           </p>
@@ -25,7 +25,7 @@ export function LandingPillars() {
           </h2>
         </div>
 
-        <div className="mt-14 grid gap-px overflow-hidden rounded-[var(--radius-lg)] border border-border bg-border lg:grid-cols-3">
+        <div className="mt-14 grid gap-4 md:mt-16 lg:grid-cols-3">
           {PILLARS.map((pillar, i) => (
             <Pillar key={pillar.title} index={i + 1} {...pillar} />
           ))}
@@ -51,7 +51,7 @@ function Pillar({
   return (
     <div
       data-reveal
-      className="group flex flex-col gap-5 bg-surface p-8 transition-colors md:p-10"
+      className="group flex flex-col gap-5 rounded-[var(--radius-lg)] border border-border bg-surface p-8 shadow-[var(--shadow-card)] transition-colors hover:border-border-strong md:p-9"
     >
       <div className="flex items-center justify-between">
         <span className="flex size-11 items-center justify-center rounded-[var(--radius)] bg-accent-soft text-accent">
