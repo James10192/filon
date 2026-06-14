@@ -57,13 +57,16 @@ Zéro dépendance externe, buildable tout de suite.
 ### Phase 2 — Abonnements & paliers (Paystack, test mode)
 Pendant la review Paystack (~7 j). Tout testable sans charge réelle, bascule live keys à l'activation.
 
-- [ ] Champ `plan` sur `users` (`free` / `pro` / `pro_ai`) + `planRenewsAt`, `subscriptionRef`
-- [ ] **Helper de gating central** (limites freemium : plafond opportunités, 1 veille, import manuel)
-- [ ] Page **Tarifs** (mensuel/annuel, XOF, comparatif paliers)
-- [ ] Intégration **Paystack test mode** : Initialize Transaction / Plans + Subscriptions
-- [ ] **Webhook signé** Paystack → http action Convex (vérif signature) qui pose le tier
-- [ ] Application des limites dans les queries/mutations + UI d'upsell
-- [ ] Bascule clés live à l'activation du compte
+- [x] Champ `plan` sur `users` (`free` / `pro` / `pro_ai`) + `planInterval`, `planRenewsAt`, `subscriptionRef`, `paystackCustomerCode` (additif, défaut `free`) — livré 2026-06-14
+- [x] **Helper de gating central** (`convex/lib/plan.ts` + miroir client : plafond 25 opportunités actives, 1 veille, import manuel ; cron veille saute les users gratuits) — livré 2026-06-14
+- [x] Page **Tarifs** `/app/tarifs` (mensuel/annuel, XOF, comparatif paliers, palier courant, CTA upgrade) — livré 2026-06-14
+- [x] Intégration **Paystack test mode** : Initialize Transaction + Verify (action serveur, clé secrète en env Convex, XOF ×100, channels carte+mobile money) — livré 2026-06-14
+- [x] **Webhook signé** Paystack → http action Convex `/paystack/webhook` (vérif HMAC-SHA512 du corps brut) qui pose le tier — livré 2026-06-14
+- [x] Application des limites dans les mutations (create opportunité/veille) + UI d'upsell (toast → /app/tarifs) + badge de palier dans les réglages — livré 2026-06-14
+- [ ] Bascule clés live à l'activation du compte (action Marcel : `npx convex env set PAYSTACK_SECRET_KEY …` + enregistrer le webhook ; issue #12)
+
+> Note récurrence : les vraies souscriptions Paystack (Plans + autorisation réutilisable) sont **carte uniquement**. Le mobile money (Wave / OM / MoMo) ne donne pas d'autorisation réutilisable : il est traité comme un **paiement ponctuel** couvrant la période choisie, avec relance de ré-abonnement à l'échéance. La copie de la page Tarifs le dit honnêtement.
+> Webhook à enregistrer (dashboard Paystack) : `https://decisive-mongoose-364.convex.site/paystack/webhook`.
 
 ### Phase 3 — Super premium IA
 Industrialise le savoir-faire manuel (kits de candidature). Coût variable → métrage.
