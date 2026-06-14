@@ -36,7 +36,12 @@ export default defineSchema({
   })
     .index('by_user', ['userId'])
     .index('by_user_created', ['userId', 'createdAt'])
-    .index('by_user_name', ['userId', 'name']),
+    .index('by_user_name', ['userId', 'name'])
+    // Recherche plein texte de la palette de commandes (scopee par user).
+    .searchIndex('search_name', {
+      searchField: 'name',
+      filterFields: ['userId'],
+    }),
 
   // Contacts (interlocuteurs), éventuellement rattachés à une entreprise.
   contacts: defineTable({
@@ -118,7 +123,12 @@ export default defineSchema({
     // Déduplication des imports : (userId, sourceUrl).
     .index('by_user_sourceUrl', ['userId', 'sourceUrl'])
     .index('by_company', ['companyId'])
-    .index('by_contact', ['contactId']),
+    .index('by_contact', ['contactId'])
+    // Recherche plein texte de la palette de commandes (scopee par user).
+    .searchIndex('search_title', {
+      searchField: 'title',
+      filterFields: ['userId'],
+    }),
 
   // Timeline d'activités rattachée à une opportunité.
   activities: defineTable({
@@ -179,7 +189,12 @@ export default defineSchema({
     .index('by_user', ['userId'])
     .index('by_user_status', ['userId', 'status'])
     .index('by_user_created', ['userId', 'createdAt'])
-    .index('by_company', ['companyId']),
+    .index('by_company', ['companyId'])
+    // Recherche plein texte de la palette de commandes (scopee par user).
+    .searchIndex('search_title', {
+      searchField: 'title',
+      filterFields: ['userId'],
+    }),
 
   // Bibliothèque de documents (CV, lettres, etc.) via Convex storage.
   documents: defineTable({
