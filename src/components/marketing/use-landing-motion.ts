@@ -153,13 +153,23 @@ export function useLandingMotion(scopeRef: React.RefObject<HTMLElement | null>) 
         // batch, dont l'onEnter ne se déclenchait pas après l'init asynchrone de
         // ScrollSmoother).
         const reveals = gsap.utils.toArray<HTMLElement>('[data-reveal]')
+        const vh = window.innerHeight
         reveals.forEach((el) => {
+          const inView = el.getBoundingClientRect().top < vh * 0.9
+          // Au-dessus de la ligne de flottaison : révélation au load (comme le
+          // hero), SANS gating ScrollTrigger — dont l'onEnter initial n'est pas
+          // fiable sous ScrollSmoother. En dessous : révélation au scroll.
           gsap.from(el, {
             y: 28,
             autoAlpha: 0,
             duration: 0.6,
             ease: 'power2.out',
-            scrollTrigger: { trigger: el, start: 'top 85%', once: true },
+            delay: inView ? 0.1 : 0,
+            ...(inView
+              ? {}
+              : {
+                  scrollTrigger: { trigger: el, start: 'top 85%', once: true },
+                }),
           })
         })
 
