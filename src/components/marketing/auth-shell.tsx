@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
 import { KanbanSquare } from 'lucide-react'
+import { m } from '~/lib/paraglide/messages'
 
 /**
  * Coquille partagée des pages /connexion et /inscription.
@@ -24,7 +25,7 @@ export function AuthShell({
         <Link
           to="/"
           className="flex items-center gap-2.5 text-fg"
-          aria-label="Filon, accueil"
+          aria-label={m.footer_home_aria()}
         >
           <span className="flex size-8 items-center justify-center rounded-[var(--radius-sm)] bg-accent text-accent-fg">
             <KanbanSquare className="size-4.5" />
@@ -55,23 +56,19 @@ export function AuthShell({
           to="/"
           className="text-sm font-medium text-fg-subtle transition-colors hover:text-fg"
         >
-          ← Retour au site
+          {m.auth_back_to_site()}
         </Link>
 
         <div className="max-w-md">
           <p className="text-xl font-semibold leading-snug tracking-[-0.01em] text-fg">
-            Ne laissez plus filer une seule opportunité.
+            {m.auth_aside_title()}
           </p>
           <p className="mt-4 text-sm leading-relaxed text-fg-muted">
-            Candidatures, propositions spontanées, prospection freelance et
-            missions en cours : tout vit dans un seul pipeline, avec les
-            relances qu'il faut au bon moment.
+            {m.auth_aside_body()}
           </p>
         </div>
 
-        <p className="text-xs text-fg-subtle">
-          Sans carte bancaire · Vos données restent privées
-        </p>
+        <p className="text-xs text-fg-subtle">{m.auth_reassurance()}</p>
       </aside>
     </div>
   )

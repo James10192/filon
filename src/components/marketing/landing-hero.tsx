@@ -3,6 +3,7 @@ import { ArrowRight, ShieldCheck } from 'lucide-react'
 import { useSession } from '~/lib/auth/auth-client'
 import { Button } from '~/components/ui/button'
 import { PipelinePreview } from '~/components/marketing/pipeline-preview'
+import { m } from '~/lib/paraglide/messages'
 
 /**
  * Hero de la landing, direction « zed-style » : tout est CENTRÉ (eyebrow, titre,
@@ -31,23 +32,21 @@ export function LandingHero() {
             className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/60 px-3 py-1 text-xs font-medium text-fg-muted backdrop-blur-sm"
           >
             <span className="size-1.5 rounded-full bg-accent shadow-[0_0_0_4px_var(--color-accent-soft)]" />
-            Pipeline · Veille · Assistance IA
+            {m.hero_eyebrow()}
           </span>
 
           <h1
             data-hero-title
             className="hero-title-gradient mt-6 text-balance text-[clamp(2.5rem,7vw,5rem)] font-bold leading-[1.02] tracking-[-0.035em]"
           >
-            Le filon qui transforme votre prospection en pipeline.
+            {m.hero_title()}
           </h1>
 
           <p
             data-hero-rise
             className="mt-6 max-w-xl text-pretty text-base leading-relaxed text-fg-muted md:text-lg"
           >
-            Candidatures, propositions spontanées, prospection freelance et
-            missions vivent dans un seul tableau. Vous savez toujours qui
-            relancer, quand, et où en est chaque piste.
+            {m.hero_subtitle()}
           </p>
 
           <div
@@ -57,14 +56,14 @@ export function LandingHero() {
             {authed ? (
               <Button size="lg" className="w-full sm:w-auto" asChild>
                 <Link to="/app">
-                  Aller à mon espace
+                  {m.hero_cta_app()}
                   <ArrowRight className="size-4" />
                 </Link>
               </Button>
             ) : (
               <Button size="lg" className="w-full sm:w-auto" asChild>
                 <Link to="/inscription">
-                  Commencer gratuitement
+                  {m.cta_start_free()}
                   <ArrowRight className="size-4" />
                 </Link>
               </Button>
@@ -75,7 +74,7 @@ export function LandingHero() {
               className="w-full sm:w-auto"
               asChild
             >
-              <a href="#produit">Voir le produit</a>
+              <a href="#produit">{m.hero_cta_product()}</a>
             </Button>
           </div>
 
@@ -84,7 +83,7 @@ export function LandingHero() {
             className="mt-5 flex items-center gap-2 text-xs text-fg-subtle"
           >
             <ShieldCheck className="size-3.5" />
-            Sans carte bancaire · Vos données restent privées
+            {m.hero_reassurance()}
           </p>
         </div>
 

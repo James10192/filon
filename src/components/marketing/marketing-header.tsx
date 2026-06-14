@@ -3,6 +3,8 @@ import { Link } from '@tanstack/react-router'
 import { KanbanSquare, Menu, LayoutDashboard, Settings, LogOut } from 'lucide-react'
 import { authClient, useSession } from '~/lib/auth/auth-client'
 import { ThemeToggle } from '~/components/app/theme'
+import { LocaleSwitcher } from '~/components/i18n/locale-switcher'
+import { m } from '~/lib/paraglide/messages'
 import { Button } from '~/components/ui/button'
 import { Avatar, AvatarFallback } from '~/components/ui/avatar'
 import {
@@ -21,11 +23,13 @@ import {
   SheetTrigger,
 } from '~/components/ui/sheet'
 
-const NAV = [
-  { href: '#produit', label: 'Produit' },
-  { href: '#vues', label: 'Vues' },
-  { href: '#tarifs', label: 'Tarifs' },
-] as const
+function useNav() {
+  return [
+    { href: '#produit', label: m.nav_product() },
+    { href: '#vues', label: m.nav_views() },
+    { href: '#tarifs', label: m.nav_pricing() },
+  ]
+}
 
 /**
  * En-tête public, sticky, raffiné (zed-style). Reste HORS du conteneur
@@ -34,6 +38,7 @@ const NAV = [
  */
 export function MarketingHeader() {
   const [open, setOpen] = useState(false)
+  const NAV = useNav()
   const { data: session, isPending } = useSession()
   // Tant que la session n'est pas résolue, on montre l'état déconnecté
   // (évite tout flash de menu profil au SSR).
@@ -68,22 +73,24 @@ export function MarketingHeader() {
         </nav>
 
         <div className="ml-auto hidden items-center gap-2 md:flex">
+          <LocaleSwitcher />
           <ThemeToggle />
           {authed ? (
             <ProfileMenu session={session!} />
           ) : (
             <>
               <Button variant="ghost" size="sm" asChild>
-                <Link to="/connexion">Se connecter</Link>
+                <Link to="/connexion">{m.header_login()}</Link>
               </Button>
               <Button size="sm" asChild>
-                <Link to="/inscription">Commencer gratuitement</Link>
+                <Link to="/inscription">{m.cta_start_free()}</Link>
               </Button>
             </>
           )}
         </div>
 
         <div className="ml-auto flex items-center gap-1 md:hidden">
+          <LocaleSwitcher />
           <ThemeToggle />
           <MobileMenu open={open} setOpen={setOpen} authed={authed} />
         </div>
@@ -106,6 +113,7 @@ function MobileMenu({
   setOpen: (v: boolean) => void
   authed: boolean
 }) {
+  const NAV = useNav()
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
@@ -113,7 +121,7 @@ function MobileMenu({
           variant="ghost"
           size="icon"
           className="md:hidden"
-          aria-label="Ouvrir le menu"
+          aria-label={m.header_open_menu()}
         >
           <Menu className="size-5" />
         </Button>

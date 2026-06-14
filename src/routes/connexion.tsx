@@ -9,6 +9,7 @@ import { Label } from '~/components/ui/label'
 import { toast } from '~/components/ui/sonner'
 import { AuthShell } from '~/components/marketing/auth-shell'
 import { cn } from '~/lib/utils'
+import { m } from '~/lib/paraglide/messages'
 
 export const Route = createFileRoute('/connexion')({
   component: ConnexionPage,
@@ -77,36 +78,36 @@ function ConnexionPage() {
 
     if (error) {
       setSubmitting(false)
-      const message = 'E-mail ou mot de passe incorrect.'
+      const message = m.login_error_invalid()
       setFormError(message)
       toast.error(message)
       return
     }
 
-    toast.success('Connexion réussie.')
+    toast.success(m.login_success())
     // Rechargement complet pour propager le JWT à Convex.
     window.location.href = '/app'
   }
 
   return (
     <AuthShell
-      title="Connexion à Filon"
-      subtitle="Reprenez vos opportunités là où vous les avez laissées."
+      title={m.login_title()}
+      subtitle={m.login_subtitle()}
       footer={
         <>
-          Pas encore de compte ?{' '}
+          {m.login_footer_text()}{' '}
           <Link
             to="/inscription"
             className="font-medium text-accent underline-offset-4 hover:underline"
           >
-            Inscrivez-vous
+            {m.login_footer_link()}
           </Link>
         </>
       }
     >
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="email">Adresse e-mail</Label>
+          <Label htmlFor="email">{m.login_label_email()}</Label>
           <Input
             id="email"
             name="email"
@@ -126,7 +127,7 @@ function ConnexionPage() {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="password">Mot de passe</Label>
+          <Label htmlFor="password">{m.login_label_password()}</Label>
           <Input
             id="password"
             name="password"
@@ -158,7 +159,7 @@ function ConnexionPage() {
 
         <Button type="submit" className="mt-2 w-full" disabled={submitting}>
           {submitting && <Loader2 className="size-4 animate-spin" />}
-          {submitting ? 'Connexion…' : 'Se connecter'}
+          {submitting ? m.login_submitting() : m.login_submit()}
         </Button>
       </form>
     </AuthShell>

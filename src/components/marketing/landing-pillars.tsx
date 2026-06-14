@@ -1,5 +1,6 @@
 import { KanbanSquare, Radar, Sparkles } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import { m } from '~/lib/paraglide/messages'
 
 /**
  * Les 3 piliers produit. Cadrage réel (ce que ça fait, pas du marketing creux),
@@ -7,6 +8,38 @@ import type { LucideIcon } from 'lucide-react'
  * ([data-reveal] + ScrollTrigger.batch).
  */
 export function LandingPillars() {
+  const pillars = [
+    {
+      icon: KanbanSquare,
+      title: m.pillar_pipeline_title(),
+      description: m.pillar_pipeline_desc(),
+      points: [
+        m.pillar_pipeline_point_1(),
+        m.pillar_pipeline_point_2(),
+        m.pillar_pipeline_point_3(),
+      ],
+    },
+    {
+      icon: Radar,
+      title: m.pillar_watch_title(),
+      description: m.pillar_watch_desc(),
+      points: [
+        m.pillar_watch_point_1(),
+        m.pillar_watch_point_2(),
+        m.pillar_watch_point_3(),
+      ],
+    },
+    {
+      icon: Sparkles,
+      title: m.pillar_ai_title(),
+      description: m.pillar_ai_desc(),
+      points: [
+        m.pillar_ai_point_1(),
+        m.pillar_ai_point_2(),
+        m.pillar_ai_point_3(),
+      ],
+    },
+  ]
   return (
     <section
       id="produit"
@@ -15,18 +48,18 @@ export function LandingPillars() {
       <div className="mx-auto w-full max-w-screen-xl px-4 py-20 md:px-6 md:py-28 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
           <p data-reveal className="eyebrow">
-            Trois piliers
+            {m.pillars_eyebrow()}
           </p>
           <h2
             data-reveal
             className="mt-3 text-balance text-3xl font-semibold leading-[1.1] tracking-[-0.025em] text-fg md:text-[2.5rem]"
           >
-            Tout ce qu'il faut pour ne plus rien laisser filer.
+            {m.pillars_title()}
           </h2>
         </div>
 
         <div className="mt-14 grid gap-4 md:mt-16 lg:grid-cols-3">
-          {PILLARS.map((pillar, i) => (
+          {pillars.map((pillar, i) => (
             <Pillar key={pillar.title} index={i + 1} {...pillar} />
           ))}
         </div>

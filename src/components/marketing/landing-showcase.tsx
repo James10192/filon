@@ -7,6 +7,7 @@ import {
   TablePreview,
   CalendarPreview,
 } from '~/components/marketing/showcase-previews'
+import { m } from '~/lib/paraglide/messages'
 
 /**
  * Vitrine produit : sélecteur de vues interactif (PAS de pin/sticky ScrollTrigger,
@@ -23,6 +24,37 @@ import {
  * zone morte, aucun recouvrement, comportement identique mobile/desktop.
  */
 export function LandingShowcase() {
+  const VIEWS: {
+    icon: LucideIcon
+    label: string
+    hint: string
+    preview: () => React.JSX.Element
+  }[] = [
+    {
+      icon: KanbanSquare,
+      label: m.showcase_view_kanban_label(),
+      hint: m.showcase_view_kanban_hint(),
+      preview: KanbanPreview,
+    },
+    {
+      icon: List,
+      label: m.showcase_view_list_label(),
+      hint: m.showcase_view_list_hint(),
+      preview: ListPreview,
+    },
+    {
+      icon: Table2,
+      label: m.showcase_view_table_label(),
+      hint: m.showcase_view_table_hint(),
+      preview: TablePreview,
+    },
+    {
+      icon: CalendarDays,
+      label: m.showcase_view_calendar_label(),
+      hint: m.showcase_view_calendar_hint(),
+      preview: CalendarPreview,
+    },
+  ]
   const { active, select } = useShowcaseTabs(VIEWS.length)
 
   return (
@@ -33,27 +65,26 @@ export function LandingShowcase() {
       <div className="mx-auto grid w-full max-w-screen-xl gap-10 px-4 py-20 md:px-6 md:py-28 lg:grid-cols-[0.85fr_1.15fr] lg:items-center lg:gap-16 lg:px-8">
         <div className="flex min-w-0 flex-col">
           <p data-reveal className="eyebrow">
-            Une donnée, quatre angles
+            {m.showcase_eyebrow()}
           </p>
           <h2
             data-reveal
             className="mt-3 text-balance text-3xl font-semibold leading-[1.1] tracking-[-0.025em] text-fg md:text-[2.5rem]"
           >
-            Le même pipeline, vu comme vous travaillez.
+            {m.showcase_title()}
           </h2>
           <p
             data-reveal
             className="mt-4 max-w-md text-base leading-relaxed text-fg-muted"
           >
-            Glissez vos pistes dans le tableau, scannez-les en liste, comparez
-            les chiffres en tableau, ou planifiez vos relances au calendrier.
+            {m.showcase_subtitle()}
           </p>
 
           {/* Onglets : liste verticale sur desktop, scroll horizontal sur mobile. */}
           <div
             data-reveal
             role="tablist"
-            aria-label="Choisir une vue du pipeline"
+            aria-label={m.showcase_tablist_label()}
             className="mt-10 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] lg:flex-col lg:overflow-visible [&::-webkit-scrollbar]:hidden"
           >
             {VIEWS.map((view, i) => {
@@ -121,35 +152,3 @@ export function LandingShowcase() {
     </section>
   )
 }
-
-const VIEWS: {
-  icon: LucideIcon
-  label: string
-  hint: string
-  preview: () => React.JSX.Element
-}[] = [
-  {
-    icon: KanbanSquare,
-    label: 'Tableau kanban',
-    hint: 'Glisser-déposer par stade',
-    preview: KanbanPreview,
-  },
-  {
-    icon: List,
-    label: 'Liste',
-    hint: 'Scanner et trier rapidement',
-    preview: ListPreview,
-  },
-  {
-    icon: Table2,
-    label: 'Tableau',
-    hint: 'Comparer les chiffres',
-    preview: TablePreview,
-  },
-  {
-    icon: CalendarDays,
-    label: 'Calendrier',
-    hint: 'Planifier les relances',
-    preview: CalendarPreview,
-  },
-]

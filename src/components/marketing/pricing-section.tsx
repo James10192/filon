@@ -5,6 +5,7 @@ import { IntervalToggle } from '~/components/billing/interval-toggle'
 import { PlanCardShell } from '~/components/billing/plan-card'
 import { PLAN_CARDS } from '~/components/billing/plan-catalogue'
 import type { Interval } from '~/lib/billing/plan'
+import { m } from '~/lib/paraglide/messages'
 
 /**
  * Section Tarifs de la landing publique. Réutilise le catalogue et la coquille
@@ -72,13 +73,12 @@ export function PricingSection() {
     >
       <div className="mx-auto w-full max-w-screen-xl px-4 py-20 md:px-6 md:py-28 lg:px-8">
         <div className="max-w-2xl">
-          <p className="eyebrow">Tarifs</p>
+          <p className="eyebrow">{m.pricing_eyebrow()}</p>
           <h2 className="mt-3 text-balance text-3xl font-semibold leading-[1.1] tracking-[-0.025em] text-fg md:text-[2.5rem]">
-            Un palier pour chaque étape de votre prospection.
+            {m.pricing_title()}
           </h2>
           <p className="mt-4 text-base text-fg-muted">
-            Commencez gratuitement. Passez à un palier supérieur quand vous
-            voulez, sans engagement.
+            {m.pricing_subtitle()}
           </p>
         </div>
 
@@ -102,9 +102,7 @@ export function PricingSection() {
         </div>
 
         <p className="mt-8 max-w-3xl text-sm text-fg-subtle">
-          Paiement par carte ou mobile money (Wave, Orange Money, MTN MoMo). La
-          carte active un renouvellement automatique ; le mobile money couvre la
-          période choisie, avec une relance de ré-abonnement à l'échéance.
+          {m.pricing_payment_note()}
         </p>
       </div>
     </section>
@@ -123,14 +121,14 @@ function PublicCta({
     return (
       <Button variant="outline" className="w-full" asChild>
         <a href="mailto:contact@filon.ci?subject=Filon%20%C3%89quipe">
-          Nous contacter
+          {m.pricing_cta_contact()}
         </a>
       </Button>
     )
   }
 
   const label =
-    planKey === 'free' ? 'Commencer gratuitement' : 'Créer mon compte'
+    planKey === 'free' ? m.cta_start_free() : m.cta_create_account()
 
   return (
     <Button

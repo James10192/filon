@@ -1,5 +1,6 @@
 import { Briefcase, Send, Radar, Rocket } from 'lucide-react'
 import { cn } from '~/lib/utils'
+import { m } from '~/lib/paraglide/messages'
 
 /**
  * Aperçu visuel statique du pipeline kanban, affiché dans le hero.
@@ -12,20 +13,28 @@ type TypeKey = 'application' | 'pitch' | 'prospect' | 'mission'
 
 const TYPE_META: Record<
   TypeKey,
-  { label: string; icon: typeof Briefcase; varName: string }
+  { label: () => string; icon: typeof Briefcase; varName: string }
 > = {
   application: {
-    label: 'Candidature',
+    label: m.preview_type_application,
     icon: Briefcase,
     varName: '--color-type-application',
   },
-  pitch: { label: 'Proposition', icon: Send, varName: '--color-type-pitch' },
+  pitch: {
+    label: m.preview_type_pitch,
+    icon: Send,
+    varName: '--color-type-pitch',
+  },
   prospect: {
-    label: 'Prospection',
+    label: m.preview_type_prospect,
     icon: Radar,
     varName: '--color-type-prospect',
   },
-  mission: { label: 'Mission', icon: Rocket, varName: '--color-type-mission' },
+  mission: {
+    label: m.preview_type_mission,
+    icon: Rocket,
+    varName: '--color-type-mission',
+  },
 }
 
 type Card = {
@@ -36,7 +45,7 @@ type Card = {
 }
 
 type Column = {
-  label: string
+  label: () => string
   stageVar: string
   softVar: string
   cards: Card[]
@@ -44,7 +53,7 @@ type Column = {
 
 const COLUMNS: Column[] = [
   {
-    label: 'Piste',
+    label: m.preview_stage_lead,
     stageVar: '--color-stage-lead',
     softVar: '--color-stage-lead-soft',
     cards: [
@@ -63,7 +72,7 @@ const COLUMNS: Column[] = [
     ],
   },
   {
-    label: 'Contacté',
+    label: m.preview_stage_contacted,
     stageVar: '--color-stage-contacted',
     softVar: '--color-stage-contacted-soft',
     cards: [
@@ -76,7 +85,7 @@ const COLUMNS: Column[] = [
     ],
   },
   {
-    label: 'Entretien',
+    label: m.preview_stage_interview,
     stageVar: '--color-stage-interview',
     softVar: '--color-stage-interview-soft',
     cards: [
@@ -89,7 +98,7 @@ const COLUMNS: Column[] = [
     ],
   },
   {
-    label: 'Gagné',
+    label: m.preview_stage_won,
     stageVar: '--color-stage-won',
     softVar: '--color-stage-won-soft',
     cards: [
@@ -115,7 +124,7 @@ export function PipelinePreview({ className }: { className?: string }) {
       <div className="flex gap-3 overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {COLUMNS.map((col) => (
           <div
-            key={col.label}
+            key={col.stageVar}
             className="flex w-[180px] shrink-0 flex-col gap-2.5 rounded-[var(--radius-lg)] bg-surface-2 p-3"
           >
             <div className="flex items-center gap-2">
@@ -123,7 +132,9 @@ export function PipelinePreview({ className }: { className?: string }) {
                 className="size-2 rounded-full"
                 style={{ background: `var(${col.stageVar})` }}
               />
-              <span className="text-xs font-semibold text-fg">{col.label}</span>
+              <span className="text-xs font-semibold text-fg">
+                {col.label()}
+              </span>
               <span className="ml-auto text-xs tabular-nums text-fg-subtle">
                 {col.cards.length}
               </span>
@@ -147,7 +158,7 @@ export function PipelinePreview({ className }: { className?: string }) {
                       style={{ color: `var(${meta.varName})` }}
                     >
                       <Icon className="size-3" />
-                      {meta.label}
+                      {meta.label()}
                     </span>
                     <span className="text-[11px] font-semibold tabular-nums text-fg-muted">
                       {card.amount}

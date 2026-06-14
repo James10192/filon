@@ -1,4 +1,5 @@
 import { ArrowRight } from 'lucide-react'
+import { m } from '~/lib/paraglide/messages'
 
 /**
  * Problème → solution. Colonne gauche : l'éparpillement (texte barré, ton
@@ -6,24 +7,36 @@ import { ArrowRight } from 'lucide-react'
  * scroll via [data-reveal].
  */
 export function LandingProblem() {
+  const scattered = [
+    m.problem_before_1(),
+    m.problem_before_2(),
+    m.problem_before_3(),
+    m.problem_before_4(),
+  ]
+  const ordered = [
+    m.problem_after_1(),
+    m.problem_after_2(),
+    m.problem_after_3(),
+    m.problem_after_4(),
+  ]
   return (
     <section className="border-t border-border bg-surface">
       <div className="mx-auto w-full max-w-screen-xl px-4 py-20 md:px-6 md:py-28 lg:px-8">
         <p data-reveal className="eyebrow">
-          Le constat
+          {m.problem_eyebrow()}
         </p>
         <h2
           data-reveal
           className="mt-3 max-w-3xl text-balance text-3xl font-semibold leading-[1.1] tracking-[-0.025em] text-fg md:text-[2.5rem]"
         >
-          Vos opportunités sont éparpillées. Les bonnes finissent par filer.
+          {m.problem_title()}
         </h2>
 
         <div className="mt-14 grid gap-px overflow-hidden rounded-[var(--radius-lg)] border border-border bg-border md:grid-cols-2">
           <div data-reveal className="flex flex-col gap-4 bg-bg p-8 md:p-10">
-            <span className="eyebrow text-fg-subtle">Avant Filon</span>
+            <span className="eyebrow text-fg-subtle">{m.problem_before_label()}</span>
             <ul className="flex flex-col gap-3 text-base text-fg-muted">
-              {SCATTERED.map((item) => (
+              {scattered.map((item) => (
                 <li
                   key={item}
                   className="flex items-start gap-3 line-through decoration-fg-subtle/40"
@@ -34,8 +47,7 @@ export function LandingProblem() {
               ))}
             </ul>
             <p className="mt-1 text-sm text-fg-subtle">
-              Des pistes qui refroidissent, des relances oubliées, des contrats
-              qui partent ailleurs.
+              {m.problem_before_note()}
             </p>
           </div>
 
@@ -43,9 +55,9 @@ export function LandingProblem() {
             data-reveal
             className="relative flex flex-col gap-4 bg-surface p-8 md:p-10"
           >
-            <span className="eyebrow text-accent">Avec Filon</span>
+            <span className="eyebrow text-accent">{m.problem_after_label()}</span>
             <ul className="flex flex-col gap-3 text-base text-fg">
-              {ORDERED.map((item) => (
+              {ordered.map((item) => (
                 <li key={item} className="flex items-start gap-3">
                   <ArrowRight className="mt-1 size-4 shrink-0 text-accent" />
                   {item}
@@ -53,7 +65,7 @@ export function LandingProblem() {
               ))}
             </ul>
             <p className="mt-1 text-sm text-fg-muted">
-              Tout au même endroit. Filon vous dit quoi faire ensuite.
+              {m.problem_after_note()}
             </p>
           </div>
         </div>
@@ -61,17 +73,3 @@ export function LandingProblem() {
     </section>
   )
 }
-
-const SCATTERED = [
-  'Un mail ici, un message LinkedIn là',
-  'Une candidature perdue dans un onglet',
-  'Une relance prévue « dans votre tête »',
-  'Aucune visibilité sur le revenu en jeu',
-] as const
-
-const ORDERED = [
-  'Chaque piste au bon stade du pipeline',
-  'Les relances datées, jamais oubliées',
-  'Contacts et documents rattachés',
-  'Le revenu potentiel suivi en temps réel',
-] as const

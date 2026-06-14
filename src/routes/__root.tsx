@@ -30,6 +30,14 @@ import appCss from '../styles/app.css?url'
  */
 const themeInitScript = `(function(){try{var t=localStorage.getItem('filon-theme');if(t!=='light'&&t!=='dark'){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}var r=document.documentElement;if(t==='dark'){r.classList.add('dark');r.style.colorScheme='dark';}else{r.classList.remove('dark');r.style.colorScheme='light';}}catch(e){}})();`
 
+/**
+ * Script anti-flash i18n : pose l'attribut <html lang> AVANT l'hydratation en
+ * lisant la cle localStorage "filon-locale" (strategy Paraglide). Au SSR, le
+ * document est rendu en baseLocale (fr) ; ce script corrige le lang cote client
+ * si l'utilisateur a choisi "en", avant que Paraglide ne prenne le relais.
+ */
+const localeInitScript = `(function(){try{var l=localStorage.getItem('filon-locale');if(l==='en'||l==='fr'){document.documentElement.lang=l;}}catch(e){}})();`
+
 const SITE = {
   url: 'https://filon.vercel.app',
   name: 'Filon',
@@ -83,6 +91,8 @@ function RootDocument() {
       <head>
         {/* eslint-disable-next-line react/no-danger */}
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        {/* eslint-disable-next-line react/no-danger */}
+        <script dangerouslySetInnerHTML={{ __html: localeInitScript }} />
         <HeadContent />
       </head>
       <body>

@@ -11,6 +11,7 @@ import { LandingProof } from '~/components/marketing/landing-proof'
 import { LandingCreator } from '~/components/marketing/landing-creator'
 import { LandingCta } from '~/components/marketing/landing-cta'
 import { useLandingMotion } from '~/components/marketing/use-landing-motion'
+import { m } from '~/lib/paraglide/messages'
 
 export const Route = createFileRoute('/')({
   component: LandingPage,
@@ -51,7 +52,7 @@ function LandingPage() {
   return (
     <div ref={scopeRef} className="bg-bg text-fg">
       <a href="#contenu" className="skip-link">
-        Aller au contenu
+        {m.auth_skip_link()}
       </a>
       <MarketingHeader />
 

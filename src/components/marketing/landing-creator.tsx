@@ -1,5 +1,6 @@
 import { Globe, ExternalLink, Mail } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import { m } from '~/lib/paraglide/messages'
 
 /**
  * Section « Créateur » : carte centrée présentant l'auteur de Filon. Monogramme
@@ -8,6 +9,23 @@ import type { LucideIcon } from 'lucide-react'
  * nette, tokens sémantiques (clair/sombre), révélation au scroll ([data-reveal]).
  */
 export function LandingCreator() {
+  const LINKS = [
+    {
+      icon: Globe,
+      label: m.creator_link_portfolio(),
+      href: 'https://marcel-djedjeli-portfolio.vercel.app',
+    },
+    {
+      icon: ExternalLink,
+      label: m.creator_link_github(),
+      href: 'https://github.com/James10192',
+    },
+    {
+      icon: Mail,
+      label: m.creator_link_email(),
+      href: 'mailto:Marcel-_12@outlook.fr',
+    },
+  ]
   return (
     <section className="border-t border-border bg-bg">
       <div className="mx-auto w-full max-w-screen-xl px-4 py-20 md:px-6 md:py-28 lg:px-8">
@@ -22,18 +40,16 @@ export function LandingCreator() {
             MD
           </span>
 
-          <p className="eyebrow mt-8 text-accent">Le créateur</p>
+          <p className="eyebrow mt-8 text-accent">{m.creator_eyebrow()}</p>
           <h2 className="mt-3 text-balance text-2xl font-semibold leading-[1.15] tracking-[-0.025em] text-fg md:text-[2rem]">
             N'Guessan Marcel Jacques Patrick DJEDJE-LI
           </h2>
           <p className="mt-3 text-pretty text-sm font-medium text-fg-muted md:text-base">
-            Head of Development @ African Digit Consulting · Full-Stack Developer
+            {m.creator_role()}
           </p>
 
           <p className="mt-6 max-w-md text-pretty text-base leading-relaxed text-fg-muted">
-            Basé à Abidjan, passionné par les solutions tech pour l'Afrique
-            francophone. Filon est né de ce besoin : des outils précis, rapides,
-            qui font une chose et la font bien.
+            {m.creator_bio()}
           </p>
 
           <ul className="mt-7 flex flex-wrap justify-center gap-2">
@@ -86,22 +102,4 @@ const TAGS = [
   'Convex',
   'TypeScript',
   'Laravel',
-] as const
-
-const LINKS = [
-  {
-    icon: Globe,
-    label: 'Portfolio',
-    href: 'https://marcel-djedjeli-portfolio.vercel.app',
-  },
-  {
-    icon: ExternalLink,
-    label: 'GitHub',
-    href: 'https://github.com/James10192',
-  },
-  {
-    icon: Mail,
-    label: 'Email',
-    href: 'mailto:Marcel-_12@outlook.fr',
-  },
 ] as const

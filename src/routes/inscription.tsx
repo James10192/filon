@@ -9,6 +9,7 @@ import { Label } from '~/components/ui/label'
 import { toast } from '~/components/ui/sonner'
 import { AuthShell } from '~/components/marketing/auth-shell'
 import { cn } from '~/lib/utils'
+import { m } from '~/lib/paraglide/messages'
 
 export const Route = createFileRoute('/inscription')({
   component: InscriptionPage,
@@ -87,42 +88,42 @@ function InscriptionPage() {
         code === 'USER_ALREADY_EXISTS' ||
         error.status === 422 ||
         /exist|already/i.test(error.message ?? '')
-          ? 'Un compte existe déjà avec cette adresse e-mail.'
-          : "La création du compte a échoué. Réessayez."
+          ? m.signup_error_exists()
+          : m.signup_error_generic()
       setFormError(message)
       toast.error(message)
       return
     }
 
-    toast.success('Compte créé. Bienvenue sur Filon.')
+    toast.success(m.signup_success())
     // Rechargement complet pour propager le JWT à Convex.
     window.location.href = '/app'
   }
 
   return (
     <AuthShell
-      title="Créer votre compte Filon"
-      subtitle="Quelques secondes pour centraliser toutes vos opportunités."
+      title={m.signup_title()}
+      subtitle={m.signup_subtitle()}
       footer={
         <>
-          Déjà inscrit ?{' '}
+          {m.signup_footer_text()}{' '}
           <Link
             to="/connexion"
             className="font-medium text-accent underline-offset-4 hover:underline"
           >
-            Connectez-vous
+            {m.signup_footer_link()}
           </Link>
         </>
       }
     >
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="name">Nom</Label>
+          <Label htmlFor="name">{m.signup_label_name()}</Label>
           <Input
             id="name"
             name="name"
             type="text"
-            placeholder="Votre nom"
+            placeholder={m.signup_placeholder_name()}
             autoComplete="name"
             autoFocus
             disabled={submitting}
@@ -137,7 +138,7 @@ function InscriptionPage() {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="email">Adresse e-mail</Label>
+          <Label htmlFor="email">{m.login_label_email()}</Label>
           <Input
             id="email"
             name="email"
@@ -156,12 +157,12 @@ function InscriptionPage() {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="password">Mot de passe</Label>
+          <Label htmlFor="password">{m.login_label_password()}</Label>
           <Input
             id="password"
             name="password"
             type="password"
-            placeholder="Au moins 8 caractères"
+            placeholder={m.signup_placeholder_password()}
             autoComplete="new-password"
             disabled={submitting}
             aria-invalid={Boolean(errors.password)}
@@ -188,11 +189,11 @@ function InscriptionPage() {
 
         <Button type="submit" className="mt-2 w-full" disabled={submitting}>
           {submitting && <Loader2 className="size-4 animate-spin" />}
-          {submitting ? 'Création…' : 'Créer mon compte'}
+          {submitting ? m.signup_submitting() : m.signup_submit()}
         </Button>
 
         <p className="text-center text-xs text-fg-subtle">
-          En créant un compte, vous acceptez nos conditions d'utilisation.
+          {m.signup_terms()}
         </p>
       </form>
     </AuthShell>

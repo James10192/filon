@@ -1,4 +1,5 @@
 import { PipelinePreview } from '~/components/marketing/pipeline-preview'
+import { m } from '~/lib/paraglide/messages'
 
 /**
  * Aperçus des quatre vues du pipeline pour la vitrine (Kanban / Liste / Tableau
@@ -8,11 +9,11 @@ import { PipelinePreview } from '~/components/marketing/pipeline-preview'
  */
 
 const ROWS = [
-  { title: 'Développeur React senior', company: 'Atlas Studio', stage: 'Piste', amount: '55 000 €' },
-  { title: 'Refonte site vitrine', company: 'Coop Karité', stage: 'Piste', amount: '8 500 €' },
-  { title: 'API paiement mobile', company: 'PayWa', stage: 'Contacté', amount: '12 000 €' },
-  { title: 'Lead front-end', company: 'Numia', stage: 'Entretien', amount: '62 000 €' },
-  { title: 'Mission dashboard', company: 'Orange CI', stage: 'Gagné', amount: '18 000 €' },
+  { title: 'Développeur React senior', company: 'Atlas Studio', stage: m.preview_stage_lead, amount: '55 000 €' },
+  { title: 'Refonte site vitrine', company: 'Coop Karité', stage: m.preview_stage_lead, amount: '8 500 €' },
+  { title: 'API paiement mobile', company: 'PayWa', stage: m.preview_stage_contacted, amount: '12 000 €' },
+  { title: 'Lead front-end', company: 'Numia', stage: m.preview_stage_interview, amount: '62 000 €' },
+  { title: 'Mission dashboard', company: 'Orange CI', stage: m.preview_stage_won, amount: '18 000 €' },
 ] as const
 
 /** Cadre commun : surface, bordure, ombre, coins arrondis. */
@@ -53,7 +54,7 @@ export function ListPreview() {
               {row.company}
             </span>
             <span className="rounded-[var(--radius-sm)] border border-border px-2 py-0.5 text-[11px] text-fg-muted">
-              {row.stage}
+              {row.stage()}
             </span>
             <span className="assay w-20 text-right text-xs font-semibold text-fg-muted">
               {row.amount}
@@ -72,7 +73,11 @@ export function TablePreview() {
         <table className="w-full min-w-[28rem] text-left">
           <thead>
             <tr className="border-b border-border text-fg-subtle">
-              {['Opportunité', 'Stade', 'Montant'].map((h) => (
+              {[
+                m.preview_col_opportunity(),
+                m.preview_col_stage(),
+                m.preview_col_amount(),
+              ].map((h) => (
                 <th
                   key={h}
                   className="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.06em]"
@@ -91,7 +96,7 @@ export function TablePreview() {
                   </p>
                   <p className="truncate text-xs text-fg-subtle">{row.company}</p>
                 </td>
-                <td className="px-4 py-2.5 text-xs text-fg-muted">{row.stage}</td>
+                <td className="px-4 py-2.5 text-xs text-fg-muted">{row.stage()}</td>
                 <td className="assay px-4 py-2.5 text-xs font-semibold text-fg">
                   {row.amount}
                 </td>
