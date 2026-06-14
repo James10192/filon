@@ -15,6 +15,7 @@ import { Route as AppRouteRouteImport } from './routes/app/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app/index'
 import { Route as AppVeilleRouteImport } from './routes/app/veille'
+import { Route as AppTarifsRouteImport } from './routes/app/tarifs'
 import { Route as AppRelancesRouteImport } from './routes/app/relances'
 import { Route as AppPropositionsRouteImport } from './routes/app/propositions'
 import { Route as AppPipelineRouteImport } from './routes/app/pipeline'
@@ -54,6 +55,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
 const AppVeilleRoute = AppVeilleRouteImport.update({
   id: '/veille',
   path: '/veille',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppTarifsRoute = AppTarifsRouteImport.update({
+  id: '/tarifs',
+  path: '/tarifs',
   getParentRoute: () => AppRouteRoute,
 } as any)
 const AppRelancesRoute = AppRelancesRouteImport.update({
@@ -119,6 +125,7 @@ export interface FileRoutesByFullPath {
   '/app/pipeline': typeof AppPipelineRoute
   '/app/propositions': typeof AppPropositionsRouteWithChildren
   '/app/relances': typeof AppRelancesRoute
+  '/app/tarifs': typeof AppTarifsRoute
   '/app/veille': typeof AppVeilleRoute
   '/app/': typeof AppIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -136,6 +143,7 @@ export interface FileRoutesByTo {
   '/app/pipeline': typeof AppPipelineRoute
   '/app/propositions': typeof AppPropositionsRouteWithChildren
   '/app/relances': typeof AppRelancesRoute
+  '/app/tarifs': typeof AppTarifsRoute
   '/app/veille': typeof AppVeilleRoute
   '/app': typeof AppIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -155,6 +163,7 @@ export interface FileRoutesById {
   '/app/pipeline': typeof AppPipelineRoute
   '/app/propositions': typeof AppPropositionsRouteWithChildren
   '/app/relances': typeof AppRelancesRoute
+  '/app/tarifs': typeof AppTarifsRoute
   '/app/veille': typeof AppVeilleRoute
   '/app/': typeof AppIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -175,6 +184,7 @@ export interface FileRouteTypes {
     | '/app/pipeline'
     | '/app/propositions'
     | '/app/relances'
+    | '/app/tarifs'
     | '/app/veille'
     | '/app/'
     | '/api/auth/$'
@@ -192,6 +202,7 @@ export interface FileRouteTypes {
     | '/app/pipeline'
     | '/app/propositions'
     | '/app/relances'
+    | '/app/tarifs'
     | '/app/veille'
     | '/app'
     | '/api/auth/$'
@@ -210,6 +221,7 @@ export interface FileRouteTypes {
     | '/app/pipeline'
     | '/app/propositions'
     | '/app/relances'
+    | '/app/tarifs'
     | '/app/veille'
     | '/app/'
     | '/api/auth/$'
@@ -267,6 +279,13 @@ declare module '@tanstack/react-router' {
       path: '/veille'
       fullPath: '/app/veille'
       preLoaderRoute: typeof AppVeilleRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/app/tarifs': {
+      id: '/app/tarifs'
+      path: '/tarifs'
+      fullPath: '/app/tarifs'
+      preLoaderRoute: typeof AppTarifsRouteImport
       parentRoute: typeof AppRouteRoute
     }
     '/app/relances': {
@@ -374,6 +393,7 @@ interface AppRouteRouteChildren {
   AppPipelineRoute: typeof AppPipelineRoute
   AppPropositionsRoute: typeof AppPropositionsRouteWithChildren
   AppRelancesRoute: typeof AppRelancesRoute
+  AppTarifsRoute: typeof AppTarifsRoute
   AppVeilleRoute: typeof AppVeilleRoute
   AppIndexRoute: typeof AppIndexRoute
 }
@@ -386,6 +406,7 @@ const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppPipelineRoute: AppPipelineRoute,
   AppPropositionsRoute: AppPropositionsRouteWithChildren,
   AppRelancesRoute: AppRelancesRoute,
+  AppTarifsRoute: AppTarifsRoute,
   AppVeilleRoute: AppVeilleRoute,
   AppIndexRoute: AppIndexRoute,
 }

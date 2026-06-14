@@ -7,6 +7,7 @@ import {
   BellRing,
   FileText,
   Settings,
+  Sparkles,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -102,6 +103,13 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     title: 'Réglages',
     items: [
+      {
+        to: '/app/tarifs',
+        label: 'Tarifs & abonnement',
+        icon: Sparkles,
+        exact: false,
+        keywords: 'tarifs abonnement plan palier pro premium upgrade paystack facturation',
+      },
       {
         to: '/app/parametres',
         label: 'Paramètres',
