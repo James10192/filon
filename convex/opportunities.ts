@@ -177,6 +177,71 @@ export const board = query({
   },
 })
 
+/**
+ * `api.opportunities.calendar` — flux de la vue Calendrier.
+ *
+ * Renvoie, scopé au user, les opportunités portant une échéance (`deadline`)
+ * ou une prochaine action (`nextActionAt`), plus les relances dues (followups
+ * non terminés). Additif et en lecture seule : aucune écriture, aucun nouvel
+ * index requis (on lit `by_user` + `by_user_done`).
+ */
+export const calendar = query({
+  args: {},
+  handler: async (ctx) => {
+    const { userId } = await requireUser(ctx)
+
+    const opportunities = await ctx.db
+      .query('opportunities')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .collect()
+
+    const deadlineItems = opportunities
+      .filter((o) => o.deadline)
+      .map((o) => ({
+        id: o._id,
+        date: o.deadline!,
+        title: o.title,
+        type: o.type,
+        stage: o.stage,
+      }))
+
+    const nextActionItems = opportunities
+      .filter((o) => o.nextActionAt)
+      .map((o) => ({
+        id: o._id,
+        date: o.nextActionAt!,
+        title: o.title,
+        type: o.type,
+        stage: o.stage,
+      }))
+
+    const openFollowups = await ctx.db
+      .query('followups')
+      .withIndex('by_user_done', (q) =>
+        q.eq('userId', userId).eq('done', false),
+      )
+      .collect()
+
+    const oppById = new Map(opportunities.map((o) => [o._id, o]))
+    const followupItems = openFollowups.map((f) => {
+      const opp = f.opportunityId ? oppById.get(f.opportunityId) : undefined
+      return {
+        id: f._id,
+        opportunityId: f.opportunityId ?? null,
+        date: f.dueDate,
+        label: f.label,
+        opportunityTitle: opp?.title ?? null,
+      }
+    })
+
+    return {
+      deadlines: deadlineItems,
+      nextActions: nextActionItems,
+      followups: followupItems,
+    }
+  },
+})
+
 export const get = query({
   args: { id: v.id('opportunities') },
   handler: async (ctx, args) => {
