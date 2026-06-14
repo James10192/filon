@@ -89,9 +89,11 @@ export function LandingShowcase() {
           </div>
         </div>
 
-        {/* Cadre d'aperçu : panneaux empilés en absolu, crossfade par opacité. */}
+        {/* Cadre d'aperçu : panneaux empilés en absolu, crossfade par opacité.
+            PAS de [data-reveal] ici : le panneau actif est piloté par sa propre
+            opacité inline (crossfade). Le gater par GSAP le laissait coincé
+            invisible si le ScrollTrigger ne se déclenchait pas (zone morte). */}
         <div
-          data-reveal
           id="showcase-panel"
           role="tabpanel"
           aria-labelledby={`showcase-tab-${active}`}
