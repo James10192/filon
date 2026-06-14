@@ -52,6 +52,13 @@ export function LandingCreator() {
             {m.creator_bio()}
           </p>
 
+          <p className="mt-5 inline-flex items-center gap-1.5 text-xs font-medium text-fg-subtle">
+            {m.footer_made_in()}
+            <span aria-hidden="true" className="text-sm leading-none">
+              🇨🇮
+            </span>
+          </p>
+
           <ul className="mt-7 flex flex-wrap justify-center gap-2">
             {TAGS.map((tag) => (
               <li
