@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { KanbanSquare, Menu, LayoutDashboard, Settings, LogOut } from 'lucide-react'
 import { authClient, useSession } from '~/lib/auth/auth-client'
+import { ThemeToggle } from '~/components/app/theme'
 import { Button } from '~/components/ui/button'
 import { Avatar, AvatarFallback } from '~/components/ui/avatar'
 import {
@@ -67,6 +68,7 @@ export function MarketingHeader() {
         </nav>
 
         <div className="ml-auto hidden items-center gap-2 md:flex">
+          <ThemeToggle />
           {authed ? (
             <ProfileMenu session={session!} />
           ) : (
@@ -81,7 +83,10 @@ export function MarketingHeader() {
           )}
         </div>
 
-        <MobileMenu open={open} setOpen={setOpen} authed={authed} />
+        <div className="ml-auto flex items-center gap-1 md:hidden">
+          <ThemeToggle />
+          <MobileMenu open={open} setOpen={setOpen} authed={authed} />
+        </div>
       </div>
     </header>
   )
@@ -107,7 +112,7 @@ function MobileMenu({
         <Button
           variant="ghost"
           size="icon"
-          className="ml-auto md:hidden"
+          className="md:hidden"
           aria-label="Ouvrir le menu"
         >
           <Menu className="size-5" />

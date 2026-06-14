@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useRef } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { MarketingHeader } from '~/components/marketing/marketing-header'
 import { MarketingFooter } from '~/components/marketing/marketing-footer'
@@ -26,13 +26,14 @@ export const Route = createFileRoute('/')({
 })
 
 /**
- * Landing publique — direction premium « zed-inspired » : surface marketing
- * sombre et dramatique, monochrome zinc + un seul accent indigo, signature
- * « assay » (JetBrains Mono + tabular-nums) sur les figures.
+ * Landing publique — direction premium « zed-style » : surface light-first,
+ * fond quasi-blanc, encre profonde, un seul accent indigo, hero centré, titre
+ * en dégradé, glow centré derrière le titre, vitrine produit en cartes nettes.
  *
- * La surface sombre est scopée via la classe `.dark` sur le conteneur racine :
- * elle réutilise les tokens dark déjà définis dans app.css (l'app reste
- * light-first en dehors de cette page).
+ * Le thème (clair/sombre) est piloté par le ThemeProvider global (defaut =
+ * préférence système, override persistant en localStorage) : la classe `.dark`
+ * vit sur <html>, la landing s'y adapte via les tokens sémantiques. Aucune
+ * surface forcée ici (la landing ouvre en clair quand le système est clair).
  *
  * Le mouvement (GSAP brut, code-split, client-only) est orchestré par
  * useLandingMotion. Le contenu est entièrement rendu au SSR (statique, visible,
@@ -46,20 +47,8 @@ function LandingPage() {
   const scopeRef = useRef<HTMLDivElement | null>(null)
   useLandingMotion(scopeRef)
 
-  // Surface marketing sombre : le conteneur ScrollSmoother est en position
-  // fixed, le fond blanc du body pourrait transparaître sous le contenu
-  // transformé. On force le body en sombre tant que la landing est montée,
-  // restauré au démontage (l'app reste light-first).
-  useEffect(() => {
-    const prev = document.body.style.backgroundColor
-    document.body.style.backgroundColor = '#09090b'
-    return () => {
-      document.body.style.backgroundColor = prev
-    }
-  }, [])
-
   return (
-    <div ref={scopeRef} className="dark bg-bg text-fg">
+    <div ref={scopeRef} className="bg-bg text-fg">
       <a href="#contenu" className="skip-link">
         Aller au contenu
       </a>

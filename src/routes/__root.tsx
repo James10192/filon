@@ -18,7 +18,17 @@ import {
 import type { QueryClient } from '@tanstack/react-query'
 import type { ConvexQueryClient } from '@convex-dev/react-query'
 import { Toaster } from '~/components/ui/sonner'
+import { ThemeProvider } from '~/components/app/theme'
 import appCss from '../styles/app.css?url'
+
+/**
+ * Script anti-FOUC : applique la classe `.dark` sur <html> AVANT l'hydratation,
+ * en lisant la cle localStorage "filon-theme" (override) puis la preference
+ * systeme (prefers-color-scheme). Defaut = systeme, donc la landing ouvre en
+ * clair quand le systeme est clair (style zed). Inline + synchrone dans le
+ * <head> : aucun flash de theme. Le ThemeProvider reprend la main apres montage.
+ */
+const themeInitScript = `(function(){try{var t=localStorage.getItem('filon-theme');if(t!=='light'&&t!=='dark'){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}var r=document.documentElement;if(t==='dark'){r.classList.add('dark');r.style.colorScheme='dark';}else{r.classList.remove('dark');r.style.colorScheme='light';}}catch(e){}})();`
 
 const SITE = {
   url: 'https://filon.vercel.app',
@@ -71,10 +81,14 @@ function RootDocument() {
   return (
     <html lang="fr">
       <head>
+        {/* eslint-disable-next-line react/no-danger */}
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <HeadContent />
       </head>
       <body>
-        <Outlet />
+        <ThemeProvider>
+          <Outlet />
+        </ThemeProvider>
         <Toaster />
         <Scripts />
       </body>
