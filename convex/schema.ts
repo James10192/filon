@@ -19,9 +19,26 @@ export default defineSchema({
     name: v.optional(v.string()),
     headline: v.optional(v.string()),
     createdAt: v.number(),
+    // --- Abonnement (Phase 2, additif) ---
+    // Tous ces champs sont optionnels : les lignes existantes restent valides.
+    // L'absence de `plan` est traitée comme 'free' par le helper de gating.
+    plan: v.optional(
+      v.union(v.literal('free'), v.literal('pro'), v.literal('pro_ai')),
+    ),
+    planInterval: v.optional(
+      v.union(v.literal('monthly'), v.literal('annual')),
+    ),
+    // Échéance de renouvellement / fin de période payée (epoch ms).
+    planRenewsAt: v.optional(v.number()),
+    // Référence d'abonnement Paystack (subscription_code) ou de transaction.
+    subscriptionRef: v.optional(v.string()),
+    // Code client Paystack (customer_code), pour relier les webhooks au user.
+    paystackCustomerCode: v.optional(v.string()),
   })
     .index('by_authId', ['authId'])
-    .index('by_email', ['email']),
+    .index('by_email', ['email'])
+    // Résolution d'un user depuis un webhook par son code client Paystack.
+    .index('by_paystackCustomer', ['paystackCustomerCode']),
 
   // Entreprises ciblées (employeurs, clients potentiels).
   companies: defineTable({
