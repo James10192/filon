@@ -210,5 +210,16 @@
   "dashboard_subtitle": "Your priorities for the day and the shape of your pipeline.",
   "dashboard_new_opportunity": "New opportunity",
   "dashboard_onboarding_title": "Add your first opportunity",
-  "dashboard_onboarding_view_pipeline": "View pipeline"
+  "dashboard_onboarding_view_pipeline": "View pipeline",
+  "origin_eyebrow": "Our roots",
+  "origin_badge": "Proudly built in Abidjan, Côte d'Ivoire",
+  "origin_title": "Born in Abidjan, built for freelancers everywhere.",
+  "origin_intro": "Filon is built in Côte d'Ivoire, close to the realities of local freelancers and consultants. That grounding is our strength: a tool that speaks your language, understands your payment methods and your market, while staying open to independents everywhere.",
+  "origin_pay_title": "Pay in XOF, your way",
+  "origin_pay_desc": "Wave, Orange Money, MTN MoMo. Settle your subscription with the methods you already use, no friction, no conversion.",
+  "origin_support_title": "Local support, in your timezone",
+  "origin_support_desc": "A team that answers during West African business hours, in clear language, with no lag to slow you down.",
+  "origin_market_title": "West African market expertise",
+  "origin_market_desc": "We know the codes of prospecting and freelancing in the region: missions, spontaneous proposals, client relationships.",
+  "origin_flag_aria": "Flag of Côte d'Ivoire"
 }

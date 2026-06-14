@@ -210,5 +210,16 @@
   "dashboard_subtitle": "Vos priorités du jour et la forme de votre pipeline.",
   "dashboard_new_opportunity": "Nouvelle opportunité",
   "dashboard_onboarding_title": "Ajoutez votre première opportunité",
-  "dashboard_onboarding_view_pipeline": "Voir le pipeline"
+  "dashboard_onboarding_view_pipeline": "Voir le pipeline",
+  "origin_eyebrow": "Nos racines",
+  "origin_badge": "Fièrement conçu à Abidjan, Côte d'Ivoire",
+  "origin_title": "Né à Abidjan, pensé pour les indépendants d'Afrique francophone et d'ailleurs.",
+  "origin_intro": "Filon est construit depuis la Côte d'Ivoire, au plus près des réalités des freelances et consultants d'ici. Cet ancrage est notre force : un outil qui parle votre langue, comprend vos moyens de paiement et votre marché, tout en restant ouvert aux indépendants du monde entier.",
+  "origin_pay_title": "Paiement en XOF, à votre manière",
+  "origin_pay_desc": "Wave, Orange Money, MTN MoMo. Réglez votre abonnement avec les moyens que vous utilisez déjà, sans friction ni conversion.",
+  "origin_support_title": "Support local, dans votre fuseau",
+  "origin_support_desc": "Une équipe qui répond aux heures ouvrées d'Afrique de l'Ouest, dans un français clair, sans décalage qui vous ralentit.",
+  "origin_market_title": "Compréhension du marché ouest-africain",
+  "origin_market_desc": "Nous connaissons les codes de la prospection et du freelancing dans la région : missions, propositions spontanées, relations clients.",
+  "origin_flag_aria": "Drapeau de la Côte d'Ivoire"
 }

@@ -9,6 +9,7 @@ import { LandingShowcase } from '~/components/marketing/landing-showcase'
 import { PricingSection } from '~/components/marketing/pricing-section'
 import { LandingProof } from '~/components/marketing/landing-proof'
 import { LandingCreator } from '~/components/marketing/landing-creator'
+import { LandingOrigin } from '~/components/marketing/landing-origin'
 import { LandingCta } from '~/components/marketing/landing-cta'
 import { useLandingMotion } from '~/components/marketing/use-landing-motion'
 import { m } from '~/lib/paraglide/messages'
@@ -66,6 +67,7 @@ function LandingPage() {
             <PricingSection />
             <LandingProof />
             <LandingCreator />
+            <LandingOrigin />
             <LandingCta />
           </main>
           <MarketingFooter />
