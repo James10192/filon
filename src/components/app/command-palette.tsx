@@ -3,57 +3,40 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useMemo,
-  useRef,
   useState,
 } from 'react'
 import { useNavigate } from '@tanstack/react-router'
+import { FilePlus2, FileDown, Plus } from 'lucide-react'
 import {
-  LayoutDashboard,
-  KanbanSquare,
-  Briefcase,
-  Building2,
-  Send,
-  BellRing,
-  FileText,
-  Settings,
-  Plus,
-  Search,
-  CornerDownLeft,
-  type LucideIcon,
-} from 'lucide-react'
-import { cn } from '~/lib/utils'
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+  CommandShortcut,
+} from '~/components/ui/command'
 import {
   Dialog,
   DialogContent,
-  DialogTitle,
   DialogDescription,
+  DialogTitle,
 } from '~/components/ui/dialog'
 import { useQuickCapture } from './quick-capture'
+import { NAV_ITEMS } from './nav-config'
 
 /**
- * Palette de commandes Cmd+K / Ctrl+K, sans dependance externe (pas de cmdk).
+ * Palette de commandes Cmd+K / Ctrl+K, batie sur le composant officiel shadcn
+ * Command (cmdk) dans un Dialog Radix.
  *
- * - Dialog Radix (ui/dialog) + champ de recherche + liste filtrable.
- * - Navigation 100 % clavier : fleches haut/bas pour se deplacer, Entree pour
- *   declencher, Echap pour fermer (gere par le Dialog).
- * - Actions : naviguer vers chaque page de la nav, + "Nouvelle opportunite"
- *   (ouvre la capture rapide).
+ * - Recherche tolerante (cmdk gere le scoring + accents via les keywords).
+ * - Navigation clavier native (fleches, Entree, Echap).
+ * - Actions rapides : nouvelle opportunite (capture rapide), nouvelle
+ *   proposition, importer une offre. Plus la navigation vers chaque page.
  *
- * Usage :
- *   <CommandPaletteProvider>...</CommandPaletteProvider>  // sous QuickCapture
- *   const { open, toggle } = useCommandPalette()
+ * L'API du contexte (open/close/toggle/isOpen) est preservee a l'identique.
  */
-
-type CommandAction = {
-  id: string
-  label: string
-  hint?: string
-  icon: LucideIcon
-  /** Mots-cles supplementaires pour le filtrage. */
-  keywords?: string
-  run: () => void
-}
 
 type CommandPaletteContextValue = {
   open: () => void
@@ -65,30 +48,6 @@ type CommandPaletteContextValue = {
 const CommandPaletteContext = createContext<CommandPaletteContextValue | null>(
   null,
 )
-
-const NAV_TARGETS: {
-  to: string
-  label: string
-  icon: LucideIcon
-  keywords?: string
-}[] = [
-  { to: '/app', label: 'Tableau de bord', icon: LayoutDashboard, keywords: 'dashboard accueil pilotage' },
-  { to: '/app/pipeline', label: 'Pipeline', icon: KanbanSquare, keywords: 'kanban etapes board' },
-  { to: '/app/opportunites', label: 'Opportunités', icon: Briefcase, keywords: 'pistes candidatures missions' },
-  { to: '/app/entreprises', label: 'Entreprises', icon: Building2, keywords: 'societes companies carnet' },
-  { to: '/app/propositions', label: 'Propositions', icon: Send, keywords: 'pitch demarchage proposals' },
-  { to: '/app/relances', label: 'Relances', icon: BellRing, keywords: 'followups rappels echeances' },
-  { to: '/app/documents', label: 'Documents', icon: FileText, keywords: 'cv lettres portfolio fichiers' },
-  { to: '/app/parametres', label: 'Paramètres', icon: Settings, keywords: 'reglages settings preferences' },
-]
-
-/** Normalise (minuscules, sans accents) pour un filtrage tolerant. */
-function normalize(value: string): string {
-  return value
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-}
 
 export function CommandPaletteProvider({
   children,
@@ -103,212 +62,145 @@ export function CommandPaletteProvider({
   const close = useCallback(() => setIsOpen(false), [])
   const toggle = useCallback(() => setIsOpen((v) => !v), [])
 
+  function go(to: string, search?: Record<string, unknown>) {
+    setIsOpen(false)
+    // search construit dynamiquement : aucun champ undefined transmis.
+    void navigate(search ? { to, search } : { to })
+  }
+
   return (
     <CommandPaletteContext.Provider value={{ open, close, toggle, isOpen }}>
       {children}
-      <PaletteDialog
+      <CommandPaletteDialog
         isOpen={isOpen}
         setIsOpen={setIsOpen}
-        onNavigate={(to) => {
-          setIsOpen(false)
-          void navigate({ to })
-        }}
-        onQuickCapture={() => {
+        onNavigate={(to) => go(to)}
+        onNewOpportunity={() => {
           setIsOpen(false)
           quickCapture.open()
         }}
+        onNewProposal={() => go('/app/propositions', { nouveau: true })}
+        onImportOffer={() => go('/app/veille', { import: true })}
       />
     </CommandPaletteContext.Provider>
   )
 }
 
-function PaletteDialog({
+function CommandPaletteDialog({
   isOpen,
   setIsOpen,
   onNavigate,
-  onQuickCapture,
+  onNewOpportunity,
+  onNewProposal,
+  onImportOffer,
 }: {
   isOpen: boolean
   setIsOpen: (open: boolean) => void
   onNavigate: (to: string) => void
-  onQuickCapture: () => void
+  onNewOpportunity: () => void
+  onNewProposal: () => void
+  onImportOffer: () => void
 }) {
   const [query, setQuery] = useState('')
-  const [activeIndex, setActiveIndex] = useState(0)
-  const listRef = useRef<HTMLDivElement>(null)
 
-  const actions = useMemo<CommandAction[]>(() => {
-    const navActions: CommandAction[] = NAV_TARGETS.map((t) => ({
-      id: `nav:${t.to}`,
-      label: t.label,
-      hint: 'Aller a',
-      icon: t.icon,
-      keywords: t.keywords,
-      run: () => onNavigate(t.to),
-    }))
-    const createAction: CommandAction = {
-      id: 'action:new-opportunity',
-      label: 'Nouvelle opportunite',
-      hint: 'Creer',
-      icon: Plus,
-      keywords: 'ajouter creer capture rapide piste',
-      run: onQuickCapture,
-    }
-    return [createAction, ...navActions]
-  }, [onNavigate, onQuickCapture])
-
-  const filtered = useMemo(() => {
-    const q = normalize(query.trim())
-    if (!q) return actions
-    return actions.filter((a) =>
-      normalize(`${a.label} ${a.keywords ?? ''} ${a.hint ?? ''}`).includes(q),
-    )
-  }, [actions, query])
-
-  // Reinitialise la saisie + selection a chaque ouverture.
+  // Repart d'une saisie vierge a chaque ouverture.
   useEffect(() => {
-    if (isOpen) {
-      setQuery('')
-      setActiveIndex(0)
-    }
+    if (isOpen) setQuery('')
   }, [isOpen])
-
-  // Maintient l'index actif dans les bornes apres filtrage.
-  useEffect(() => {
-    setActiveIndex((i) => Math.min(i, Math.max(0, filtered.length - 1)))
-  }, [filtered.length])
-
-  function handleKeyDown(event: React.KeyboardEvent) {
-    if (event.key === 'ArrowDown') {
-      event.preventDefault()
-      setActiveIndex((i) => (filtered.length ? (i + 1) % filtered.length : 0))
-    } else if (event.key === 'ArrowUp') {
-      event.preventDefault()
-      setActiveIndex((i) =>
-        filtered.length ? (i - 1 + filtered.length) % filtered.length : 0,
-      )
-    } else if (event.key === 'Enter') {
-      event.preventDefault()
-      const action = filtered[activeIndex]
-      if (action) action.run()
-    }
-  }
-
-  // Garde l'item actif visible.
-  useEffect(() => {
-    const el = listRef.current?.querySelector<HTMLElement>(
-      `[data-index="${activeIndex}"]`,
-    )
-    el?.scrollIntoView({ block: 'nearest' })
-  }, [activeIndex])
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="top-[18%] translate-y-0 gap-0 overflow-hidden p-0 sm:max-w-xl">
+      <DialogContent className="top-[18%] translate-y-0 overflow-hidden p-0 sm:max-w-xl">
         <DialogTitle className="sr-only">Palette de commandes</DialogTitle>
         <DialogDescription className="sr-only">
-          Recherchez une page ou une action. Fleches pour naviguer, Entree pour
-          valider.
+          Recherchez une page ou une action. Flèches pour naviguer, Entrée pour
+          valider, Échap pour fermer.
         </DialogDescription>
 
-        <div className="flex items-center gap-2.5 border-b border-border px-4">
-          <Search className="size-4 shrink-0 text-fg-subtle" />
-          <input
-            type="text"
-            autoFocus
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Rechercher une page ou une action..."
-            className="h-12 w-full bg-transparent text-sm text-fg outline-none placeholder:text-fg-subtle"
-            aria-label="Rechercher"
-            role="combobox"
-            aria-expanded="true"
-            aria-controls="command-list"
-            aria-activedescendant={
-              filtered[activeIndex]
-                ? `cmd-${filtered[activeIndex].id}`
-                : undefined
-            }
-          />
-        </div>
-
-        <div
-          ref={listRef}
-          id="command-list"
-          role="listbox"
-          className="max-h-[min(60dvh,360px)] overflow-y-auto p-2"
+        <Command
+          className="[&_[cmdk-group-heading]]:eyebrow [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5"
+          value={query}
+          onValueChange={setQuery}
         >
-          {filtered.length === 0 ? (
-            <p className="px-3 py-8 text-center text-sm text-fg-subtle">
-              Aucun resultat.
-            </p>
-          ) : (
-            filtered.map((action, index) => {
-              const Icon = action.icon
-              const active = index === activeIndex
-              return (
-                <button
-                  key={action.id}
-                  id={`cmd-${action.id}`}
-                  data-index={index}
-                  type="button"
-                  role="option"
-                  aria-selected={active}
-                  onMouseMove={() => setActiveIndex(index)}
-                  onClick={action.run}
-                  className={cn(
-                    'flex w-full items-center gap-3 rounded-[var(--radius-sm)] px-3 py-2 text-left text-sm transition-colors',
-                    active
-                      ? 'bg-accent-soft text-accent'
-                      : 'text-fg hover:bg-surface-2',
-                  )}
-                >
-                  <Icon
-                    className={cn(
-                      'size-4 shrink-0',
-                      active ? 'text-accent' : 'text-fg-subtle',
-                    )}
-                  />
-                  <span className="flex-1 truncate font-medium">
-                    {action.label}
-                  </span>
-                  {action.hint && (
-                    <span className="shrink-0 text-xs text-fg-subtle">
-                      {action.hint}
-                    </span>
-                  )}
-                  {active && (
-                    <CornerDownLeft className="size-3.5 shrink-0 text-accent" />
-                  )}
-                </button>
-              )
-            })
-          )}
-        </div>
+          <CommandInput
+            placeholder="Rechercher une page ou une action…"
+            value={query}
+            onValueChange={setQuery}
+          />
+          <CommandList className="max-h-[min(60dvh,360px)] p-2">
+            <CommandEmpty className="py-8 text-sm text-fg-subtle">
+              Aucun résultat.
+            </CommandEmpty>
 
-        <div className="flex items-center gap-3 border-t border-border px-4 py-2 text-[11px] text-fg-subtle">
-          <span className="flex items-center gap-1">
-            <kbd className="rounded border border-border bg-surface-2 px-1.5 py-0.5 font-sans">
-              ↑↓
-            </kbd>
-            naviguer
-          </span>
-          <span className="flex items-center gap-1">
-            <kbd className="rounded border border-border bg-surface-2 px-1.5 py-0.5 font-sans">
-              ↵
-            </kbd>
-            ouvrir
-          </span>
-          <span className="flex items-center gap-1">
-            <kbd className="rounded border border-border bg-surface-2 px-1.5 py-0.5 font-sans">
-              Echap
-            </kbd>
-            fermer
-          </span>
-        </div>
+            <CommandGroup heading="Actions rapides">
+              <CommandItem
+                value="nouvelle opportunite ajouter creer capture rapide piste"
+                onSelect={onNewOpportunity}
+              >
+                <Plus className="text-accent" />
+                <span className="flex-1">Nouvelle opportunité</span>
+                <CommandShortcut className="assay">N</CommandShortcut>
+              </CommandItem>
+              <CommandItem
+                value="nouvelle proposition pitch demarchage prospection creer"
+                onSelect={onNewProposal}
+              >
+                <FilePlus2 />
+                <span className="flex-1">Nouvelle proposition</span>
+              </CommandItem>
+              <CommandItem
+                value="importer une offre veille educarriere linkedin lien"
+                onSelect={onImportOffer}
+              >
+                <FileDown />
+                <span className="flex-1">Importer une offre</span>
+              </CommandItem>
+            </CommandGroup>
+
+            <CommandSeparator className="my-1" />
+
+            <CommandGroup heading="Aller à">
+              {NAV_ITEMS.map((item) => {
+                const Icon = item.icon
+                return (
+                  <CommandItem
+                    key={item.to}
+                    value={`${item.label} ${item.keywords ?? ''}`}
+                    onSelect={() => onNavigate(item.to)}
+                  >
+                    <Icon />
+                    <span className="flex-1">{item.label}</span>
+                  </CommandItem>
+                )
+              })}
+            </CommandGroup>
+          </CommandList>
+
+          <div className="flex items-center gap-3 border-t border-border px-4 py-2 text-[11px] text-fg-subtle">
+            <PaletteHint label="naviguer">↑↓</PaletteHint>
+            <PaletteHint label="ouvrir">↵</PaletteHint>
+            <PaletteHint label="fermer">Échap</PaletteHint>
+          </div>
+        </Command>
       </DialogContent>
     </Dialog>
+  )
+}
+
+function PaletteHint({
+  children,
+  label,
+}: {
+  children: React.ReactNode
+  label: string
+}) {
+  return (
+    <span className="flex items-center gap-1">
+      <kbd className="rounded border border-border bg-surface-2 px-1.5 py-0.5 font-sans">
+        {children}
+      </kbd>
+      {label}
+    </span>
   )
 }
 
@@ -316,7 +208,7 @@ export function useCommandPalette(): CommandPaletteContextValue {
   const ctx = useContext(CommandPaletteContext)
   if (!ctx) {
     throw new Error(
-      'useCommandPalette doit etre utilise dans un <CommandPaletteProvider>.',
+      'useCommandPalette doit être utilisé dans un <CommandPaletteProvider>.',
     )
   }
   return ctx
