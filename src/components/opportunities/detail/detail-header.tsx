@@ -38,24 +38,28 @@ export function DetailHeader({
 }) {
   return (
     <header className="flex flex-col gap-4 rounded-[var(--radius-lg)] border border-border bg-surface p-5 shadow-[var(--shadow-card)]">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0 space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <TypeChip type={opportunity.type} />
-            <StageChip stage={opportunity.stage} />
-          </div>
-          <h1 className="text-xl font-semibold tracking-[-0.02em] text-fg">
-            {opportunity.title}
-          </h1>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <TypeChip type={opportunity.type} />
+          <StageChip stage={opportunity.stage} />
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <Button variant="outline" size="sm" onClick={onEdit}>
+        <div className="flex shrink-0 items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label="Modifier"
+            title="Modifier"
+            className="size-9 p-0"
+            onClick={onEdit}
+          >
             <Pencil className="size-4" />
-            Modifier
           </Button>
           <DeleteOpportunityDialog onConfirm={onRemove} pending={removing} />
         </div>
       </div>
+      <h1 className="text-xl font-semibold tracking-[-0.02em] text-fg">
+        {opportunity.title}
+      </h1>
 
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-fg-muted">
         {opportunity.compensation && (

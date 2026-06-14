@@ -146,9 +146,14 @@ export function DeleteOpportunityDialog({
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="destructive" size="sm" aria-label="Supprimer">
+        <Button
+          variant="ghost"
+          size="sm"
+          aria-label="Supprimer"
+          title="Supprimer"
+          className="size-9 p-0 text-danger hover:bg-surface-2 hover:text-danger"
+        >
           <Trash2 className="size-4" />
-          Supprimer
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
