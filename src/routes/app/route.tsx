@@ -25,6 +25,7 @@ import {
 } from '~/components/app/command-palette'
 import { AppSidebar } from '~/components/app/app-sidebar'
 import { Topbar } from '~/components/app/topbar'
+import { MobileBottombar } from '~/components/app/mobile-bottombar'
 
 export const Route = createFileRoute('/app')({
   component: AppLayout,
@@ -160,11 +161,12 @@ function ShellLayout({
       <SidebarInset className="h-svh overflow-hidden">
         <Topbar />
         <main className="flex-1 overflow-y-auto">
-          <div className="mx-auto w-full max-w-screen-2xl px-4 py-5 md:px-6 lg:px-8">
+          <div className="mx-auto w-full max-w-screen-2xl px-4 py-5 pb-24 md:px-6 lg:px-8 lg:pb-5">
             <Outlet />
           </div>
         </main>
       </SidebarInset>
+      <MobileBottombar />
     </SidebarProvider>
   )
 }
