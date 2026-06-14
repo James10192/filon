@@ -131,7 +131,7 @@ export function CommandPaletteDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="top-[18%] translate-y-0 overflow-hidden p-0 sm:max-w-xl">
+      <DialogContent className="top-[18%] translate-y-0 overflow-hidden p-0 sm:max-w-xl [&>button]:right-3 [&>button]:top-2">
         <DialogTitle className="sr-only">Palette de commandes</DialogTitle>
         <DialogDescription className="sr-only">
           Recherchez une page, une action ou une fiche. Flèches pour naviguer,
@@ -143,6 +143,7 @@ export function CommandPaletteDialog({
           className="[&_[cmdk-group-heading]]:eyebrow [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5"
         >
           <CommandInput
+            className="pr-8"
             placeholder="Rechercher une page, une action, une fiche…"
             value={query}
             onValueChange={setQuery}
