@@ -34,10 +34,12 @@ function normalizeBoard(source: Board | undefined): Board {
 
 export function KanbanBoard({
   board: serverBoard,
+  companyNames,
   onQuickAdd,
   onOpenCard,
 }: {
   board: Board
+  companyNames: Map<string, string>
   onQuickAdd: (stage: Stage) => void
   onOpenCard?: (id: Id<'opportunities'>) => void
 }) {
@@ -164,6 +166,7 @@ export function KanbanBoard({
             key={stage}
             stage={stage}
             items={local[stage]}
+            companyNames={companyNames}
             draggingId={draggingId}
             isDropTarget={overStage === stage && draggingId !== null}
             dropIndex={overStage === stage ? overIndex : null}

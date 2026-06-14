@@ -13,6 +13,7 @@ import type { Opportunity } from './types'
 export function KanbanColumn({
   stage,
   items,
+  companyNames,
   draggingId,
   isDropTarget,
   dropIndex,
@@ -26,6 +27,7 @@ export function KanbanColumn({
 }: {
   stage: Stage
   items: Opportunity[]
+  companyNames: Map<string, string>
   draggingId: string | null
   isDropTarget: boolean
   dropIndex: number | null
@@ -95,7 +97,7 @@ export function KanbanColumn({
       {/* Corps : zone de dépôt scrollable */}
       <div
         className={cn(
-          'flex min-h-[calc(100dvh-13rem)] flex-1 flex-col gap-2.5 overflow-y-auto p-2.5 transition-colors [scrollbar-width:thin]',
+          'flex min-h-[7rem] flex-col gap-2.5 overflow-y-auto p-2.5 transition-colors [scrollbar-width:thin]',
           'max-h-[calc(100dvh-13rem)]',
           isDropTarget &&
             'bg-accent-soft/60 ring-2 ring-inset ring-[var(--color-accent-ring)]',
@@ -120,7 +122,7 @@ export function KanbanColumn({
         {items.length === 0 ? (
           <div
             className={cn(
-              'flex flex-1 items-center justify-center rounded-[var(--radius)] border border-dashed px-3 py-8 text-center transition-colors',
+              'flex min-h-[5.5rem] flex-1 items-center justify-center rounded-[var(--radius)] border border-dashed px-3 py-8 text-center transition-colors',
               isDropTarget
                 ? 'border-[var(--color-accent)] text-accent'
                 : 'border-border/70 text-fg-subtle',
@@ -143,6 +145,11 @@ export function KanbanColumn({
               >
                 <KanbanCard
                   opportunity={opportunity}
+                  companyName={
+                    opportunity.companyId
+                      ? companyNames.get(opportunity.companyId)
+                      : undefined
+                  }
                   dragging={draggingId === opportunity._id}
                   onDragStart={() =>
                     onCardDragStart(opportunity._id, stage)

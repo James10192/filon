@@ -25,6 +25,7 @@ export const Route = createFileRoute('/app/pipeline')({
 
 function PipelinePage() {
   const board = useQuery(api.opportunities.board, {}) as Board | undefined
+  const companies = useQuery(api.companies.list, {})
   const [quickAddOpen, setQuickAddOpen] = useState(false)
   const [quickAddStage, setQuickAddStage] = useState<Stage>('lead')
   const quickCapture = useQuickCapture()
@@ -53,6 +54,13 @@ function PipelinePage() {
   function openCard(id: Id<'opportunities'>) {
     navigate({ to: '/app/opportunites/$id', params: { id } })
   }
+
+  // Table d'association id -> nom d'entreprise : le board ne joint pas le nom.
+  const companyNames = useMemo(() => {
+    const map = new Map<string, string>()
+    if (companies) for (const c of companies) map.set(c._id, c.name)
+    return map
+  }, [companies])
 
   const potential = formatPotential(totalValue)
 
@@ -91,6 +99,7 @@ function PipelinePage() {
       ) : (
         <KanbanBoard
           board={board}
+          companyNames={companyNames}
           onQuickAdd={openQuickAdd}
           onOpenCard={openCard}
         />

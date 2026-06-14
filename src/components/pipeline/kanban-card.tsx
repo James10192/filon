@@ -33,12 +33,14 @@ const TONE_TEXT: Record<'overdue' | 'today' | 'upcoming', string> = {
 
 export function KanbanCard({
   opportunity,
+  companyName,
   dragging = false,
   onDragStart,
   onDragEnd,
   onOpen,
 }: {
   opportunity: Opportunity
+  companyName?: string
   dragging?: boolean
   onDragStart?: () => void
   onDragEnd?: () => void
@@ -96,6 +98,10 @@ export function KanbanCard({
           {opportunity.title}
         </h3>
       </div>
+
+      {companyName && (
+        <p className="mt-1 truncate text-xs text-fg-muted">{companyName}</p>
+      )}
 
       <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
         <span
