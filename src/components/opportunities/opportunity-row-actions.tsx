@@ -73,7 +73,7 @@ export function OpportunityRowActions({
 
   return (
     <div onClick={(e) => e.stopPropagation()}>
-      <DropdownMenu>
+      <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"

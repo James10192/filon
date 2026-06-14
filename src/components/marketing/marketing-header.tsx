@@ -158,7 +158,7 @@ function ProfileMenu({
   const email = user?.email ?? ''
 
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <button
           type="button"

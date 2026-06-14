@@ -160,7 +160,7 @@ export function ProposalCard({
           </Button>
         )}
         <div className="ml-auto">
-          <DropdownMenu>
+          <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"

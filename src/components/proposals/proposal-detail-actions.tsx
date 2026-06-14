@@ -124,7 +124,7 @@ export function ProposalDetailActions({
         Modifier
       </Button>
 
-      <DropdownMenu>
+      <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"

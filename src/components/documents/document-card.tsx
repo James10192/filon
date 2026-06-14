@@ -101,7 +101,7 @@ export function DocumentCard({
             {createdAt && <span>Ajoute le {createdAt}</span>}
           </div>
         </div>
-        <DropdownMenu>
+        <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
