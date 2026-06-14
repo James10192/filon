@@ -1,7 +1,17 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { KanbanSquare, Menu, X } from 'lucide-react'
+import { KanbanSquare, Menu, X, LayoutDashboard, Settings, LogOut } from 'lucide-react'
+import { authClient, useSession } from '~/lib/auth/auth-client'
 import { Button } from '~/components/ui/button'
+import { Avatar, AvatarFallback } from '~/components/ui/avatar'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '~/components/ui/dropdown-menu'
 import { cn } from '~/lib/utils'
 
 const NAV = [
@@ -12,6 +22,10 @@ const NAV = [
 /** En-tête public, sticky, sobre. CTA vers /connexion et /inscription. */
 export function MarketingHeader() {
   const [open, setOpen] = useState(false)
+  const { data: session, isPending } = useSession()
+  // Tant que la session n'est pas résolue, on montre l'état déconnecté
+  // (évite tout flash de menu profil au SSR).
+  const authed = !isPending && Boolean(session)
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-bg/85 backdrop-blur">
@@ -42,12 +56,18 @@ export function MarketingHeader() {
         </nav>
 
         <div className="ml-auto hidden items-center gap-2 md:flex">
-          <Button variant="ghost" size="sm" asChild>
-            <Link to="/connexion">Se connecter</Link>
-          </Button>
-          <Button size="sm" asChild>
-            <Link to="/inscription">Commencer gratuitement</Link>
-          </Button>
+          {authed ? (
+            <ProfileMenu session={session!} />
+          ) : (
+            <>
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/connexion">Se connecter</Link>
+              </Button>
+              <Button size="sm" asChild>
+                <Link to="/inscription">Commencer gratuitement</Link>
+              </Button>
+            </>
+          )}
         </div>
 
         <Button
@@ -80,19 +100,108 @@ export function MarketingHeader() {
             </a>
           ))}
           <div className="mt-2 flex flex-col gap-2">
-            <Button variant="outline" asChild>
-              <Link to="/connexion" onClick={() => setOpen(false)}>
-                Se connecter
-              </Link>
-            </Button>
-            <Button asChild>
-              <Link to="/inscription" onClick={() => setOpen(false)}>
-                Commencer gratuitement
-              </Link>
-            </Button>
+            {authed ? (
+              <>
+                <Button asChild>
+                  <Link to="/app" onClick={() => setOpen(false)}>
+                    Mon espace
+                  </Link>
+                </Button>
+                <Button variant="outline" onClick={() => { setOpen(false); signOut() }}>
+                  Déconnexion
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" asChild>
+                  <Link to="/connexion" onClick={() => setOpen(false)}>
+                    Se connecter
+                  </Link>
+                </Button>
+                <Button asChild>
+                  <Link to="/inscription" onClick={() => setOpen(false)}>
+                    Commencer gratuitement
+                  </Link>
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>
     </header>
   )
+}
+
+function signOut() {
+  void authClient.signOut({
+    fetchOptions: {
+      onSuccess: () => {
+        window.location.href = '/'
+      },
+    },
+  })
+}
+
+/** Avatar + menu déroulant compte, repris du pattern AccountMenu de /app. */
+function ProfileMenu({
+  session,
+}: {
+  session: NonNullable<ReturnType<typeof useSession>['data']>
+}) {
+  const user = session.user
+  const displayName = user?.name?.trim() || user?.email || 'Mon compte'
+  const email = user?.email ?? ''
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          aria-label={displayName}
+          className="flex size-9 items-center justify-center rounded-[var(--radius)] transition-colors hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-ring)]"
+        >
+          <Avatar>
+            <AvatarFallback>{initials(displayName)}</AvatarFallback>
+          </Avatar>
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuLabel className="flex flex-col gap-0.5">
+          <span className="truncate text-sm font-medium text-fg">
+            {displayName}
+          </span>
+          {email && (
+            <span className="truncate text-xs font-normal text-fg-subtle">
+              {email}
+            </span>
+          )}
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link to="/app">
+            <LayoutDashboard className="size-4" />
+            Tableau de bord
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link to="/app/parametres">
+            <Settings className="size-4" />
+            Paramètres
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem variant="destructive" onSelect={signOut}>
+          <LogOut className="size-4" />
+          Déconnexion
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+function initials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return '?'
+  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase()
+  return (parts[0]![0]! + parts[parts.length - 1]![0]!).toUpperCase()
 }

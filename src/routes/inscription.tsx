@@ -1,8 +1,8 @@
-import { useState } from 'react'
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { useEffect, useState } from 'react'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { z } from 'zod'
 import { Loader2, AlertCircle } from 'lucide-react'
-import { authClient } from '~/lib/auth/auth-client'
+import { authClient, useSession } from '~/lib/auth/auth-client'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
@@ -39,6 +39,15 @@ function InscriptionPage() {
   const [submitting, setSubmitting] = useState(false)
   const [errors, setErrors] = useState<FieldErrors>({})
   const [formError, setFormError] = useState<string | null>(null)
+  const { data: session, isPending } = useSession()
+  const navigate = useNavigate()
+
+  // Utilisateur déjà connecté : on l'envoie vers son espace.
+  useEffect(() => {
+    if (!isPending && session) {
+      navigate({ to: '/app', replace: true })
+    }
+  }, [isPending, session, navigate])
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()

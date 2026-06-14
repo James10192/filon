@@ -10,6 +10,7 @@ import {
   Radar,
   ShieldCheck,
 } from 'lucide-react'
+import { useSession } from '~/lib/auth/auth-client'
 import { Button } from '~/components/ui/button'
 import { MarketingHeader } from '~/components/marketing/marketing-header'
 import { MarketingFooter } from '~/components/marketing/marketing-footer'
@@ -94,6 +95,8 @@ function LandingPage() {
 }
 
 function Hero() {
+  const { data: session, isPending } = useSession()
+  const authed = !isPending && Boolean(session)
   return (
     <section className="relative overflow-hidden">
       <div className="mx-auto w-full max-w-screen-xl px-4 py-16 md:px-6 md:py-24 lg:px-8">
@@ -115,12 +118,21 @@ function Hero() {
             </p>
 
             <div className="mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-              <Button size="lg" asChild>
-                <Link to="/inscription">
-                  Commencer gratuitement
-                  <ArrowRight className="size-4" />
-                </Link>
-              </Button>
+              {authed ? (
+                <Button size="lg" asChild>
+                  <Link to="/app">
+                    Aller à mon espace
+                    <ArrowRight className="size-4" />
+                  </Link>
+                </Button>
+              ) : (
+                <Button size="lg" asChild>
+                  <Link to="/inscription">
+                    Commencer gratuitement
+                    <ArrowRight className="size-4" />
+                  </Link>
+                </Button>
+              )}
               <Button size="lg" variant="outline" asChild>
                 <a href="#fonctionnalites">Voir comment ça marche</a>
               </Button>
@@ -251,6 +263,8 @@ function Audiences() {
 }
 
 function FinalCta() {
+  const { data: session, isPending } = useSession()
+  const authed = !isPending && Boolean(session)
   return (
     <section>
       <div className="mx-auto w-full max-w-screen-xl px-4 py-16 md:px-6 md:py-24 lg:px-8">
@@ -263,18 +277,29 @@ function FinalCta() {
             filer le prochain contrat.
           </p>
           <div className="mt-8 flex flex-col items-center gap-3">
-            <Button size="lg" asChild>
-              <Link to="/inscription">
-                Créer mon compte
-                <ArrowRight className="size-4" />
-              </Link>
-            </Button>
-            <Link
-              to="/connexion"
-              className="text-sm font-medium text-fg-muted underline-offset-4 transition-colors hover:text-fg hover:underline"
-            >
-              J'ai déjà un compte
-            </Link>
+            {authed ? (
+              <Button size="lg" asChild>
+                <Link to="/app">
+                  Aller à mon espace
+                  <ArrowRight className="size-4" />
+                </Link>
+              </Button>
+            ) : (
+              <>
+                <Button size="lg" asChild>
+                  <Link to="/inscription">
+                    Créer mon compte
+                    <ArrowRight className="size-4" />
+                  </Link>
+                </Button>
+                <Link
+                  to="/connexion"
+                  className="text-sm font-medium text-fg-muted underline-offset-4 transition-colors hover:text-fg hover:underline"
+                >
+                  J'ai déjà un compte
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>
