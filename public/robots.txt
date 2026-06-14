@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /app
+Disallow: /api
+Disallow: /connexion
+Disallow: /inscription
+
+Sitemap: https://filon-xi.vercel.app/sitemap.xml

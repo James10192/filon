@@ -29,7 +29,12 @@ import { MobileBottombar } from '~/components/app/mobile-bottombar'
 
 export const Route = createFileRoute('/app')({
   component: AppLayout,
-  head: () => ({ meta: [{ title: 'Filon · Espace de travail' }] }),
+  head: () => ({
+    meta: [
+      { title: 'Filon · Espace de travail' },
+      { name: 'robots', content: 'noindex, nofollow' },
+    ],
+  }),
 })
 
 // ===========================================================================

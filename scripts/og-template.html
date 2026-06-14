@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap');
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+
+      html, body { width: 1200px; height: 630px; }
+
+      body {
+        width: 1200px;
+        height: 630px;
+        font-family: 'Hanken Grotesk', system-ui, sans-serif;
+        background: #09090b;
+        color: #fafafa;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 88px 92px;
+      }
+
+      /* Glow indigo centré, esprit zed */
+      .glow {
+        position: absolute;
+        top: -180px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 900px;
+        height: 600px;
+        background: radial-gradient(
+          ellipse at center,
+          rgba(99, 102, 241, 0.28) 0%,
+          rgba(99, 102, 241, 0.10) 38%,
+          rgba(99, 102, 241, 0) 70%
+        );
+        filter: blur(8px);
+        pointer-events: none;
+      }
+
+      /* Grille discrète en fond */
+      .grid {
+        position: absolute;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+        background-size: 56px 56px;
+        mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, #000 30%, transparent 78%);
+        -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, #000 30%, transparent 78%);
+        pointer-events: none;
+      }
+
+      .content { position: relative; z-index: 2; }
+
+      .brandrow {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        margin-bottom: 44px;
+      }
+
+      .mark {
+        width: 72px;
+        height: 72px;
+        border-radius: 18px;
+        background: linear-gradient(140deg, #6366f1 0%, #4f46e5 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08),
+          0 18px 40px -12px rgba(79, 70, 229, 0.65);
+      }
+
+      .mark svg { width: 40px; height: 40px; }
+
+      .brandname {
+        font-size: 46px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: #fafafa;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 19px;
+        font-weight: 500;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #a5b4fc;
+        margin-bottom: 26px;
+      }
+
+      .eyebrow .dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: #818cf8;
+        box-shadow: 0 0 12px 2px rgba(129, 140, 248, 0.8);
+      }
+
+      h1 {
+        font-size: 70px;
+        line-height: 1.04;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+        max-width: 980px;
+        margin-bottom: 30px;
+      }
+
+      h1 .accent {
+        background: linear-gradient(100deg, #c7d2fe 0%, #818cf8 55%, #6366f1 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      p.sub {
+        font-size: 30px;
+        line-height: 1.4;
+        font-weight: 400;
+        color: #a1a1aa;
+        max-width: 920px;
+      }
+
+      .pills {
+        display: flex;
+        gap: 14px;
+        margin-top: 46px;
+      }
+
+      .pill {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 18px;
+        font-weight: 500;
+        color: #d4d4d8;
+        padding: 11px 22px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.04);
+      }
+
+      .url {
+        position: absolute;
+        bottom: 56px;
+        right: 92px;
+        z-index: 2;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 21px;
+        font-weight: 500;
+        color: #71717a;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="glow"></div>
+    <div class="grid"></div>
+
+    <div class="content">
+      <div class="brandrow">
+        <div class="mark">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path
+              d="M4 5h16M4 5v14M4 12h10"
+              stroke="#fff"
+              stroke-width="2.4"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+            <circle cx="18" cy="17" r="3" stroke="#fff" stroke-width="2.4" />
+            <path d="M20.2 19.2 23 22" stroke="#fff" stroke-width="2.4" stroke-linecap="round" />
+          </svg>
+        </div>
+        <div class="brandname">Filon</div>
+      </div>
+
+      <div class="eyebrow"><span class="dot"></span>Pipeline de revenus</div>
+
+      <h1>Ne laissez plus filer<br /><span class="accent">une opportunité de revenu</span></h1>
+
+      <p class="sub">
+        Candidatures, missions et prospection freelance dans un pipeline unique,
+        avec relances datées et veille automatique.
+      </p>
+
+      <div class="pills">
+        <div class="pill">Pipeline kanban</div>
+        <div class="pill">Relances datées</div>
+        <div class="pill">Veille + IA</div>
+      </div>
+    </div>
+
+    <div class="url">filon-xi.vercel.app</div>
+  </body>
+</html>

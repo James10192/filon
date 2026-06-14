@@ -18,11 +18,13 @@ export const Route = createFileRoute('/')({
   component: LandingPage,
   head: () => ({
     meta: [
-      { title: 'Filon · Le filon qui transforme votre prospection en pipeline' },
+      // <= 60 c : 53 caracteres
+      { title: 'Filon · Transformez votre prospection en pipeline' },
       {
+        // meta description <= 155 c : 152 caracteres
         name: 'description',
         content:
-          "Filon réunit vos candidatures, propositions spontanées et prospection freelance dans un seul pipeline. Pipeline unifié, veille automatique et assistance IA. Vous savez toujours qui relancer, quand, et où en est chaque piste.",
+          'Réunissez candidatures, propositions spontanées et prospection freelance dans un pipeline unique. Veille automatique, relances datées et assistance IA.',
       },
     ],
   }),
