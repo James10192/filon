@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select'
+import { EntityCombobox } from '~/components/ui/entity-combobox'
 import { toast } from '~/components/ui/sonner'
 
 type ProposalDoc = Doc<'proposals'>
@@ -43,6 +44,19 @@ export function ProposalFormDialog({
   const companies = useQuery(api.companies.list, open ? {} : 'skip')
   const create = useMutation(api.proposals.create)
   const update = useMutation(api.proposals.update)
+  const createCompany = useMutation(api.companies.create)
+
+  /** Cree une entreprise inline depuis le combobox et renvoie son id. */
+  async function handleCreateCompany(name: string) {
+    try {
+      const id = await createCompany({ name })
+      toast.success('Entreprise creee.')
+      return id as string
+    } catch {
+      toast.error("L'entreprise n'a pas pu etre creee.")
+      return null
+    }
+  }
 
   const [title, setTitle] = useState('')
   const [pitch, setPitch] = useState('')
@@ -189,24 +203,22 @@ export function ProposalFormDialog({
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="proposal-company">Entreprise cible</Label>
-            <Select value={companyId} onValueChange={setCompanyId}>
-              <SelectTrigger id="proposal-company">
-                <SelectValue placeholder="Aucune entreprise" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={NO_COMPANY}>Aucune entreprise</SelectItem>
-                {(companies ?? []).map((company) => (
-                  <SelectItem key={company._id} value={company._id}>
-                    {company.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {companies !== undefined && companies.length === 0 && (
-              <p className="text-xs text-fg-subtle">
-                Aucune entreprise enregistrée pour l'instant.
-              </p>
-            )}
+            <EntityCombobox
+              id="proposal-company"
+              items={(companies ?? []).map((c) => ({
+                value: c._id,
+                label: c.name,
+              }))}
+              value={companyId}
+              onChange={setCompanyId}
+              onCreate={handleCreateCompany}
+              emptyValue={NO_COMPANY}
+              emptyLabel="Aucune entreprise"
+              placeholder="Aucune entreprise"
+              searchPlaceholder="Rechercher ou creer une entreprise..."
+              noResultLabel="Aucune entreprise trouvee."
+              createLabel="Creer l'entreprise"
+            />
           </div>
 
           <div className="grid grid-cols-[1fr_auto] gap-3">

@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { useQuery } from 'convex/react'
 import { Loader2 } from 'lucide-react'
+import { api } from '../../../convex/_generated/api'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
@@ -11,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select'
+import { ValueCombobox } from '~/components/ui/value-combobox'
 import { STAGES, STAGE_META, TYPE_META, type OppType, type Stage } from './meta'
 
 export type OpportunityFormValues = {
@@ -81,6 +84,16 @@ export function OpportunityForm({
   const [tags, setTags] = useState((initial?.tags ?? []).join(', '))
   const [description, setDescription] = useState(initial?.description ?? '')
   const [titleError, setTitleError] = useState<string | null>(null)
+
+  // Suggestions derivees des opportunites existantes (coherence des donnees).
+  const existing = useQuery(api.opportunities.list, {})
+  const suggestions = useMemo(() => {
+    const list = existing ?? []
+    return {
+      source: list.map((o) => o.source ?? '').filter(Boolean),
+      location: list.map((o) => o.location ?? '').filter(Boolean),
+    }
+  }, [existing])
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
@@ -173,11 +186,13 @@ export function OpportunityForm({
         </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="opp-location">Lieu</Label>
-          <Input
+          <ValueCombobox
             id="opp-location"
             value={location}
-            onChange={(e) => setLocation(e.target.value)}
+            onChange={setLocation}
+            suggestions={suggestions.location}
             placeholder="Remote, Abidjan, hybride..."
+            searchPlaceholder="Lieu..."
           />
         </div>
       </div>
@@ -185,11 +200,13 @@ export function OpportunityForm({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="opp-source">Source</Label>
-          <Input
+          <ValueCombobox
             id="opp-source"
             value={source}
-            onChange={(e) => setSource(e.target.value)}
+            onChange={setSource}
+            suggestions={suggestions.source}
             placeholder="LinkedIn, site, recommandation..."
+            searchPlaceholder="Source..."
           />
         </div>
         <div className="flex flex-col gap-1.5">

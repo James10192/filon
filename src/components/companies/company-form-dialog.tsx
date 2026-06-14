@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { useMutation } from 'convex/react'
+import { useEffect, useMemo, useState } from 'react'
+import { useMutation, useQuery } from 'convex/react'
 import { Loader2 } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Doc } from '../../../convex/_generated/dataModel'
@@ -15,6 +15,7 @@ import {
 import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
 import { Textarea } from '~/components/ui/textarea'
+import { ValueCombobox } from '~/components/ui/value-combobox'
 import { toast } from '~/components/ui/sonner'
 
 type Company = Doc<'companies'>
@@ -32,6 +33,17 @@ export function CompanyFormDialog({
   const createCompany = useMutation(api.companies.create)
   const updateCompany = useMutation(api.companies.update)
   const isEdit = Boolean(company)
+
+  // Suggestions derivees des entreprises existantes (coherence des donnees).
+  const allCompanies = useQuery(api.companies.list, open ? {} : 'skip')
+  const suggestions = useMemo(() => {
+    const list = allCompanies ?? []
+    return {
+      sector: list.map((c) => c.sector ?? '').filter(Boolean),
+      location: list.map((c) => c.location ?? '').filter(Boolean),
+      source: list.map((c) => c.source ?? '').filter(Boolean),
+    }
+  }, [allCompanies])
 
   const [form, setForm] = useState({
     name: '',
@@ -145,20 +157,24 @@ export function CompanyFormDialog({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-1.5">
               <Label htmlFor="company-sector">Secteur</Label>
-              <Input
+              <ValueCombobox
                 id="company-sector"
                 value={form.sector}
-                onChange={field('sector')}
+                onChange={(v) => setForm((f) => ({ ...f, sector: v }))}
+                suggestions={suggestions.sector}
                 placeholder="Ex. Fintech, agence web"
+                searchPlaceholder="Secteur..."
               />
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="company-location">Localisation</Label>
-              <Input
+              <ValueCombobox
                 id="company-location"
                 value={form.location}
-                onChange={field('location')}
+                onChange={(v) => setForm((f) => ({ ...f, location: v }))}
+                suggestions={suggestions.location}
                 placeholder="Ex. Abidjan, remote"
+                searchPlaceholder="Localisation..."
               />
             </div>
           </div>
@@ -176,11 +192,13 @@ export function CompanyFormDialog({
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="company-source">Source</Label>
-              <Input
+              <ValueCombobox
                 id="company-source"
                 value={form.source}
-                onChange={field('source')}
+                onChange={(v) => setForm((f) => ({ ...f, source: v }))}
+                suggestions={suggestions.source}
                 placeholder="LinkedIn, recommandation..."
+                searchPlaceholder="Source..."
               />
             </div>
           </div>

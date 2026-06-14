@@ -15,13 +15,7 @@ import {
 import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
 import { Textarea } from '~/components/ui/textarea'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '~/components/ui/select'
+import { EntityCombobox } from '~/components/ui/entity-combobox'
 import { toast } from '~/components/ui/sonner'
 
 type Company = Doc<'companies'>
@@ -46,7 +40,20 @@ export function ContactFormDialog({
 }) {
   const createContact = useMutation(api.contacts.create)
   const updateContact = useMutation(api.contacts.update)
+  const createCompany = useMutation(api.companies.create)
   const isEdit = Boolean(contact)
+
+  /** Cree une entreprise inline depuis le combobox et renvoie son id. */
+  async function handleCreateCompany(name: string) {
+    try {
+      const id = await createCompany({ name })
+      toast.success('Entreprise creee.')
+      return id as string
+    } catch {
+      toast.error("L'entreprise n'a pas pu etre creee.")
+      return null
+    }
+  }
 
   const [form, setForm] = useState({
     name: '',
@@ -181,22 +188,19 @@ export function ContactFormDialog({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-1.5">
               <Label htmlFor="contact-company">Entreprise</Label>
-              <Select
+              <EntityCombobox
+                id="contact-company"
+                items={companies.map((c) => ({ value: c._id, label: c.name }))}
                 value={form.companyId}
-                onValueChange={(v) => setForm((f) => ({ ...f, companyId: v }))}
-              >
-                <SelectTrigger id="contact-company">
-                  <SelectValue placeholder="Rattacher une entreprise" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NO_COMPANY}>Sans entreprise</SelectItem>
-                  {companies.map((c) => (
-                    <SelectItem key={c._id} value={c._id}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={(v) => setForm((f) => ({ ...f, companyId: v }))}
+                onCreate={handleCreateCompany}
+                emptyValue={NO_COMPANY}
+                emptyLabel="Sans entreprise"
+                placeholder="Rattacher une entreprise"
+                searchPlaceholder="Rechercher ou creer une entreprise..."
+                noResultLabel="Aucune entreprise trouvee."
+                createLabel="Creer l'entreprise"
+              />
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="contact-role">Role</Label>
