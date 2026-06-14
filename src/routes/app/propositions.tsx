@@ -1,14 +1,25 @@
-import { useMemo, useState } from 'react'
-import { createFileRoute } from '@tanstack/react-router'
+import { useEffect, useMemo, useState } from 'react'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
-import { AlertTriangle, Plus, Send } from 'lucide-react'
+import { Plus, Send } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Doc } from '../../../convex/_generated/dataModel'
 import { Button } from '~/components/ui/button'
-import { Skeleton } from '~/components/ui/skeleton'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '~/components/ui/tabs'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '~/components/ui/select'
 import { PageToolbar } from '~/components/app/page-toolbar'
-import { ProposalCard } from '~/components/proposals/proposal-card'
+import {
+  DataTableToolbar,
+  DataTableSkeleton,
+  DataTableEmpty,
+  type FilterChip,
+} from '~/components/data-table'
+import { ProposalsTable } from '~/components/proposals/proposals-table'
 import { ProposalFormDialog } from '~/components/proposals/proposal-form-dialog'
 import {
   PROPOSAL_STATUSES,
@@ -19,43 +30,67 @@ import {
 export const Route = createFileRoute('/app/propositions')({
   component: PropositionsPage,
   head: () => ({ meta: [{ title: 'Filon · Propositions' }] }),
+  // Ouverture directe du formulaire depuis la palette de commandes (?nouveau).
+  validateSearch: (search: Record<string, unknown>): { nouveau?: boolean } =>
+    search.nouveau ? { nouveau: true } : {},
 })
 
 type ProposalRow = Doc<'proposals'> & { companyName?: string }
-type TabValue = 'all' | ProposalStatus
+type StatusFilter = 'all' | ProposalStatus
 
 function PropositionsPage() {
-  // Une seule requête : tout charger puis filtrer/compter côté client par
-  // onglet (le volume de propositions par user reste modeste).
-  const proposals = useQuery(api.proposals.list, {}) as
-    | ProposalRow[]
-    | undefined
+  // Une seule requete : tout charger puis filtrer/rechercher cote client (le
+  // volume de propositions par user reste modeste).
+  const proposals = useQuery(api.proposals.list, {}) as ProposalRow[] | undefined
 
-  const [tab, setTab] = useState<TabValue>('all')
+  const [status, setStatus] = useState<StatusFilter>('all')
+  const [search, setSearch] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<Doc<'proposals'> | null>(null)
 
-  const counts = useMemo(() => {
-    const base: Record<TabValue, number> = {
-      all: 0,
-      draft: 0,
-      sent: 0,
-      accepted: 0,
-      refused: 0,
-    }
-    if (!proposals) return base
-    base.all = proposals.length
-    for (const p of proposals) {
-      base[p.status as ProposalStatus] += 1
-    }
-    return base
-  }, [proposals])
+  // Auto-ouverture du formulaire via la palette (?nouveau), nettoyee ensuite.
+  const { nouveau } = Route.useSearch()
+  const navigate = useNavigate()
+  useEffect(() => {
+    if (!nouveau) return
+    setEditing(null)
+    setDialogOpen(true)
+    void navigate({ to: '/app/propositions', replace: true })
+  }, [nouveau, navigate])
 
   const filtered = useMemo(() => {
-    if (!proposals) return []
-    if (tab === 'all') return proposals
-    return proposals.filter((p) => p.status === tab)
-  }, [proposals, tab])
+    if (!proposals) return undefined
+    const q = search.trim().toLowerCase()
+    return proposals.filter((p) => {
+      if (status !== 'all' && p.status !== status) return false
+      if (q) {
+        const haystack = `${p.title} ${p.companyName ?? ''} ${p.pitch}`.toLowerCase()
+        if (!haystack.includes(q)) return false
+      }
+      return true
+    })
+  }, [proposals, status, search])
+
+  const chips = useMemo<FilterChip[]>(() => {
+    const out: FilterChip[] = []
+    if (status !== 'all') {
+      out.push({
+        key: 'status',
+        label: `Statut : ${STATUS_LABELS[status]}`,
+        onRemove: () => setStatus('all'),
+      })
+    }
+    const s = search.trim()
+    if (s) {
+      out.push({ key: 'search', label: `« ${s} »`, onRemove: () => setSearch('') })
+    }
+    return out
+  }, [status, search])
+
+  function resetFilters() {
+    setStatus('all')
+    setSearch('')
+  }
 
   function openCreate() {
     setEditing(null)
@@ -69,42 +104,48 @@ function PropositionsPage() {
 
   return (
     <div className="flex flex-col">
-      <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)}>
-        <PageToolbar
-          title="Propositions"
-          subtitle="Suivez vos propositions spontanées et votre prospection, du brouillon à la signature."
-          actions={
-            <Button onClick={openCreate} className="shrink-0">
-              <Plus className="size-4" />
-              Nouvelle proposition
-            </Button>
-          }
-          sticky
+      <PageToolbar
+        title="Propositions"
+        subtitle="Suivez vos propositions spontanées et votre prospection, du brouillon à la signature."
+        actions={
+          <Button onClick={openCreate} className="shrink-0">
+            <Plus className="size-4" />
+            Nouvelle proposition
+          </Button>
+        }
+      >
+        <DataTableToolbar
+          search={search}
+          onSearchChange={setSearch}
+          searchPlaceholder="Rechercher une proposition..."
+          searchLabel="Rechercher une proposition"
+          chips={chips}
+          onClearAll={resetFilters}
         >
-          <TabsList className="w-full justify-start overflow-x-auto sm:w-auto">
-            <TabsTrigger value="all">
-              Toutes
-              <Count n={counts.all} active={tab === 'all'} />
-            </TabsTrigger>
-            {PROPOSAL_STATUSES.map((status) => (
-              <TabsTrigger key={status} value={status}>
-                {STATUS_LABELS[status]}
-                <Count n={counts[status]} active={tab === status} />
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </PageToolbar>
+          <Select value={status} onValueChange={(v) => setStatus(v as StatusFilter)}>
+            <SelectTrigger className="lg:w-44" aria-label="Filtrer par statut">
+              <SelectValue placeholder="Statut" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les statuts</SelectItem>
+              {PROPOSAL_STATUSES.map((s) => (
+                <SelectItem key={s} value={s}>
+                  {STATUS_LABELS[s]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </DataTableToolbar>
+      </PageToolbar>
 
-        <TabsContent value={tab}>
-          <PropositionsBody
-            proposals={proposals}
-            filtered={filtered}
-            tab={tab}
-            onCreate={openCreate}
-            onEdit={openEdit}
-          />
-        </TabsContent>
-      </Tabs>
+      <Content
+        all={proposals}
+        filtered={filtered}
+        hasActiveFilters={chips.length > 0}
+        onReset={resetFilters}
+        onCreate={openCreate}
+        onEdit={openEdit}
+      />
 
       <ProposalFormDialog
         open={dialogOpen}
@@ -115,130 +156,59 @@ function PropositionsPage() {
   )
 }
 
-function PropositionsBody({
-  proposals,
+function Content({
+  all,
   filtered,
-  tab,
+  hasActiveFilters,
+  onReset,
   onCreate,
   onEdit,
 }: {
-  proposals: ProposalRow[] | undefined
-  filtered: ProposalRow[]
-  tab: TabValue
+  all: ProposalRow[] | undefined
+  filtered: ProposalRow[] | undefined
+  hasActiveFilters: boolean
+  onReset: () => void
   onCreate: () => void
   onEdit: (proposal: Doc<'proposals'>) => void
 }) {
-  // État erreur : Convex propage l'erreur via une exception au rendu ; on
-  // distingue ici le cas « données indisponibles » du chargement légitime.
-  if (proposals === undefined) {
-    return <ListSkeleton />
+  if (all === undefined || filtered === undefined) {
+    return <DataTableSkeleton />
   }
 
-  // État vide global (aucune proposition du tout).
-  if (proposals.length === 0) {
-    return <EmptyState onCreate={onCreate} />
-  }
-
-  // État vide d'onglet (filtre sans résultat).
-  if (filtered.length === 0) {
+  // Etat vide global (aucune proposition du tout).
+  if (all.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-2 rounded-[var(--radius-lg)] border border-dashed border-border bg-surface-2/40 px-6 py-12 text-center">
-        <p className="text-sm font-medium text-fg">
-          {tab === 'all'
-            ? 'Rien ici pour le moment.'
-            : `Aucune proposition « ${STATUS_LABELS[tab as ProposalStatus].toLowerCase()} ».`}
-        </p>
-        <p className="max-w-sm text-sm text-fg-muted">
-          Changez d'onglet ou créez une nouvelle proposition.
-        </p>
-      </div>
+      <DataTableEmpty
+        icon={Send}
+        title="Aucune proposition pour l'instant"
+        message="Démarchez les bonnes entreprises sans rien laisser filer. Créez votre première proposition spontanée pour la suivre jusqu'à la signature."
+        action={
+          <Button onClick={onCreate}>
+            <Plus className="size-4" />
+            Nouvelle proposition
+          </Button>
+        }
+      />
     )
   }
 
-  return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-      {filtered.map((proposal) => (
-        <ProposalCard key={proposal._id} proposal={proposal} onEdit={onEdit} />
-      ))}
-    </div>
-  )
-}
+  // Etat vide de filtre (aucun resultat).
+  if (filtered.length === 0) {
+    return (
+      <DataTableEmpty
+        icon={Send}
+        title="Aucun résultat"
+        message="Aucune proposition ne correspond à ces filtres."
+        action={
+          hasActiveFilters ? (
+            <Button variant="outline" onClick={onReset}>
+              Réinitialiser les filtres
+            </Button>
+          ) : undefined
+        }
+      />
+    )
+  }
 
-function Count({ n, active }: { n: number; active: boolean }) {
-  return (
-    <span
-      className={
-        active
-          ? 'ml-0.5 rounded-full bg-accent-soft px-1.5 text-xs font-medium tabular-nums text-accent'
-          : 'ml-0.5 rounded-full bg-surface-2 px-1.5 text-xs font-medium tabular-nums text-fg-subtle'
-      }
-    >
-      {n}
-    </span>
-  )
-}
-
-function EmptyState({ onCreate }: { onCreate: () => void }) {
-  return (
-    <div className="flex flex-col items-center gap-4 rounded-[var(--radius-lg)] border border-border bg-surface px-6 py-16 text-center shadow-[var(--shadow-card)]">
-      <span className="flex size-12 items-center justify-center rounded-full bg-accent-soft text-accent">
-        <Send className="size-5" />
-      </span>
-      <div className="flex flex-col gap-1.5">
-        <h2 className="text-lg font-semibold text-fg">
-          Aucune proposition pour l'instant
-        </h2>
-        <p className="mx-auto max-w-md text-sm text-fg-muted">
-          Démarchez les bonnes entreprises sans rien laisser filer. Créez votre
-          première proposition spontanée pour la suivre jusqu'à la signature.
-        </p>
-      </div>
-      <Button onClick={onCreate}>
-        <Plus className="size-4" />
-        Nouvelle proposition
-      </Button>
-    </div>
-  )
-}
-
-function ListSkeleton() {
-  return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div
-          key={i}
-          className="flex flex-col gap-3 rounded-[var(--radius-lg)] border border-border bg-surface p-5 shadow-[var(--shadow-card)]"
-        >
-          <div className="flex items-start justify-between gap-3">
-            <Skeleton className="h-5 w-40" />
-            <Skeleton className="h-6 w-16 rounded-full" />
-          </div>
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-3/4" />
-          <div className="mt-2 flex gap-2">
-            <Skeleton className="h-9 w-28" />
-            <Skeleton className="h-9 w-24" />
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-/**
- * Encart d'erreur réutilisable (non monté par défaut ici car Convex remonte
- * l'erreur au niveau du router ; conservé pour usage explicite si besoin).
- */
-export function ProposalsError({ onRetry }: { onRetry: () => void }) {
-  return (
-    <div className="flex flex-col items-center gap-3 rounded-[var(--radius-lg)] border border-danger/40 bg-danger-soft px-6 py-10 text-center">
-      <AlertTriangle className="size-6 text-danger" />
-      <p className="text-sm font-medium text-danger">
-        Impossible de charger les propositions.
-      </p>
-      <Button variant="outline" onClick={onRetry}>
-        Réessayer
-      </Button>
-    </div>
-  )
+  return <ProposalsTable items={filtered} onEdit={onEdit} />
 }

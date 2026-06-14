@@ -1,0 +1,128 @@
+import type { ColumnDef } from '@tanstack/react-table'
+import { Building2 } from 'lucide-react'
+import type { Doc } from '../../../convex/_generated/dataModel'
+import { Badge } from '~/components/ui/badge'
+import { SortableHeader } from '~/components/data-table'
+import { ProposalRowActions } from './proposal-row-actions'
+import {
+  formatAmount,
+  formatDate,
+  STATUS_BADGE,
+  STATUS_LABELS,
+  type ProposalStatus,
+} from './proposal-status'
+
+type Proposal = Doc<'proposals'> & { companyName?: string }
+
+const STATUS_RANK: Record<ProposalStatus, number> = {
+  draft: 0,
+  sent: 1,
+  accepted: 2,
+  refused: 3,
+}
+
+/**
+ * Definitions de colonnes du tableau des propositions. Fabrique parametree par
+ * le callback d'edition (ouvre le dialog du formulaire cote page).
+ */
+export function buildProposalColumns({
+  onEdit,
+}: {
+  onEdit: (proposal: Doc<'proposals'>) => void
+}): ColumnDef<Proposal, unknown>[] {
+  return [
+    {
+      id: 'title',
+      accessorKey: 'title',
+      header: ({ column }) => <SortableHeader column={column} label="Proposition" />,
+      sortingFn: (a, b) =>
+        a.original.title.localeCompare(b.original.title, 'fr', {
+          sensitivity: 'base',
+        }),
+      meta: { headerClassName: 'w-[42%]' },
+      cell: ({ row }) => {
+        const p = row.original
+        return (
+          <div className="flex flex-col gap-0.5">
+            <span className="truncate font-medium text-fg">{p.title}</span>
+            <span className="flex items-center gap-1.5 truncate text-xs text-fg-subtle">
+              {p.companyName ? (
+                <>
+                  <Building2 className="size-3 shrink-0" />
+                  <span className="truncate">{p.companyName}</span>
+                </>
+              ) : (
+                'Sans entreprise cible'
+              )}
+            </span>
+          </div>
+        )
+      },
+    },
+    {
+      id: 'status',
+      accessorKey: 'status',
+      header: ({ column }) => <SortableHeader column={column} label="Statut" />,
+      sortingFn: (a, b) =>
+        STATUS_RANK[a.original.status as ProposalStatus] -
+        STATUS_RANK[b.original.status as ProposalStatus],
+      cell: ({ row }) => {
+        const status = row.original.status as ProposalStatus
+        return <Badge variant={STATUS_BADGE[status]}>{STATUS_LABELS[status]}</Badge>
+      },
+    },
+    {
+      id: 'amount',
+      accessorKey: 'amount',
+      header: ({ column }) => <SortableHeader column={column} label="Montant" />,
+      sortingFn: (a, b) => (a.original.amount ?? -1) - (b.original.amount ?? -1),
+      meta: {
+        headerClassName: 'hidden lg:table-cell',
+        cellClassName: 'hidden lg:table-cell',
+      },
+      cell: ({ row }) => {
+        const amount = formatAmount(row.original.amount, row.original.currency)
+        return amount ? (
+          <span className="assay text-sm text-fg-muted">{amount}</span>
+        ) : (
+          <span className="text-fg-subtle">·</span>
+        )
+      },
+    },
+    {
+      id: 'sentAt',
+      accessorKey: 'sentAt',
+      header: ({ column }) => <SortableHeader column={column} label="Envoyée le" />,
+      sortingFn: (a, b) => {
+        const av = a.original.sentAt
+          ? new Date(a.original.sentAt).getTime()
+          : Infinity
+        const bv = b.original.sentAt
+          ? new Date(b.original.sentAt).getTime()
+          : Infinity
+        return av - bv
+      },
+      meta: {
+        headerClassName: 'hidden md:table-cell',
+        cellClassName: 'hidden md:table-cell',
+      },
+      cell: ({ row }) => {
+        const sentAt = formatDate(row.original.sentAt)
+        return sentAt ? (
+          <span className="assay text-sm text-fg-muted">{sentAt}</span>
+        ) : (
+          <span className="text-fg-subtle">·</span>
+        )
+      },
+    },
+    {
+      id: 'actions',
+      enableSorting: false,
+      header: () => <span className="sr-only">Actions</span>,
+      meta: { headerClassName: 'w-12', cellClassName: 'w-12' },
+      cell: ({ row }) => (
+        <ProposalRowActions proposal={row.original} onEdit={onEdit} />
+      ),
+    },
+  ]
+}
