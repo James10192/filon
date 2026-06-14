@@ -18,6 +18,8 @@ import { BoardView } from './views/board-view'
 import { CalendarView } from './views/calendar-view'
 import { OpportunityDetailPane } from './detail/detail-pane'
 import { PaneErrorBoundary } from './detail/pane-error-boundary'
+import { OpportunitiesUsageMeter } from './opportunities-usage-meter'
+import { AiScoreTeaser } from './ai-score-teaser'
 
 /**
  * Espace de travail Opportunités unifié. Un sélecteur de vue
@@ -50,6 +52,7 @@ export function OpportunityWorkspace({
 
   const content = (
     <>
+      {view === 'liste' && <AiScoreTeaser />}
       {view === 'liste' && (
         <ListView
           filters={filters}
@@ -84,6 +87,7 @@ export function OpportunityWorkspace({
 
       <div className="flex gap-5">
         <div className={cn('min-w-0 flex-1', showSidePane && 'lg:max-w-[calc(100%-30rem)]')}>
+          <OpportunitiesUsageMeter />
           {content}
         </div>
 

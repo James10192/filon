@@ -46,9 +46,12 @@ function toDateInput(value?: string): string {
 export function ImportOfferDialog({
   open,
   onOpenChange,
+  onImported,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
+  /** Appelé après un import réussi (déclencheur de valeur mérité). */
+  onImported?: () => void
 }) {
   const parseSource = useAction(api.veille.actions.parseSource)
   const create = useMutation(api.opportunities.create)
@@ -143,6 +146,7 @@ export function ImportOfferDialog({
       toast.success('Offre importée dans votre pipeline.')
       reset()
       onOpenChange(false)
+      onImported?.()
     } catch (error) {
       if (!handlePlanLimit(error)) {
         toast.error("Impossible d'importer l'offre.")

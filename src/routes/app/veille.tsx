@@ -5,6 +5,8 @@ import { Button } from '~/components/ui/button'
 import { PageToolbar } from '~/components/app/page-toolbar'
 import { ImportOfferDialog } from '~/components/veille/import-offer-dialog'
 import { SavedSearchManager } from '~/components/veille/saved-search-manager'
+import { VeilleAutoBanner } from '~/components/veille/veille-auto-banner'
+import { UpgradeNudge } from '~/components/billing/upgrade-nudge'
 
 export const Route = createFileRoute('/app/veille')({
   component: VeillePage,
@@ -16,6 +18,8 @@ export const Route = createFileRoute('/app/veille')({
 
 function VeillePage() {
   const [importOpen, setImportOpen] = useState(false)
+  // Déclencheur de valeur mérité : on tente le nudge après un import réussi.
+  const [imported, setImported] = useState(false)
 
   // Auto-ouverture du dialog d'import via la palette (?import), nettoyee ensuite.
   const { import: importParam } = Route.useSearch()
@@ -37,15 +41,25 @@ function VeillePage() {
       />
 
       <div className="flex flex-col gap-4">
+        {imported && (
+          <UpgradeNudge id="import_value" variant="value" className="mb-1" />
+        )}
         <div className="reveal" style={{ '--reveal-i': 0 } as React.CSSProperties}>
-          <SavedSearchManager />
+          <VeilleAutoBanner />
         </div>
         <div className="reveal" style={{ '--reveal-i': 1 } as React.CSSProperties}>
+          <SavedSearchManager />
+        </div>
+        <div className="reveal" style={{ '--reveal-i': 2 } as React.CSSProperties}>
           <LinkedInNote />
         </div>
       </div>
 
-      <ImportOfferDialog open={importOpen} onOpenChange={setImportOpen} />
+      <ImportOfferDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onImported={() => setImported(true)}
+      />
     </div>
   )
 }

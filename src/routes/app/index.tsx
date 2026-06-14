@@ -19,6 +19,7 @@ import {
   RecentActivity,
   RecentActivitySkeleton,
 } from '~/components/dashboard/recent-activity'
+import { DashboardNudge } from '~/components/dashboard/dashboard-nudge'
 
 export const Route = createFileRoute('/app/')({
   component: DashboardPage,
@@ -80,6 +81,9 @@ function DashboardPage() {
       />
 
       <div className="flex flex-col gap-5">
+        {/* Nudge de conversion contextuel (au plus un, dismissible). */}
+        <DashboardNudge />
+
         {/* Hero : entonnoir de conversion du pipeline */}
         <PipelineFunnel />
 

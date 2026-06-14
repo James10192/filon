@@ -20,6 +20,8 @@ import {
   AttachedDocumentsPanel,
 } from './panels'
 import { DetailHeader } from './detail-header'
+import { AiDraftTeaser } from './ai-draft-teaser'
+import { UpgradeNudge } from '~/components/billing/upgrade-nudge'
 
 type LoadedOpportunity = FunctionReturnType<typeof api.opportunities.get>
 
@@ -47,12 +49,15 @@ export function OpportunityDetailContent({
   const [editOpen, setEditOpen] = useState(false)
   const [editPending, setEditPending] = useState(false)
   const [removing, setRemoving] = useState(false)
+  // Déclencheur de valeur mérité : opportunité passée à « Gagné » à l'instant.
+  const [justWon, setJustWon] = useState(false)
 
   async function handleStage(next: Stage) {
     if (next === opportunity.stage) return
     try {
       await setStage({ id: opportunity._id, stage: next })
       toast.success(`Opportunité déplacée vers « ${STAGE_META[next].label} ».`)
+      if (next === 'won') setJustWon(true)
     } catch {
       toast.error('Le déplacement a échoué.')
     }
@@ -108,6 +113,8 @@ export function OpportunityDetailContent({
         onStage={handleStage}
       />
 
+      {justWon && <UpgradeNudge id="won_value" variant="value" />}
+
       <div
         className={
           isPage ? 'grid grid-cols-1 gap-5 lg:grid-cols-3' : 'flex flex-col gap-5'
@@ -127,6 +134,8 @@ export function OpportunityDetailContent({
               </p>
             </Panel>
           )}
+
+          <AiDraftTeaser />
 
           <CompanyContactPanel
             company={opportunity.company}

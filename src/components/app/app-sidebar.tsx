@@ -5,10 +5,12 @@ import {
   LogOut,
   Plus,
   Settings,
+  Sparkles,
   type LucideIcon,
 } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import { authClient } from '~/lib/auth/auth-client'
+import { useUpsell } from '~/lib/billing/use-upsell'
 import { cn } from '~/lib/utils'
 import { Avatar, AvatarFallback } from '~/components/ui/avatar'
 import {
@@ -220,6 +222,10 @@ function AccountMenu({
   email: string
   compact: boolean
 }) {
+  // Présence discrète (jamais nag) : « Améliorer » seulement pour non-payeurs max.
+  const { plan } = useUpsell()
+  const showUpgrade = plan !== 'pro_ai'
+
   async function logout() {
     await authClient.signOut({
       fetchOptions: {
@@ -267,6 +273,14 @@ function AccountMenu({
             Paramètres
           </Link>
         </DropdownMenuItem>
+        {showUpgrade && (
+          <DropdownMenuItem asChild>
+            <Link to="/app/tarifs">
+              <Sparkles className="size-4" />
+              Améliorer
+            </Link>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" onSelect={logout}>
           <LogOut className="size-4" />
