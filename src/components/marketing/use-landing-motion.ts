@@ -69,7 +69,13 @@ export function useLandingMotion(scopeRef: React.RefObject<HTMLElement | null>) 
       }
 
       gsap.registerPlugin(ScrollTrigger, SplitText)
-      if (ScrollSmoother) gsap.registerPlugin(ScrollSmoother)
+      if (ScrollSmoother) {
+        gsap.registerPlugin(ScrollSmoother)
+        // Expose ScrollSmoother au header (hors scope GSAP) pour le scroll doux
+        // des ancres de navigation : `ScrollSmoother.get()` y devient accessible.
+        ;(window as unknown as { ScrollSmoother?: unknown }).ScrollSmoother =
+          ScrollSmoother
+      }
 
       ctx = gsap.context(() => {
         // ── ScrollSmoother (scroll « beurre » + base du parallax) ──────────

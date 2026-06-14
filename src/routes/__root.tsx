@@ -19,6 +19,7 @@ import type { QueryClient } from '@tanstack/react-query'
 import type { ConvexQueryClient } from '@convex-dev/react-query'
 import { Toaster } from '~/components/ui/sonner'
 import { ThemeProvider } from '~/components/app/theme'
+import { LocaleProvider } from '~/components/i18n/locale-provider'
 import appCss from '../styles/app.css?url'
 
 /**
@@ -97,7 +98,9 @@ function RootDocument() {
       </head>
       <body>
         <ThemeProvider>
-          <Outlet />
+          <LocaleProvider>
+            <Outlet />
+          </LocaleProvider>
         </ThemeProvider>
         <Toaster />
         <Scripts />

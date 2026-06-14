@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { getLocale, setLocale, type Locale } from '~/lib/paraglide/runtime'
+import { type Locale } from '~/lib/paraglide/runtime'
+import { useLocale } from '~/components/i18n/locale-provider'
 import { cn } from '~/lib/utils'
 
 /**
@@ -8,9 +8,9 @@ import { cn } from '~/lib/utils'
  * on rend la baseLocale (fr) pour eviter tout mismatch d'hydratation, puis la
  * vraie locale resolue (localStorage "filon-locale") prend le relais.
  *
- * Au changement, `setLocale` ecrit la cle localStorage et recharge la page
- * (comportement Paraglide par defaut) pour propager la langue a tout l'arbre
- * (composants, donnees Convex, meta). Cibles tactiles >= h-11 en variante full.
+ * Au changement, on appelle `switchLocale` (LocaleProvider) : `setLocale` en
+ * mode `{ reload: false }` PUIS re-render reactif de l'arbre. AUCUN rechargement
+ * de page. Cibles tactiles >= h-11 en variante full.
  */
 const LOCALES: { value: Locale; label: string; aria: string }[] = [
   { value: 'fr', label: 'FR', aria: 'Francais' },
@@ -25,19 +25,10 @@ export function LocaleSwitcher({
   /** `sm` = compact (header), `lg` = pleines cibles tactiles (reglages). */
   size?: 'sm' | 'lg'
 }) {
-  const [mounted, setMounted] = useState(false)
-  const [current, setCurrent] = useState<Locale>('fr')
-
-  useEffect(() => {
-    setCurrent(getLocale())
-    setMounted(true)
-  }, [])
+  const { locale: current, switchLocale, mounted } = useLocale()
 
   function choose(next: Locale) {
-    if (next === current) return
-    // Met a jour l'affichage immediatement ; setLocale recharge ensuite la page.
-    setCurrent(next)
-    void setLocale(next)
+    switchLocale(next)
   }
 
   return (

@@ -23,12 +23,44 @@ import {
   SheetTrigger,
 } from '~/components/ui/sheet'
 
+const DOCS_URL = 'https://filon-docs.vercel.app'
+
 function useNav() {
   return [
     { href: '#produit', label: m.nav_product() },
     { href: '#vues', label: m.nav_views() },
     { href: '#tarifs', label: m.nav_pricing() },
   ]
+}
+
+/**
+ * Defile en douceur vers une ancre. ScrollSmoother detourne le scroll natif :
+ * un saut `#hash` ne fonctionne donc pas. On passe par l'instance ScrollSmoother
+ * quand elle existe (desktop, non tactile), sinon fallback `scrollIntoView`.
+ */
+function scrollToAnchor(href: string) {
+  if (typeof window === 'undefined') return
+  const id = href.replace(/^#/, '')
+  const target = document.getElementById(id)
+  if (!target) return
+
+  const w = window as typeof window & {
+    ScrollSmoother?: { get: () => { scrollTo: (t: Element, smooth: boolean, position?: string) => void } | undefined }
+  }
+  const smoother = w.ScrollSmoother?.get?.()
+  if (smoother) {
+    smoother.scrollTo(target, true, 'top top')
+  } else {
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+}
+
+function handleAnchorClick(
+  e: React.MouseEvent<HTMLAnchorElement>,
+  href: string,
+) {
+  e.preventDefault()
+  scrollToAnchor(href)
 }
 
 /**
@@ -65,11 +97,20 @@ export function MarketingHeader() {
             <a
               key={item.href}
               href={item.href}
+              onClick={(e) => handleAnchorClick(e, item.href)}
               className="flex h-9 items-center rounded-[var(--radius)] px-3 text-sm font-medium text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg"
             >
               {item.label}
             </a>
           ))}
+          <a
+            href={DOCS_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex h-9 items-center rounded-[var(--radius)] px-3 text-sm font-medium text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg"
+          >
+            {m.nav_docs()}
+          </a>
         </nav>
 
         <div className="ml-auto hidden items-center gap-2 md:flex">
@@ -143,12 +184,24 @@ function MobileMenu({
             <a
               key={item.href}
               href={item.href}
-              onClick={() => setOpen(false)}
+              onClick={(e) => {
+                handleAnchorClick(e, item.href)
+                setOpen(false)
+              }}
               className="flex h-12 items-center rounded-[var(--radius)] px-3 text-base font-medium text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg"
             >
               {item.label}
             </a>
           ))}
+          <a
+            href={DOCS_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => setOpen(false)}
+            className="flex h-12 items-center rounded-[var(--radius)] px-3 text-base font-medium text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg"
+          >
+            {m.nav_docs()}
+          </a>
         </nav>
 
         <div className="mt-auto flex flex-col gap-2.5 border-t border-border px-5 py-5">
