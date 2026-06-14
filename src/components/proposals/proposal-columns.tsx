@@ -1,6 +1,6 @@
 import type { ColumnDef } from '@tanstack/react-table'
 import { Building2 } from 'lucide-react'
-import type { Doc } from '../../../convex/_generated/dataModel'
+import type { Doc, Id } from '../../../convex/_generated/dataModel'
 import { Badge } from '~/components/ui/badge'
 import { SortableHeader } from '~/components/data-table'
 import { ProposalRowActions } from './proposal-row-actions'
@@ -26,8 +26,10 @@ const STATUS_RANK: Record<ProposalStatus, number> = {
  * le callback d'edition (ouvre le dialog du formulaire cote page).
  */
 export function buildProposalColumns({
+  onOpen,
   onEdit,
 }: {
+  onOpen: (id: Id<'proposals'>) => void
   onEdit: (proposal: Doc<'proposals'>) => void
 }): ColumnDef<Proposal, unknown>[] {
   return [
@@ -121,7 +123,11 @@ export function buildProposalColumns({
       header: () => <span className="sr-only">Actions</span>,
       meta: { headerClassName: 'w-12', cellClassName: 'w-12' },
       cell: ({ row }) => (
-        <ProposalRowActions proposal={row.original} onEdit={onEdit} />
+        <ProposalRowActions
+          proposal={row.original}
+          onOpen={() => onOpen(row.original._id)}
+          onEdit={onEdit}
+        />
       ),
     },
   ]

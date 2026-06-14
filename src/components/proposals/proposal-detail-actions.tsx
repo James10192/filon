@@ -78,7 +78,7 @@ export function ProposalDetailActions({
     try {
       await remove({ id: proposal._id })
       toast.success('Proposition supprimée.')
-      navigate({ to: '/app/propositions' })
+      navigate({ to: '/app/propositions', search: { view: 'liste' } })
     } catch {
       toast.error('La suppression a échoué.')
       setBusy(false)

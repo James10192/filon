@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Link } from '@tanstack/react-router'
 import { useMutation } from 'convex/react'
 import {
   Building2,
@@ -46,9 +45,11 @@ type ProposalRow = Doc<'proposals'> & { companyName?: string }
 
 export function ProposalCard({
   proposal,
+  onSelect,
   onEdit,
 }: {
   proposal: ProposalRow
+  onSelect: () => void
   onEdit: (proposal: Doc<'proposals'>) => void
 }) {
   const setStatus = useMutation(api.proposals.setStatus)
@@ -110,13 +111,13 @@ export function ProposalCard({
     <article className="flex flex-col gap-3 rounded-[var(--radius-lg)] border border-border bg-surface p-4 shadow-[var(--shadow-card)] transition-colors hover:border-border-strong sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <Link
-            to="/app/propositions/$id"
-            params={{ id: proposal._id }}
-            className="block truncate text-base font-semibold tracking-[-0.01em] text-fg transition-colors hover:text-accent"
+          <button
+            type="button"
+            onClick={onSelect}
+            className="block max-w-full truncate text-left text-base font-semibold tracking-[-0.01em] text-fg transition-colors hover:text-accent focus-visible:outline-none focus-visible:underline"
           >
             {proposal.title}
-          </Link>
+          </button>
           {proposal.companyName ? (
             <p className="mt-0.5 flex items-center gap-1.5 text-sm text-fg-muted">
               <Building2 className="size-3.5 shrink-0 text-fg-subtle" />
@@ -139,11 +140,13 @@ export function ProposalCard({
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-fg-subtle">
         {amount && (
-          <span className="font-medium tabular-nums text-fg-muted">
-            {amount}
+          <span className="assay font-medium text-fg-muted">{amount}</span>
+        )}
+        {sentAt && (
+          <span>
+            Envoyée le <span className="assay">{sentAt}</span>
           </span>
         )}
-        {sentAt && <span>Envoyée le {sentAt}</span>}
       </div>
 
       <div className="mt-1 flex items-center gap-2">

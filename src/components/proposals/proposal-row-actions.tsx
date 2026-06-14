@@ -11,7 +11,6 @@ import {
   Undo2,
   XCircle,
 } from 'lucide-react'
-import { useNavigate } from '@tanstack/react-router'
 import { api } from '../../../convex/_generated/api'
 import type { Doc } from '../../../convex/_generated/dataModel'
 import { Button } from '~/components/ui/button'
@@ -44,12 +43,13 @@ type Proposal = Doc<'proposals'>
  */
 export function ProposalRowActions({
   proposal,
+  onOpen,
   onEdit,
 }: {
   proposal: Proposal
+  onOpen: () => void
   onEdit: (proposal: Proposal) => void
 }) {
-  const navigate = useNavigate()
   const setStatus = useMutation(api.proposals.setStatus)
   const remove = useMutation(api.proposals.remove)
   const convert = useMutation(api.proposals.convertToOpportunity)
@@ -116,11 +116,7 @@ export function ProposalRowActions({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-52">
-          <DropdownMenuItem
-            onSelect={() =>
-              navigate({ to: '/app/propositions/$id', params: { id: proposal._id } })
-            }
-          >
+          <DropdownMenuItem onSelect={onOpen}>
             <SquareArrowOutUpRight className="size-4" />
             Ouvrir
           </DropdownMenuItem>
