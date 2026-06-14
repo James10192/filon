@@ -63,15 +63,18 @@ export function TodayStack() {
   const isEmpty = total === 0
 
   return (
-    <Card className="flex h-full flex-col">
+    <Card
+      className="reveal flex h-full flex-col"
+      style={{ ['--reveal-i' as string]: 5 }}
+    >
       <CardHeader className="flex-row items-center justify-between gap-3 space-y-0">
         <CardTitle className="flex items-center gap-2 text-[15px]">
           <ListChecks className="size-4.5 text-fg-muted" />
-          À faire aujourd'hui
+          Prochaines actions
           {!isEmpty && (
             <span
               className={cn(
-                'inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-semibold tabular-nums',
+                'assay inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-semibold',
                 overdueList.length > 0
                   ? 'bg-danger-soft text-danger'
                   : 'bg-accent-soft text-accent',
@@ -161,7 +164,7 @@ function ActionRow({
             {tone === 'danger' ? 'En retard' : "Aujourd'hui"}
           </span>
           <span aria-hidden>·</span>
-          <span className="shrink-0">{formatDateShort(followup.dueDate)}</span>
+          <span className="assay shrink-0">{formatDateShort(followup.dueDate)}</span>
         </span>
       </div>
       <Button

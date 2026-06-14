@@ -244,6 +244,86 @@ export const funnel = query({
 })
 
 /**
+ * Tendances hebdomadaires sur 8 semaines glissantes, pour les sparklines des
+ * cartes KPI du tableau de bord. Toutes les séries sont dans le même ordre
+ * chronologique (la plus ancienne en premier, la semaine en cours en dernier).
+ *
+ * Séries renvoyées (8 points chacune) :
+ * - `opportunities` : opportunités créées par semaine (`createdAt`).
+ * - `won` : opportunités passées « gagné » par semaine (proxy `updatedAt` des
+ *   opportunités au stage `won`).
+ * - `proposals` : propositions envoyées par semaine (`sentAt`, sinon `createdAt`
+ *   pour les propositions au statut `sent`).
+ * - `activities` : activités journalisées par semaine (`createdAt`).
+ *
+ * Multi-tenant strict (`requireUser`), lectures scopées `by_user*`. Additif :
+ * n'altère aucun contrat existant.
+ */
+const TREND_WEEKS = 8
+const WEEK_MS = 7 * 86_400_000
+
+export const trends = query({
+  args: {},
+  handler: async (ctx) => {
+    const { userId } = await requireUser(ctx)
+
+    // Bornes des 8 fenêtres hebdomadaires (la dernière finit maintenant).
+    const now = Date.now()
+    const start = now - TREND_WEEKS * WEEK_MS
+    const emptySeries = () => Array.from({ length: TREND_WEEKS }, () => 0)
+    // Indice de bucket pour un timestamp ms ; -1 si hors fenêtre.
+    const bucketOf = (ms: number): number => {
+      if (ms < start || ms > now) return -1
+      const idx = Math.floor((ms - start) / WEEK_MS)
+      return idx >= TREND_WEEKS ? TREND_WEEKS - 1 : idx
+    }
+    // Indice de bucket pour une date ISO ; -1 si non parsable / hors fenêtre.
+    const bucketOfIso = (iso?: string): number => {
+      if (!iso) return -1
+      const ms = new Date(iso).getTime()
+      return Number.isNaN(ms) ? -1 : bucketOf(ms)
+    }
+
+    const opportunities = emptySeries()
+    const won = emptySeries()
+    const proposals = emptySeries()
+    const activities = emptySeries()
+
+    const opps = await loadOpportunities(ctx, userId)
+    for (const opp of opps) {
+      const created = bucketOf(opp.createdAt)
+      if (created >= 0) opportunities[created] += 1
+      if (opp.stage === 'won') {
+        const movedWon = bucketOf(opp.updatedAt)
+        if (movedWon >= 0) won[movedWon] += 1
+      }
+    }
+
+    const sentProposals = await ctx.db
+      .query('proposals')
+      .withIndex('by_user_status', (q) =>
+        q.eq('userId', userId).eq('status', 'sent'),
+      )
+      .collect()
+    for (const p of sentProposals) {
+      const idx = p.sentAt ? bucketOfIso(p.sentAt) : bucketOf(p.createdAt)
+      if (idx >= 0) proposals[idx] += 1
+    }
+
+    const acts = await ctx.db
+      .query('activities')
+      .withIndex('by_user_created', (q) => q.eq('userId', userId))
+      .collect()
+    for (const a of acts) {
+      const idx = bucketOf(a.createdAt)
+      if (idx >= 0) activities[idx] += 1
+    }
+
+    return { weeks: TREND_WEEKS, opportunities, won, proposals, activities }
+  },
+})
+
+/**
  * Relances à venir + opportunités dont la prochaine action approche.
  */
 export const upcomingActions = query({

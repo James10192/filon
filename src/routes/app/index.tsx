@@ -14,7 +14,11 @@ import {
   SecondaryKpis,
   SecondaryKpisSkeleton,
 } from '~/components/dashboard/secondary-kpis'
-import { RecentActivity } from '~/components/dashboard/recent-activity'
+import { KpiRow, KpiRowSkeleton } from '~/components/dashboard/kpi-row'
+import {
+  RecentActivity,
+  RecentActivitySkeleton,
+} from '~/components/dashboard/recent-activity'
 
 export const Route = createFileRoute('/app/')({
   component: DashboardPage,
@@ -76,16 +80,19 @@ function DashboardPage() {
       />
 
       <div className="flex flex-col gap-5">
-        {/* Hero : entonnoir du pipeline (compte + valeur par étape) */}
+        {/* Hero : entonnoir de conversion du pipeline */}
         <PipelineFunnel />
 
-        {/* Priorités du jour + activité récente */}
+        {/* Rangée KPI : valeurs directrices + sparklines de tendance */}
+        <KpiRow summary={summary} />
+
+        {/* Prochaines actions + timeline d'activité */}
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
           <TodayStack />
           <RecentActivity />
         </div>
 
-        {/* KPI secondaires compacts */}
+        {/* Bande carnet : volumes cliquables */}
         <SecondaryKpis summary={summary} />
       </div>
     </div>
@@ -145,9 +152,10 @@ function DashboardSkeleton() {
       />
       <div className="flex flex-col gap-5">
         <PipelineFunnelSkeleton />
+        <KpiRowSkeleton />
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
           <TodayStackSkeleton />
-          <TodayStackSkeleton />
+          <RecentActivitySkeleton />
         </div>
         <SecondaryKpisSkeleton />
       </div>

@@ -1,134 +1,82 @@
+import { Link } from '@tanstack/react-router'
 import type { LucideIcon } from 'lucide-react'
-import { Percent, Trophy, NotebookTabs, Send } from 'lucide-react'
-import { cn } from '~/lib/utils'
+import { Building2, Users, FileText, Send, ArrowUpRight } from 'lucide-react'
 import { Skeleton } from '~/components/ui/skeleton'
-import { formatNumber, formatPercent } from './pipeline-meta'
-
-type Tone = 'neutral' | 'accent' | 'success'
+import { formatNumber } from './pipeline-meta'
 
 type Summary = {
-  winRate: number
-  wonCount: number
-  lostCount: number
-  proposalsSent: number
   companiesCount: number
   contactsCount: number
   documentsCount: number
+  proposalsSent: number
 }
 
-const TONE_ICON: Record<Tone, string> = {
-  neutral: 'bg-surface-2 text-fg-muted',
-  accent: 'bg-accent-soft text-accent',
-  success: 'bg-success-soft text-success',
+type Item = {
+  label: string
+  value: number
+  icon: LucideIcon
+  to: string
 }
 
 /**
- * Rangee de KPI secondaires, compacts (plus petits que le hero) : taux de
- * conversion, gagnees, propositions envoyees, carnet. Lecture rapide en
- * complement de l'entonnoir, pas le centre d'attention.
+ * Bande « Carnet » : indicateurs de volume du carnet (entreprises, contacts,
+ * documents, propositions), discrets et cliquables. Complète la rangée KPI
+ * sans la dupliquer. Valeurs en assay-mono.
  */
 export function SecondaryKpis({ summary }: { summary: Summary }) {
-  const items: {
-    label: string
-    value: string
-    icon: LucideIcon
-    hint: string
-    tone: Tone
-  }[] = [
-    {
-      label: 'Conversion',
-      value: formatPercent(summary.winRate),
-      icon: Percent,
-      hint: `${formatNumber(summary.wonCount)} / ${formatNumber(summary.wonCount + summary.lostCount)} closes`,
-      tone: summary.winRate >= 0.5 ? 'success' : 'neutral',
-    },
-    {
-      label: 'Gagnées',
-      value: formatNumber(summary.wonCount),
-      icon: Trophy,
-      hint: `${formatNumber(summary.lostCount)} perdue${summary.lostCount > 1 ? 's' : ''}`,
-      tone: 'success',
-    },
-    {
-      label: 'Propositions',
-      value: formatNumber(summary.proposalsSent),
-      icon: Send,
-      hint: 'envoyées',
-      tone: 'accent',
-    },
-    {
-      label: 'Carnet',
-      value: formatNumber(summary.companiesCount),
-      icon: NotebookTabs,
-      hint: `${formatNumber(summary.contactsCount)} contact${summary.contactsCount > 1 ? 's' : ''} · ${formatNumber(summary.documentsCount)} doc${summary.documentsCount > 1 ? 's' : ''}`,
-      tone: 'neutral',
-    },
+  const items: Item[] = [
+    { label: 'Entreprises', value: summary.companiesCount, icon: Building2, to: '/app/entreprises' },
+    { label: 'Contacts', value: summary.contactsCount, icon: Users, to: '/app/entreprises' },
+    { label: 'Propositions', value: summary.proposalsSent, icon: Send, to: '/app/propositions' },
+    { label: 'Documents', value: summary.documentsCount, icon: FileText, to: '/app/documents' },
   ]
 
   return (
     <section
-      aria-label="Indicateurs secondaires"
-      className="grid grid-cols-2 gap-3 lg:grid-cols-4"
+      aria-label="Carnet"
+      className="reveal grid grid-cols-2 gap-px overflow-hidden rounded-[var(--radius-lg)] border border-border bg-border shadow-[var(--shadow-card)] lg:grid-cols-4"
+      style={{ ['--reveal-i' as string]: 7 }}
     >
       {items.map((it) => (
-        <CompactKpi key={it.label} {...it} />
+        <CarnetCell key={it.label} {...it} />
       ))}
     </section>
   )
 }
 
-function CompactKpi({
-  label,
-  value,
-  icon: Icon,
-  hint,
-  tone,
-}: {
-  label: string
-  value: string
-  icon: LucideIcon
-  hint: string
-  tone: Tone
-}) {
+function CarnetCell({ label, value, icon: Icon, to }: Item) {
   return (
-    <div className="flex items-center gap-3 rounded-[var(--radius)] border border-border bg-surface px-3.5 py-3 shadow-[var(--shadow-card)]">
-      <span
-        className={cn(
-          'flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)]',
-          TONE_ICON[tone],
-        )}
-      >
-        <Icon className="size-4" />
-      </span>
-      <div className="flex min-w-0 flex-col">
-        <span className="flex items-baseline gap-1.5">
-          <span className="text-lg font-semibold tabular-nums tracking-[-0.02em] text-fg">
-            {value}
-          </span>
-          <span className="truncate text-xs font-medium uppercase tracking-[0.04em] text-fg-subtle">
-            {label}
-          </span>
+    <Link
+      to={to}
+      className="group flex items-center justify-between gap-3 bg-surface px-4 py-3.5 transition-colors hover:bg-surface-2"
+    >
+      <div className="flex items-center gap-2.5">
+        <Icon className="size-4 shrink-0 text-fg-subtle" aria-hidden />
+        <span className="text-xs font-medium uppercase tracking-[0.04em] text-fg-subtle">
+          {label}
         </span>
-        <span className="truncate text-xs text-fg-muted">{hint}</span>
       </div>
-    </div>
+      <span className="flex items-center gap-1.5">
+        <span className="assay text-lg font-semibold tracking-[-0.01em] text-fg">
+          {formatNumber(value)}
+        </span>
+        <ArrowUpRight className="size-3.5 text-fg-subtle opacity-0 transition-opacity group-hover:opacity-100" />
+      </span>
+    </Link>
   )
 }
 
-/** Squelette de la rangee de KPI secondaires (etat loading). */
+/** Squelette de la bande carnet (état loading). */
 export function SecondaryKpisSkeleton() {
   return (
-    <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <section className="grid grid-cols-2 gap-px overflow-hidden rounded-[var(--radius-lg)] border border-border bg-border shadow-[var(--shadow-card)] lg:grid-cols-4">
       {Array.from({ length: 4 }).map((_, i) => (
         <div
           key={i}
-          className="flex items-center gap-3 rounded-[var(--radius)] border border-border bg-surface px-3.5 py-3 shadow-[var(--shadow-card)]"
+          className="flex items-center justify-between bg-surface px-4 py-3.5"
         >
-          <Skeleton className="size-8 rounded-[var(--radius-sm)]" />
-          <div className="flex flex-1 flex-col gap-1.5">
-            <Skeleton className="h-4 w-20" />
-            <Skeleton className="h-3 w-16" />
-          </div>
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-5 w-8" />
         </div>
       ))}
     </section>
