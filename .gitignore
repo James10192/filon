@@ -13,3 +13,6 @@ convex/_generated
 HANDOFF.md
 
 .vercel
+
+# i18n Paraglide (genere par paraglide-js compile / plugin Vite)
+src/lib/paraglide

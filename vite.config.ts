@@ -4,6 +4,7 @@ import viteReact from '@vitejs/plugin-react'
 import { nitro } from 'nitro/vite'
 import viteTsConfigPaths from 'vite-tsconfig-paths'
 import tailwindcss from '@tailwindcss/vite'
+import { paraglideVitePlugin } from '@inlang/paraglide-js'
 
 export default defineConfig({
   server: { port: 3000 },
@@ -23,6 +24,16 @@ export default defineConfig({
   },
   plugins: [
     viteTsConfigPaths({ projects: ['./tsconfig.json'] }),
+    // i18n compile-time (Paraglide / Inlang). Genere le runtime tree-shakeable
+    // dans src/lib/paraglide a partir des messages FR/EN. Strategy SSR-safe :
+    // localStorage (cle "filon-locale") cote client, sinon langue preferee du
+    // navigateur (header Accept-Language au SSR), sinon baseLocale (fr).
+    paraglideVitePlugin({
+      project: './project.inlang',
+      outdir: './src/lib/paraglide',
+      strategy: ['localStorage', 'preferredLanguage', 'baseLocale'],
+      localStorageKey: 'filon-locale',
+    }),
     tailwindcss(),
     // SSR au runtime (Nitro/Vercel). Les pages dépendent de données Convex
     // temps réel : pas de prérendu statique au build pour éviter de figer
