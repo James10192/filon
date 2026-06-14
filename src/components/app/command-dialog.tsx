@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from 'convex/react'
 import { Calendar, FileDown, FilePlus2, KanbanSquare, Plus } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
+import { m } from '~/lib/paraglide/messages'
 import type { GlobalSearchResult } from '../../../convex/search'
 import {
   Command,
@@ -96,7 +97,7 @@ export function CommandPaletteDialog({
     () => [
       {
         id: 'new-opportunity',
-        label: 'Nouvelle opportunité',
+        label: m.command_action_new_opportunity(),
         keywords: 'ajouter creer capture rapide piste candidature',
         icon: Plus,
         run: onNewOpportunity,
@@ -104,28 +105,28 @@ export function CommandPaletteDialog({
       },
       {
         id: 'new-proposal',
-        label: 'Nouvelle proposition',
+        label: m.command_action_new_proposal(),
         keywords: 'pitch demarchage prospection creer envoyer',
         icon: FilePlus2,
         run: onNewProposal,
       },
       {
         id: 'import-offer',
-        label: 'Importer une offre',
+        label: m.command_action_import_offer(),
         keywords: 'veille educarriere linkedin lien coller',
         icon: FileDown,
         run: onImportOffer,
       },
       {
         id: 'open-board',
-        label: 'Pipeline (vue Tableau)',
+        label: m.command_action_open_board(),
         keywords: 'kanban board colonnes etapes pipeline tableau opportunites',
         icon: KanbanSquare,
         run: onOpenBoard,
       },
       {
         id: 'open-calendar',
-        label: 'Opportunités (vue Calendrier)',
+        label: m.command_action_open_calendar(),
         keywords: 'agenda echeances relances calendrier dates opportunites',
         icon: Calendar,
         run: onOpenCalendar,
@@ -146,7 +147,7 @@ export function CommandPaletteDialog({
     : actions
   const visiblePages = term
     ? NAV_ITEMS.filter((item) =>
-        normalize(`${item.label} ${item.keywords ?? ''}`).includes(term),
+        normalize(`${item.label()} ${item.keywords ?? ''}`).includes(term),
       )
     : NAV_ITEMS
 
@@ -156,10 +157,9 @@ export function CommandPaletteDialog({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="top-[18%] translate-y-0 overflow-hidden p-0 sm:max-w-xl [&>button]:right-3 [&>button]:top-2">
-        <DialogTitle className="sr-only">Palette de commandes</DialogTitle>
+        <DialogTitle className="sr-only">{m.command_title()}</DialogTitle>
         <DialogDescription className="sr-only">
-          Recherchez une page, une action ou une fiche. Flèches pour naviguer,
-          Entrée pour valider, Échap pour fermer.
+          {m.command_description()}
         </DialogDescription>
 
         <Command
@@ -168,21 +168,23 @@ export function CommandPaletteDialog({
         >
           <CommandInput
             className="pr-8"
-            placeholder="Rechercher une page, une action, une fiche…"
+            placeholder={m.command_input_placeholder()}
             value={query}
             onValueChange={setQuery}
           />
           <CommandList className="max-h-[min(60dvh,420px)] p-2">
             <CommandEmpty className="py-8 text-sm text-fg-subtle">
               {searching ? (
-                <>Aucun résultat pour « {debounced} ».</>
+                <>
+                  {m.command_empty_with_term()} « {debounced} ».
+                </>
               ) : (
-                'Aucun résultat.'
+                m.command_empty()
               )}
             </CommandEmpty>
 
             {visibleActions.length > 0 && (
-              <CommandGroup heading="Actions rapides">
+              <CommandGroup heading={m.command_group_actions()}>
                 {visibleActions.map((action) => {
                   const Icon = action.icon
                   return (
@@ -212,18 +214,18 @@ export function CommandPaletteDialog({
             {visiblePages.length > 0 && (
               <>
                 <CommandSeparator className="my-1" />
-                <CommandGroup heading="Aller à">
+                <CommandGroup heading={m.command_group_pages()}>
                   {visiblePages.map((item) => {
                     const Icon = item.icon
                     return (
                       <CommandItem
                         key={item.to}
                         value={`page:${item.to}`}
-                        keywords={[item.label, item.keywords ?? '']}
+                        keywords={[item.label(), item.keywords ?? '']}
                         onSelect={() => onNavigate(item.to)}
                       >
                         <Icon />
-                        <span className="flex-1">{item.label}</span>
+                        <span className="flex-1">{item.label()}</span>
                       </CommandItem>
                     )
                   })}
@@ -243,9 +245,9 @@ export function CommandPaletteDialog({
           </CommandList>
 
           <div className="flex items-center gap-3 border-t border-border px-4 py-2 text-[11px] text-fg-subtle">
-            <PaletteHint label="naviguer">↑↓</PaletteHint>
-            <PaletteHint label="ouvrir">↵</PaletteHint>
-            <PaletteHint label="fermer">Échap</PaletteHint>
+            <PaletteHint label={m.command_hint_navigate()}>↑↓</PaletteHint>
+            <PaletteHint label={m.command_hint_open()}>↵</PaletteHint>
+            <PaletteHint label={m.command_hint_close()}>Échap</PaletteHint>
             <kbd className="assay ml-auto rounded border border-border bg-surface-2 px-1.5 py-0.5 text-fg-subtle">
               {shortcut}
             </kbd>

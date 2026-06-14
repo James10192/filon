@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useState } from 'react'
 import { useMutation } from 'convex/react'
 import { Zap } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
+import { m } from '~/lib/paraglide/messages'
 import { toast } from '~/components/ui/sonner'
 import { handlePlanLimit } from '~/lib/billing/upsell'
 import {
@@ -69,11 +70,11 @@ export function QuickCaptureProvider({
       if (values.description) args.description = values.description
 
       await create(args as Parameters<typeof create>[0])
-      toast.success('Opportunite ajoutee.')
+      toast.success(m.quick_capture_success())
       setIsOpen(false)
     } catch (error) {
       if (!handlePlanLimit(error)) {
-        toast.error("Impossible d'ajouter l'opportunite.")
+        toast.error(m.quick_capture_error())
       }
     } finally {
       setPending(false)
@@ -93,10 +94,10 @@ export function QuickCaptureProvider({
               <span className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] bg-accent-soft text-accent">
                 <Zap className="size-3.5" />
               </span>
-              Capture rapide
+              {m.quick_capture_title()}
             </SheetTitle>
             <SheetDescription>
-              Ajoutez une opportunite a votre pipeline en quelques secondes.
+              {m.quick_capture_description()}
             </SheetDescription>
           </SheetHeader>
           {/* Le formulaire n'est monte que lorsque le Sheet est ouvert, pour

@@ -1,4 +1,5 @@
 import { Briefcase, Building2, Send } from 'lucide-react'
+import { m } from '~/lib/paraglide/messages'
 import type { GlobalSearchResult, SearchHit } from '../../../convex/search'
 import {
   CommandGroup,
@@ -52,21 +53,21 @@ export function SearchResults({
       <CommandSeparator className="my-1" />
 
       <ResultGroup
-        heading="Opportunités"
+        heading={m.command_results_opportunities()}
         hits={results.opportunities}
         icon={Briefcase}
         keyPrefix="opp"
         onSelect={(hit) => onNavigate(`/app/opportunites/${hit.id}`)}
       />
       <ResultGroup
-        heading="Entreprises"
+        heading={m.command_results_companies()}
         hits={results.companies}
         icon={Building2}
         keyPrefix="cmp"
         onSelect={(hit) => onOpenCompany(hit.title)}
       />
       <ResultGroup
-        heading="Propositions"
+        heading={m.command_results_proposals()}
         hits={results.proposals}
         icon={Send}
         keyPrefix="prop"

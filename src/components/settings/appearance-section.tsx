@@ -1,6 +1,8 @@
 import { Monitor, Moon, Sun } from 'lucide-react'
+import { m } from '~/lib/paraglide/messages'
 import { cn } from '~/lib/utils'
 import { useTheme } from '~/components/app/theme'
+import { LocaleSwitcher } from '~/components/i18n/locale-switcher'
 import {
   Card,
   CardContent,
@@ -46,6 +48,18 @@ export function AppearanceSection() {
             selected={active === 'dark'}
             onSelect={() => setTheme('dark')}
           />
+        </div>
+
+        <div className="mt-5 flex flex-col gap-3 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-1">
+            <span className="text-sm font-medium text-fg">
+              {m.settings_language()}
+            </span>
+            <span className="text-sm text-fg-muted">
+              {m.settings_language_description()}
+            </span>
+          </div>
+          <LocaleSwitcher size="lg" />
         </div>
       </CardContent>
     </Card>

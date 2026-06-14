@@ -1,5 +1,6 @@
 import { Link, useLocation } from '@tanstack/react-router'
 import { Plus, type LucideIcon } from 'lucide-react'
+import { m } from '~/lib/paraglide/messages'
 import { cn } from '~/lib/utils'
 import { useQuickCapture } from './quick-capture'
 import { NAV_ITEMS, isNavItemActive, type NavItem } from './nav-config'
@@ -24,7 +25,7 @@ export function MobileBottombar() {
 
   return (
     <nav
-      aria-label="Navigation principale"
+      aria-label={m.bottombar_nav_label()}
       className="fixed inset-x-0 bottom-0 z-40 border-t border-sidebar-border bg-sidebar/95 backdrop-blur-sm lg:hidden"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
@@ -41,7 +42,7 @@ export function MobileBottombar() {
           <button
             type="button"
             onClick={quickCapture.open}
-            aria-label="Nouvelle opportunité"
+            aria-label={m.bottombar_new_opportunity()}
             className="flex size-11 items-center justify-center rounded-full bg-accent text-accent-fg shadow-sm transition-colors hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring active:bg-accent-hover"
           >
             <Plus className="size-5" />
@@ -75,7 +76,7 @@ function BottomLink({ item, active }: { item: NavItem; active: boolean }) {
         )}
       >
         <Icon className="size-5" />
-        <span className="max-w-full truncate px-0.5">{item.label}</span>
+        <span className="max-w-full truncate px-0.5">{item.label()}</span>
       </Link>
     </li>
   )

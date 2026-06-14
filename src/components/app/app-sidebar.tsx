@@ -9,6 +9,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
+import { m } from '~/lib/paraglide/messages'
 import { authClient } from '~/lib/auth/auth-client'
 import { useUpsell } from '~/lib/billing/use-upsell'
 import { cn } from '~/lib/utils'
@@ -87,7 +88,7 @@ function Brand() {
     <Link
       to="/app"
       className="flex h-9 items-center gap-2.5 px-1.5 text-sidebar-foreground"
-      aria-label="Filon, tableau de bord"
+      aria-label={m.sidebar_brand_aria()}
     >
       <span className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-accent text-accent-fg">
         <KanbanSquare className="size-4" />
@@ -105,12 +106,12 @@ function NewOpportunityButton() {
   return (
     <SidebarMenuButton
       onClick={quickCapture.open}
-      tooltip="Nouvelle opportunité"
+      tooltip={m.sidebar_new_opportunity()}
       className="mt-1 bg-accent font-medium text-accent-fg hover:bg-accent-hover hover:text-accent-fg active:bg-accent-hover active:text-accent-fg"
     >
       <Plus className="size-4" />
       <span className="group-data-[collapsible=icon]:hidden">
-        Nouvelle opportunité
+        {m.sidebar_new_opportunity()}
       </span>
     </SidebarMenuButton>
   )
@@ -133,9 +134,9 @@ function SidebarNav() {
   return (
     <>
       {NAV_GROUPS.map((group) => (
-        <SidebarGroup key={group.title}>
+        <SidebarGroup key={group.title()}>
           <SidebarGroupLabel className="text-[10px] font-semibold tracking-[0.08em] text-sidebar-foreground/55 uppercase">
-            {group.title}
+            {group.title()}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -148,7 +149,7 @@ function SidebarNav() {
                     <SidebarMenuButton
                       asChild
                       isActive={active}
-                      tooltip={item.label}
+                      tooltip={item.label()}
                       className={cn(active && ACTIVE_NAV)}
                     >
                       <Link
@@ -156,7 +157,7 @@ function SidebarNav() {
                         aria-current={active ? 'page' : undefined}
                       >
                         <Icon className="size-4" />
-                        <span>{item.label}</span>
+                        <span>{item.label()}</span>
                       </Link>
                     </SidebarMenuButton>
                     {b && (
@@ -270,21 +271,21 @@ function AccountMenu({
         <DropdownMenuItem asChild>
           <Link to="/app/parametres">
             <Settings className="size-4" />
-            Paramètres
+            {m.sidebar_settings()}
           </Link>
         </DropdownMenuItem>
         {showUpgrade && (
           <DropdownMenuItem asChild>
             <Link to="/app/tarifs">
               <Sparkles className="size-4" />
-              Améliorer
+              {m.sidebar_upgrade()}
             </Link>
           </DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" onSelect={logout}>
           <LogOut className="size-4" />
-          Déconnexion
+          {m.sidebar_logout()}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

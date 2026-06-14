@@ -10,17 +10,21 @@ import {
   Sparkles,
   type LucideIcon,
 } from 'lucide-react'
+import { m } from '~/lib/paraglide/messages'
 
 /**
  * Source unique de la navigation de l'espace de travail Filon.
  *
  * Partagee par la sidebar (groupes visuels) et la palette de commandes
  * (cibles de navigation), pour eviter toute divergence entre les deux.
+ *
+ * Les intitules sont des fonctions de message Paraglide (`() => string`),
+ * resolues au point de rendu pour suivre la langue active.
  */
 
 export type NavItem = {
   to: string
-  label: string
+  label: () => string
   icon: LucideIcon
   /** Comparaison stricte de chemin (vrai pour le tableau de bord racine). */
   exact: boolean
@@ -29,18 +33,18 @@ export type NavItem = {
 }
 
 export type NavGroup = {
-  title: string
+  title: () => string
   items: NavItem[]
 }
 
 /** Navigation regroupee par domaine, avec petits intitules. */
 export const NAV_GROUPS: NavGroup[] = [
   {
-    title: 'Pilotage',
+    title: m.nav_group_pilotage,
     items: [
       {
         to: '/app',
-        label: 'Tableau de bord',
+        label: m.nav_dashboard,
         icon: LayoutDashboard,
         exact: true,
         keywords: 'dashboard accueil pilotage synthese',
@@ -48,11 +52,11 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    title: 'Pipeline',
+    title: m.nav_group_pipeline,
     items: [
       {
         to: '/app/opportunites',
-        label: 'Opportunités',
+        label: m.nav_opportunities,
         icon: Briefcase,
         exact: false,
         keywords:
@@ -60,7 +64,7 @@ export const NAV_GROUPS: NavGroup[] = [
       },
       {
         to: '/app/veille',
-        label: 'Veille',
+        label: m.nav_watch,
         icon: Rss,
         exact: false,
         keywords: 'import offres educarriere surveillance recherche',
@@ -68,32 +72,32 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    title: 'Carnet',
+    title: m.nav_group_carnet,
     items: [
       {
         to: '/app/entreprises',
-        label: 'Entreprises',
+        label: m.nav_companies,
         icon: Building2,
         exact: false,
         keywords: 'societes companies carnet contacts',
       },
       {
         to: '/app/propositions',
-        label: 'Propositions',
+        label: m.nav_proposals,
         icon: Send,
         exact: false,
         keywords: 'pitch demarchage proposals prospection',
       },
       {
         to: '/app/relances',
-        label: 'Relances',
+        label: m.nav_followups,
         icon: BellRing,
         exact: false,
         keywords: 'followups rappels echeances suivis',
       },
       {
         to: '/app/documents',
-        label: 'Documents',
+        label: m.nav_documents,
         icon: FileText,
         exact: false,
         keywords: 'cv lettres portfolio fichiers pieces',
@@ -101,18 +105,18 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    title: 'Réglages',
+    title: m.nav_group_reglages,
     items: [
       {
         to: '/app/tarifs',
-        label: 'Tarifs & abonnement',
+        label: m.nav_pricing_plan,
         icon: Sparkles,
         exact: false,
         keywords: 'tarifs abonnement plan palier pro premium upgrade paystack facturation',
       },
       {
         to: '/app/parametres',
-        label: 'Paramètres',
+        label: m.nav_settings,
         icon: Settings,
         exact: false,
         keywords: 'reglages settings preferences compte',

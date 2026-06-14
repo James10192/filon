@@ -2,6 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
 import { AlertTriangle, Compass, Plus, RotateCcw } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
+import { m } from '~/lib/paraglide/messages'
 import { Button } from '~/components/ui/button'
 import { PageToolbar } from '~/components/app/page-toolbar'
 import { useQuickCapture } from '~/components/app/quick-capture'
@@ -31,8 +32,8 @@ function DashboardError({ reset }: { reset: () => void }) {
   return (
     <div className="flex flex-col">
       <PageToolbar
-        title="Tableau de bord"
-        subtitle="Vos priorités du jour et la forme de votre pipeline."
+        title={m.dashboard_title()}
+        subtitle={m.dashboard_subtitle()}
       />
       <div className="flex flex-col items-center gap-4 rounded-[var(--radius-lg)] border border-danger/40 bg-danger-soft px-6 py-12 text-center">
         <span className="flex size-12 items-center justify-center rounded-full bg-surface text-danger">
@@ -40,16 +41,13 @@ function DashboardError({ reset }: { reset: () => void }) {
         </span>
         <div className="flex max-w-sm flex-col gap-1.5">
           <h2 className="text-base font-semibold text-fg">
-            Impossible de charger le tableau de bord
+            {m.dashboard_error_title()}
           </h2>
-          <p className="text-sm text-fg-muted">
-            Une erreur est survenue lors du chargement de vos indicateurs.
-            Réessayez dans un instant.
-          </p>
+          <p className="text-sm text-fg-muted">{m.dashboard_error_body()}</p>
         </div>
         <Button variant="secondary" onClick={reset}>
           <RotateCcw className="size-4" />
-          Réessayer
+          {m.dashboard_error_retry()}
         </Button>
       </div>
     </div>
@@ -70,12 +68,12 @@ function DashboardPage() {
   return (
     <div className="flex flex-col">
       <PageToolbar
-        title="Tableau de bord"
-        subtitle="Vos priorités du jour et la forme de votre pipeline."
+        title={m.dashboard_title()}
+        subtitle={m.dashboard_subtitle()}
         actions={
           <Button onClick={quickCapture.open}>
             <Plus className="size-4" />
-            Nouvelle opportunité
+            {m.dashboard_new_opportunity()}
           </Button>
         }
       />
@@ -107,12 +105,12 @@ function OnboardingState({ onCreate }: { onCreate: () => void }) {
   return (
     <div className="flex flex-col">
       <PageToolbar
-        title="Tableau de bord"
-        subtitle="Vos priorités du jour et la forme de votre pipeline."
+        title={m.dashboard_title()}
+        subtitle={m.dashboard_subtitle()}
         actions={
           <Button onClick={onCreate}>
             <Plus className="size-4" />
-            Nouvelle opportunité
+            {m.dashboard_new_opportunity()}
           </Button>
         }
       />
@@ -122,7 +120,7 @@ function OnboardingState({ onCreate }: { onCreate: () => void }) {
         </span>
         <div className="flex max-w-md flex-col gap-2">
           <h2 className="text-lg font-semibold tracking-[-0.02em] text-fg">
-            Ajoutez votre première opportunité
+            {m.dashboard_onboarding_title()}
           </h2>
           <p className="text-sm text-fg-muted">
             Dès votre première piste, votre entonnoir, vos relances du jour et
@@ -136,11 +134,11 @@ function OnboardingState({ onCreate }: { onCreate: () => void }) {
         <div className="flex flex-wrap items-center justify-center gap-2">
           <Button size="lg" onClick={onCreate}>
             <Plus className="size-4" />
-            Nouvelle opportunité
+            {m.dashboard_new_opportunity()}
           </Button>
           <Button variant="outline" size="lg" asChild>
             <Link to="/app/opportunites" search={{ view: 'tableau' }}>
-              Voir le pipeline
+              {m.dashboard_onboarding_view_pipeline()}
             </Link>
           </Button>
         </div>
@@ -153,8 +151,8 @@ function DashboardSkeleton() {
   return (
     <div className="flex flex-col">
       <PageToolbar
-        title="Tableau de bord"
-        subtitle="Vos priorités du jour et la forme de votre pipeline."
+        title={m.dashboard_title()}
+        subtitle={m.dashboard_subtitle()}
       />
       <div className="flex flex-col gap-5">
         <PipelineFunnelSkeleton />
