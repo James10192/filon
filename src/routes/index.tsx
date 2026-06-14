@@ -8,6 +8,7 @@ import { LandingPillars } from '~/components/marketing/landing-pillars'
 import { LandingShowcase } from '~/components/marketing/landing-showcase'
 import { PricingSection } from '~/components/marketing/pricing-section'
 import { LandingProof } from '~/components/marketing/landing-proof'
+import { LandingCreator } from '~/components/marketing/landing-creator'
 import { LandingCta } from '~/components/marketing/landing-cta'
 import { useLandingMotion } from '~/components/marketing/use-landing-motion'
 
@@ -63,6 +64,7 @@ function LandingPage() {
             <LandingShowcase />
             <PricingSection />
             <LandingProof />
+            <LandingCreator />
             <LandingCta />
           </main>
           <MarketingFooter />
