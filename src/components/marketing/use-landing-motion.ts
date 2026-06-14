@@ -40,8 +40,17 @@ export function useLandingMotion(scopeRef: React.RefObject<HTMLElement | null>) 
     if (prefersReduced) return
 
     let ctx: { revert: () => void } | undefined
-    let smoother: { kill: () => void } | undefined
+    let smoother:
+      | {
+          kill: () => void
+          refresh: () => void
+          content: () => HTMLElement
+          scrollTo: (target: number | Element, smooth?: boolean) => void
+        }
+      | undefined
     let cancelled = false
+    // Listeners fenêtre à nettoyer au unmount (refresh layout + état scrollé).
+    const winListeners: Array<[string, EventListener]> = []
 
     void (async () => {
       const [{ gsap }, { ScrollTrigger }, { SplitText }] = await Promise.all([
@@ -90,6 +99,29 @@ export function useLandingMotion(scopeRef: React.RefObject<HTMLElement | null>) 
             smooth: 1,
             effects: true,
             normalizeScroll: false,
+          }) as typeof smoother
+
+          // ── Navbar compacte au scroll ────────────────────────────────────
+          // Le scroll natif est détourné par ScrollSmoother : un listener
+          // `window scroll` ne se déclenche pas. On lit la position via un
+          // ScrollTrigger (qui suit le scroll virtuel du smoother) et on
+          // diffuse l'état « scrollé » au header (hors scope GSAP) par event,
+          // uniquement quand la valeur change (anti-thrash).
+          let lastScrolled = false
+          ScrollTrigger.create({
+            start: 0,
+            end: 'max',
+            onUpdate: (self: { scroll: () => number }) => {
+              const isScrolled = self.scroll() > 20
+              if (isScrolled !== lastScrolled) {
+                lastScrolled = isScrolled
+                window.dispatchEvent(
+                  new CustomEvent('filon:header-scrolled', {
+                    detail: { scrolled: isScrolled },
+                  }),
+                )
+              }
+            },
           })
         }
 
@@ -200,24 +232,44 @@ export function useLandingMotion(scopeRef: React.RefObject<HTMLElement | null>) 
         // avec ScrollSmoother → zone morte mobile, recouvrement desktop). Elle
         // se révèle au scroll via le pattern [data-reveal] partagé ci-dessus.
 
-        // ScrollSmoother s'initialise sur quelques frames : un refresh synchrone
-        // calcule les positions trop tôt (triggers jamais déclenchés). On
-        // rafraîchit aussi après le paint ET après le chargement des polices
-        // (qui décale la mise en page), pour fiabiliser les révélations.
-        ScrollTrigger.refresh()
-        requestAnimationFrame(() => {
-          if (!cancelled) ScrollTrigger.refresh()
-        })
-        if (document.fonts?.ready) {
-          void document.fonts.ready.then(() => {
-            if (!cancelled) ScrollTrigger.refresh()
-          })
+        // ── REFRESH ROBUSTE (corrige le footer inatteignable) ──────────────
+        // ScrollSmoother mesure la hauteur de #smooth-content trop tôt (avant
+        // que polices, révélations et images ne se stabilisent) : la plage de
+        // scroll virtuel n'atteint jamais le bas → le footer reste hors course.
+        // On rafraîchit DONC le smoother ET ScrollTrigger à chaque fois que la
+        // mise en page peut avoir changé : paint suivant, polices prêtes, load
+        // complet (images), et resize.
+        const refreshAll = () => {
+          if (cancelled) return
+          smoother?.refresh()
+          ScrollTrigger.refresh()
         }
+        refreshAll()
+        requestAnimationFrame(refreshAll)
+        if (document.fonts?.ready) {
+          void document.fonts.ready.then(refreshAll)
+        }
+        const onLoad: EventListener = () => refreshAll()
+        // `load` est déjà passé si le mount est tardif : appel direct en filet.
+        if (document.readyState === 'complete') {
+          requestAnimationFrame(refreshAll)
+        } else {
+          window.addEventListener('load', onLoad)
+          winListeners.push(['load', onLoad])
+        }
+        let resizeRaf = 0
+        const onResize: EventListener = () => {
+          if (resizeRaf) cancelAnimationFrame(resizeRaf)
+          resizeRaf = requestAnimationFrame(refreshAll)
+        }
+        window.addEventListener('resize', onResize)
+        winListeners.push(['resize', onResize])
       }, scope)
     })()
 
     return () => {
       cancelled = true
+      for (const [type, fn] of winListeners) window.removeEventListener(type, fn)
       smoother?.kill()
       ctx?.revert()
     }
