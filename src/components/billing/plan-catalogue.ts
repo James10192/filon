@@ -45,12 +45,24 @@ export const PLAN_CARDS: PlanCard[] = [
   {
     key: 'pro_ai',
     name: 'Pro+ IA',
-    tagline: "Tout Pro, plus l'assistance par IA.",
+    tagline: "Tout Pro, plus l'assistance par IA à l'acte.",
     features: [
       'Tout le palier Pro',
       'Scoring de pertinence des opportunités',
       'Brouillons lettre / e-mail / CV ciblés',
-      "Quota de crédits IA mensuel, au-delà à l'usage",
+      '300 crédits IA par mois, au-delà à la recharge',
+    ],
+  },
+  {
+    key: 'copilot',
+    name: 'Copilot',
+    tagline: "L'agent IA qui agit sur votre pipeline.",
+    features: [
+      'Tout le palier Pro+ IA',
+      'Copilote agentique : il analyse et agit (créer, relancer, rédiger)',
+      'Historique des conversations + journal des actions',
+      'Quota IA généreux en usage loyal, sans mur dur',
+      'Clé API perso (BYOK) en option',
     ],
   },
   {
@@ -72,30 +84,20 @@ export type CompareRow = {
   free: string | boolean
   pro: string | boolean
   pro_ai: string | boolean
+  copilot: string | boolean
 }
 
 export const COMPARE_ROWS: CompareRow[] = [
-  { label: 'Opportunités actives', free: '25', pro: 'Illimité', pro_ai: 'Illimité' },
-  { label: 'Recherches de veille', free: '1', pro: 'Illimité', pro_ai: 'Illimité' },
-  {
-    label: 'Veille automatique (moniteur)',
-    free: false,
-    pro: true,
-    pro_ai: true,
-  },
-  { label: 'Vues Liste / Tableau / Calendrier', free: true, pro: true, pro_ai: true },
-  { label: 'Relances et analytique', free: false, pro: true, pro_ai: true },
-  { label: 'Export des données', free: false, pro: true, pro_ai: true },
-  {
-    label: 'Scoring de pertinence (IA)',
-    free: false,
-    pro: false,
-    pro_ai: true,
-  },
-  {
-    label: 'Brouillons lettre / e-mail / CV (IA)',
-    free: false,
-    pro: false,
-    pro_ai: true,
-  },
+  { label: 'Opportunités actives', free: '25', pro: 'Illimité', pro_ai: 'Illimité', copilot: 'Illimité' },
+  { label: 'Recherches de veille', free: '1', pro: 'Illimité', pro_ai: 'Illimité', copilot: 'Illimité' },
+  { label: 'Veille automatique (moniteur)', free: false, pro: true, pro_ai: true, copilot: true },
+  { label: 'Vues Liste / Tableau / Calendrier', free: true, pro: true, pro_ai: true, copilot: true },
+  { label: 'Relances et analytique', free: false, pro: true, pro_ai: true, copilot: true },
+  { label: 'Export des données', free: false, pro: true, pro_ai: true, copilot: true },
+  { label: 'Crédits IA inclus / mois', free: '25', pro: '100', pro_ai: '300', copilot: '6000' },
+  { label: 'Scoring de pertinence (IA)', free: false, pro: false, pro_ai: true, copilot: true },
+  { label: 'Brouillons lettre / e-mail / CV (IA)', free: false, pro: false, pro_ai: true, copilot: true },
+  { label: 'Copilote agentique (chat + actions)', free: false, pro: false, pro_ai: false, copilot: true },
+  { label: 'Historique + journal des actions', free: false, pro: false, pro_ai: false, copilot: true },
+  { label: 'Usage loyal sans mur dur · BYOK', free: false, pro: false, pro_ai: false, copilot: true },
 ]

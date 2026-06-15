@@ -33,6 +33,9 @@ export function PlanComparison() {
               <th className="px-4 py-3 text-center font-medium text-fg-muted">
                 Pro+ IA
               </th>
+              <th className="px-4 py-3 text-center font-medium text-fg-muted">
+                Copilot
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -45,6 +48,7 @@ export function PlanComparison() {
                 <Cell value={row.free} />
                 <Cell value={row.pro} />
                 <Cell value={row.pro_ai} />
+                <Cell value={row.copilot} />
               </tr>
             ))}
           </tbody>
