@@ -81,20 +81,29 @@ export const ACTIVE_STAGES = [
 
 /**
  * Allocation mensuelle de crédits IA par palier. Un « crédit » est l'unité de
- * consommation interne (≈ un acte du copilote, dérivé du coût tokens). Seuls les
- * paliers IA en ont : `free`/`pro` = 0, `pro_ai` = quota modeste, `copilot` =
- * généreux. Les packs achetés à la carte s'ajoutent par-dessus (packBalance).
+ * consommation interne (≈ un acte du copilote, dérivé du coût tokens).
+ *
+ * Stratégie « dégustation » (arbitrage grill-me 2026-06-15) : TOUS les paliers
+ * reçoivent un quota, même gratuit, pour faire RESSENTIR la magie de l'agent sur
+ * un marché qui ne connaît pas encore l'IA. Avec le markup (×8), un crédit offert
+ * coûte ~1 XOF : l'acquisition par dégustation est quasi gratuite et nourrit le
+ * bouche-à-oreille. `free`/`pro` = un avant-goût ; `pro_ai` = à l'acte ; `copilot`
+ * = généreux (fair-use). Les packs achetés à la carte s'ajoutent (packBalance).
  */
 export const AI_MONTHLY_CREDITS: Record<Plan, number> = {
-  free: 0,
-  pro: 0,
-  pro_ai: 150,
-  copilot: 2000,
+  free: 25,
+  pro: 100,
+  pro_ai: 300,
+  copilot: 6000,
 }
 
-/** Le palier donne-t-il accès au copilote IA (agent + outils) ? */
+/**
+ * Le palier donne-t-il accès au copilote IA (agent + outils) ? Désormais piloté
+ * par les CRÉDITS, pas par le palier : tout palier doté d'une allocation > 0
+ * peut goûter l'agent (dégustation). Le mur n'est plus l'accès mais le solde.
+ */
 export function aiAccess(plan: Plan | undefined | null): boolean {
-  return planOf(plan) === 'copilot'
+  return AI_MONTHLY_CREDITS[planOf(plan)] > 0
 }
 
 /**

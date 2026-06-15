@@ -83,9 +83,11 @@ export async function currentPlan(ctx: AnyCtx, userId: string): Promise<Plan> {
 }
 
 /**
- * Garde d'accès au copilote IA. À appeler dans une query/mutation gatée : si le
- * palier du user ne donne pas accès à l'IA, throw une erreur typée `PLAN_LIMIT:`
- * (détectée côté client pour l'upsell). Retourne le palier effectif sinon.
+ * Garde d'accès au copilote IA. Depuis la stratégie « dégustation » (grill-me
+ * 2026-06-15), tous les paliers ont une allocation de crédits, donc cette garde
+ * passe pour tout le monde ; elle ne throw que pour un éventuel palier futur sans
+ * allocation. Le vrai mur est le SOLDE de crédits (pré-contrôle dans sendMessage),
+ * pas le palier. Retourne le palier effectif.
  */
 export async function requireCopilot(
   ctx: AnyCtx,
@@ -94,7 +96,7 @@ export async function requireCopilot(
   const plan = await currentPlan(ctx, userId)
   if (!aiAccess(plan)) {
     throw new Error(
-      `${PLAN_LIMIT_PREFIX}Le copilote IA est réservé au palier Copilot. Passez à Copilot pour activer l'assistant de prospection.`,
+      `${PLAN_LIMIT_PREFIX}Le copilote IA n'est pas disponible sur ce palier.`,
     )
   }
   return plan

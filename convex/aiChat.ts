@@ -13,6 +13,7 @@ import { requireUser, requireUserFromAction, requireCopilot } from './lib/withUs
 import { aiCreditError } from './lib/plan'
 import type { PaginationResult } from 'convex/server'
 import type { MessageDoc } from '@convex-dev/agent'
+import { vStreamArgs } from '@convex-dev/agent/validators'
 import { copilot } from './agent/agent'
 import { modelFor, MODELS, type AiMode } from './agent/models'
 
@@ -30,7 +31,35 @@ import { modelFor, MODELS, type AiMode } from './agent/models'
 
 const modeValidator = v.union(v.literal('fast'), v.literal('quality'))
 
-/** Coût en crédits d'un échange, dérivé des tokens et pondéré par le mode. */
+/**
+ * Tarifs modèle (USD / million de tokens), par mode. Conservateurs (arrondis au-
+ * dessus) pour protéger la marge. À mettre à jour si OpenRouter change ses prix
+ * ou si on change de modèle dans `convex/agent/models.ts`.
+ */
+const MODEL_PRICING: Record<AiMode, { inUsd: number; outUsd: number }> = {
+  fast: { inUsd: 0.25, outUsd: 2 }, // gpt-5.4-mini (classe mini)
+  quality: { inUsd: 3, outUsd: 15 }, // claude-sonnet-4.6
+}
+
+/**
+ * Plancher de marge garanti (arbitrage grill-me 2026-06-15). FX facturé au-dessus
+ * du spot (~605) pour absorber la volatilité du franc ; MARKUP = marge minimale
+ * garantie sur le coût réel ; CREDIT_XOF = prix de détail d'un crédit (mi-pack).
+ */
+const FX_XOF_PER_USD = 680
+const AI_MARKUP = 8
+const CREDIT_XOF = 8
+
+/**
+ * Coût en crédits d'un échange = MAX(poids de tokens, plancher coût-réel).
+ *
+ * - Le poids de tokens (1× rapide, 3× qualité) reste prévisible pour l'utilisateur
+ *   en usage normal.
+ * - Le plancher coût-réel (coût modèle estimé × FX × markup) garantit la marge :
+ *   il suit l'output cher (qualité) et toute hausse de prix modèle, donc on n'est
+ *   JAMAIS sous l'eau. En pratique il domine en mode qualité, le poids domine en
+ *   rapide. Voir arbitrage grill-me 2026-06-15.
+ */
 function creditsForUsage(
   inputTokens: number,
   outputTokens: number,
@@ -38,7 +67,17 @@ function creditsForUsage(
 ): number {
   const totalK = (inputTokens + outputTokens) / 1000
   const weight = mode === 'quality' ? 3 : 1
-  return Math.max(1, Math.ceil(totalK * weight))
+  const tokenCredits = Math.ceil(totalK * weight)
+
+  const price = MODEL_PRICING[mode]
+  const costUsd =
+    (inputTokens / 1_000_000) * price.inUsd +
+    (outputTokens / 1_000_000) * price.outUsd
+  const floorCredits = Math.ceil(
+    (costUsd * FX_XOF_PER_USD * AI_MARKUP) / CREDIT_XOF,
+  )
+
+  return Math.max(1, tokenCredits, floorCredits)
 }
 
 /** Gate copilot depuis une query (pour l'action via runQuery). */
@@ -132,8 +171,12 @@ export const listThreads = query({
  * le fil appartient au user courant.
  */
 export const listMessages = query({
-  args: { threadId: v.string(), paginationOpts: paginationOptsValidator },
-  handler: async (ctx, args): Promise<PaginationResult<MessageDoc>> => {
+  args: {
+    threadId: v.string(),
+    paginationOpts: paginationOptsValidator,
+    streamArgs: v.optional(vStreamArgs),
+  },
+  handler: async (ctx, args) => {
     const { userId } = await requireUser(ctx)
     const mirror = await ctx.db
       .query('aiThreads')
@@ -141,10 +184,19 @@ export const listMessages = query({
       .unique()
     if (!mirror || mirror.userId !== userId) throw new Error('Non autorisé')
 
-    return copilot.listMessages(ctx, {
+    const paginated: PaginationResult<MessageDoc> = await copilot.listMessages(
+      ctx,
+      {
+        threadId: args.threadId,
+        paginationOpts: args.paginationOpts,
+      },
+    )
+    // Deltas de streaming (lus par le hook `useThreadMessages({ stream: true })`).
+    const streams = await copilot.syncStreams(ctx, {
       threadId: args.threadId,
-      paginationOpts: args.paginationOpts,
+      streamArgs: args.streamArgs,
     })
+    return { ...paginated, streams }
   },
 })
 
