@@ -26,12 +26,14 @@ export default defineConfig({
     viteTsConfigPaths({ projects: ['./tsconfig.json'] }),
     // i18n compile-time (Paraglide / Inlang). Genere le runtime tree-shakeable
     // dans src/lib/paraglide a partir des messages FR/EN. Strategy SSR-safe :
-    // localStorage (cle "filon-locale") cote client, sinon langue preferee du
-    // navigateur (header Accept-Language au SSR), sinon baseLocale (fr).
+    // localStorage (cle "filon-locale") = choix EXPLICITE du user, sinon
+    // baseLocale (fr). On NE suit PAS la langue du navigateur : Filon est un
+    // produit francophone-first (Cote d'Ivoire), le francais est le defaut dur ;
+    // l'anglais est un choix volontaire via le selecteur de langue.
     paraglideVitePlugin({
       project: './project.inlang',
       outdir: './src/lib/paraglide',
-      strategy: ['localStorage', 'preferredLanguage', 'baseLocale'],
+      strategy: ['localStorage', 'baseLocale'],
       localStorageKey: 'filon-locale',
     }),
     tailwindcss(),
