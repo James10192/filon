@@ -303,5 +303,15 @@
   "suggestions_noaction_seed": "I have {count} active opportunity(ies) with no next action scheduled. Suggest a next step for each.",
   "suggestions_empty_pipeline_title": "Empty pipeline",
   "suggestions_empty_pipeline_desc": "No active opportunity. Kick off your prospecting today.",
-  "suggestions_empty_pipeline_seed": "My pipeline is empty. Help me start prospecting this week."
+  "suggestions_empty_pipeline_seed": "My pipeline is empty. Help me start prospecting this week.",
+  "notifications_open": "Open notifications",
+  "notifications_title": "Notifications",
+  "notifications_mark_all_read": "Mark all as read",
+  "notifications_empty_title": "No notifications",
+  "notifications_empty_desc": "Your follow-ups and subscription alerts will show up here.",
+  "notifications_action_renew": "Renew",
+  "renewal_renew_now": "Renew now",
+  "renewal_card_auto": "Automatic renewal enabled",
+  "renewal_no_card": "Renewal by reminder at expiry",
+  "renewal_error": "Renewal link unavailable. Please try again."
 }

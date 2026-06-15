@@ -45,7 +45,7 @@ export function PricingPlans() {
 
       <IntervalToggle value={interval} onChange={setInterval} />
 
-      <div className="grid items-stretch gap-4 sm:auto-rows-fr sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid items-stretch gap-4 sm:auto-rows-fr sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {PLAN_CARDS.map((card, i) => (
           <div
             key={card.key}

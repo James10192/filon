@@ -8,6 +8,7 @@ import { useCommandPalette } from './command-palette'
 import { useQuickCapture } from './quick-capture'
 import { useCopilotLauncher } from '~/components/copilot/copilot-provider'
 import { LocaleSwitcher } from '~/components/i18n/locale-switcher'
+import { NotificationBell } from './notification-bell'
 import { useShortcutLabel } from './use-shortcut-label'
 import { NAV_ITEMS, isNavItemActive } from './nav-config'
 
@@ -52,6 +53,8 @@ export function Topbar() {
             {shortcut}
           </kbd>
         </button>
+
+        <NotificationBell />
 
         <LocaleSwitcher className="hidden sm:inline-flex" />
 

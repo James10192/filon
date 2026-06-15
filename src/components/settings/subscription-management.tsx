@@ -1,8 +1,17 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { useMutation, useQuery } from 'convex/react'
-import { ArrowDownRight, RotateCcw, Sparkles, XCircle } from 'lucide-react'
+import { useAction, useMutation, useQuery } from 'convex/react'
+import {
+  ArrowDownRight,
+  CreditCard,
+  RotateCcw,
+  Smartphone,
+  Sparkles,
+  XCircle,
+} from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
+import { m } from '~/lib/paraglide/messages'
+import type { PaidPlan, Interval } from '~/lib/billing/plan'
 import { toast } from '~/components/ui/sonner'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
@@ -38,9 +47,11 @@ export function SubscriptionManagement() {
   const scheduleDowngrade = useMutation(api.billing.scheduleDowngrade)
   const cancelAutoRenew = useMutation(api.billing.cancelAutoRenew)
   const reactivate = useMutation(api.billing.reactivateAutoRenew)
+  const createRenewalLink = useAction(api.paystackRenewal.createRenewalLink)
 
   const [dialog, setDialog] = useState<LifecycleDialog | null>(null)
   const [pending, setPending] = useState(false)
+  const [renewing, setRenewing] = useState(false)
 
   async function run(action: () => Promise<unknown>, ok: string) {
     setPending(true)
@@ -61,6 +72,24 @@ export function SubscriptionManagement() {
   const renewsLabel = renewsAt ? formatDate(renewsAt) : null
   const autoRenew = myPlan?.autoRenew ?? true
   const pendingPlan = myPlan?.pendingPlan ?? null
+  const card = myPlan?.card ?? null
+  const interval: Interval = myPlan?.planInterval === 'annual' ? 'annual' : 'monthly'
+
+  /** Génère un lien Paystack pré-rempli puis redirige le navigateur dessus. */
+  async function renewNow() {
+    if (isFree) return
+    setRenewing(true)
+    try {
+      const { authorizationUrl } = await createRenewalLink({
+        plan: plan as PaidPlan,
+        interval,
+      })
+      window.location.href = authorizationUrl
+    } catch {
+      toast.error(m.renewal_error())
+      setRenewing(false)
+    }
+  }
 
   function confirmDialog() {
     if (!dialog) return
@@ -127,6 +156,33 @@ export function SubscriptionManagement() {
                 limites.
               </p>
             )}
+
+            {!isFree && (
+              <div className="mt-1 flex items-center gap-3 rounded-[var(--radius)] border border-border bg-surface px-3 py-2.5">
+                {card ? (
+                  <CreditCard className="size-4 shrink-0 text-fg-muted" />
+                ) : (
+                  <Smartphone className="size-4 shrink-0 text-fg-muted" />
+                )}
+                <div className="flex-1">
+                  {card ? (
+                    <>
+                      <p className="text-sm font-medium text-fg">
+                        {card.brand ? `${card.brand} ` : ''}···· {card.last4}
+                        {card.bank ? ` · ${card.bank}` : ''}
+                      </p>
+                      <p className="text-xs text-fg-muted">
+                        {m.renewal_card_auto()}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-sm text-fg-muted">
+                      {m.renewal_no_card()}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -137,6 +193,13 @@ export function SubscriptionManagement() {
               {isFree ? 'Choisir un palier' : 'Changer de palier'}
             </Link>
           </Button>
+
+          {!isFree && (
+            <Button onClick={() => void renewNow()} disabled={renewing}>
+              <RotateCcw className="size-4" />
+              {m.renewal_renew_now()}
+            </Button>
+          )}
 
           {plan === 'pro_ai' && pendingPlan !== 'pro' && pendingPlan !== 'free' && (
             <Button variant="outline" onClick={() => setDialog('downgrade')}>

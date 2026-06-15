@@ -303,5 +303,15 @@
   "suggestions_noaction_seed": "J'ai {count} opportunité(s) active(s) sans prochaine action planifiée. Propose-moi une prochaine étape pour chacune.",
   "suggestions_empty_pipeline_title": "Pipeline vide",
   "suggestions_empty_pipeline_desc": "Aucune opportunité active. Lancez votre prospection dès aujourd'hui.",
-  "suggestions_empty_pipeline_seed": "Mon pipeline est vide. Aide-moi à démarrer ma prospection cette semaine."
+  "suggestions_empty_pipeline_seed": "Mon pipeline est vide. Aide-moi à démarrer ma prospection cette semaine.",
+  "notifications_open": "Ouvrir les notifications",
+  "notifications_title": "Notifications",
+  "notifications_mark_all_read": "Tout marquer comme lu",
+  "notifications_empty_title": "Aucune notification",
+  "notifications_empty_desc": "Vos relances et alertes d'abonnement apparaîtront ici.",
+  "notifications_action_renew": "Renouveler",
+  "renewal_renew_now": "Renouveler maintenant",
+  "renewal_card_auto": "Renouvellement automatique activé",
+  "renewal_no_card": "Renouvellement par rappel à l'échéance",
+  "renewal_error": "Lien de renouvellement indisponible. Réessayez."
 }
