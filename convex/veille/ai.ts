@@ -4,13 +4,8 @@ import { z } from 'zod'
 import { action } from '../_generated/server'
 import { internal } from '../_generated/api'
 import { requireUserFromAction } from '../lib/withUser'
-import {
-  aiCreditError,
-  FAIR_USE_PLANS,
-  FAIR_USE_CEILING,
-  type Plan,
-} from '../lib/plan'
 import { creditsForUsage } from '../lib/credits'
+import { ensureAiBudget } from '../lib/aiGate'
 import { modelFor, MODELS, type AiMode } from '../agent/models'
 import type { OpportunityForAi } from './aiData'
 
@@ -27,19 +22,6 @@ import type { OpportunityForAi } from './aiData'
  */
 
 const modeValidator = v.union(v.literal('fast'), v.literal('quality'))
-
-/** Pré-contrôle de solde + fair-use, commun aux deux actes. */
-async function ensureBudget(
-  gate: { plan: Plan; balance: number; monthUsed: number; allowance: number },
-): Promise<void> {
-  if (gate.balance > 0) return
-  if (!FAIR_USE_PLANS.has(gate.plan)) throw aiCreditError()
-  if (gate.monthUsed >= gate.allowance * FAIR_USE_CEILING) {
-    throw aiCreditError(
-      'Usage exceptionnel atteint ce mois. Rechargez un pack pour continuer.',
-    )
-  }
-}
 
 /** Contexte d'opportunité formaté pour le LLM (français, sans codes internes). */
 function offerContext(o: OpportunityForAi): string {
@@ -113,7 +95,7 @@ export const analyzeSignal = action({
     const gate = await ctx.runQuery(internal.veille.aiData.aiSignalGate, {
       userId,
     })
-    await ensureBudget(gate)
+    ensureAiBudget(gate)
 
     const { object, usage } = await generateObject({
       model: modelFor(mode),
@@ -176,7 +158,7 @@ export const draftMessage = action({
     const gate = await ctx.runQuery(internal.veille.aiData.aiSignalGate, {
       userId,
     })
-    await ensureBudget(gate)
+    ensureAiBudget(gate)
 
     const signal = await ctx.runQuery(
       internal.veille.aiData.getSignalInternal,

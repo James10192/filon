@@ -3,10 +3,24 @@ import {
   internalMutation,
   internalQuery,
   query,
+  type QueryCtx,
+  type MutationCtx,
 } from '../_generated/server'
 import type { Doc, Id } from '../_generated/dataModel'
 import { requireUser } from '../lib/withUser'
-import { AI_MONTHLY_CREDITS, planOf, type Plan } from '../lib/plan'
+import { planOf } from '../lib/plan'
+import { readCreditState, type AiBudget } from '../lib/aiGate'
+
+/** Requête unique de l'analyse IA d'une opportunité (factorisée, 4 appelants). */
+async function signalByOpportunity(
+  ctx: QueryCtx | MutationCtx,
+  opportunityId: Id<'opportunities'>,
+): Promise<Doc<'aiSignals'> | null> {
+  return ctx.db
+    .query('aiSignals')
+    .withIndex('by_opportunity', (q) => q.eq('opportunityId', opportunityId))
+    .unique()
+}
 
 /**
  * Veille IA · accès données (queries/mutations) de la couche d'analyse de signaux.
@@ -27,38 +41,12 @@ const actionValidator = v.union(
  */
 export const aiSignalGate = internalQuery({
   args: { userId: v.string() },
-  handler: async (
-    ctx,
-    { userId },
-  ): Promise<{
-    plan: Plan
-    balance: number
-    monthUsed: number
-    allowance: number
-  }> => {
+  handler: async (ctx, { userId }): Promise<AiBudget> => {
     const userDoc = await ctx.db
       .query('users')
       .withIndex('by_authId', (q) => q.eq('authId', userId))
       .unique()
-    const plan = planOf(userDoc?.plan ?? null)
-    const row = await ctx.db
-      .query('aiCredits')
-      .withIndex('by_user', (q) => q.eq('userId', userId))
-      .unique()
-    const periodStart = row?.periodStart ?? 0
-    const usage = await ctx.db
-      .query('aiUsage')
-      .withIndex('by_user_created', (q) =>
-        q.eq('userId', userId).gte('createdAt', periodStart),
-      )
-      .collect()
-    const monthUsed = usage.reduce((sum, u) => sum + u.creditsDebited, 0)
-    return {
-      plan,
-      balance: (row?.balance ?? 0) + (row?.packBalance ?? 0),
-      monthUsed,
-      allowance: AI_MONTHLY_CREDITS[plan],
-    }
+    return readCreditState(ctx, userId, planOf(userDoc?.plan ?? null))
   },
 })
 
@@ -99,10 +87,7 @@ export const loadOpportunityForAi = internalQuery({
 export const getSignalInternal = internalQuery({
   args: { opportunityId: v.id('opportunities') },
   handler: async (ctx, { opportunityId }): Promise<Doc<'aiSignals'> | null> => {
-    return ctx.db
-      .query('aiSignals')
-      .withIndex('by_opportunity', (q) => q.eq('opportunityId', opportunityId))
-      .unique()
+    return signalByOpportunity(ctx, opportunityId)
   },
 })
 
@@ -111,10 +96,7 @@ export const signalFor = query({
   args: { opportunityId: v.id('opportunities') },
   handler: async (ctx, { opportunityId }): Promise<Doc<'aiSignals'> | null> => {
     const { userId } = await requireUser(ctx)
-    const sig = await ctx.db
-      .query('aiSignals')
-      .withIndex('by_opportunity', (q) => q.eq('opportunityId', opportunityId))
-      .unique()
+    const sig = await signalByOpportunity(ctx, opportunityId)
     if (!sig || sig.userId !== userId) return null
     return sig
   },
@@ -131,12 +113,7 @@ export const saveSignal = internalMutation({
   },
   handler: async (ctx, args): Promise<Id<'aiSignals'>> => {
     const now = Date.now()
-    const existing = await ctx.db
-      .query('aiSignals')
-      .withIndex('by_opportunity', (q) =>
-        q.eq('opportunityId', args.opportunityId),
-      )
-      .unique()
+    const existing = await signalByOpportunity(ctx, args.opportunityId)
     if (existing) {
       await ctx.db.patch(existing._id, {
         score: args.score,
@@ -162,10 +139,7 @@ export const saveSignal = internalMutation({
 export const saveDraft = internalMutation({
   args: { opportunityId: v.id('opportunities'), draft: v.string() },
   handler: async (ctx, { opportunityId, draft }): Promise<null> => {
-    const sig = await ctx.db
-      .query('aiSignals')
-      .withIndex('by_opportunity', (q) => q.eq('opportunityId', opportunityId))
-      .unique()
+    const sig = await signalByOpportunity(ctx, opportunityId)
     if (sig) await ctx.db.patch(sig._id, { draft, updatedAt: Date.now() })
     return null
   },

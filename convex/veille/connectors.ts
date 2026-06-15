@@ -31,19 +31,6 @@ export type Connector = {
   parse: (html: string) => Listing[]
 }
 
-/**
- * Métadonnées partagées avec le frontend (sélection de sources dans le dialog
- * de veille, panneau santé). N'embarque PAS les parsers : data sérialisable.
- */
-export const CONNECTOR_META: ReadonlyArray<{
-  id: ConnectorId
-  label: string
-  host: string
-}> = [
-  { id: 'educarriere', label: 'educarriere', host: 'emploi.educarriere.ci' },
-  { id: 'novojob', label: 'Novojob', host: 'www.novojob.com' },
-]
-
 const NOVOJOB_BASE = 'https://www.novojob.com'
 
 /** Déduplique par URL et écarte les titres vides. */
@@ -92,6 +79,17 @@ export const CONNECTORS: ReadonlyArray<Connector> = [
 export const CONNECTOR_IDS: ReadonlyArray<ConnectorId> = CONNECTORS.map(
   (c) => c.id,
 )
+
+/**
+ * Métadonnées partagées avec le frontend (sélection de sources, panneau santé).
+ * Dérivées de `CONNECTORS` (source unique) en omettant les parsers non
+ * sérialisables : pas de liste parallèle à maintenir.
+ */
+export const CONNECTOR_META: ReadonlyArray<{
+  id: ConnectorId
+  label: string
+  host: string
+}> = CONNECTORS.map(({ id, label, host }) => ({ id, label, host }))
 
 /** Vrai si l'id correspond à un connecteur auto connu. */
 export function isConnectorId(id: string): id is ConnectorId {

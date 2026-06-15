@@ -43,36 +43,43 @@ type ListingsByConnector = Map<string, Listing[]>
  * Récupère la liste de chaque connecteur et journalise sa santé (succès, nombre
  * d'offres, ou erreur). Un connecteur en panne n'interrompt pas les autres.
  */
+type ConnectorResult =
+  | { id: string; listings: Listing[]; ok: true; count: number }
+  | { id: string; listings: Listing[]; ok: false; error: string }
+
 async function fetchAllListings(ctx: ActionCtx): Promise<ListingsByConnector> {
-  const byConnector: ListingsByConnector = new Map()
-  for (const c of CONNECTORS) {
-    try {
-      const res = await fetch(c.listingUrl, { headers: browserHeaders() })
-      if (!res.ok) {
-        await ctx.runMutation(internal.veille.monitor.recordSourceHealth, {
-          connectorId: c.id,
+  // Fetch + parse de chaque connecteur EN PARALLÈLE (latence = max, pas somme).
+  const results: ConnectorResult[] = await Promise.all(
+    CONNECTORS.map(async (c): Promise<ConnectorResult> => {
+      try {
+        const res = await fetch(c.listingUrl, { headers: browserHeaders() })
+        if (!res.ok) {
+          return { id: c.id, listings: [], ok: false, error: `HTTP ${res.status}` }
+        }
+        const listings = c.parse(await res.text())
+        return { id: c.id, listings, ok: true, count: listings.length }
+      } catch (e) {
+        return {
+          id: c.id,
+          listings: [],
           ok: false,
-          error: `HTTP ${res.status}`,
-        })
-        byConnector.set(c.id, [])
-        continue
+          error: e instanceof Error ? e.message.slice(0, 200) : 'fetch_error',
+        }
       }
-      const listings = c.parse(await res.text())
-      await ctx.runMutation(internal.veille.monitor.recordSourceHealth, {
-        connectorId: c.id,
-        ok: true,
-        count: listings.length,
+    }),
+  )
+
+  const byConnector: ListingsByConnector = new Map()
+  await Promise.all(
+    results.map((r) => {
+      byConnector.set(r.id, r.listings)
+      return ctx.runMutation(internal.veille.monitor.recordSourceHealth, {
+        connectorId: r.id,
+        ok: r.ok,
+        ...(r.ok ? { count: r.count } : { error: r.error }),
       })
-      byConnector.set(c.id, listings)
-    } catch (e) {
-      await ctx.runMutation(internal.veille.monitor.recordSourceHealth, {
-        connectorId: c.id,
-        ok: false,
-        error: e instanceof Error ? e.message.slice(0, 200) : 'fetch_error',
-      })
-      byConnector.set(c.id, [])
-    }
-  }
+    }),
+  )
   return byConnector
 }
 

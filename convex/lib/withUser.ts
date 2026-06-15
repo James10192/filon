@@ -5,7 +5,7 @@ import type {
 } from 'convex/server'
 import type { DataModel } from '../_generated/dataModel'
 import { authComponent } from '../auth'
-import { aiAccess, planOf, PLAN_LIMIT_PREFIX, type Plan } from './plan'
+import { aiAccess, planOf, planLimitError, type Plan } from './plan'
 
 /**
  * Contexte d'un utilisateur authentifié.
@@ -95,9 +95,8 @@ export async function requireCopilot(
 ): Promise<Plan> {
   const plan = await currentPlan(ctx, userId)
   if (!aiAccess(plan)) {
-    throw new Error(
-      `${PLAN_LIMIT_PREFIX}Le copilote IA n'est pas disponible sur ce palier.`,
-    )
+    // ConvexError (pas Error brute) : sinon le message est masqué en prod.
+    throw planLimitError('Le copilote IA n’est pas disponible sur ce palier.')
   }
   return plan
 }

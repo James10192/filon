@@ -10,14 +10,9 @@ import {
 import { internal } from './_generated/api'
 import type { Doc } from './_generated/dataModel'
 import { requireUser, requireUserFromAction, requireCopilot } from './lib/withUser'
-import {
-  aiCreditError,
-  AI_MONTHLY_CREDITS,
-  FAIR_USE_PLANS,
-  FAIR_USE_CEILING,
-  type Plan,
-} from './lib/plan'
+import { type Plan } from './lib/plan'
 import { creditsForUsage } from './lib/credits'
+import { readCreditState, ensureAiBudget, type AiBudget } from './lib/aiGate'
 import type { PaginationResult } from 'convex/server'
 import type { MessageDoc } from '@convex-dev/agent'
 import { vStreamArgs } from '@convex-dev/agent/validators'
@@ -46,34 +41,9 @@ const modeValidator = v.union(v.literal('fast'), v.literal('quality'))
  */
 export const aiGate = internalQuery({
   args: { userId: v.string() },
-  handler: async (
-    ctx,
-    { userId },
-  ): Promise<{
-    plan: Plan
-    balance: number
-    monthUsed: number
-    allowance: number
-  }> => {
+  handler: async (ctx, { userId }): Promise<AiBudget> => {
     const plan = await requireCopilot(ctx, userId)
-    const row = await ctx.db
-      .query('aiCredits')
-      .withIndex('by_user', (q) => q.eq('userId', userId))
-      .unique()
-    const periodStart = row?.periodStart ?? 0
-    const usage = await ctx.db
-      .query('aiUsage')
-      .withIndex('by_user_created', (q) =>
-        q.eq('userId', userId).gte('createdAt', periodStart),
-      )
-      .collect()
-    const monthUsed = usage.reduce((sum, u) => sum + u.creditsDebited, 0)
-    return {
-      plan,
-      balance: (row?.balance ?? 0) + (row?.packBalance ?? 0),
-      monthUsed,
-      allowance: AI_MONTHLY_CREDITS[plan],
-    }
+    return readCreditState(ctx, userId, plan)
   },
 })
 
@@ -310,17 +280,7 @@ export const sendMessage = action({
     // couvre), on continue jusqu'à un plafond anti-abus ; les paliers en
     // dégustation (free/pro/pro_ai) butent sur un mur dur = déclencheur d'upgrade.
     const gate = await ctx.runQuery(internal.aiChat.aiGate, { userId })
-    if (gate.balance <= 0) {
-      const fairUse = FAIR_USE_PLANS.has(gate.plan)
-      if (!fairUse) {
-        throw aiCreditError()
-      }
-      if (gate.monthUsed >= gate.allowance * FAIR_USE_CEILING) {
-        throw aiCreditError(
-          'Usage exceptionnel atteint ce mois. Rechargez un pack pour continuer.',
-        )
-      }
-    }
+    ensureAiBudget(gate)
 
     const { thread } = await copilot.continueThread(ctx, {
       threadId: args.threadId,
