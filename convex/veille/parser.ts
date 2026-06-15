@@ -228,6 +228,40 @@ export function parseEducarriereListing(
   return out
 }
 
+/**
+ * Titlecase un slug à tirets en libellé lisible.
+ * `agent-qhse-abidjan` -> « Agent Qhse Abidjan ». Partagé par les connecteurs
+ * (emploi.ci, novojob) dont les listes n'exposent qu'un slug d'URL.
+ */
+export function slugToTitle(slug: string): string {
+  return slug
+    .split('-')
+    .map((w) => w.trim())
+    .filter((w) => w.length > 0)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ')
+    .trim()
+}
+
+/**
+ * Matching d'une veille enrichie : le texte doit contenir AU MOINS un mot-clé
+ * inclus ET AUCUN mot-clé exclu (accent-insensible, sous-chaîne). `include` vide
+ * ne matche rien (une veille sans inclusion ne capte volontairement rien).
+ */
+export function matchesSearch(
+  haystack: string,
+  include: string[],
+  exclude: string[],
+): boolean {
+  const h = deburr(haystack.toLowerCase())
+  const has = (kw: string) => {
+    const n = deburr(kw.toLowerCase()).trim()
+    return n.length > 0 && h.includes(n)
+  }
+  if (!include.some(has)) return false
+  return !exclude.some(has)
+}
+
 /** Tokens lowercase (accent-insensibles) pour le matching de mots-clés. */
 export function extractKeywords(text: string): string[] {
   return deburr(text.toLowerCase())

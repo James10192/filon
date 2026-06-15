@@ -291,9 +291,26 @@ export default defineSchema({
   // 1..N par user. Le cron scanne les recherches `enabled` de tous les users.
   savedSearches: defineTable({
     userId: v.string(),
-    // Mots-clés normalisés (trim, lowercase, dédupliqués).
+    // Mots-clés à INCLURE, normalisés (trim, lowercase, dédupliqués). Conservé
+    // sous le nom `keywords` pour rétro-compat ; sémantiquement = inclusions.
     keywords: v.array(v.string()),
     enabled: v.boolean(),
+    // --- Enrichissement Radar (tout optionnel : lignes existantes valides) ---
+    // Nom lisible de la veille (à défaut, dérivé des mots-clés).
+    name: v.optional(v.string()),
+    // Intention : postuler, démarcher (prospection), ou les deux. Pilote le
+    // type/les tags de l'opportunité créée et le cadrage de l'analyse IA.
+    intent: v.optional(
+      v.union(v.literal('apply'), v.literal('prospect'), v.literal('both')),
+    ),
+    // Mots-clés à EXCLURE (ex: « stage », « alternance »).
+    excludeKeywords: v.optional(v.array(v.string())),
+    // Connecteurs ciblés (ids). Absent/vide = toutes les sources auto.
+    sources: v.optional(v.array(v.string())),
+    // Filtre localisation libre normalisé ('all' = partout).
+    location: v.optional(v.string()),
+    // Notifier (cloche) quand cette veille importe de nouvelles offres.
+    notify: v.optional(v.boolean()),
     lastRunAt: v.optional(v.number()),
     lastMatchCount: v.optional(v.number()),
     createdAt: v.number(),
@@ -302,6 +319,42 @@ export default defineSchema({
     .index('by_user', ['userId'])
     // Le cron itère les recherches actives, tous users confondus.
     .index('by_enabled', ['enabled']),
+
+  // Santé des connecteurs de veille (données SYSTÈME, pas de userId). Une ligne
+  // par connecteur, mise à jour à chaque passage du moniteur : permet d'afficher
+  // « educarriere opérationnel · SIGMAP en panne » au lieu d'un échec muet.
+  veilleSourceHealth: defineTable({
+    connectorId: v.string(),
+    ok: v.boolean(),
+    lastRunAt: v.number(),
+    lastOkAt: v.optional(v.number()),
+    lastError: v.optional(v.string()),
+    // Nombre d'offres listées au dernier passage réussi (santé du parsing).
+    lastCount: v.optional(v.number()),
+    updatedAt: v.number(),
+  }).index('by_connector', ['connectorId']),
+
+  // Analyse IA d'un signal détecté (Phase IA « à l'acte »). Mise en cache par
+  // opportunité pour ne JAMAIS re-débiter une analyse déjà payée. `draft` est
+  // généré à la demande (second acte facturé), d'où son caractère optionnel.
+  aiSignals: defineTable({
+    userId: v.string(),
+    opportunityId: v.id('opportunities'),
+    // Pertinence 0-100 vs l'intention/les mots-clés de la veille.
+    score: v.number(),
+    suggestedAction: v.union(
+      v.literal('apply'),
+      v.literal('prospect'),
+      v.literal('ignore'),
+    ),
+    rationale: v.string(),
+    // Brouillon du 1er message (candidature ou démarchage), à la demande.
+    draft: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_opportunity', ['opportunityId'])
+    .index('by_user', ['userId']),
 
   // Notifications in-app (Axe 2, additif). Scope strict `userId`. Aujourd'hui
   // alimentées par le cycle de renouvellement (relance d'échéance, échec de
@@ -315,6 +368,8 @@ export default defineSchema({
       v.literal('renewal_charged'),
       v.literal('renewal_failed'),
       v.literal('downgraded'),
+      // Le radar a importé de nouvelles offres pour une veille.
+      v.literal('veille_import'),
     ),
     title: v.string(),
     body: v.string(),

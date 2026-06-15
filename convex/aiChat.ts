@@ -17,12 +17,7 @@ import {
   FAIR_USE_CEILING,
   type Plan,
 } from './lib/plan'
-import {
-  MODEL_PRICING,
-  FX_XOF_PER_USD,
-  AI_MARKUP,
-  CREDIT_XOF,
-} from './lib/pricing'
+import { creditsForUsage } from './lib/credits'
 import type { PaginationResult } from 'convex/server'
 import type { MessageDoc } from '@convex-dev/agent'
 import { vStreamArgs } from '@convex-dev/agent/validators'
@@ -42,36 +37,6 @@ import { modelFor, MODELS, type AiMode } from './agent/models'
  */
 
 const modeValidator = v.union(v.literal('fast'), v.literal('quality'))
-
-/**
- * Coût en crédits d'un échange = MAX(poids de tokens, plancher coût-réel).
- *
- * - Le poids de tokens (1× rapide, 3× qualité) reste prévisible pour l'utilisateur
- *   en usage normal.
- * - Le plancher coût-réel (coût modèle estimé × FX × markup) garantit la marge :
- *   il suit l'output cher (qualité) et toute hausse de prix modèle, donc on n'est
- *   JAMAIS sous l'eau. En pratique il domine en mode qualité, le poids domine en
- *   rapide. Voir arbitrage grill-me 2026-06-15.
- */
-function creditsForUsage(
-  inputTokens: number,
-  outputTokens: number,
-  mode: AiMode,
-): number {
-  const totalK = (inputTokens + outputTokens) / 1000
-  const weight = mode === 'quality' ? 3 : 1
-  const tokenCredits = Math.ceil(totalK * weight)
-
-  const price = MODEL_PRICING[mode]
-  const costUsd =
-    (inputTokens / 1_000_000) * price.inUsd +
-    (outputTokens / 1_000_000) * price.outUsd
-  const floorCredits = Math.ceil(
-    (costUsd * FX_XOF_PER_USD * AI_MARKUP) / CREDIT_XOF,
-  )
-
-  return Math.max(1, tokenCredits, floorCredits)
-}
 
 /** Gate copilot depuis une query (pour l'action via runQuery). */
 /**

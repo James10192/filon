@@ -1,37 +1,66 @@
 import { v } from 'convex/values'
-import { internalMutation, internalQuery } from '../_generated/server'
+import {
+  internalMutation,
+  internalQuery,
+  query,
+} from '../_generated/server'
 import type { Doc, Id } from '../_generated/dataModel'
 import { limitsFor, planOf } from '../lib/plan'
+import { requireUser } from '../lib/withUser'
 
 /**
- * Veille · opérations de données côté cron.
+ * Veille · opérations de données côté cron + lecture santé des sources.
  *
- * Ces fonctions sont `internal*` : non appelables par le client, donc pas de
- * `requireUser`. Elles reçoivent un `userId` explicite (le moniteur itère les
- * recherches enregistrées de tous les users). Elles ne peuvent pas appeler la
- * mutation gatée `opportunities.create` : la logique d'ordre/activité est
- * répliquée ici (4 lignes), par conception.
+ * Ces fonctions sont `internal*` (sauf `sourceHealth`, lecture publique) : non
+ * appelables par le client, donc pas de `requireUser`. Elles reçoivent un
+ * `userId` explicite (le moniteur itère les veilles de tous les users).
  */
 
-type SavedSearch = Pick<Doc<'savedSearches'>, '_id' | 'userId' | 'keywords'>
+/** Veille enrichie, telle que consommée par le moniteur. */
+export type MonitorSearch = {
+  _id: Id<'savedSearches'>
+  userId: string
+  /** Libellé lisible (nom de la veille, à défaut mots-clés joints). */
+  label: string
+  include: string[]
+  exclude: string[]
+  /** Connecteurs ciblés ; `null` = toutes les sources auto. */
+  sources: string[] | null
+  intent: 'apply' | 'prospect' | 'both'
+  notify: boolean
+}
+
+/** Doc `savedSearches` -> forme enrichie consommée par le moniteur. */
+function toMonitorSearch(r: Doc<'savedSearches'>): MonitorSearch {
+  const label = r.name?.trim() || r.keywords.join(', ') || 'veille'
+  return {
+    _id: r._id,
+    userId: r.userId,
+    label,
+    include: r.keywords,
+    exclude: r.excludeKeywords ?? [],
+    sources: r.sources && r.sources.length > 0 ? r.sources : null,
+    intent: r.intent ?? 'apply',
+    notify: r.notify ?? false,
+  }
+}
 
 /**
- * Recherches actives des users éligibles à la veille AUTOMATIQUE (palier
- * pro / pro_ai). Le moniteur (cron) SAUTE les recherches des users gratuits :
- * sur le palier Découverte, la veille reste manuelle (import à la demande).
- * On résout le palier de chaque user via `by_authId` (cache local par userId
- * pour ne pas relire la même ligne `users`).
+ * Veilles actives des users éligibles à la surveillance AUTOMATIQUE (palier
+ * pro / pro_ai / copilot). Le cron SAUTE les veilles des users gratuits : sur
+ * Découverte, la veille reste manuelle. Palier résolu via `by_authId` (cache
+ * local par userId pour ne pas relire la même ligne `users`).
  */
 export const enabledSearches = internalQuery({
   args: {},
-  handler: async (ctx): Promise<SavedSearch[]> => {
+  handler: async (ctx): Promise<MonitorSearch[]> => {
     const rows = await ctx.db
       .query('savedSearches')
       .withIndex('by_enabled', (q) => q.eq('enabled', true))
       .collect()
 
     const autoByUser = new Map<string, boolean>()
-    const out: SavedSearch[] = []
+    const out: MonitorSearch[] = []
     for (const r of rows) {
       let auto = autoByUser.get(r.userId)
       if (auto === undefined) {
@@ -43,9 +72,30 @@ export const enabledSearches = internalQuery({
         autoByUser.set(r.userId, auto)
       }
       if (!auto) continue
-      out.push({ _id: r._id, userId: r.userId, keywords: r.keywords })
+      out.push(toMonitorSearch(r))
     }
     return out
+  },
+})
+
+/**
+ * Veilles actives d'UN user (pour « Lancer maintenant »). Aucun gating de palier :
+ * le déclenchement manuel est ouvert à tous (c'est LA veille des comptes gratuits).
+ * `lastRun` = passage le plus récent parmi ses veilles (pour le cooldown anti-abus).
+ */
+export const userEnabledSearches = internalQuery({
+  args: { userId: v.string() },
+  handler: async (
+    ctx,
+    { userId },
+  ): Promise<{ searches: MonitorSearch[]; lastRun: number }> => {
+    const rows = await ctx.db
+      .query('savedSearches')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .collect()
+    const enabled = rows.filter((r) => r.enabled)
+    const lastRun = rows.reduce((max, r) => Math.max(max, r.lastRunAt ?? 0), 0)
+    return { searches: enabled.map(toMonitorSearch), lastRun }
   },
 })
 
@@ -54,7 +104,6 @@ async function nextLeadOrder(
   ctx: { db: { query: (t: 'opportunities') => unknown } },
   userId: string,
 ): Promise<number> {
-  // Typage assoupli localement pour rester découplé de opportunities.ts.
   const db = (ctx as unknown as { db: { query: (t: string) => any } }).db
   const inStage: Doc<'opportunities'>[] = await db
     .query('opportunities')
@@ -68,6 +117,7 @@ async function nextLeadOrder(
 /**
  * Importe une offre détectée par le moniteur dans le pipeline du user.
  * Déduplique via l'index `by_user_sourceUrl` (idempotent sur ré-exécutions).
+ * L'intention de la veille pilote le `type` (prospect vs offre) et les tags.
  * Retourne `true` si créée, `false` si déjà présente.
  */
 export const importFromMonitor = internalMutation({
@@ -75,11 +125,16 @@ export const importFromMonitor = internalMutation({
     userId: v.string(),
     title: v.string(),
     sourceUrl: v.string(),
+    connectorId: v.string(),
+    intent: v.union(
+      v.literal('apply'),
+      v.literal('prospect'),
+      v.literal('both'),
+    ),
   },
   handler: async (ctx, args): Promise<boolean> => {
-    const { userId, title, sourceUrl } = args
+    const { userId, title, sourceUrl, connectorId, intent } = args
 
-    // Déduplication : (userId, sourceUrl) déjà présent → on n'insère pas.
     const existing = await ctx.db
       .query('opportunities')
       .withIndex('by_user_sourceUrl', (q) =>
@@ -90,33 +145,35 @@ export const importFromMonitor = internalMutation({
 
     const now = Date.now()
     const order = await nextLeadOrder(ctx, userId)
+    // Démarcher = prospect (entreprise qui recrute = budget = cible presta).
+    const type = intent === 'prospect' ? 'prospect' : 'job_offer'
+    const tags = ['veille', connectorId, intent]
 
     const opportunityId: Id<'opportunities'> = await ctx.db.insert(
       'opportunities',
       {
         userId,
         title,
-        type: 'job_offer',
+        type,
         stage: 'lead',
         priority: 'medium',
-        tags: ['veille', 'educarriere'],
+        tags,
         order,
-        importSource: 'educarriere',
+        importSource: connectorId === 'educarriere' ? 'educarriere' : 'autre',
         sourceUrl,
         importedAt: now,
-        source: 'educarriere',
+        source: connectorId,
         url: sourceUrl,
         createdAt: now,
         updatedAt: now,
       },
     )
 
-    // Journalise l'import dans la timeline (même transaction).
     await ctx.db.insert('activities', {
       userId,
       opportunityId,
       kind: 'other',
-      content: `Offre importée via la veille educarriere : ${title}`,
+      content: `Détecté par la veille (${connectorId}) : ${title}`,
       createdAt: now,
     })
 
@@ -124,12 +181,9 @@ export const importFromMonitor = internalMutation({
   },
 })
 
-/** Met à jour les métadonnées d'exécution d'une recherche enregistrée. */
+/** Met à jour les métadonnées d'exécution d'une veille. */
 export const markRun = internalMutation({
-  args: {
-    searchId: v.id('savedSearches'),
-    count: v.number(),
-  },
+  args: { searchId: v.id('savedSearches'), count: v.number() },
   handler: async (ctx, args): Promise<null> => {
     const now = Date.now()
     await ctx.db.patch(args.searchId, {
@@ -138,5 +192,83 @@ export const markRun = internalMutation({
       updatedAt: now,
     })
     return null
+  },
+})
+
+/**
+ * Enregistre la santé d'un connecteur après un passage (upsert par connecteur).
+ * Remplace l'échec muet : « educarriere opérationnel · novojob en panne » devient
+ * affichable. `ok=false` conserve `lastOkAt`/`lastCount` du dernier succès.
+ */
+export const recordSourceHealth = internalMutation({
+  args: {
+    connectorId: v.string(),
+    ok: v.boolean(),
+    count: v.optional(v.number()),
+    error: v.optional(v.string()),
+  },
+  handler: async (ctx, args): Promise<null> => {
+    const now = Date.now()
+    const existing = await ctx.db
+      .query('veilleSourceHealth')
+      .withIndex('by_connector', (q) => q.eq('connectorId', args.connectorId))
+      .unique()
+
+    const patch: Partial<Doc<'veilleSourceHealth'>> = {
+      ok: args.ok,
+      lastRunAt: now,
+      updatedAt: now,
+    }
+    if (args.ok) {
+      patch.lastOkAt = now
+      if (args.count !== undefined) patch.lastCount = args.count
+      patch.lastError = undefined
+    } else if (args.error !== undefined) {
+      patch.lastError = args.error
+    }
+
+    if (existing) {
+      await ctx.db.patch(existing._id, patch)
+    } else {
+      await ctx.db.insert('veilleSourceHealth', {
+        connectorId: args.connectorId,
+        ok: args.ok,
+        lastRunAt: now,
+        lastOkAt: args.ok ? now : undefined,
+        lastCount: args.ok ? args.count : undefined,
+        lastError: args.ok ? undefined : args.error,
+        updatedAt: now,
+      })
+    }
+    return null
+  },
+})
+
+/** Notifie (cloche) qu'une veille a importé de nouvelles offres. */
+export const notifyVeilleImport = internalMutation({
+  args: { userId: v.string(), count: v.number(), searchLabel: v.string() },
+  handler: async (ctx, args): Promise<null> => {
+    if (args.count <= 0) return null
+    const plural = args.count > 1 ? 's' : ''
+    await ctx.db.insert('notifications', {
+      userId: args.userId,
+      kind: 'veille_import',
+      title: `${args.count} nouvelle${plural} offre${plural} détectée${plural}`,
+      body: `Votre veille « ${args.searchLabel} » a ajouté ${args.count} offre${plural} à votre pipeline.`,
+      actionUrl: '/app/opportunites',
+      read: false,
+      emailSent: false,
+      createdAt: Date.now(),
+    })
+    return null
+  },
+})
+
+/** `api.veille.monitor.sourceHealth` : santé des connecteurs (lecture publique). */
+export const sourceHealth = query({
+  args: {},
+  handler: async (ctx): Promise<Doc<'veilleSourceHealth'>[]> => {
+    await requireUser(ctx)
+    return ctx.db.query('veilleSourceHealth').collect()
   },
 })
