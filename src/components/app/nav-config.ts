@@ -1,5 +1,6 @@
 import {
   LayoutDashboard,
+  Bot,
   Briefcase,
   Rss,
   Building2,
@@ -48,6 +49,13 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: LayoutDashboard,
         exact: true,
         keywords: 'dashboard accueil pilotage synthese',
+      },
+      {
+        to: '/app/copilot',
+        label: m.nav_copilot,
+        icon: Bot,
+        exact: false,
+        keywords: 'copilot copilote ia agent intelligence assistant chat',
       },
     ],
   },

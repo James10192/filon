@@ -24,6 +24,11 @@
 ### Batch SOLO B — après A mergé
 - **i18n complet en/fr** (Paraglide, compile-time) — site + app, touche presque tout → JAMAIS en parallèle.
 
+## Phase IA — EN COURS (reprise nécessaire)
+- **Backend LIVRÉ + committé** (`dc6ad2a feat(ai): copilot backend`) sur main : composant `@convex-dev/agent` + `convex/agent/*` (agent.ts, models.ts, instructions.ts, permissions.ts, queries.ts, mutations.ts, tools/{read,write,index}.ts), schéma additif aiCredits/aiUsage/aiPermissionPrefs/aiThreads, tier `copilot`, routage OpenRouter (slugs dans `convex/agent/models.ts`), gating + métrage. OPENROUTER_API_KEY en env prod.
+- **Frontend RESTE À FAIRE** (les agents se bloquent sur la limite de session — reprendre en session neuve). À faire : lire `convex/agent/*` pour les noms de fonctions, installer **ai-elements** (registry shadcn), construire route `/app/copilot` + slide-over ⌘K avec `useThreadMessages({stream:true})` + `toUIMessages` de `@convex-dev/agent/react`, cartes de confirmation d'action (Ask : une fois/toujours/refuser), sélecteur de mode (Ask/Accept/Auto/Bypass), toggle Rapide/Qualité, compteur crédits, upsell. Puis convex deploy + build + vercel + agent-browser. Blueprint complet : sortie workflow `wet2tp39w` (fichier tasks).
+- v1 = mode Ask. Décisions modèles/funnel/permission déjà actées (tâches #17/#20).
+
 ## Phases futures (roadmap, pas encore lancées)
 - **Phase IA** : copilot in-app + IA agentique partout, débloquée par un NOUVEAU tier au-dessus de Pro+ IA. v1 = chatbot. Claude via actions Convex scopées, métré.
 - **Phase 4** : orgs (Local Install Better Auth) + **/admin** (gérer users/orgs + métriques + feedbacks) + **système de feedback**. /admin et feedback décidés POUR la Phase 4.

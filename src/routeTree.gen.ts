@@ -23,6 +23,7 @@ import { Route as AppParametresRouteImport } from './routes/app/parametres'
 import { Route as AppOpportunitesRouteImport } from './routes/app/opportunites'
 import { Route as AppEntreprisesRouteImport } from './routes/app/entreprises'
 import { Route as AppDocumentsRouteImport } from './routes/app/documents'
+import { Route as AppCopilotRouteImport } from './routes/app/copilot'
 import { Route as AppPropositionsIdRouteImport } from './routes/app/propositions.$id'
 import { Route as AppOpportunitesIdRouteImport } from './routes/app/opportunites.$id'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth.$'
@@ -97,6 +98,11 @@ const AppDocumentsRoute = AppDocumentsRouteImport.update({
   path: '/documents',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AppCopilotRoute = AppCopilotRouteImport.update({
+  id: '/copilot',
+  path: '/copilot',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 const AppPropositionsIdRoute = AppPropositionsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -118,6 +124,7 @@ export interface FileRoutesByFullPath {
   '/app': typeof AppRouteRouteWithChildren
   '/connexion': typeof ConnexionRoute
   '/inscription': typeof InscriptionRoute
+  '/app/copilot': typeof AppCopilotRoute
   '/app/documents': typeof AppDocumentsRoute
   '/app/entreprises': typeof AppEntreprisesRoute
   '/app/opportunites': typeof AppOpportunitesRouteWithChildren
@@ -136,6 +143,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/connexion': typeof ConnexionRoute
   '/inscription': typeof InscriptionRoute
+  '/app/copilot': typeof AppCopilotRoute
   '/app/documents': typeof AppDocumentsRoute
   '/app/entreprises': typeof AppEntreprisesRoute
   '/app/opportunites': typeof AppOpportunitesRouteWithChildren
@@ -156,6 +164,7 @@ export interface FileRoutesById {
   '/app': typeof AppRouteRouteWithChildren
   '/connexion': typeof ConnexionRoute
   '/inscription': typeof InscriptionRoute
+  '/app/copilot': typeof AppCopilotRoute
   '/app/documents': typeof AppDocumentsRoute
   '/app/entreprises': typeof AppEntreprisesRoute
   '/app/opportunites': typeof AppOpportunitesRouteWithChildren
@@ -177,6 +186,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/connexion'
     | '/inscription'
+    | '/app/copilot'
     | '/app/documents'
     | '/app/entreprises'
     | '/app/opportunites'
@@ -195,6 +205,7 @@ export interface FileRouteTypes {
     | '/'
     | '/connexion'
     | '/inscription'
+    | '/app/copilot'
     | '/app/documents'
     | '/app/entreprises'
     | '/app/opportunites'
@@ -214,6 +225,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/connexion'
     | '/inscription'
+    | '/app/copilot'
     | '/app/documents'
     | '/app/entreprises'
     | '/app/opportunites'
@@ -337,6 +349,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppDocumentsRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/app/copilot': {
+      id: '/app/copilot'
+      path: '/copilot'
+      fullPath: '/app/copilot'
+      preLoaderRoute: typeof AppCopilotRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
     '/app/propositions/$id': {
       id: '/app/propositions/$id'
       path: '/$id'
@@ -386,6 +405,7 @@ const AppPropositionsRouteWithChildren = AppPropositionsRoute._addFileChildren(
 )
 
 interface AppRouteRouteChildren {
+  AppCopilotRoute: typeof AppCopilotRoute
   AppDocumentsRoute: typeof AppDocumentsRoute
   AppEntreprisesRoute: typeof AppEntreprisesRoute
   AppOpportunitesRoute: typeof AppOpportunitesRouteWithChildren
@@ -399,6 +419,7 @@ interface AppRouteRouteChildren {
 }
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
+  AppCopilotRoute: AppCopilotRoute,
   AppDocumentsRoute: AppDocumentsRoute,
   AppEntreprisesRoute: AppEntreprisesRoute,
   AppOpportunitesRoute: AppOpportunitesRouteWithChildren,

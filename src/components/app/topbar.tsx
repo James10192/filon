@@ -1,11 +1,12 @@
 import { useLocation } from '@tanstack/react-router'
-import { Plus, Search } from 'lucide-react'
+import { Plus, Search, Sparkles } from 'lucide-react'
 import { m } from '~/lib/paraglide/messages'
 import { Button } from '~/components/ui/button'
 import { SidebarTrigger } from '~/components/ui/sidebar'
 import { Separator } from '~/components/ui/separator'
 import { useCommandPalette } from './command-palette'
 import { useQuickCapture } from './quick-capture'
+import { useCopilotLauncher } from '~/components/copilot/copilot-provider'
 import { useShortcutLabel } from './use-shortcut-label'
 import { NAV_ITEMS, isNavItemActive } from './nav-config'
 
@@ -19,6 +20,7 @@ import { NAV_ITEMS, isNavItemActive } from './nav-config'
 export function Topbar() {
   const palette = useCommandPalette()
   const quickCapture = useQuickCapture()
+  const copilot = useCopilotLauncher()
   const location = useLocation()
   const shortcut = useShortcutLabel()
 
@@ -49,6 +51,16 @@ export function Topbar() {
             {shortcut}
           </kbd>
         </button>
+
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={copilot.open}
+          aria-label={m.copilot_open()}
+          title={m.copilot_open()}
+        >
+          <Sparkles className="size-4 text-accent" />
+        </Button>
 
         <Button
           onClick={quickCapture.open}

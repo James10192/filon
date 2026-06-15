@@ -112,10 +112,24 @@ Industrialise le savoir-faire manuel (kits de candidature). Coût variable → m
 ### Phase IA — Copilot in-app & IA agentique (nouveau 5e tier)
 Au-delà de l'IA à l'acte : une **IA agentique présente partout** dans l'app, débloquée par un **palier dédié AU-DESSUS de Pro+ IA** (« Filon Copilot »). v1 = chatbot copilote ; cible = actions assistées sur le pipeline, la veille et les propositions.
 
-- [ ] Nouveau tier **Copilot** dans la grille + gating (au-dessus de Pro+ IA)
-- [ ] Copilot in-app (chat) via **actions Convex scopées**, métré à l'usage
-- [ ] IA agentique contextuelle dans les espaces (Opportunités, Propositions, Veille)
-- [ ] **Choix de modèle (en cours d'arbitrage)** : Claude **Sonnet 4.6** (~3 $ / 15 $ par M tokens) pour le copilot, Claude **Haiku 4.5** (~1 $ / 5 $ par M tokens) pour le volume ; décision modèle figée vs choix laissé à l'utilisateur à trancher
+**Livré v1 (2026-06-15)** — backend `convex/agent/*` + `aiChat`/`aiCredits`/`aiPermissions` + frontend copilot (slide-over ⌘J + bouton topbar, route `/app/copilot`, entrée sidebar) : conversation streamée (`useThreadMessages`), cartes de confirmation d'action (Ask : une fois / toujours / refuser), sélecteur de mode, toggle Rapide/Qualité, compteur crédits, gating + upsell.
+
+**Économie des crédits — décisions arbitrées (grill-me 2026-06-15) :**
+1. Prix = **valeur + plancher coût** (jamais sous l'eau).
+2. Débit crédits = `max(poids tokens, plancher coût-réel)` — *livré* dans `aiChat.creditsForUsage` (table `MODEL_PRICING` par mode).
+3. **MARKUP = 8 · FX = 680 XOF/$** (marge garantie ≥ 8×, coussin FX) — *livré*.
+4. Copilot = **fair-use sans mur dur** (throttle + nudge, plafond anti-abus ~3×) — *v2 (reste un mur "recharger" en v1)*.
+5. **Dégustation** : allocations Découverte 25 · Pro 100 · Pro+IA 300 · Copilot 6000 cr/mois ; accès IA **piloté par les crédits** (tout palier goûte l'agent) — *livré* (`AI_MONTHLY_CREDITS`, `aiAccess`).
+6. Affichage **jauge + crédits**, métaphore **« recharge »** (crédit téléphone, natif CI) — *livré* (wording « Recharger »).
+7. **BYOK** (clé perso) = même prix Copilot, **usage illimité** sur leur clé — *v2*.
+8. Nouveau tier **Copilot Max ~35 000 XOF** (quota XXL, modes Auto/Bypass réservés, priorité, BYOK inclus) — *v2*.
+
+**Reste à faire — Phase IA monétisation v2 :**
+- [ ] Tier **Copilot Max** : `Plan`/`PaidPlan` + validateurs schéma + `PRICING` + Paystack + page Tarifs + miroir client + libellés.
+- [ ] **Fair-use soft** : remplacer le mur dur `AI_CREDIT` par throttle + nudge pour les paliers Copilot, avec plafond anti-abus (~3× l'allocation).
+- [ ] **BYOK** : coffre de clé (chiffré), bascule usage illimité, gating Copilot/Max.
+- [ ] **Modes Auto/Bypass** réservés à Copilot Max (gating du sélecteur de permission).
+- [ ] **Essai/dégustation** raffiné + métriques de conversion (jauge « recharge » + packs).
 
 ### Phase 4 — Orgs, /admin & feedback (déclenchée par un prospect équipe)
 Coût lourd, ne se lance qu'au déclencheur réel.

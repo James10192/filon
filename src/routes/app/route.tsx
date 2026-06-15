@@ -23,6 +23,10 @@ import {
   CommandPaletteProvider,
   useCommandPalette,
 } from '~/components/app/command-palette'
+import {
+  CopilotProvider,
+  useCopilotLauncher,
+} from '~/components/copilot/copilot-provider'
 import { AppSidebar } from '~/components/app/app-sidebar'
 import { Topbar } from '~/components/app/topbar'
 import { MobileBottombar } from '~/components/app/mobile-bottombar'
@@ -116,7 +120,9 @@ function AppShell({
     <ThemeProvider>
       <QuickCaptureProvider>
         <CommandPaletteProvider>
-          <ShellLayout displayName={displayName} email={email} />
+          <CopilotProvider>
+            <ShellLayout displayName={displayName} email={email} />
+          </CopilotProvider>
         </CommandPaletteProvider>
       </QuickCaptureProvider>
     </ThemeProvider>
@@ -176,10 +182,14 @@ function ShellLayout({
   )
 }
 
-/** Cmd+K / Ctrl+K ouvre la palette ; « n » ouvre la capture rapide. */
+/**
+ * Cmd+K / Ctrl+K ouvre la palette ; Cmd+J / Ctrl+J ouvre le copilote ; « n »
+ * ouvre la capture rapide.
+ */
 function useGlobalShortcuts() {
   const palette = useCommandPalette()
   const quickCapture = useQuickCapture()
+  const copilot = useCopilotLauncher()
 
   useEffect(() => {
     function isEditable(target: EventTarget | null): boolean {
@@ -200,6 +210,11 @@ function useGlobalShortcuts() {
         palette.toggle()
         return
       }
+      if ((event.metaKey || event.ctrlKey) && key === 'j') {
+        event.preventDefault()
+        copilot.toggle()
+        return
+      }
       // « n » seul (sans modificateur), hors champ de saisie.
       if (
         key === 'n' &&
@@ -215,7 +230,7 @@ function useGlobalShortcuts() {
 
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [palette, quickCapture])
+  }, [palette, quickCapture, copilot])
 }
 
 function ShellSkeleton() {
