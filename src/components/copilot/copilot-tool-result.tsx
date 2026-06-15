@@ -4,15 +4,23 @@ import {
   Send,
   Building2,
   User,
-  TrendingUp,
+  type LucideIcon,
 } from 'lucide-react'
 import { ProgressBar } from '~/components/ui/progress-bar'
+import { Badge } from '~/components/ui/badge'
+import { STAGE_META, STAGES } from '~/components/opportunities/meta'
+import {
+  STATUS_LABELS,
+  STATUS_BADGE,
+  formatAmount,
+} from '~/components/proposals/proposal-status'
 
 /**
  * Rendu riche (generative UI) des résultats d'outils du copilote : au lieu d'un
  * JSON brut, on affiche de vrais composants (tuiles de stats, barres, listes
- * premium). Renvoie `null` si l'outil n'a pas de rendu dédié (fallback générique
- * géré par l'appelant).
+ * premium), en réutilisant les libellés/couleurs canoniques de l'app. Renvoie
+ * `null` si l'outil n'a pas de rendu dédié (fallback générique géré par
+ * l'appelant).
  */
 export function renderToolResult(
   tool: string,
@@ -25,39 +33,116 @@ export function renderToolResult(
       return <PipelineSummary data={output as PipelineData} />
     case 'list_opportunities':
     case 'search_opportunities':
-      return <OpportunityList items={output as OppItem[]} />
+      return (
+        <List
+          items={output as OppItem[]}
+          icon={Briefcase}
+          noun="opportunité"
+          empty="Aucune opportunité trouvée."
+          row={(o) => (
+            <>
+              <span className="min-w-0 flex-1 truncate text-sm text-fg">
+                {o.title}
+              </span>
+              <Badge variant="outline" className={stageChip(o.stage)}>
+                {stageLabel(o.stage)}
+              </Badge>
+            </>
+          )}
+        />
+      )
     case 'due_followups':
-      return <FollowupList items={output as FollowupItem[]} />
+      return (
+        <List
+          items={output as FollowupItem[]}
+          icon={BellRing}
+          noun="relance"
+          empty="Aucune relance à venir. Tu es à jour."
+          row={(f) => (
+            <>
+              <span className="min-w-0 flex-1 truncate text-sm text-fg">
+                {f.label}
+              </span>
+              <span className="assay shrink-0 text-xs text-fg-muted">
+                {formatDate(f.dueDate)}
+              </span>
+            </>
+          )}
+        />
+      )
     case 'list_proposals':
-      return <ProposalList items={output as ProposalItem[]} />
+      return (
+        <List
+          items={output as ProposalItem[]}
+          icon={Send}
+          noun="proposition"
+          empty="Aucune proposition."
+          row={(p) => (
+            <>
+              <span className="min-w-0 flex-1 truncate text-sm text-fg">
+                {p.title}
+              </span>
+              {p.amount != null && (
+                <span className="assay shrink-0 text-xs text-fg-muted">
+                  {formatAmount(p.amount, p.currency)}
+                </span>
+              )}
+              <Badge variant={STATUS_BADGE[p.status] ?? 'outline'}>
+                {STATUS_LABELS[p.status] ?? p.status}
+              </Badge>
+            </>
+          )}
+        />
+      )
     case 'find_company':
-      return <CompanyList items={output as CompanyItem[]} />
+      return (
+        <List
+          items={output as CompanyItem[]}
+          empty="Aucune entreprise trouvée."
+          row={(c) => (
+            <>
+              <Building2 className="size-4 shrink-0 text-fg-subtle" />
+              <span className="min-w-0 flex-1 truncate text-sm text-fg">
+                {c.name}
+              </span>
+              {c.sector && (
+                <span className="shrink-0 text-xs text-fg-muted">{c.sector}</span>
+              )}
+            </>
+          )}
+        />
+      )
     case 'find_contact':
-      return <ContactList items={output as ContactItem[]} />
+      return (
+        <List
+          items={output as ContactItem[]}
+          empty="Aucun contact trouvé."
+          row={(c) => (
+            <>
+              <User className="size-4 shrink-0 text-fg-subtle" />
+              <span className="min-w-0 flex-1 truncate text-sm text-fg">
+                {c.name}
+              </span>
+              {c.role && (
+                <span className="shrink-0 text-xs text-fg-muted">{c.role}</span>
+              )}
+            </>
+          )}
+        />
+      )
     default:
       return null
   }
 }
 
-const STAGE_LABELS: Record<string, string> = {
-  lead: 'Pistes',
-  contacted: 'Contactés',
-  applied: 'Candidatures',
-  interview: 'Entretiens',
-  negotiation: 'Négociation',
-  won: 'Gagnées',
-  lost: 'Perdues',
-}
+// --- Libellés canoniques (réutilisés de l'app, jamais de codes bruts) ------
 
-const STAGE_ORDER = [
-  'lead',
-  'contacted',
-  'applied',
-  'interview',
-  'negotiation',
-  'won',
-  'lost',
-]
+function stageLabel(stage: string): string {
+  return STAGE_META[stage as keyof typeof STAGE_META]?.label ?? stage
+}
+function stageChip(stage: string): string {
+  return STAGE_META[stage as keyof typeof STAGE_META]?.chip ?? ''
+}
 
 function Card({ children }: { children: React.ReactNode }) {
   return (
@@ -71,7 +156,63 @@ function EmptyHint({ text }: { text: string }) {
   return <p className="px-3.5 py-3 text-sm text-fg-muted">{text}</p>
 }
 
-// --- Pipeline -------------------------------------------------------------
+function Header({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
+  return (
+    <div className="flex items-center gap-2 border-b border-border px-3.5 py-2">
+      <Icon className="size-3.5 text-accent" />
+      <span className="text-xs font-medium text-fg-muted">{label}</span>
+    </div>
+  )
+}
+
+// --- Liste générique -------------------------------------------------------
+
+function List<T extends { id: string }>({
+  items,
+  row,
+  empty,
+  icon,
+  noun,
+  limit = 8,
+}: {
+  items: T[]
+  row: (item: T) => React.ReactNode
+  empty: string
+  icon?: LucideIcon
+  noun?: string
+  limit?: number
+}) {
+  if (!items?.length) {
+    return (
+      <Card>
+        <EmptyHint text={empty} />
+      </Card>
+    )
+  }
+  const shown = items.slice(0, limit)
+  return (
+    <Card>
+      {icon && noun && (
+        <Header
+          icon={icon}
+          label={`${items.length} ${noun}${items.length > 1 ? 's' : ''}`}
+        />
+      )}
+      <ul className="divide-y divide-border">
+        {shown.map((item) => (
+          <li
+            key={item.id}
+            className="flex items-center gap-2.5 px-3.5 py-2.5"
+          >
+            {row(item)}
+          </li>
+        ))}
+      </ul>
+    </Card>
+  )
+}
+
+// --- Pipeline --------------------------------------------------------------
 
 type PipelineData = {
   total: number
@@ -82,7 +223,7 @@ type PipelineData = {
 
 function PipelineSummary({ data }: { data: PipelineData }) {
   const max = Math.max(1, ...Object.values(data.byStage ?? {}))
-  const stages = STAGE_ORDER.filter((s) => (data.byStage?.[s] ?? 0) > 0)
+  const stages = STAGES.filter((s) => (data.byStage?.[s] ?? 0) > 0)
   return (
     <Card>
       <div className="grid grid-cols-3 divide-x divide-border border-b border-border">
@@ -98,8 +239,8 @@ function PipelineSummary({ data }: { data: PipelineData }) {
             const n = data.byStage[s] ?? 0
             return (
               <div key={s} className="flex items-center gap-3">
-                <span className="w-24 shrink-0 text-xs text-fg-muted">
-                  {STAGE_LABELS[s] ?? s}
+                <span className="w-28 shrink-0 truncate text-xs text-fg-muted">
+                  {STAGE_META[s].label}
                 </span>
                 <ProgressBar
                   percent={(n / max) * 100}
@@ -141,156 +282,19 @@ function Stat({
   )
 }
 
-// --- Lists ----------------------------------------------------------------
+// --- Types & utils ---------------------------------------------------------
 
 type OppItem = { id: string; title: string; stage: string; priority: string }
-
-function OpportunityList({ items }: { items: OppItem[] }) {
-  if (!items?.length) return <Card><EmptyHint text="Aucune opportunité trouvée." /></Card>
-  return (
-    <Card>
-      <Header icon={Briefcase} label={`${items.length} opportunité${items.length > 1 ? 's' : ''}`} />
-      <ul className="divide-y divide-border">
-        {items.slice(0, 8).map((o) => (
-          <li key={o.id} className="flex items-center gap-2.5 px-3.5 py-2.5">
-            <span
-              className={`size-1.5 shrink-0 rounded-full ${o.priority === 'high' ? 'bg-danger' : o.priority === 'low' ? 'bg-fg-subtle' : 'bg-warning'}`}
-            />
-            <span className="min-w-0 flex-1 truncate text-sm text-fg">
-              {o.title}
-            </span>
-            <span className="shrink-0 rounded-full bg-surface-2 px-2 py-0.5 text-[11px] text-fg-muted">
-              {STAGE_LABELS[o.stage] ?? o.stage}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </Card>
-  )
-}
-
 type FollowupItem = { id: string; label: string; dueDate: string }
-
-function FollowupList({ items }: { items: FollowupItem[] }) {
-  if (!items?.length) return <Card><EmptyHint text="Aucune relance à venir. Tu es à jour." /></Card>
-  return (
-    <Card>
-      <Header icon={BellRing} label={`${items.length} relance${items.length > 1 ? 's' : ''}`} />
-      <ul className="divide-y divide-border">
-        {items.slice(0, 8).map((f) => (
-          <li key={f.id} className="flex items-center gap-2.5 px-3.5 py-2.5">
-            <span className="min-w-0 flex-1 truncate text-sm text-fg">
-              {f.label}
-            </span>
-            <span className="assay shrink-0 text-xs text-fg-muted">
-              {formatDate(f.dueDate)}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </Card>
-  )
-}
-
 type ProposalItem = {
   id: string
   title: string
-  status: string
+  status: keyof typeof STATUS_LABELS
   amount: number | null
   currency: string
 }
-
-const PROPOSAL_STATUS: Record<string, string> = {
-  draft: 'Brouillon',
-  sent: 'Envoyée',
-  accepted: 'Acceptée',
-  refused: 'Refusée',
-}
-
-function ProposalList({ items }: { items: ProposalItem[] }) {
-  if (!items?.length) return <Card><EmptyHint text="Aucune proposition." /></Card>
-  return (
-    <Card>
-      <Header icon={Send} label={`${items.length} proposition${items.length > 1 ? 's' : ''}`} />
-      <ul className="divide-y divide-border">
-        {items.slice(0, 8).map((p) => (
-          <li key={p.id} className="flex items-center gap-2.5 px-3.5 py-2.5">
-            <span className="min-w-0 flex-1 truncate text-sm text-fg">
-              {p.title}
-            </span>
-            {p.amount != null && (
-              <span className="assay shrink-0 text-xs text-fg-muted">
-                {p.amount.toLocaleString('fr-FR')} {p.currency}
-              </span>
-            )}
-            <span className="shrink-0 rounded-full bg-surface-2 px-2 py-0.5 text-[11px] text-fg-muted">
-              {PROPOSAL_STATUS[p.status] ?? p.status}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </Card>
-  )
-}
-
 type CompanyItem = { id: string; name: string; sector: string | null }
-
-function CompanyList({ items }: { items: CompanyItem[] }) {
-  if (!items?.length) return <Card><EmptyHint text="Aucune entreprise trouvée." /></Card>
-  return (
-    <Card>
-      <ul className="divide-y divide-border">
-        {items.map((c) => (
-          <li key={c.id} className="flex items-center gap-2.5 px-3.5 py-2.5">
-            <Building2 className="size-4 shrink-0 text-fg-subtle" />
-            <span className="min-w-0 flex-1 truncate text-sm text-fg">{c.name}</span>
-            {c.sector && (
-              <span className="shrink-0 text-xs text-fg-muted">{c.sector}</span>
-            )}
-          </li>
-        ))}
-      </ul>
-    </Card>
-  )
-}
-
 type ContactItem = { id: string; name: string; role: string | null }
-
-function ContactList({ items }: { items: ContactItem[] }) {
-  if (!items?.length) return <Card><EmptyHint text="Aucun contact trouvé." /></Card>
-  return (
-    <Card>
-      <ul className="divide-y divide-border">
-        {items.map((c) => (
-          <li key={c.id} className="flex items-center gap-2.5 px-3.5 py-2.5">
-            <User className="size-4 shrink-0 text-fg-subtle" />
-            <span className="min-w-0 flex-1 truncate text-sm text-fg">{c.name}</span>
-            {c.role && (
-              <span className="shrink-0 text-xs text-fg-muted">{c.role}</span>
-            )}
-          </li>
-        ))}
-      </ul>
-    </Card>
-  )
-}
-
-// --- Shared ---------------------------------------------------------------
-
-function Header({
-  icon: Icon,
-  label,
-}: {
-  icon: typeof TrendingUp
-  label: string
-}) {
-  return (
-    <div className="flex items-center gap-2 border-b border-border px-3.5 py-2">
-      <Icon className="size-3.5 text-accent" />
-      <span className="text-xs font-medium text-fg-muted">{label}</span>
-    </div>
-  )
-}
 
 function formatDate(iso: string): string {
   const d = new Date(iso)
