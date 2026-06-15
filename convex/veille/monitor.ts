@@ -118,7 +118,7 @@ async function nextLeadOrder(
  * Importe une offre détectée par le moniteur dans le pipeline du user.
  * Déduplique via l'index `by_user_sourceUrl` (idempotent sur ré-exécutions).
  * L'intention de la veille pilote le `type` (prospect vs offre) et les tags.
- * Retourne `true` si créée, `false` si déjà présente.
+ * Retourne l'`Id` de l'opportunité créée, ou `null` si déjà présente (doublon).
  */
 export const importFromMonitor = internalMutation({
   args: {
@@ -132,7 +132,7 @@ export const importFromMonitor = internalMutation({
       v.literal('both'),
     ),
   },
-  handler: async (ctx, args): Promise<boolean> => {
+  handler: async (ctx, args): Promise<Id<'opportunities'> | null> => {
     const { userId, title, sourceUrl, connectorId, intent } = args
 
     const existing = await ctx.db
@@ -141,7 +141,7 @@ export const importFromMonitor = internalMutation({
         q.eq('userId', userId).eq('sourceUrl', sourceUrl),
       )
       .first()
-    if (existing) return false
+    if (existing) return null
 
     const now = Date.now()
     const order = await nextLeadOrder(ctx, userId)
@@ -177,7 +177,7 @@ export const importFromMonitor = internalMutation({
       createdAt: now,
     })
 
-    return true
+    return opportunityId
   },
 })
 
@@ -270,5 +270,91 @@ export const sourceHealth = query({
   handler: async (ctx): Promise<Doc<'veilleSourceHealth'>[]> => {
     await requireUser(ctx)
     return ctx.db.query('veilleSourceHealth').collect()
+  },
+})
+
+/** Une capture de la veille, exposée au frontend (section « Captures récentes »). */
+export type RecentCapture = {
+  _id: Id<'opportunities'>
+  title: string
+  source?: string
+  stage: string
+  intent: string
+  importedAt?: number
+  createdAt: number
+}
+
+/** Entonnoir des captures de la veille, compté par stade. */
+export type CapturesFunnel = {
+  captured: number
+  active: number
+  won: number
+  lost: number
+}
+
+/** Stades comptés comme « en cours » dans l'entonnoir. */
+const ACTIVE_STAGES = new Set([
+  'lead',
+  'contacted',
+  'applied',
+  'interview',
+  'negotiation',
+])
+
+/** Retrouve l'intention (apply/prospect/both) depuis les tags de l'opportunité. */
+function intentFromTags(tags: string[]): string {
+  if (tags.includes('prospect')) return 'prospect'
+  if (tags.includes('both')) return 'both'
+  return 'apply'
+}
+
+/**
+ * `api.veille.monitor.recentCaptures` : opportunités captées par la veille
+ * (tag `veille`) du user courant, récentes, avec leur stade actuel — c'est le
+ * lien entre une offre détectée et son devenir dans le pipeline. Scopée user.
+ */
+export const recentCaptures = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async (
+    ctx,
+    { limit },
+  ): Promise<{ items: RecentCapture[]; funnel: CapturesFunnel }> => {
+    const { userId } = await requireUser(ctx)
+    const rows = await ctx.db
+      .query('opportunities')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .collect()
+
+    const captures = rows.filter((o) => o.tags.includes('veille'))
+
+    const funnel: CapturesFunnel = {
+      captured: captures.length,
+      active: 0,
+      won: 0,
+      lost: 0,
+    }
+    for (const o of captures) {
+      if (o.stage === 'won') funnel.won += 1
+      else if (o.stage === 'lost') funnel.lost += 1
+      else if (ACTIVE_STAGES.has(o.stage)) funnel.active += 1
+    }
+
+    const items: RecentCapture[] = captures
+      .sort(
+        (a, b) =>
+          (b.importedAt ?? b.createdAt) - (a.importedAt ?? a.createdAt),
+      )
+      .slice(0, limit ?? 30)
+      .map((o) => ({
+        _id: o._id,
+        title: o.title,
+        source: o.source,
+        stage: o.stage,
+        intent: intentFromTags(o.tags),
+        importedAt: o.importedAt,
+        createdAt: o.createdAt,
+      }))
+
+    return { items, funnel }
   },
 })

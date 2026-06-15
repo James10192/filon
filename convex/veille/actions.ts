@@ -7,8 +7,10 @@ import { requireUserFromAction } from '../lib/withUser'
 import {
   CONNECTORS,
   CONNECTOR_IDS,
+  CONNECTOR_META,
   type Listing,
 } from './connectors'
+import type { Id } from '../_generated/dataModel'
 import {
   detectSource,
   matchesSearch,
@@ -39,6 +41,12 @@ function browserHeaders(): Record<string, string> {
 
 type ListingsByConnector = Map<string, Listing[]>
 
+/** Santé + volume listé d'un connecteur sur un passage (pour le récap UI). */
+export type SourceScan = { id: string; ok: boolean; scanned: number }
+
+/** Résultat de `fetchAllListings` : listings indexés + scan par connecteur. */
+type FetchResult = { byConnector: ListingsByConnector; scans: SourceScan[] }
+
 /**
  * Récupère la liste de chaque connecteur et journalise sa santé (succès, nombre
  * d'offres, ou erreur). Un connecteur en panne n'interrompt pas les autres.
@@ -47,7 +55,7 @@ type ConnectorResult =
   | { id: string; listings: Listing[]; ok: true; count: number }
   | { id: string; listings: Listing[]; ok: false; error: string }
 
-async function fetchAllListings(ctx: ActionCtx): Promise<ListingsByConnector> {
+async function fetchAllListings(ctx: ActionCtx): Promise<FetchResult> {
   // Fetch + parse de chaque connecteur EN PARALLÈLE (latence = max, pas somme).
   const results: ConnectorResult[] = await Promise.all(
     CONNECTORS.map(async (c): Promise<ConnectorResult> => {
@@ -80,19 +88,38 @@ async function fetchAllListings(ctx: ActionCtx): Promise<ListingsByConnector> {
       })
     }),
   )
-  return byConnector
+
+  const scans: SourceScan[] = results.map((r) => ({
+    id: r.id,
+    ok: r.ok,
+    scanned: r.listings.length,
+  }))
+  return { byConnector, scans }
 }
+
+/** Une offre RÉELLEMENT créée durant un passage (pour le récap UI). */
+export type RunCapture = {
+  opportunityId: Id<'opportunities'>
+  title: string
+  source: string
+  intent: 'apply' | 'prospect' | 'both'
+}
+
+/** Plafond de captures détaillées remontées au client (le reste reste compté). */
+const MAX_CAPTURES = 50
 
 /**
  * Confronte chaque veille aux offres listées (sur ses sources ciblées) et importe
- * les correspondances. Notifie si la veille le demande. Retourne le total importé.
+ * les correspondances. Notifie si la veille le demande. Retourne le total importé
+ * et le détail des offres créées (titre, source, intention) plafonné pour le récap.
  */
 async function applySearches(
   ctx: ActionCtx,
   searches: MonitorSearch[],
   byConnector: ListingsByConnector,
-): Promise<number> {
+): Promise<{ imported: number; captures: RunCapture[] }> {
   let totalImported = 0
+  const captures: RunCapture[] = []
   for (const search of searches) {
     const targets = search.sources ?? CONNECTOR_IDS
     let count = 0
@@ -101,7 +128,7 @@ async function applySearches(
         if (!matchesSearch(listing.title, search.include, search.exclude)) {
           continue
         }
-        const created = await ctx.runMutation(
+        const opportunityId = await ctx.runMutation(
           internal.veille.monitor.importFromMonitor,
           {
             userId: search.userId,
@@ -111,7 +138,17 @@ async function applySearches(
             intent: search.intent,
           },
         )
-        if (created) count += 1
+        if (opportunityId) {
+          count += 1
+          if (captures.length < MAX_CAPTURES) {
+            captures.push({
+              opportunityId,
+              title: listing.title,
+              source: cid,
+              intent: search.intent,
+            })
+          }
+        }
       }
     }
     await ctx.runMutation(internal.veille.monitor.markRun, {
@@ -127,7 +164,7 @@ async function applySearches(
     }
     totalImported += count
   }
-  return totalImported
+  return { imported: totalImported, captures }
 }
 
 /**
@@ -185,7 +222,7 @@ export const parseSource = action({
 export const runMonitor = internalAction({
   args: {},
   handler: async (ctx): Promise<void> => {
-    const byConnector = await fetchAllListings(ctx)
+    const { byConnector } = await fetchAllListings(ctx)
     const total = [...byConnector.values()].reduce((s, l) => s + l.length, 0)
     if (total === 0) return
     const searches = await ctx.runQuery(
@@ -199,22 +236,40 @@ export const runMonitor = internalAction({
 /** Cooldown anti-abus du déclenchement manuel (90 s). */
 const RUN_NOW_COOLDOWN_MS = 90_000
 
+/** Source analysée durant un passage (état + volume), enrichie du libellé. */
+export type RunSource = { id: string; label: string; ok: boolean; scanned: number }
+
+/** Résumé riche d'un passage manuel, consommé par le panneau de run. */
+export type RunNowResult = {
+  imported: number
+  throttled?: boolean
+  retryInSec?: number
+  sources: RunSource[]
+  captures: RunCapture[]
+}
+
+/** Libellé lisible d'un connecteur (depuis CONNECTOR_META, défaut = id). */
+function connectorLabel(id: string): string {
+  return CONNECTOR_META.find((c) => c.id === id)?.label ?? id
+}
+
 /**
  * `api.veille.actions.runNow` : lance la veille à la demande pour le user courant
  * (toutes ses veilles actives). Ouvert à tous les paliers (= veille manuelle des
- * comptes gratuits). Cooldown 90 s pour ne pas marteler les sources.
+ * comptes gratuits). Cooldown 90 s pour ne pas marteler les sources. Retourne un
+ * résumé riche (sources analysées + offres captées) pour le panneau de run.
  */
 export const runNow = action({
   args: {},
-  handler: async (
-    ctx,
-  ): Promise<{ imported: number; throttled?: boolean; retryInSec?: number }> => {
+  handler: async (ctx): Promise<RunNowResult> => {
     const { userId } = await requireUserFromAction(ctx)
     const { searches, lastRun } = await ctx.runQuery(
       internal.veille.monitor.userEnabledSearches,
       { userId },
     )
-    if (searches.length === 0) return { imported: 0 }
+    if (searches.length === 0) {
+      return { imported: 0, sources: [], captures: [] }
+    }
 
     const since = Date.now() - lastRun
     if (lastRun > 0 && since < RUN_NOW_COOLDOWN_MS) {
@@ -222,11 +277,23 @@ export const runNow = action({
         imported: 0,
         throttled: true,
         retryInSec: Math.ceil((RUN_NOW_COOLDOWN_MS - since) / 1000),
+        sources: [],
+        captures: [],
       }
     }
 
-    const byConnector = await fetchAllListings(ctx)
-    const imported = await applySearches(ctx, searches, byConnector)
-    return { imported }
+    const { byConnector, scans } = await fetchAllListings(ctx)
+    const { imported, captures } = await applySearches(
+      ctx,
+      searches,
+      byConnector,
+    )
+    const sources: RunSource[] = scans.map((s) => ({
+      id: s.id,
+      label: connectorLabel(s.id),
+      ok: s.ok,
+      scanned: s.scanned,
+    }))
+    return { imported, sources, captures }
   },
 })

@@ -4,6 +4,7 @@ import { Button } from '~/components/ui/button'
 import { PageToolbar } from '~/components/app/page-toolbar'
 import { ImportOfferDialog } from '~/components/veille/import-offer-dialog'
 import { SavedSearchManager } from '~/components/veille/saved-search-manager'
+import { RecentCaptures } from '~/components/veille/recent-captures'
 import { SourceHealthPanel } from '~/components/veille/source-health-panel'
 import { VeilleAutoBanner } from '~/components/veille/veille-auto-banner'
 import { RunNowButton } from '~/components/veille/run-now-button'
@@ -57,6 +58,9 @@ function VeillePage() {
           <SavedSearchManager />
         </div>
         <div className="reveal" style={{ '--reveal-i': 2 } as React.CSSProperties}>
+          <RecentCaptures />
+        </div>
+        <div className="reveal" style={{ '--reveal-i': 3 } as React.CSSProperties}>
           <SourceHealthPanel />
         </div>
       </div>
