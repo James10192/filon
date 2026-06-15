@@ -57,6 +57,24 @@ export default defineSchema({
     // Horodatage de la dernière relance d'échéance envoyée/flaggée (epoch ms),
     // pour ne pas relancer en boucle. Posé par le cron de rappel.
     renewalReminderAt: v.optional(v.number()),
+    // --- Renouvellement carte (Axe 2, additif) ---
+    // En XOF/Côte d'Ivoire, SEULE la carte donne une autorisation réutilisable :
+    // le mobile money (Wave/Orange/MTN) est un paiement ponctuel sans mandat. On
+    // ne stocke ces champs QUE pour un paiement carte dont `authorization.reusable`
+    // est vrai. Ils alimentent l'auto-débit silencieux du cron de renouvellement.
+    // Code d'autorisation réutilisable Paystack (POST /charge/authorization).
+    cardAuthCode: v.optional(v.string()),
+    // 4 derniers chiffres de la carte (affichage « Visa ···· 4242 »).
+    cardLast4: v.optional(v.string()),
+    // Banque émettrice et marque (visa/mastercard), pour l'affichage.
+    cardBank: v.optional(v.string()),
+    cardBrand: v.optional(v.string()),
+    // Nombre de tentatives d'auto-débit pour la période courante (cap à 2). Remis
+    // à zéro par un paiement réussi (applySubscription) ou un changement de période.
+    renewalAttempts: v.optional(v.number()),
+    // Horodatage de la dernière tentative d'auto-débit (epoch ms), pour espacer
+    // les retries et éviter de re-tenter le même jour.
+    lastChargeAttemptAt: v.optional(v.number()),
   })
     .index('by_authId', ['authId'])
     .index('by_email', ['email'])
@@ -284,6 +302,35 @@ export default defineSchema({
     .index('by_user', ['userId'])
     // Le cron itère les recherches actives, tous users confondus.
     .index('by_enabled', ['enabled']),
+
+  // Notifications in-app (Axe 2, additif). Scope strict `userId`. Aujourd'hui
+  // alimentées par le cycle de renouvellement (relance d'échéance, échec de
+  // débit, downgrade). `kind` qualifie l'événement ; `emailSent` flag le relais
+  // e-mail (Resend optionnel) pour ne pas ré-envoyer. `meta` porte les détails
+  // sérialisés (plan, montant, échéance) consommés par l'UI/encart.
+  notifications: defineTable({
+    userId: v.string(),
+    kind: v.union(
+      v.literal('renewal_reminder'),
+      v.literal('renewal_charged'),
+      v.literal('renewal_failed'),
+      v.literal('downgraded'),
+    ),
+    title: v.string(),
+    body: v.string(),
+    // CTA optionnel (lien de renouvellement pré-rempli, page Tarifs, etc.).
+    actionUrl: v.optional(v.string()),
+    // Métadonnées sérialisées (JSON string) : plan, intervalle, échéance...
+    meta: v.optional(v.string()),
+    read: v.boolean(),
+    // Relais e-mail effectué (true) ou en attente d'un provider (false). Le
+    // contenu reste consultable in-app quoi qu'il arrive (email = bonus).
+    emailSent: v.boolean(),
+    createdAt: v.number(),
+  })
+    .index('by_user', ['userId'])
+    .index('by_user_created', ['userId', 'createdAt'])
+    .index('by_user_read', ['userId', 'read']),
 
   // --- Copilot IA (Phase IA, additif) ---
   // Solde de crédits IA d'un user (1 ligne par user). `balance` = allocation

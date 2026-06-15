@@ -1,6 +1,8 @@
 import { v } from 'convex/values'
+import type { GenericActionCtx } from 'convex/server'
 import { action } from './_generated/server'
 import { internal } from './_generated/api'
+import type { DataModel } from './_generated/dataModel'
 import { requireUserFromAction } from './lib/withUser'
 import {
   creditPackById,
@@ -181,7 +183,13 @@ type VerifyResponse = {
       packId?: string
       credits?: number
     }
-    authorization?: { authorization_code?: string; reusable?: boolean }
+    authorization?: {
+      authorization_code?: string
+      reusable?: boolean
+      last4?: string
+      bank?: string
+      brand?: string
+    }
     plan?: string | null
   }
 }
@@ -263,6 +271,46 @@ export const verifyCheckout = action({
         : {}),
     })
 
+    // Carte réutilisable → mémoriser l'autorisation pour l'auto-débit du cron.
+    // Le mobile money n'expose PAS d'autorisation réutilisable : on ne stocke
+    // alors rien (paiement ponctuel, relance à l'échéance).
+    await maybeSaveCardAuthorization(ctx, data, userId)
+
     return { ok: true, kind: 'subscription', plan, credits: null }
   },
 })
+
+type PaystackAuthorization = {
+  authorization_code?: string
+  reusable?: boolean
+  last4?: string
+  bank?: string
+  brand?: string
+}
+
+/**
+ * Stocke l'autorisation carte SI elle est réutilisable. Factorisé pour être
+ * réutilisé par le webhook. No-op silencieux pour le mobile money (pas de
+ * `reusable`), sans jamais throw (la sauvegarde carte ne doit pas casser la
+ * confirmation de paiement).
+ */
+async function maybeSaveCardAuthorization(
+  ctx: GenericActionCtx<DataModel>,
+  data: { authorization?: PaystackAuthorization; customer?: { email?: string } },
+  userId: string | undefined,
+): Promise<void> {
+  const auth = data.authorization
+  if (!auth?.authorization_code || auth.reusable !== true) return
+  try {
+    await ctx.runMutation(internal.billing.saveCardAuthorization, {
+      ...(userId ? { userId } : {}),
+      ...(data.customer?.email ? { email: data.customer.email } : {}),
+      authorizationCode: auth.authorization_code,
+      ...(auth.last4 ? { last4: auth.last4 } : {}),
+      ...(auth.bank ? { bank: auth.bank } : {}),
+      ...(auth.brand ? { brand: auth.brand } : {}),
+    })
+  } catch {
+    // Best-effort : ne pas faire échouer la vérification de paiement.
+  }
+}
