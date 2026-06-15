@@ -3,13 +3,11 @@ import { useUpsell } from '~/lib/billing/use-upsell'
 import { LockedFeature } from '~/components/billing/locked-feature'
 
 /**
- * Le hook le plus fort de la veille : présente la veille automatique comme une
- * fonctionnalité verrouillée et désirable pour les comptes gratuits. Le toggle
- * « Activez la veille automatique » est ghosté sous un badge Pro ; le clic
- * ouvre le dialog de valeur.
+ * Hook d'upsell de la veille AUTO (cron toutes les 6h), réservée aux paliers
+ * payants. Présentée comme une fonctionnalité verrouillée et désirable pour les
+ * comptes Découverte, qui gardent la veille MANUELLE via « Lancer maintenant ».
  *
- * Pour les paliers payants (veille déjà active), ne rend rien : leur moniteur
- * tourne, inutile de leur vendre ce qu'ils ont.
+ * Pour les paliers payants (veille auto déjà active), ne rend rien.
  */
 export function VeilleAutoBanner() {
   const { canUse } = useUpsell()
@@ -26,11 +24,13 @@ export function VeilleAutoBanner() {
           </span>
           <div className="space-y-1">
             <h3 className="text-sm font-semibold text-fg">
-              Veille automatique educarriere
+              Veille automatique
             </h3>
             <p className="max-w-md text-sm leading-relaxed text-fg-muted">
-              Filon surveille educarriere toutes les 6 heures et ajoute les
-              offres qui correspondent à vos mots-clés, pendant que vous dormez.
+              Filon surveille vos sources toutes les 6 heures et capte les
+              offres correspondant à vos mots-clés, même quand vous dormez. En
+              Découverte, lancez la veille à la main avec «&nbsp;Lancer
+              maintenant&nbsp;».
             </p>
           </div>
         </div>

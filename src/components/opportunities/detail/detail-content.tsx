@@ -21,6 +21,7 @@ import {
 } from './panels'
 import { DetailHeader } from './detail-header'
 import { AiDraftTeaser } from './ai-draft-teaser'
+import { AiSignalCard } from '../ai-signal-card'
 import { UpgradeNudge } from '~/components/billing/upgrade-nudge'
 
 type LoadedOpportunity = FunctionReturnType<typeof api.opportunities.get>
@@ -134,6 +135,8 @@ export function OpportunityDetailContent({
               </p>
             </Panel>
           )}
+
+          <AiSignalCard opportunityId={opportunity._id} />
 
           <AiDraftTeaser />
 

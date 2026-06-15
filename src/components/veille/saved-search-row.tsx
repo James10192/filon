@@ -1,28 +1,54 @@
 import { useState } from 'react'
 import { useMutation } from 'convex/react'
-import { Trash2 } from 'lucide-react'
+import { MoreVertical, Pencil, Trash2 } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Doc } from '../../../convex/_generated/dataModel'
+import { CONNECTOR_META } from '../../../convex/veille/connectors'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
+import { Switch } from '~/components/ui/switch'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '~/components/ui/dropdown-menu'
 import { toast } from '~/components/ui/sonner'
 import { DeleteConfirmDialog } from '~/components/companies/delete-confirm-dialog'
-import { formatRelativeTime } from './meta'
+import { INTENT_LABELS, formatRelativeTime, type VeilleIntent } from './meta'
+
+/** Libellés des sources ciblées, ou « Toutes les sources » si aucune. */
+function sourceLabels(sources?: string[]): string {
+  if (!sources || sources.length === 0) return 'Toutes les sources'
+  return sources
+    .map((id) => CONNECTOR_META.find((c) => c.id === id)?.label ?? id)
+    .join(', ')
+}
 
 /**
- * Ligne d'une recherche enregistrée : mots-clés, bascule actif/inactif,
- * dernière analyse et suppression (AlertDialog, jamais window.confirm).
+ * Carte premium d'une veille : nom, intention, mots-clés inclus/exclus, sources
+ * ciblées et dernier passage. Bascule active/en pause (Switch), édition et
+ * suppression via menu (AlertDialog, jamais window.confirm).
  */
-export function SavedSearchRow({ search }: { search: Doc<'savedSearches'> }) {
+export function SavedSearchRow({
+  search,
+  onEdit,
+}: {
+  search: Doc<'savedSearches'>
+  onEdit: () => void
+}) {
   const update = useMutation(api.savedSearches.update)
   const remove = useMutation(api.savedSearches.remove)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [toggling, setToggling] = useState(false)
 
-  async function toggleEnabled() {
+  const intent: VeilleIntent = search.intent ?? 'apply'
+  const title = search.name?.trim() || search.keywords.join(', ') || 'Veille'
+
+  async function toggleEnabled(next: boolean) {
     setToggling(true)
     try {
-      await update({ id: search._id, enabled: !search.enabled })
+      await update({ id: search._id, enabled: next })
     } catch {
       toast.error('La mise à jour a échoué.')
     } finally {
@@ -33,76 +59,89 @@ export function SavedSearchRow({ search }: { search: Doc<'savedSearches'> }) {
   async function confirmRemove() {
     try {
       await remove({ id: search._id })
-      toast.success('Recherche supprimée.')
+      toast.success('Veille supprimée.')
     } catch {
       toast.error('La suppression a échoué.')
     }
   }
 
   return (
-    <div className="flex flex-col gap-3 border-b border-border px-4 py-3.5 last:border-0 sm:flex-row sm:items-center sm:justify-between">
-      <div className="min-w-0 space-y-1.5">
-        <div className="flex flex-wrap gap-1.5">
-          {search.keywords.map((kw) => (
-            <Badge key={kw} variant="accent">
-              {kw}
-            </Badge>
-          ))}
+    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4 shadow-[var(--shadow-card)] transition-colors hover:border-border-strong sm:p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 space-y-1">
+          <h3 className="truncate text-sm font-semibold text-fg">{title}</h3>
+          <Badge variant="accent">{INTENT_LABELS[intent]}</Badge>
         </div>
-        <p className="text-xs text-fg-subtle">
-          {search.lastRunAt ? (
-            <>
-              Dernière analyse{' '}
-              <span className="assay-meta text-fg-subtle">
-                {formatRelativeTime(search.lastRunAt)}
-              </span>{' '}
-              ·{' '}
-              <span className="assay-meta text-fg-subtle">
-                {search.lastMatchCount ?? 0}
-              </span>{' '}
-              offre(s) trouvée(s)
-            </>
-          ) : (
-            'Aucune analyse pour le moment'
-          )}
-        </p>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={search.enabled}
+              onCheckedChange={toggleEnabled}
+              disabled={toggling}
+              aria-label={search.enabled ? 'Mettre en pause' : 'Activer'}
+            />
+            <span className="hidden text-xs font-medium text-fg-muted sm:inline">
+              {search.enabled ? 'Active' : 'En pause'}
+            </span>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-11 text-fg-subtle sm:size-9"
+                aria-label="Actions"
+              >
+                <MoreVertical className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={onEdit}>
+                <Pencil className="size-4" />
+                Modifier
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                variant="destructive"
+                onSelect={() => setDeleteOpen(true)}
+              >
+                <Trash2 className="size-4" />
+                Supprimer
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={toggleEnabled}
-          disabled={toggling}
-          aria-pressed={search.enabled}
-          className="h-11"
-        >
-          <span
-            className={
-              search.enabled
-                ? 'size-2 rounded-full bg-success'
-                : 'size-2 rounded-full bg-fg-subtle'
-            }
-            aria-hidden
-          />
-          {search.enabled ? 'Active' : 'En pause'}
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setDeleteOpen(true)}
-          aria-label="Supprimer la recherche"
-          className="h-11 w-11 text-fg-subtle hover:text-danger"
-        >
-          <Trash2 className="size-4" />
-        </Button>
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {search.keywords.map((kw) => (
+          <Badge key={kw} variant="accent">
+            {kw}
+          </Badge>
+        ))}
+        {search.excludeKeywords?.map((kw) => (
+          <Badge key={`x-${kw}`} variant="outline">
+            sauf {kw}
+          </Badge>
+        ))}
+      </div>
+
+      <div className="mt-3 flex flex-col gap-1 border-t border-border pt-3 text-xs text-fg-subtle sm:flex-row sm:items-center sm:justify-between">
+        <span>
+          Sources :{' '}
+          <span className="text-fg-muted">{sourceLabels(search.sources)}</span>
+        </span>
+        <span>
+          {search.lastRunAt
+            ? `Dernier passage ${formatRelativeTime(search.lastRunAt)} · ${search.lastMatchCount ?? 0} offre(s)`
+            : 'Pas encore lancée'}
+        </span>
       </div>
 
       <DeleteConfirmDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
-        title="Supprimer cette recherche ?"
-        description="Le moniteur cessera de surveiller ces mots-clés. Les offres déjà importées sont conservées."
+        title="Supprimer cette veille ?"
+        description="Filon cessera de surveiller ces mots-clés. Les offres déjà importées sont conservées."
         onConfirm={confirmRemove}
       />
     </div>

@@ -15,6 +15,31 @@ export const IMPORT_SOURCE_LABELS: Record<ImportSource, string> = {
   manuel: 'Manuel',
 }
 
+/** Intention d'une veille : que fait-on des détections ? */
+export type VeilleIntent = 'apply' | 'prospect' | 'both'
+
+/** Libellés FR courts de l'intention (badge sur la carte de veille). */
+export const INTENT_LABELS: Record<VeilleIntent, string> = {
+  apply: 'Postuler',
+  prospect: 'Démarcher',
+  both: 'Postuler + démarcher',
+}
+
+/** Localisation surveillée : valeur stockée. */
+export type VeilleLocation = 'all' | 'abidjan' | 'remote'
+
+/** Libellés FR des localisations (formulaire de veille). */
+export const LOCATION_LABELS: Record<VeilleLocation, string> = {
+  all: 'Partout',
+  abidjan: 'Abidjan',
+  remote: 'Télétravail',
+}
+
+/** Normalise une valeur stockée vers une localisation connue (défaut `all`). */
+export function toVeilleLocation(value?: string): VeilleLocation {
+  return value === 'abidjan' || value === 'remote' ? value : 'all'
+}
+
 /** Hôte lisible d'une URL (sans `www.`), pour l'affichage de provenance. */
 export function sourceFromHost(url?: string): string {
   if (!url) return ''

@@ -1,127 +1,96 @@
 import { useState } from 'react'
-import { useMutation, useQuery } from 'convex/react'
+import { useQuery } from 'convex/react'
 import { Plus, Radar } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
+import type { Doc } from '../../../convex/_generated/dataModel'
 import { Button } from '~/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '~/components/ui/card'
-import { Input } from '~/components/ui/input'
 import { Skeleton } from '~/components/ui/skeleton'
-import { toast } from '~/components/ui/sonner'
-import { handlePlanLimit } from '~/lib/billing/upsell'
 import { SavedSearchRow } from './saved-search-row'
-
-/** Découpe une saisie « développeur, react, laravel » en mots-clés propres. */
-function splitKeywords(input: string): string[] {
-  return input
-    .split(/[,\n]/)
-    .map((k) => k.trim())
-    .filter((k) => k.length > 0)
-}
+import { VeilleEditDialog } from './veille-edit-dialog'
 
 /**
- * Gestion des recherches surveillées par le moniteur educarriere. États gérés :
- * chargement (skeletons), vide (état illustré + CTA), succès (liste). Ajout de
- * mots-clés via une saisie séparée par des virgules.
+ * Liste des veilles en cartes riches. États gérés : chargement (skeletons),
+ * vide (état illustré + CTA), liste. La création et l'édition passent par le
+ * VeilleEditDialog (formulaire complet), pas par une saisie inline.
  */
 export function SavedSearchManager() {
   const searches = useQuery(api.savedSearches.list, {})
-  const create = useMutation(api.savedSearches.create)
-  const [draft, setDraft] = useState('')
-  const [creating, setCreating] = useState(false)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [editing, setEditing] = useState<Doc<'savedSearches'> | undefined>()
 
-  async function addSearch() {
-    const keywords = splitKeywords(draft)
-    if (keywords.length === 0) {
-      toast.error('Ajoutez au moins un mot-clé.')
-      return
-    }
-    setCreating(true)
-    try {
-      await create({ keywords })
-      toast.success('Recherche enregistrée. Le moniteur la surveillera.')
-      setDraft('')
-    } catch (error) {
-      if (!handlePlanLimit(error)) {
-        toast.error("L'enregistrement a échoué.")
-      }
-    } finally {
-      setCreating(false)
-    }
+  function openCreate() {
+    setEditing(undefined)
+    setDialogOpen(true)
   }
 
-  function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      void addSearch()
-    }
+  function openEdit(search: Doc<'savedSearches'>) {
+    setEditing(search)
+    setDialogOpen(true)
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <span className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] bg-accent-soft text-accent">
-            <Radar className="size-4" />
-          </span>
-          Surveillance educarriere
-        </CardTitle>
-        <CardDescription>
-          Le moniteur analyse les nouvelles offres educarriere toutes les 6
-          heures et ajoute automatiquement celles qui correspondent à vos
-          mots-clés. Les doublons sont écartés.
-        </CardDescription>
-      </CardHeader>
-
-      <CardContent className="space-y-4">
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Input
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={onKeyDown}
-            placeholder="développeur, react, laravel"
-            aria-label="Mots-clés à surveiller"
-            disabled={creating}
-          />
-          <Button
-            onClick={addSearch}
-            disabled={creating || draft.trim().length === 0}
-            className="shrink-0"
-          >
-            <Plus className="size-4" />
-            Ajouter
-          </Button>
+    <section className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-base font-semibold tracking-[-0.01em] text-fg">
+            Vos veilles
+          </h2>
+          <p className="mt-0.5 text-sm text-fg-muted">
+            Les recherches que Filon surveille pour alimenter votre pipeline.
+          </p>
         </div>
+        {searches && searches.length > 0 && (
+          <Button onClick={openCreate} className="shrink-0">
+            <Plus className="size-4" />
+            Nouvelle veille
+          </Button>
+        )}
+      </div>
 
-        <SearchList searches={searches} />
-      </CardContent>
-    </Card>
+      <SearchList
+        searches={searches}
+        onCreate={openCreate}
+        onEdit={openEdit}
+      />
+
+      <VeilleEditDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        search={editing}
+      />
+    </section>
   )
 }
 
 function SearchList({
   searches,
+  onCreate,
+  onEdit,
 }: {
   searches: ReturnType<typeof useQuery<typeof api.savedSearches.list>>
+  onCreate: () => void
+  onEdit: (search: Doc<'savedSearches'>) => void
 }) {
   if (searches === undefined) {
     return (
-      <div className="overflow-hidden rounded-[var(--radius)] border border-border">
-        {Array.from({ length: 3 }).map((_, i) => (
+      <div className="space-y-3">
+        {Array.from({ length: 2 }).map((_, i) => (
           <div
             key={i}
-            className="flex items-center justify-between border-b border-border px-4 py-3.5 last:border-0"
+            className="rounded-[var(--radius-lg)] border border-border bg-surface p-5 shadow-[var(--shadow-card)]"
           >
-            <div className="space-y-2">
-              <Skeleton className="h-6 w-40 rounded-full" />
-              <Skeleton className="h-3 w-52" />
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-44" />
+                <Skeleton className="h-6 w-24 rounded-[var(--radius-sm)]" />
+              </div>
+              <Skeleton className="h-7 w-16 rounded-full" />
             </div>
-            <Skeleton className="h-11 w-24" />
+            <div className="mt-3 flex gap-1.5">
+              <Skeleton className="h-6 w-20 rounded-[var(--radius-sm)]" />
+              <Skeleton className="h-6 w-24 rounded-[var(--radius-sm)]" />
+            </div>
+            <Skeleton className="mt-3 h-3 w-56" />
           </div>
         ))}
       </div>
@@ -130,27 +99,35 @@ function SearchList({
 
   if (searches.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 rounded-[var(--radius)] border border-dashed border-border px-6 py-12 text-center">
-        <span className="flex size-12 items-center justify-center rounded-full bg-accent-soft text-accent">
-          <Radar className="size-6" />
+      <div className="flex flex-col items-center justify-center gap-4 rounded-[var(--radius-lg)] border border-dashed border-border bg-surface px-6 py-14 text-center">
+        <span className="flex size-14 items-center justify-center rounded-full bg-accent-soft text-accent">
+          <Radar className="size-7" />
         </span>
-        <div className="space-y-1">
+        <div className="max-w-sm space-y-1.5">
           <h3 className="text-base font-semibold text-fg">
-            Aucune recherche enregistrée
+            Aucune veille pour le moment
           </h3>
-          <p className="text-sm text-fg-muted">
-            Ajoutez des mots-clés comme « développeur, react, laravel » pour que
-            Filon surveille educarriere à votre place.
+          <p className="text-sm leading-relaxed text-fg-muted">
+            Créez une veille avec quelques mots-clés : Filon surveille les
+            sources et capte offres et prospects qui vous correspondent.
           </p>
         </div>
+        <Button onClick={onCreate}>
+          <Plus className="size-4" />
+          Créer ma première veille
+        </Button>
       </div>
     )
   }
 
   return (
-    <div className="overflow-hidden rounded-[var(--radius)] border border-border">
+    <div className="space-y-3">
       {searches.map((search) => (
-        <SavedSearchRow key={search._id} search={search} />
+        <SavedSearchRow
+          key={search._id}
+          search={search}
+          onEdit={() => onEdit(search)}
+        />
       ))}
     </div>
   )

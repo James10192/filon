@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { Info } from 'lucide-react'
 import { Button } from '~/components/ui/button'
 import { PageToolbar } from '~/components/app/page-toolbar'
 import { ImportOfferDialog } from '~/components/veille/import-offer-dialog'
 import { SavedSearchManager } from '~/components/veille/saved-search-manager'
+import { SourceHealthPanel } from '~/components/veille/source-health-panel'
 import { VeilleAutoBanner } from '~/components/veille/veille-auto-banner'
+import { RunNowButton } from '~/components/veille/run-now-button'
 import { UpgradeNudge } from '~/components/billing/upgrade-nudge'
 
 export const Route = createFileRoute('/app/veille')({
@@ -33,14 +34,19 @@ function VeillePage() {
   return (
     <div className="flex flex-col">
       <PageToolbar
-        title="Veille & import"
-        subtitle="Importez des offres et surveillez educarriere automatiquement."
+        title="Veille"
+        subtitle="Votre radar de prospection : surveillez plusieurs sources, captez offres et prospects automatiquement."
         actions={
-          <Button onClick={() => setImportOpen(true)}>Importer une offre</Button>
+          <>
+            <RunNowButton />
+            <Button onClick={() => setImportOpen(true)}>
+              Importer une offre
+            </Button>
+          </>
         }
       />
 
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-6">
         {imported && (
           <UpgradeNudge id="import_value" variant="value" className="mb-1" />
         )}
@@ -51,7 +57,7 @@ function VeillePage() {
           <SavedSearchManager />
         </div>
         <div className="reveal" style={{ '--reveal-i': 2 } as React.CSSProperties}>
-          <LinkedInNote />
+          <SourceHealthPanel />
         </div>
       </div>
 
@@ -60,28 +66,6 @@ function VeillePage() {
         onOpenChange={setImportOpen}
         onImported={() => setImported(true)}
       />
-    </div>
-  )
-}
-
-/** Note honnete : LinkedIn ne peut pas etre surveille automatiquement. */
-function LinkedInNote() {
-  return (
-    <div className="flex items-start gap-3 rounded-[var(--radius-lg)] border border-border bg-surface px-5 py-4 shadow-[var(--shadow-card)]">
-      <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-surface-2 text-fg-subtle">
-        <Info className="size-4" />
-      </span>
-      <div className="space-y-1">
-        <h3 className="text-sm font-semibold text-fg">
-          LinkedIn : import manuel uniquement
-        </h3>
-        <p className="text-sm leading-relaxed text-fg-muted">
-          La surveillance automatique de LinkedIn n'est pas possible : la
-          plateforme exige une authentification et ses conditions d'utilisation
-          interdisent la collecte automatisée. Pour ajouter une offre LinkedIn,
-          utilisez « Importer une offre » puis collez son lien ou son texte.
-        </p>
-      </div>
     </div>
   )
 }
