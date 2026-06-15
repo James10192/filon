@@ -13,7 +13,7 @@ import { m } from '~/lib/paraglide/messages'
 import { authClient } from '~/lib/auth/auth-client'
 import { useUpsell } from '~/lib/billing/use-upsell'
 import { cn } from '~/lib/utils'
-import { Avatar, AvatarFallback } from '~/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -227,6 +227,11 @@ function AccountMenu({
   const { plan } = useUpsell()
   const showUpgrade = plan !== 'pro_ai'
 
+  // Photo de profil : `users.image` est la source unique de l'avatar (sociale
+  // ou importée). Si absente, on retombe sur les initiales.
+  const me = useQuery(api.users.me, {})
+  const image = me?.image ?? undefined
+
   async function logout() {
     await authClient.signOut({
       fetchOptions: {
@@ -251,6 +256,7 @@ function AccountMenu({
           )}
         >
           <Avatar>
+            {image && <AvatarImage src={image} alt={displayName} />}
             <AvatarFallback>{initials(displayName)}</AvatarFallback>
           </Avatar>
           {!compact && (

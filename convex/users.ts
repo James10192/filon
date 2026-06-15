@@ -58,6 +58,8 @@ export const me = query({
       email: authUser.email,
       name: undefined as string | undefined,
       headline: undefined as string | undefined,
+      image: undefined as string | undefined,
+      customImage: undefined as boolean | undefined,
       createdAt: Date.now(),
     }
   },

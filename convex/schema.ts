@@ -18,6 +18,13 @@ export default defineSchema({
     email: v.string(),
     name: v.optional(v.string()),
     headline: v.optional(v.string()),
+    // Photo de profil affichee en avatar partout. SOURCE UNIQUE lue par l'UI.
+    // Alimentee soit par le provider social (Google `picture` / GitHub
+    // `avatar_url`, via le trigger Better Auth), soit par un upload manuel.
+    image: v.optional(v.string()),
+    // Vrai quand l'utilisateur a importe sa propre photo : empeche le sync
+    // social (trigger `user.onUpdate`) d'ecraser une photo choisie a la main.
+    customImage: v.optional(v.boolean()),
     createdAt: v.number(),
     // --- Abonnement (Phase 2, additif) ---
     // Tous ces champs sont optionnels : les lignes existantes restent valides.

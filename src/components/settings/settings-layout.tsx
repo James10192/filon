@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { CircleUser, KanbanSquare, type LucideIcon } from 'lucide-react'
 import { cn } from '~/lib/utils'
 import { ProfileSection } from './profile-section'
+import { ProfilePhotoSection } from './profile-photo-section'
 import { PreferencesSection } from './preferences-section'
 import { AppearanceSection } from './appearance-section'
 import { AccountSection } from './account-section'
@@ -51,6 +52,7 @@ export function SettingsLayout() {
           {active === 'compte' ? (
             <>
               <ProfileSection />
+              <ProfilePhotoSection />
               <SubscriptionManagement />
               <LinkedAccountsSection />
               <AccountSection />

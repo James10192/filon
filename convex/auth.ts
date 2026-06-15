@@ -18,19 +18,37 @@ const authFunctions: AuthFunctions = internal.auth as AuthFunctions
 // casser le déploiement tant que les secrets OAuth ne sont pas configurés.
 type OAuthCreds = { clientId: string; clientSecret: string }
 
-function buildSocialProviders(): Record<string, OAuthCreds> {
-  const providers: Record<string, OAuthCreds> = {}
+type OAuthProviderConfig = OAuthCreds & {
+  // RAFRAICHISSEMENT A LA CONNEXION : a chaque sign-in social, Better Auth
+  // re-ecrit `user.image`/`name` depuis le profil du provider (Google `picture`,
+  // GitHub `avatar_url`). Cf. `node_modules/better-auth/dist/oauth2/link-account.mjs`
+  // (handleOAuthUserInfo -> `if (overrideUserInfo) internalAdapter.updateUser`),
+  // declenche depuis `api/routes/callback.mjs` avec
+  // `overrideUserInfo: provider.options?.overrideUserInfoOnSignIn`.
+  overrideUserInfoOnSignIn: boolean
+}
+
+function buildSocialProviders(): Record<string, OAuthProviderConfig> {
+  const providers: Record<string, OAuthProviderConfig> = {}
 
   const googleId = process.env.GOOGLE_CLIENT_ID
   const googleSecret = process.env.GOOGLE_CLIENT_SECRET
   if (googleId && googleSecret) {
-    providers.google = { clientId: googleId, clientSecret: googleSecret }
+    providers.google = {
+      clientId: googleId,
+      clientSecret: googleSecret,
+      overrideUserInfoOnSignIn: true,
+    }
   }
 
   const githubId = process.env.GITHUB_CLIENT_ID
   const githubSecret = process.env.GITHUB_CLIENT_SECRET
   if (githubId && githubSecret) {
-    providers.github = { clientId: githubId, clientSecret: githubSecret }
+    providers.github = {
+      clientId: githubId,
+      clientSecret: githubSecret,
+      overrideUserInfoOnSignIn: true,
+    }
   }
 
   return providers
@@ -50,12 +68,49 @@ export const authComponent = createClient<DataModel>(components.betterAuth, {
           .unique()
         if (existing) return
 
-        await ctx.db.insert('users', {
+        // On construit l'objet sans cle `undefined` (regle Convex : ne jamais
+        // passer `undefined` en argument). `image` provient du provider social
+        // (Google `picture` / GitHub `avatar_url`, mappes par Better Auth).
+        const name = (authUser as { name?: string }).name
+        const image = (authUser as { image?: string }).image
+        const row: {
+          authId: string
+          email: string
+          createdAt: number
+          name?: string
+          image?: string
+        } = {
           authId: authUser._id,
           email: (authUser as { email?: string }).email ?? '',
-          name: (authUser as { name?: string }).name ?? undefined,
           createdAt: Date.now(),
-        })
+        }
+        if (name) row.name = name
+        if (image) row.image = image
+
+        await ctx.db.insert('users', row)
+      },
+      // Propage les changements Better Auth (nom, photo) vers la ligne metier.
+      // C'est ce trigger qui realise le RAFRAICHISSEMENT social : a chaque
+      // sign-in, `overrideUserInfoOnSignIn` met a jour l'utilisateur Better Auth,
+      // ce qui declenche cet `onUpdate`. On NE remplace PAS une photo importee a
+      // la main (flag `customImage`).
+      onUpdate: async (ctx, newDoc) => {
+        const doc = await ctx.db
+          .query('users')
+          .withIndex('by_authId', (q) => q.eq('authId', newDoc._id))
+          .unique()
+        if (!doc) return
+
+        const name = (newDoc as { name?: string }).name
+        const image = (newDoc as { image?: string }).image
+        const patch: { name?: string; image?: string } = {}
+        if (name && name !== doc.name) patch.name = name
+        // Sync de la photo sociale uniquement si l'utilisateur n'a pas impose
+        // sa propre photo (sinon on ecraserait son choix a chaque connexion).
+        if (!doc.customImage && image && image !== doc.image) {
+          patch.image = image
+        }
+        if (Object.keys(patch).length > 0) await ctx.db.patch(doc._id, patch)
       },
     },
   },
