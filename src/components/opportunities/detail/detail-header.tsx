@@ -7,8 +7,10 @@ import {
   CalendarClock,
 } from 'lucide-react'
 import type { api } from '../../../../convex/_generated/api'
+import { m } from '~/lib/paraglide/messages'
 import { Button } from '~/components/ui/button'
 import { Label } from '~/components/ui/label'
+import { AskCopilotButton } from '~/components/copilot/ask-copilot-button'
 import {
   Select,
   SelectContent,
@@ -36,6 +38,14 @@ export function DetailHeader({
   onRemove: () => void
   onStage: (next: Stage) => void
 }) {
+  const companyName = opportunity.company?.name
+  const seed = companyName
+    ? m.copilot_seed_opportunity({
+        title: opportunity.title,
+        company: companyName,
+      })
+    : m.copilot_seed_opportunity_no_company({ title: opportunity.title })
+
   return (
     <header className="flex flex-col gap-4 rounded-[var(--radius-lg)] border border-border bg-surface p-5 shadow-[var(--shadow-card)]">
       <div className="flex items-start justify-between gap-3">
@@ -44,6 +54,7 @@ export function DetailHeader({
           <StageChip stage={opportunity.stage} />
         </div>
         <div className="flex shrink-0 items-center gap-1">
+          <AskCopilotButton seed={seed} variant="icon" />
           <Button
             variant="ghost"
             size="sm"
