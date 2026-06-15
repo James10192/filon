@@ -3,6 +3,7 @@ import { action } from './_generated/server'
 import { internal } from './_generated/api'
 import { requireUserFromAction } from './lib/withUser'
 import {
+  creditPackById,
   priceXof,
   toPaystackSubunit,
   type Interval,
@@ -32,10 +33,18 @@ import {
 
 const PAYSTACK_BASE = 'https://api.paystack.co'
 
-const paidPlanValidator = v.union(v.literal('pro'), v.literal('pro_ai'))
+const paidPlanValidator = v.union(
+  v.literal('pro'),
+  v.literal('pro_ai'),
+  v.literal('copilot'),
+)
 const intervalValidator = v.union(
   v.literal('monthly'),
   v.literal('annual'),
+)
+const kindValidator = v.union(
+  v.literal('subscription'),
+  v.literal('credit_pack'),
 )
 
 function secretKey(): string {
@@ -70,7 +79,14 @@ type InitResponse = {
  * webhook recolle l'abonnement au bon user.
  */
 export const startCheckout = action({
-  args: { plan: paidPlanValidator, interval: intervalValidator },
+  args: {
+    // `kind` défaut 'subscription' (rétrocompatible). Pour un abonnement, `plan`
+    // + `interval` sont requis ; pour un pack de crédits, `packId` est requis.
+    kind: v.optional(kindValidator),
+    plan: v.optional(paidPlanValidator),
+    interval: v.optional(intervalValidator),
+    packId: v.optional(v.string()),
+  },
   handler: async (
     ctx,
     args,
@@ -80,9 +96,40 @@ export const startCheckout = action({
       throw new Error('E-mail introuvable : impossible de lancer le paiement.')
     }
 
-    const plan = args.plan as PaidPlan
-    const interval = args.interval as Interval
-    const amountXof = priceXof(plan, interval)
+    const kind = args.kind ?? 'subscription'
+
+    // Montant + métadonnées selon le type d'achat.
+    let amountXof: number
+    let metadata: Record<string, unknown>
+    if (kind === 'credit_pack') {
+      if (!args.packId) {
+        throw new Error('Pack de crédits manquant.')
+      }
+      const pack = creditPackById(args.packId)
+      if (!pack) throw new Error('Pack de crédits inconnu.')
+      amountXof = pack.priceXof
+      metadata = {
+        userId,
+        kind: 'credit_pack',
+        packId: pack.id,
+        credits: pack.credits,
+        amountXof,
+      }
+    } else {
+      if (!args.plan || !args.interval) {
+        throw new Error('Palier ou intervalle manquant.')
+      }
+      const plan = args.plan as PaidPlan
+      const interval = args.interval as Interval
+      amountXof = priceXof(plan, interval)
+      metadata = {
+        userId,
+        kind: 'subscription',
+        plan,
+        interval,
+        amountXof,
+      }
+    }
 
     const body = {
       email,
@@ -92,12 +139,7 @@ export const startCheckout = action({
       // Carte (récurrent possible) + mobile money (ponctuel).
       channels: ['card', 'mobile_money'],
       callback_url: `${appBaseUrl()}/app/tarifs?paystack=return`,
-      metadata: {
-        userId,
-        plan,
-        interval,
-        amountXof,
-      },
+      metadata,
     }
 
     const res = await fetch(`${PAYSTACK_BASE}/transaction/initialize`, {
@@ -133,8 +175,11 @@ type VerifyResponse = {
     customer?: { email?: string; customer_code?: string }
     metadata?: {
       userId?: string
+      kind?: 'subscription' | 'credit_pack'
       plan?: PaidPlan
       interval?: Interval
+      packId?: string
+      credits?: number
     }
     authorization?: { authorization_code?: string; reusable?: boolean }
     plan?: string | null
@@ -159,7 +204,12 @@ export const verifyCheckout = action({
   handler: async (
     ctx,
     args,
-  ): Promise<{ ok: boolean; plan: PaidPlan | null }> => {
+  ): Promise<{
+    ok: boolean
+    kind: 'subscription' | 'credit_pack' | null
+    plan: PaidPlan | null
+    credits: number | null
+  }> => {
     await requireUserFromAction(ctx)
 
     const res = await fetch(
@@ -170,15 +220,34 @@ export const verifyCheckout = action({
     )
     const json = (await res.json()) as VerifyResponse
     if (!res.ok || !json.status || !json.data) {
-      return { ok: false, plan: null }
+      return { ok: false, kind: null, plan: null, credits: null }
     }
     const data = json.data
-    if (data.status !== 'success') return { ok: false, plan: null }
+    if (data.status !== 'success') {
+      return { ok: false, kind: null, plan: null, credits: null }
+    }
+
+    const userId = data.metadata?.userId
+    const kind = data.metadata?.kind ?? 'subscription'
+
+    if (kind === 'credit_pack') {
+      const credits = data.metadata?.credits ?? 0
+      if (credits <= 0) {
+        return { ok: false, kind: 'credit_pack', plan: null, credits: null }
+      }
+      await ctx.runMutation(internal.aiCredits.creditPack, {
+        ...(userId ? { userId } : {}),
+        ...(data.customer?.email ? { email: data.customer.email } : {}),
+        credits,
+      })
+      return { ok: true, kind: 'credit_pack', plan: null, credits }
+    }
 
     const plan = data.metadata?.plan ?? null
     const interval = data.metadata?.interval ?? 'monthly'
-    const userId = data.metadata?.userId
-    if (!plan) return { ok: false, plan: null }
+    if (!plan) {
+      return { ok: false, kind: 'subscription', plan: null, credits: null }
+    }
 
     await ctx.runMutation(internal.billing.applySubscription, {
       ...(userId ? { userId } : {}),
@@ -194,6 +263,6 @@ export const verifyCheckout = action({
         : {}),
     })
 
-    return { ok: true, plan }
+    return { ok: true, kind: 'subscription', plan, credits: null }
   },
 })

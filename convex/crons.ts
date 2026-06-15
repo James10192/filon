@@ -37,4 +37,13 @@ crons.daily(
   {},
 )
 
+// Réinitialisation mensuelle de l'allocation de crédits IA (le 1er du mois).
+// Remet `balance` à l'allocation du palier courant ; ne touche pas aux packs.
+crons.monthly(
+  'ai-credits-reset',
+  { day: 1, hourUTC: 5, minuteUTC: 0 },
+  internal.aiCredits.resetMonthlyAllowances,
+  {},
+)
+
 export default crons

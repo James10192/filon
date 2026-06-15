@@ -23,7 +23,12 @@ export default defineSchema({
     // Tous ces champs sont optionnels : les lignes existantes restent valides.
     // L'absence de `plan` est traitée comme 'free' par le helper de gating.
     plan: v.optional(
-      v.union(v.literal('free'), v.literal('pro'), v.literal('pro_ai')),
+      v.union(
+        v.literal('free'),
+        v.literal('pro'),
+        v.literal('pro_ai'),
+        v.literal('copilot'),
+      ),
     ),
     planInterval: v.optional(
       v.union(v.literal('monthly'), v.literal('annual')),
@@ -42,7 +47,12 @@ export default defineSchema({
     // soit un downgrade choisi (ex 'pro'), soit 'free' (annulation). Effacé une
     // fois appliqué, ou par un upgrade / une réactivation.
     pendingPlan: v.optional(
-      v.union(v.literal('free'), v.literal('pro'), v.literal('pro_ai')),
+      v.union(
+        v.literal('free'),
+        v.literal('pro'),
+        v.literal('pro_ai'),
+        v.literal('copilot'),
+      ),
     ),
     // Horodatage de la dernière relance d'échéance envoyée/flaggée (epoch ms),
     // pour ne pas relancer en boucle. Posé par le cron de rappel.
@@ -274,4 +284,65 @@ export default defineSchema({
     .index('by_user', ['userId'])
     // Le cron itère les recherches actives, tous users confondus.
     .index('by_enabled', ['enabled']),
+
+  // --- Copilot IA (Phase IA, additif) ---
+  // Solde de crédits IA d'un user (1 ligne par user). `balance` = allocation
+  // mensuelle restante (remise à `monthlyAllowance` par le cron mensuel) ;
+  // `packBalance` = crédits achetés à la carte (packs Paystack), non remis à
+  // zéro. La consommation pioche d'abord dans `balance`, puis dans `packBalance`.
+  aiCredits: defineTable({
+    userId: v.string(),
+    balance: v.number(),
+    monthlyAllowance: v.number(),
+    periodStart: v.number(),
+    packBalance: v.number(),
+    updatedAt: v.number(),
+  }).index('by_user', ['userId']),
+
+  // Journal de consommation IA (1 ligne par échange/onFinish), pour l'historique
+  // d'usage et la facturation. Scope strict `userId`.
+  aiUsage: defineTable({
+    userId: v.string(),
+    threadId: v.string(),
+    model: v.string(),
+    mode: v.union(v.literal('fast'), v.literal('quality')),
+    inputTokens: v.number(),
+    outputTokens: v.number(),
+    costUsd: v.optional(v.number()),
+    creditsDebited: v.number(),
+    toolsUsed: v.array(v.string()),
+    createdAt: v.number(),
+  })
+    .index('by_user', ['userId'])
+    .index('by_user_created', ['userId', 'createdAt'])
+    .index('by_thread', ['threadId']),
+
+  // Préférences de permission du copilote (1 ligne par user). `mode` pilote le
+  // niveau d'autonomie des outils d'écriture ; `alwaysAllow` mémorise les outils
+  // que l'utilisateur a explicitement autorisés « toujours ».
+  aiPermissionPrefs: defineTable({
+    userId: v.string(),
+    mode: v.union(
+      v.literal('ask'),
+      v.literal('accept'),
+      v.literal('auto'),
+      v.literal('bypass'),
+    ),
+    alwaysAllow: v.array(v.string()),
+    updatedAt: v.number(),
+  }).index('by_user', ['userId']),
+
+  // Miroir applicatif des fils de conversation du copilote. Le composant Agent
+  // gère les messages ; on mémorise ici la liste pour l'historique (titre, date
+  // du dernier message) scopé `userId`.
+  aiThreads: defineTable({
+    userId: v.string(),
+    threadId: v.string(),
+    title: v.optional(v.string()),
+    lastMessageAt: v.number(),
+    createdAt: v.number(),
+  })
+    .index('by_user', ['userId'])
+    .index('by_user_last', ['userId', 'lastMessageAt'])
+    .index('by_threadId', ['threadId']),
 })

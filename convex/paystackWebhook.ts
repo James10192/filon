@@ -56,7 +56,14 @@ type PaystackEvent = {
   data?: {
     status?: string
     customer?: { email?: string; customer_code?: string }
-    metadata?: { userId?: string; plan?: PaidPlan; interval?: Interval }
+    metadata?: {
+      userId?: string
+      kind?: 'subscription' | 'credit_pack'
+      plan?: PaidPlan
+      interval?: Interval
+      packId?: string
+      credits?: number
+    }
     plan?: { plan_code?: string; interval?: string } | string | null
     subscription_code?: string
     next_payment_date?: string
@@ -110,10 +117,26 @@ export const handlePaystackWebhook = httpAction(async (ctx, request) => {
 
   const data = event.data
   const plan = data?.metadata?.plan ?? null
+  const kind = data?.metadata?.kind ?? 'subscription'
 
   switch (event.event) {
     case 'charge.success':
     case 'subscription.create': {
+      // Achat de pack de crédits IA : créditer le packBalance (idempotence
+      // assurée côté traitement métier ; Paystack peut rejouer le webhook).
+      if (kind === 'credit_pack') {
+        const credits = data?.metadata?.credits ?? 0
+        if (credits > 0) {
+          await ctx.runMutation(internal.aiCredits.creditPack, {
+            ...(data?.metadata?.userId
+              ? { userId: data.metadata.userId }
+              : {}),
+            ...(data?.customer?.email ? { email: data.customer.email } : {}),
+            credits,
+          })
+        }
+        break
+      }
       if (plan) {
         const interval = intervalFromEvent(data)
         await ctx.runMutation(internal.billing.applySubscription, {

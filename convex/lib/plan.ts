@@ -12,7 +12,7 @@
  *   garde ses opportunités, il ne peut simplement plus en créer au-delà du cap.
  */
 
-export type Plan = 'free' | 'pro' | 'pro_ai'
+export type Plan = 'free' | 'pro' | 'pro_ai' | 'copilot'
 
 /** Limites par palier. `null` = illimité. */
 export type PlanLimits = {
@@ -36,6 +36,11 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
     veilleAutoMonitor: true,
   },
   pro_ai: {
+    activeOpportunities: null,
+    savedSearches: null,
+    veilleAutoMonitor: true,
+  },
+  copilot: {
     activeOpportunities: null,
     savedSearches: null,
     veilleAutoMonitor: true,
@@ -71,3 +76,35 @@ export const ACTIVE_STAGES = [
   'interview',
   'negotiation',
 ] as const
+
+// --- Copilot IA (Phase IA) ---
+
+/**
+ * Allocation mensuelle de crédits IA par palier. Un « crédit » est l'unité de
+ * consommation interne (≈ un acte du copilote, dérivé du coût tokens). Seuls les
+ * paliers IA en ont : `free`/`pro` = 0, `pro_ai` = quota modeste, `copilot` =
+ * généreux. Les packs achetés à la carte s'ajoutent par-dessus (packBalance).
+ */
+export const AI_MONTHLY_CREDITS: Record<Plan, number> = {
+  free: 0,
+  pro: 0,
+  pro_ai: 150,
+  copilot: 2000,
+}
+
+/** Le palier donne-t-il accès au copilote IA (agent + outils) ? */
+export function aiAccess(plan: Plan | undefined | null): boolean {
+  return planOf(plan) === 'copilot'
+}
+
+/**
+ * Erreur de crédits IA épuisés. Préfixe stable détecté côté client pour afficher
+ * l'UI d'achat de pack (toast + lien vers /app/tarifs).
+ */
+export const AI_CREDIT_PREFIX = 'AI_CREDIT:'
+
+export function aiCreditError(
+  message = 'Crédits IA épuisés. Rechargez un pack ou attendez le renouvellement mensuel.',
+): Error {
+  return new Error(`${AI_CREDIT_PREFIX}${message}`)
+}

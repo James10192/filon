@@ -5,7 +5,7 @@ import type {
 } from 'convex/server'
 import type { DataModel } from '../_generated/dataModel'
 import { authComponent } from '../auth'
-import { planOf, type Plan } from './plan'
+import { aiAccess, planOf, PLAN_LIMIT_PREFIX, type Plan } from './plan'
 
 /**
  * Contexte d'un utilisateur authentifié.
@@ -80,6 +80,24 @@ export async function currentPlan(ctx: AnyCtx, userId: string): Promise<Plan> {
     .withIndex('by_authId', (q) => q.eq('authId', userId))
     .unique()
   return planOf(doc?.plan ?? null)
+}
+
+/**
+ * Garde d'accès au copilote IA. À appeler dans une query/mutation gatée : si le
+ * palier du user ne donne pas accès à l'IA, throw une erreur typée `PLAN_LIMIT:`
+ * (détectée côté client pour l'upsell). Retourne le palier effectif sinon.
+ */
+export async function requireCopilot(
+  ctx: AnyCtx,
+  userId: string,
+): Promise<Plan> {
+  const plan = await currentPlan(ctx, userId)
+  if (!aiAccess(plan)) {
+    throw new Error(
+      `${PLAN_LIMIT_PREFIX}Le copilote IA est réservé au palier Copilot. Passez à Copilot pour activer l'assistant de prospection.`,
+    )
+  }
+  return plan
 }
 
 /**

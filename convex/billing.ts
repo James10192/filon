@@ -23,6 +23,7 @@ const planValidator = v.union(
   v.literal('free'),
   v.literal('pro'),
   v.literal('pro_ai'),
+  v.literal('copilot'),
 )
 
 const intervalValidator = v.union(
@@ -81,7 +82,12 @@ export const myPlan = query({
 })
 
 /** Ordre des paliers, pour distinguer un downgrade d'un upgrade. */
-const PLAN_RANK: Record<Plan, number> = { free: 0, pro: 1, pro_ai: 2 }
+const PLAN_RANK: Record<Plan, number> = {
+  free: 0,
+  pro: 1,
+  pro_ai: 2,
+  copilot: 3,
+}
 
 /**
  * `api.billing.scheduleDowngrade` : programme une rétrogradation de palier

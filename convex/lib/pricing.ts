@@ -8,7 +8,7 @@
  * l'API — voir le commentaire dans `convex/paystack.ts`.
  */
 
-export type PaidPlan = 'pro' | 'pro_ai'
+export type PaidPlan = 'pro' | 'pro_ai' | 'copilot'
 export type Interval = 'monthly' | 'annual'
 
 export type PriceEntry = {
@@ -22,6 +22,8 @@ export type PriceEntry = {
 export const PRICING: Record<PaidPlan, PriceEntry> = {
   pro: { monthly: 3500, annual: 35000 },
   pro_ai: { monthly: 9000, annual: 90000 },
+  // Copilot : palier IA agentique, au-dessus de Pro+ IA.
+  copilot: { monthly: 19000, annual: 190000 },
 }
 
 /** Montant XOF (entiers) pour un palier payant et un intervalle donnés. */
@@ -46,4 +48,27 @@ export const PLAN_LABELS: Record<'free' | PaidPlan, string> = {
   free: 'Découverte',
   pro: 'Pro',
   pro_ai: 'Pro+ IA',
+  copilot: 'Copilot',
+}
+
+/**
+ * Packs de crédits IA achetables à la carte (one-shot Paystack), pour recharger
+ * au-delà de l'allocation mensuelle. `credits` = unités créditées sur le
+ * `packBalance` ; `priceXof` = prix en XOF entiers (× 100 côté Paystack).
+ */
+export type CreditPack = {
+  id: string
+  credits: number
+  priceXof: number
+}
+
+export const CREDIT_PACKS: CreditPack[] = [
+  { id: 'pack_500', credits: 500, priceXof: 5000 },
+  { id: 'pack_1500', credits: 1500, priceXof: 12000 },
+  { id: 'pack_4000', credits: 4000, priceXof: 28000 },
+]
+
+/** Résout un pack par id, ou `undefined` s'il n'existe pas. */
+export function creditPackById(id: string): CreditPack | undefined {
+  return CREDIT_PACKS.find((p) => p.id === id)
 }
