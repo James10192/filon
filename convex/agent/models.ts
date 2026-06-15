@@ -12,7 +12,8 @@ import type { LanguageModelV3 } from '@openrouter/ai-sdk-provider'
  *  - `fast`   (« Rapide »)  : modèle économique et véloce, défaut du copilote.
  *  - `quality`(« Qualité ») : modèle premium pour les raisonnements exigeants.
  */
-export type AiMode = 'fast' | 'quality'
+import type { AiMode } from '../lib/pricing'
+export type { AiMode }
 
 export const MODELS: Record<AiMode, string> = {
   fast: 'openai/gpt-5.4-mini',

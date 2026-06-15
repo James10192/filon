@@ -107,6 +107,16 @@ export function aiAccess(plan: Plan | undefined | null): boolean {
 }
 
 /**
+ * Paliers en « usage loyal » (fair-use) : on ne bloque pas net à zéro crédit (la
+ * marge ×8 nous couvre), on continue jusqu'au plafond anti-abus. Les paliers en
+ * dégustation (free/pro/pro_ai) butent sur un mur dur = déclencheur d'upgrade.
+ */
+export const FAIR_USE_PLANS: ReadonlySet<Plan> = new Set<Plan>(['copilot'])
+
+/** Plafond anti-abus en fair-use : multiple de l'allocation mensuelle. */
+export const FAIR_USE_CEILING = 3
+
+/**
  * Erreur de crédits IA épuisés. Préfixe stable détecté côté client pour afficher
  * l'UI d'achat de pack (toast + lien vers /app/tarifs).
  */

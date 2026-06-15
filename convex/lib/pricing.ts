@@ -72,3 +72,25 @@ export const CREDIT_PACKS: CreditPack[] = [
 export function creditPackById(id: string): CreditPack | undefined {
   return CREDIT_PACKS.find((p) => p.id === id)
 }
+
+// --- Copilot IA : coût modèle + marge (arbitrage grill-me 2026-06-15) ---
+
+/** Modes d'exécution du copilote (latence vs qualité). */
+export type AiMode = 'fast' | 'quality'
+
+/**
+ * Tarifs modèle (USD / million de tokens), par mode. Conservateurs (arrondis
+ * au-dessus) pour protéger la marge. À mettre à jour si OpenRouter change ses
+ * prix ou si on change de modèle dans `convex/agent/models.ts`.
+ */
+export const MODEL_PRICING: Record<AiMode, { inUsd: number; outUsd: number }> = {
+  fast: { inUsd: 0.25, outUsd: 2 }, // gpt-5.4-mini (classe mini)
+  quality: { inUsd: 3, outUsd: 15 }, // claude-sonnet-4.6
+}
+
+/** FX facturé au-dessus du spot (~605) pour absorber la volatilité du franc. */
+export const FX_XOF_PER_USD = 680
+/** Marge minimale garantie sur le coût réel de chaque appel. */
+export const AI_MARKUP = 8
+/** Prix de détail d'un crédit (mi-pack), pour convertir le plancher en crédits. */
+export const CREDIT_XOF = 8

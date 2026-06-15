@@ -1,11 +1,14 @@
 import { useQuery } from 'convex/react'
+import { Link } from '@tanstack/react-router'
 import { Coins } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import { m } from '~/lib/paraglide/messages'
+import { ProgressBar } from '~/components/ui/progress-bar'
 
 /**
- * Compteur de crédits IA : solde mensuel + pack, avec une jauge sobre de la
- * consommation du mois. Numéros en `.assay` (mono). Masqué si non disponible.
+ * Compteur de crédits IA : solde (mensuel + pack) et jauge de consommation du
+ * mois, avec la métaphore « recharge » (crédit téléphone). Numéros en `.assay`
+ * (mono). Lien de recharge discret vers les tarifs. Masqué si non disponible.
  */
 export function CopilotCredits() {
   const credits = useQuery(api.aiCredits.myCredits, {})
@@ -19,12 +22,14 @@ export function CopilotCredits() {
   return (
     <div className="rounded-[var(--radius)] border border-border bg-bg px-3 py-2.5">
       <div className="flex items-center justify-between gap-2">
-        <span className="flex items-center gap-1.5 text-xs font-medium text-fg-muted">
-          <Coins className="size-3.5" />
+        <span className="flex items-center gap-2 text-xs font-medium text-fg-muted">
+          <span className="flex size-5 items-center justify-center rounded-[var(--radius-sm)] bg-accent/10 text-accent">
+            <Coins className="size-3" />
+          </span>
           {m.copilot_credits_label()}
         </span>
-        <span className="text-xs text-fg">
-          <span className="assay font-medium text-fg">{total}</span>{' '}
+        <span className="text-xs text-fg-muted">
+          <span className="assay text-sm font-semibold text-fg">{total}</span>{' '}
           {m.copilot_credits_remaining()}
           {credits.packBalance > 0 && (
             <span className="ml-1 text-fg-subtle">
@@ -34,18 +39,23 @@ export function CopilotCredits() {
           )}
         </span>
       </div>
-      <div className="mt-2 h-1 overflow-hidden rounded-full bg-surface-2">
-        <div
-          className="h-full rounded-full bg-accent transition-[width]"
-          style={{ width: `${pct}%` }}
-        />
+
+      <ProgressBar percent={pct} className="mt-2" />
+
+      <div className="mt-1.5 flex items-center justify-between">
+        <p className="text-[11px] text-fg-subtle">
+          <span className="assay">{credits.monthCreditsUsed}</span>
+          {' / '}
+          <span className="assay">{credits.monthlyAllowance}</span>{' '}
+          {m.copilot_credits_used()}
+        </p>
+        <Link
+          to="/app/tarifs"
+          className="text-[11px] font-medium text-accent transition-colors hover:text-accent-hover"
+        >
+          {m.copilot_recharge()}
+        </Link>
       </div>
-      <p className="mt-1.5 text-[11px] text-fg-subtle">
-        <span className="assay">{credits.monthCreditsUsed}</span>
-        {' / '}
-        <span className="assay">{credits.monthlyAllowance}</span>{' '}
-        {m.copilot_credits_used()}
-      </p>
     </div>
   )
 }

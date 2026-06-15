@@ -10,7 +10,19 @@ import {
 import { internal } from './_generated/api'
 import type { Doc } from './_generated/dataModel'
 import { requireUser, requireUserFromAction, requireCopilot } from './lib/withUser'
-import { aiCreditError } from './lib/plan'
+import {
+  aiCreditError,
+  AI_MONTHLY_CREDITS,
+  FAIR_USE_PLANS,
+  FAIR_USE_CEILING,
+  type Plan,
+} from './lib/plan'
+import {
+  MODEL_PRICING,
+  FX_XOF_PER_USD,
+  AI_MARKUP,
+  CREDIT_XOF,
+} from './lib/pricing'
 import type { PaginationResult } from 'convex/server'
 import type { MessageDoc } from '@convex-dev/agent'
 import { vStreamArgs } from '@convex-dev/agent/validators'
@@ -30,25 +42,6 @@ import { modelFor, MODELS, type AiMode } from './agent/models'
  */
 
 const modeValidator = v.union(v.literal('fast'), v.literal('quality'))
-
-/**
- * Tarifs modèle (USD / million de tokens), par mode. Conservateurs (arrondis au-
- * dessus) pour protéger la marge. À mettre à jour si OpenRouter change ses prix
- * ou si on change de modèle dans `convex/agent/models.ts`.
- */
-const MODEL_PRICING: Record<AiMode, { inUsd: number; outUsd: number }> = {
-  fast: { inUsd: 0.25, outUsd: 2 }, // gpt-5.4-mini (classe mini)
-  quality: { inUsd: 3, outUsd: 15 }, // claude-sonnet-4.6
-}
-
-/**
- * Plancher de marge garanti (arbitrage grill-me 2026-06-15). FX facturé au-dessus
- * du spot (~605) pour absorber la volatilité du franc ; MARKUP = marge minimale
- * garantie sur le coût réel ; CREDIT_XOF = prix de détail d'un crédit (mi-pack).
- */
-const FX_XOF_PER_USD = 680
-const AI_MARKUP = 8
-const CREDIT_XOF = 8
 
 /**
  * Coût en crédits d'un échange = MAX(poids de tokens, plancher coût-réel).
@@ -81,17 +74,44 @@ function creditsForUsage(
 }
 
 /** Gate copilot depuis une query (pour l'action via runQuery). */
-export const assertCopilot = internalQuery({
+/**
+ * Pré-contrôle d'accès + crédits depuis une query (pour l'action via runQuery).
+ * Retourne le palier, le solde (mensuel + pack), la consommation du mois et
+ * l'allocation, de quoi appliquer la stratégie fair-use côté `sendMessage`.
+ */
+export const aiGate = internalQuery({
   args: { userId: v.string() },
-  handler: async (ctx, { userId }): Promise<{ balance: number }> => {
-    await requireCopilot(ctx, userId)
+  handler: async (
+    ctx,
+    { userId },
+  ): Promise<{
+    plan: Plan
+    balance: number
+    monthUsed: number
+    allowance: number
+  }> => {
+    const plan = await requireCopilot(ctx, userId)
     const row = await ctx.db
       .query('aiCredits')
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .unique()
-    return { balance: (row?.balance ?? 0) + (row?.packBalance ?? 0) }
+    const periodStart = row?.periodStart ?? 0
+    const usage = await ctx.db
+      .query('aiUsage')
+      .withIndex('by_user_created', (q) =>
+        q.eq('userId', userId).gte('createdAt', periodStart),
+      )
+      .collect()
+    const monthUsed = usage.reduce((sum, u) => sum + u.creditsDebited, 0)
+    return {
+      plan,
+      balance: (row?.balance ?? 0) + (row?.packBalance ?? 0),
+      monthUsed,
+      allowance: AI_MONTHLY_CREDITS[plan],
+    }
   },
 })
+
 
 /** Enregistre le miroir `aiThreads` à la création d'un fil. */
 export const recordThread = internalMutation({
@@ -216,12 +236,21 @@ export const sendMessage = action({
     const { userId } = await requireUserFromAction(ctx)
     const mode: AiMode = args.mode ?? 'fast'
 
-    // Gate copilot + solde courant (pré-contrôle avant l'appel LLM).
-    const { balance } = await ctx.runQuery(internal.aiChat.assertCopilot, {
-      userId,
-    })
-    if (balance <= 0) {
-      throw aiCreditError()
+    // Gate accès + solde (pré-contrôle avant l'appel LLM). Stratégie fair-use :
+    // les paliers Copilot ne sont pas bloqués net à zéro (la marge ×8 nous
+    // couvre), on continue jusqu'à un plafond anti-abus ; les paliers en
+    // dégustation (free/pro/pro_ai) butent sur un mur dur = déclencheur d'upgrade.
+    const gate = await ctx.runQuery(internal.aiChat.aiGate, { userId })
+    if (gate.balance <= 0) {
+      const fairUse = FAIR_USE_PLANS.has(gate.plan)
+      if (!fairUse) {
+        throw aiCreditError()
+      }
+      if (gate.monthUsed >= gate.allowance * FAIR_USE_CEILING) {
+        throw aiCreditError(
+          'Usage exceptionnel atteint ce mois. Rechargez un pack pour continuer.',
+        )
+      }
     }
 
     const { thread } = await copilot.continueThread(ctx, {
@@ -246,20 +275,23 @@ export const sendMessage = action({
     )
     const credits = creditsForUsage(inputTokens, outputTokens, mode)
 
-    await ctx.runMutation(internal.aiCredits.debit, {
-      userId,
-      threadId: args.threadId,
-      model: MODELS[mode],
-      mode,
-      inputTokens,
-      outputTokens,
-      credits,
-      toolsUsed,
-    })
-    await ctx.runMutation(internal.aiChat.bumpThread, {
-      userId,
-      threadId: args.threadId,
-    })
+    // Débit + horodatage du fil : indépendants, exécutés en parallèle.
+    await Promise.all([
+      ctx.runMutation(internal.aiCredits.debit, {
+        userId,
+        threadId: args.threadId,
+        model: MODELS[mode],
+        mode,
+        inputTokens,
+        outputTokens,
+        credits,
+        toolsUsed,
+      }),
+      ctx.runMutation(internal.aiChat.bumpThread, {
+        userId,
+        threadId: args.threadId,
+      }),
+    ])
     return { ok: true }
   },
 })

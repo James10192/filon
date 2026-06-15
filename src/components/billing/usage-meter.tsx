@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { useUpsell } from '~/lib/billing/use-upsell'
 import { cn } from '~/lib/utils'
+import { ProgressBar } from '~/components/ui/progress-bar'
 
 /**
  * Compteur d'usage discret (chiffres `.assay` mono) qui devient une invitation
@@ -48,15 +49,11 @@ export function UsageMeter({
           {used} / {limit}
         </span>
       </div>
-      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-2">
-        <div
-          className={cn(
-            'h-full rounded-full transition-[width] duration-300',
-            near ? 'bg-accent' : 'bg-fg-subtle/50',
-          )}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
+      <ProgressBar
+        percent={pct}
+        className="mt-2"
+        barClassName={near ? 'bg-accent' : 'bg-fg-subtle/50'}
+      />
       {near && (
         <p className="mt-2 text-xs leading-relaxed text-fg-muted">
           Bientôt au plafond du palier Découverte.{' '}
