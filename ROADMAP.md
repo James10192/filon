@@ -112,13 +112,15 @@ Industrialise le savoir-faire manuel (kits de candidature). Coût variable → m
 ### Phase IA — Copilot in-app & IA agentique (nouveau 5e tier)
 Au-delà de l'IA à l'acte : une **IA agentique présente partout** dans l'app, débloquée par un **palier dédié AU-DESSUS de Pro+ IA** (« Filon Copilot »). v1 = chatbot copilote ; cible = actions assistées sur le pipeline, la veille et les propositions.
 
-**Livré v1 (2026-06-15)** — backend `convex/agent/*` + `aiChat`/`aiCredits`/`aiPermissions` + frontend copilot (slide-over ⌘J + bouton topbar, route `/app/copilot`, entrée sidebar) : conversation streamée (`useThreadMessages`), cartes de confirmation d'action (Ask : une fois / toujours / refuser), sélecteur de mode, toggle Rapide/Qualité, compteur crédits, gating + upsell.
+**Livré v1 (2026-06-15)** — backend `convex/agent/*` + `aiChat`/`aiCredits`/`aiPermissions` + frontend copilot (slide-over ⌘J + bouton topbar, route `/app/copilot`, entrée sidebar) : conversation streamée (`useThreadMessages`), cartes de confirmation d'action (Ask : une fois / toujours / refuser), sélecteur de mode (les 4 modes honorés côté backend), toggle Rapide/Qualité, compteur crédits, gating + upsell.
+
+**Polish + i18n + simplify (2026-06-15)** — saisie custom (Entrée envoie, vide, auto-grow ; remplace le PromptInput d'ai-elements, 1462 LOC supprimées), état vide premium (cartes + halo accent), carte crédits premium, déclencheur de permission compact. **i18n : français = défaut dur** (drop `preferredLanguage` du strategy Paraglide) + switcher FR/EN dans la topbar. `/simplify` passé : constantes `MODEL_PRICING`/FX/markup centralisées dans `lib/pricing`, fair-use dans `lib/plan`, `ProgressBar` partagé (crédits + usage-meter), `debit`+`bumpThread` parallélisés.
 
 **Économie des crédits — décisions arbitrées (grill-me 2026-06-15) :**
 1. Prix = **valeur + plancher coût** (jamais sous l'eau).
 2. Débit crédits = `max(poids tokens, plancher coût-réel)` — *livré* dans `aiChat.creditsForUsage` (table `MODEL_PRICING` par mode).
 3. **MARKUP = 8 · FX = 680 XOF/$** (marge garantie ≥ 8×, coussin FX) — *livré*.
-4. Copilot = **fair-use sans mur dur** (throttle + nudge, plafond anti-abus ~3×) — *v2 (reste un mur "recharger" en v1)*.
+4. Copilot = **fair-use sans mur dur** (continue au-delà de zéro jusqu'au plafond anti-abus ×3 ; dégustation free/pro/pro_ai garde le mur dur = upgrade) — *livré* (`aiGate` + `FAIR_USE_PLANS`).
 5. **Dégustation** : allocations Découverte 25 · Pro 100 · Pro+IA 300 · Copilot 6000 cr/mois ; accès IA **piloté par les crédits** (tout palier goûte l'agent) — *livré* (`AI_MONTHLY_CREDITS`, `aiAccess`).
 6. Affichage **jauge + crédits**, métaphore **« recharge »** (crédit téléphone, natif CI) — *livré* (wording « Recharger »).
 7. **BYOK** (clé perso) = même prix Copilot, **usage illimité** sur leur clé — *v2*.
