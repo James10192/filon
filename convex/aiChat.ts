@@ -134,16 +134,120 @@ export const recordThread = internalMutation({
 })
 
 /** Met à jour `lastMessageAt` du miroir de fil (après un échange). */
+/**
+ * Titre déterministe d'un fil, dérivé de l'outil principal utilisé (gratuit,
+ * domain-specific). À défaut d'outil, on retombe sur le premier message tronqué.
+ */
+const TOOL_TITLE: Record<string, string> = {
+  summarize_pipeline: 'Analyse du pipeline',
+  pipeline_stats: 'Analyse du pipeline',
+  list_opportunities: "Recherche d'opportunités",
+  search_opportunities: "Recherche d'opportunités",
+  list_proposals: 'Revue des propositions',
+  due_followups: 'Relances à faire',
+  find_company: 'Recherche carnet',
+  find_contact: 'Recherche carnet',
+  create_opportunity: 'Nouvelle opportunité',
+  schedule_followup: 'Relance planifiée',
+  update_opportunity_stage: 'Mise à jour du pipeline',
+  draft_application: 'Brouillon de candidature',
+  add_activity: 'Note ajoutée',
+}
+
+function deriveTitle(toolsUsed: string[], prompt: string): string {
+  for (const t of toolsUsed) {
+    if (TOOL_TITLE[t]) return TOOL_TITLE[t]
+  }
+  const clean = prompt.trim().replace(/\s+/g, ' ')
+  if (!clean) return 'Conversation'
+  return clean.length > 48 ? `${clean.slice(0, 48)}…` : clean
+}
+
 export const bumpThread = internalMutation({
-  args: { userId: v.string(), threadId: v.string() },
-  handler: async (ctx, { userId, threadId }): Promise<null> => {
+  args: {
+    userId: v.string(),
+    threadId: v.string(),
+    toolsUsed: v.optional(v.array(v.string())),
+    prompt: v.optional(v.string()),
+  },
+  handler: async (
+    ctx,
+    { userId, threadId, toolsUsed, prompt },
+  ): Promise<null> => {
     const doc = await ctx.db
       .query('aiThreads')
       .withIndex('by_threadId', (q) => q.eq('threadId', threadId))
       .unique()
     if (doc && doc.userId === userId) {
-      await ctx.db.patch(doc._id, { lastMessageAt: Date.now() })
+      const patch: { lastMessageAt: number; title?: string } = {
+        lastMessageAt: Date.now(),
+      }
+      // Auto-titre au premier échange (tant que le fil n'a pas de titre).
+      if (!doc.title && prompt !== undefined) {
+        patch.title = deriveTitle(toolsUsed ?? [], prompt)
+      }
+      await ctx.db.patch(doc._id, patch)
     }
+    return null
+  },
+})
+
+/**
+ * `internal.aiChat.logAction` : journalise une écriture de l'agent (audit +
+ * lien entité). Appelée par les outils d'écriture après exécution réussie.
+ */
+export const logAction = internalMutation({
+  args: {
+    userId: v.string(),
+    threadId: v.optional(v.string()),
+    tool: v.string(),
+    entityType: v.optional(v.string()),
+    entityId: v.optional(v.string()),
+    summary: v.string(),
+  },
+  handler: async (ctx, args): Promise<null> => {
+    const doc: Record<string, unknown> = {
+      userId: args.userId,
+      tool: args.tool,
+      summary: args.summary,
+      createdAt: Date.now(),
+    }
+    if (args.threadId !== undefined) doc.threadId = args.threadId
+    if (args.entityType !== undefined) doc.entityType = args.entityType
+    if (args.entityId !== undefined) doc.entityId = args.entityId
+    await ctx.db.insert(
+      'aiActions',
+      doc as Omit<Doc<'aiActions'>, '_id' | '_creationTime'>,
+    )
+    return null
+  },
+})
+
+/** `api.aiChat.listActions` : journal des actions de l'agent (récent d'abord). */
+export const listActions = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async (ctx, { limit }): Promise<Doc<'aiActions'>[]> => {
+    const { userId } = await requireUser(ctx)
+    return ctx.db
+      .query('aiActions')
+      .withIndex('by_user_created', (q) => q.eq('userId', userId))
+      .order('desc')
+      .take(limit ?? 100)
+  },
+})
+
+/** `api.aiChat.renameThread` : renomme un fil (titre personnalisé). */
+export const renameThread = mutation({
+  args: { threadId: v.string(), title: v.string() },
+  handler: async (ctx, { threadId, title }): Promise<null> => {
+    const { userId } = await requireUser(ctx)
+    const doc = await ctx.db
+      .query('aiThreads')
+      .withIndex('by_threadId', (q) => q.eq('threadId', threadId))
+      .unique()
+    if (!doc || doc.userId !== userId) throw new Error('Introuvable')
+    const clean = title.trim().slice(0, 80)
+    if (clean) await ctx.db.patch(doc._id, { title: clean })
     return null
   },
 })
@@ -290,6 +394,8 @@ export const sendMessage = action({
       ctx.runMutation(internal.aiChat.bumpThread, {
         userId,
         threadId: args.threadId,
+        toolsUsed,
+        prompt: args.prompt,
       }),
     ])
     return { ok: true }

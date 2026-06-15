@@ -345,4 +345,19 @@ export default defineSchema({
     .index('by_user', ['userId'])
     .index('by_user_last', ['userId', 'lastMessageAt'])
     .index('by_threadId', ['threadId']),
+
+  // Journal des actions exécutées par le copilote (écritures). Donne l'audit
+  // cross-thread, le lien vers l'entité touchée, et la base d'une annulation
+  // future. `entityType`/`entityId` pointent l'objet créé/modifié.
+  aiActions: defineTable({
+    userId: v.string(),
+    threadId: v.optional(v.string()),
+    tool: v.string(),
+    entityType: v.optional(v.string()),
+    entityId: v.optional(v.string()),
+    summary: v.string(),
+    createdAt: v.number(),
+  })
+    .index('by_user_created', ['userId', 'createdAt'])
+    .index('by_thread', ['threadId']),
 })

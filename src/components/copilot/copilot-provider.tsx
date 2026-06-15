@@ -46,7 +46,7 @@ export function CopilotProvider({ children }: { children: React.ReactNode }) {
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetContent
           side="right"
-          className="flex w-full flex-col gap-0 p-0 sm:max-w-md"
+          className="flex w-full flex-col gap-0 p-0 sm:max-w-xl lg:max-w-2xl"
         >
           <SheetHeader className="shrink-0 space-y-1 border-b border-border px-4 py-3 text-left">
             <SheetTitle className="flex items-center gap-2 text-base">

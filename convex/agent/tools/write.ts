@@ -55,6 +55,30 @@ function approval(tool: string, summary: string): ApprovalRequired {
   return { approvalRequired: true, tool, summary }
 }
 
+/**
+ * Journalise une écriture exécutée dans `aiActions` (audit + lien entité). Args
+ * construits dynamiquement (jamais d'`undefined` passé à Convex). `threadId` est
+ * lu sur le contexte d'outil quand l'agent l'expose.
+ */
+async function logAction(
+  ctx: {
+    userId?: string
+    threadId?: string
+    runMutation: (ref: any, args: any) => Promise<any>
+  },
+  opts: { tool: string; summary: string; entityType?: string; entityId?: string },
+): Promise<void> {
+  const args: Record<string, unknown> = {
+    userId: requireUserId(ctx),
+    tool: opts.tool,
+    summary: opts.summary,
+  }
+  if (ctx.threadId) args.threadId = ctx.threadId
+  if (opts.entityType) args.entityType = opts.entityType
+  if (opts.entityId) args.entityId = opts.entityId
+  await ctx.runMutation(internal.aiChat.logAction, args)
+}
+
 export const createOpportunity = createTool({
   description:
     'Crée une opportunité dans le pipeline (titre + type requis). Crée l’entreprise si elle n’existe pas encore.',
@@ -85,10 +109,17 @@ export const createOpportunity = createTool({
         `Créer l’opportunité « ${input.title} »`,
       )
     }
-    return ctx.runMutation(internal.agent.mutations.createOpportunity, {
-      userId: requireUserId(ctx),
-      ...input,
+    const res = (await ctx.runMutation(
+      internal.agent.mutations.createOpportunity,
+      { userId: requireUserId(ctx), ...input },
+    )) as { id: string }
+    await logAction(ctx, {
+      tool: 'create_opportunity',
+      summary: `Opportunité « ${input.title} » créée`,
+      entityType: 'opportunity',
+      entityId: res.id,
     })
+    return res
   },
 })
 
@@ -125,7 +156,17 @@ export const scheduleFollowup = createTool({
     if (input.proposalId) {
       args.proposalId = input.proposalId as Id<'proposals'>
     }
-    return ctx.runMutation(internal.agent.mutations.scheduleFollowup, args)
+    const res = (await ctx.runMutation(
+      internal.agent.mutations.scheduleFollowup,
+      args,
+    )) as { id: string }
+    await logAction(ctx, {
+      tool: 'schedule_followup',
+      summary: `Relance « ${input.label} » planifiée pour le ${input.dueDate}`,
+      entityType: 'followup',
+      entityId: res.id,
+    })
+    return res
   },
 })
 
@@ -150,11 +191,21 @@ export const updateOpportunityStage = createTool({
         `Déplacer l’opportunité vers « ${input.stage} »`,
       )
     }
-    return ctx.runMutation(internal.agent.mutations.updateOpportunityStage, {
-      userId: requireUserId(ctx),
-      opportunityId: input.opportunityId as Id<'opportunities'>,
-      stage: input.stage,
+    const res = await ctx.runMutation(
+      internal.agent.mutations.updateOpportunityStage,
+      {
+        userId: requireUserId(ctx),
+        opportunityId: input.opportunityId as Id<'opportunities'>,
+        stage: input.stage,
+      },
+    )
+    await logAction(ctx, {
+      tool: 'update_opportunity_stage',
+      summary: `Opportunité déplacée vers « ${input.stage} »`,
+      entityType: 'opportunity',
+      entityId: input.opportunityId,
     })
+    return res
   },
 })
 
@@ -173,12 +224,22 @@ export const draftApplication = createTool({
         `Enregistrer un brouillon ${input.kind} sur l’opportunité`,
       )
     }
-    return ctx.runMutation(internal.agent.mutations.draftApplication, {
-      userId: requireUserId(ctx),
-      opportunityId: input.opportunityId as Id<'opportunities'>,
-      kind: input.kind,
-      content: input.content,
+    const res = await ctx.runMutation(
+      internal.agent.mutations.draftApplication,
+      {
+        userId: requireUserId(ctx),
+        opportunityId: input.opportunityId as Id<'opportunities'>,
+        kind: input.kind,
+        content: input.content,
+      },
+    )
+    await logAction(ctx, {
+      tool: 'draft_application',
+      summary: `Brouillon ${input.kind} enregistré`,
+      entityType: 'opportunity',
+      entityId: input.opportunityId,
     })
+    return res
   },
 })
 
@@ -194,12 +255,19 @@ export const addActivity = createTool({
     if (!(await canRun(ctx, 'add_activity'))) {
       return approval('add_activity', 'Ajouter une activité à la timeline')
     }
-    return ctx.runMutation(internal.agent.mutations.addActivity, {
+    const res = await ctx.runMutation(internal.agent.mutations.addActivity, {
       userId: requireUserId(ctx),
       opportunityId: input.opportunityId as Id<'opportunities'>,
       kind: input.kind,
       content: input.content,
     })
+    await logAction(ctx, {
+      tool: 'add_activity',
+      summary: 'Activité ajoutée à la timeline',
+      entityType: 'opportunity',
+      entityId: input.opportunityId,
+    })
+    return res
   },
 })
 

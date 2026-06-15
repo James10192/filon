@@ -1,5 +1,5 @@
-import { useCallback, useRef, useState } from 'react'
-import { useAction, useMutation } from 'convex/react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useAction, useMutation, useQuery } from 'convex/react'
 import { useThreadMessages, toUIMessages } from '@convex-dev/agent/react'
 import { api } from '../../../convex/_generated/api'
 import { toast } from '~/components/ui/sonner'
@@ -8,24 +8,31 @@ import { m } from '~/lib/paraglide/messages'
 export type CopilotMode = 'fast' | 'quality'
 
 /**
- * Orchestrateur du copilote : gestion du fil courant, envoi de message (avec
- * mode rapide/qualité), flux des messages (streaming via le hook Agent), et
- * arbitrage des demandes d'approbation d'outils d'écriture (respondApproval +
- * relance du dernier prompt).
- *
- * Le flux d'approbation est médié côté client : un outil d'écriture en mode
- * `ask` renvoie `{ approvalRequired, tool, summary }` ; l'UI affiche une carte,
- * puis `approve(tool, decision)` appelle `respondApproval` et relance le prompt.
+ * Orchestrateur du copilote : liste des fils (historique), fil courant, envoi de
+ * message (mode rapide/qualité), flux streamé, et arbitrage des approbations
+ * d'écriture. À l'ouverture, reprend le dernier fil (continuité) ; « Nouveau »
+ * repart d'un fil vierge.
  */
 export function useCopilot(onCreditExhausted?: () => void) {
   const [threadId, setThreadId] = useState<string | null>(null)
   const [mode, setMode] = useState<CopilotMode>('fast')
   const [sending, setSending] = useState(false)
   const lastPrompt = useRef<string>('')
+  const didInit = useRef(false)
 
+  const threads = useQuery(api.aiChat.listThreads, {}) ?? []
   const createThread = useMutation(api.aiChat.createThread)
+  const renameThread = useMutation(api.aiChat.renameThread)
   const sendMessage = useAction(api.aiChat.sendMessage)
   const respondApproval = useMutation(api.aiChat.respondApproval)
+
+  // Reprise du dernier fil au premier chargement (decision 7). Une seule fois :
+  // ensuite « Nouveau » / sélection priment.
+  useEffect(() => {
+    if (didInit.current || threads.length === 0) return
+    didInit.current = true
+    setThreadId(threads[0].threadId)
+  }, [threads])
 
   const messages = useThreadMessages(
     api.aiChat.listMessages,
@@ -82,7 +89,6 @@ export function useCopilot(onCreditExhausted?: () => void) {
         toast.message(m.copilot_approve_denied())
         return
       }
-      // Relance le dernier prompt : l'outil est désormais autorisé.
       if (threadId && lastPrompt.current) {
         setSending(true)
         try {
@@ -95,12 +101,24 @@ export function useCopilot(onCreditExhausted?: () => void) {
     [respondApproval, threadId, deliver],
   )
 
-  const reset = useCallback(() => {
+  const selectThread = useCallback((id: string) => {
+    setThreadId(id)
+    lastPrompt.current = ''
+  }, [])
+
+  const newThread = useCallback(() => {
+    didInit.current = true
     setThreadId(null)
     lastPrompt.current = ''
   }, [])
 
+  const rename = useCallback(
+    (id: string, title: string) => renameThread({ threadId: id, title }),
+    [renameThread],
+  )
+
   return {
+    threads,
     threadId,
     mode,
     setMode,
@@ -109,6 +127,8 @@ export function useCopilot(onCreditExhausted?: () => void) {
     streaming: messages.status === 'LoadingFirstPage',
     send,
     approve,
-    reset,
+    selectThread,
+    newThread,
+    rename,
   }
 }
