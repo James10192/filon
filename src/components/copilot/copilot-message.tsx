@@ -1,9 +1,6 @@
 import type { UIMessage } from '@convex-dev/agent/react'
-import {
-  Message,
-  MessageContent,
-  MessageResponse,
-} from '~/components/ai-elements/message'
+import { Sparkles } from 'lucide-react'
+import { MessageResponse } from '~/components/ai-elements/message'
 import {
   Tool,
   ToolHeader,
@@ -32,9 +29,8 @@ function asApproval(output: unknown): { tool: string; summary: string } | null {
 }
 
 /**
- * Rendu d'un message UI : parts texte (Streamdown) + parts outil (carte
- * repliable). Quand une écriture renvoie `approvalRequired`, on affiche la carte
- * de confirmation à la place du résultat brut.
+ * Rendu d'un message UI. Assistant : avatar accent + contenu (Streamdown +
+ * cartes d'outil). Utilisateur : bulle alignée à droite. Apparition animée.
  */
 export function CopilotMessage({
   message,
@@ -45,9 +41,28 @@ export function CopilotMessage({
   pending: boolean
   onDecision: (tool: string, decision: 'once' | 'always' | 'deny') => void
 }) {
+  const isUser = message.role === 'user'
+
+  if (isUser) {
+    const text = message.parts
+      .filter((p) => p.type === 'text')
+      .map((p) => (p as { text?: string }).text ?? '')
+      .join('')
+    return (
+      <div className="flex animate-in fade-in slide-in-from-bottom-1 justify-end duration-300">
+        <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-tr-md border border-border bg-surface-2 px-3.5 py-2.5 text-sm leading-relaxed text-fg shadow-[var(--shadow-sm)]">
+          {text}
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <Message from={message.role}>
-      <MessageContent>
+    <div className="flex animate-in fade-in slide-in-from-bottom-1 gap-3 duration-300">
+      <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-accent/10 text-accent ring-1 ring-accent/15">
+        <Sparkles className="size-3.5" />
+      </span>
+      <div className="min-w-0 flex-1 space-y-3 pt-0.5 text-sm leading-relaxed text-fg">
         {message.parts.map((part, index) => {
           const key = `${message.key}-${index}`
           if (part.type === 'text') {
@@ -67,8 +82,8 @@ export function CopilotMessage({
           }
           return null
         })}
-      </MessageContent>
-    </Message>
+      </div>
+    </div>
   )
 }
 
@@ -95,7 +110,7 @@ function ToolPartView({
   }
 
   return (
-    <Tool>
+    <Tool className="border-border bg-bg">
       {part.type === 'dynamic-tool' ? (
         <ToolHeader
           type={part.type}

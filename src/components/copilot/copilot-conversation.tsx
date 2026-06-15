@@ -1,5 +1,5 @@
 import type { UIMessage } from '@convex-dev/agent/react'
-import { Sparkles, Loader2 } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 import { m } from '~/lib/paraglide/messages'
 import {
   Conversation,
@@ -11,8 +11,8 @@ import { CopilotEmpty } from './copilot-empty'
 
 /**
  * Fil de conversation : état vide (prompts suggérés) tant qu'aucun message,
- * sinon la liste des messages streamés + un indicateur « réflexion » pendant
- * l'attente de la première réponse.
+ * sinon la liste des messages streamés dans une colonne lisible centrée, plus un
+ * indicateur « réflexion » (avatar + points animés) pendant l'attente.
  */
 export function CopilotConversation({
   messages,
@@ -34,7 +34,7 @@ export function CopilotConversation({
 
   return (
     <Conversation className="flex-1">
-      <ConversationContent className="gap-6">
+      <ConversationContent className="mx-auto w-full max-w-3xl gap-5 px-1 py-1">
         {messages.map((message) => (
           <CopilotMessage
             key={message.key}
@@ -44,14 +44,33 @@ export function CopilotConversation({
           />
         ))}
         {awaitingReply && (
-          <div className="flex items-center gap-2 text-sm text-fg-muted">
-            <Loader2 className="size-4 animate-spin text-accent" />
-            <Sparkles className="size-3.5" />
-            {m.copilot_thinking()}
+          <div className="flex animate-in fade-in gap-3 duration-300">
+            <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-accent/10 text-accent ring-1 ring-accent/15">
+              <Sparkles className="size-3.5" />
+            </span>
+            <div className="flex items-center gap-2 pt-1.5">
+              <span className="flex gap-1">
+                <Dot delay="0ms" />
+                <Dot delay="150ms" />
+                <Dot delay="300ms" />
+              </span>
+              <span className="text-xs text-fg-subtle">
+                {m.copilot_thinking()}
+              </span>
+            </div>
           </div>
         )}
       </ConversationContent>
       <ConversationScrollButton />
     </Conversation>
+  )
+}
+
+function Dot({ delay }: { delay: string }) {
+  return (
+    <span
+      className="size-1.5 animate-bounce rounded-full bg-accent"
+      style={{ animationDelay: delay }}
+    />
   )
 }

@@ -20,7 +20,7 @@ export function CopilotCredits() {
   const pct = Math.max(0, Math.min(100, (used / allowance) * 100))
 
   return (
-    <div className="rounded-[var(--radius)] border border-border bg-bg px-3 py-2.5">
+    <div className="rounded-[var(--radius)] border border-border bg-gradient-to-b from-surface to-bg px-3 py-2.5 shadow-[var(--shadow-sm)]">
       <div className="flex items-center justify-between gap-2">
         <span className="flex items-center gap-2 text-xs font-medium text-fg-muted">
           <span className="flex size-5 items-center justify-center rounded-[var(--radius-sm)] bg-accent/10 text-accent">
