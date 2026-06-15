@@ -58,7 +58,7 @@ export function Topbar() {
         <Button
           variant="outline"
           size="icon"
-          onClick={copilot.open}
+          onClick={() => copilot.open()}
           aria-label={m.copilot_open()}
           title={m.copilot_open()}
         >

@@ -18,13 +18,24 @@ export function CopilotPrompt({
   onModeChange,
   sending,
   onSubmit,
+  value,
+  onValueChange,
 }: {
   mode: CopilotMode
   onModeChange: (mode: CopilotMode) => void
   sending: boolean
   onSubmit: (text: string) => void
+  /** Saisie contrôlée (pré-remplissage par un seed contextuel). */
+  value?: string
+  onValueChange?: (text: string) => void
 }) {
-  const [text, setText] = useState('')
+  const [internal, setInternal] = useState('')
+  const controlled = value !== undefined
+  const text = controlled ? value : internal
+  const setText = (next: string) => {
+    if (controlled) onValueChange?.(next)
+    else setInternal(next)
+  }
   const taRef = useRef<HTMLTextAreaElement>(null)
 
   // Auto-grow : la hauteur suit le contenu, plafonnée (scroll au-delà).
@@ -35,10 +46,21 @@ export function CopilotPrompt({
     ta.style.height = `${Math.min(ta.scrollHeight, 160)}px`
   }, [text])
 
+  // Quand un seed pré-remplit la saisie (contrôlée), on donne le focus et on
+  // place le curseur en fin de texte pour une édition immédiate.
+  useEffect(() => {
+    if (!controlled || !text) return
+    const ta = taRef.current
+    if (!ta) return
+    ta.focus()
+    ta.setSelectionRange(text.length, text.length)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value])
+
   function submit() {
-    const value = text.trim()
-    if (!value || sending) return
-    onSubmit(value)
+    const trimmed = text.trim()
+    if (!trimmed || sending) return
+    onSubmit(trimmed)
     setText('')
   }
 
