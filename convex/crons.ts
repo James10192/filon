@@ -20,16 +20,18 @@ crons.interval(
   {},
 )
 
-// Relance d'échéance : flagge les abonnements arrivant à terme sous 3 j.
+// Renouvellement (Axe 2) : auto-débit carte ~48h avant échéance (minorité avec
+// carte réutilisable) + relances in-app J-7/J-3/J-1 (mobile money et reste).
+// Remplace l'ancien `flagRenewalReminders` (relance seule) par le flux complet.
 crons.daily(
-  'billing-renewal-reminders',
+  'billing-renewals',
   { hourUTC: 6, minuteUTC: 0 },
-  internal.billingLifecycle.flagRenewalReminders,
+  internal.billingRenewal.runRenewals,
   {},
 )
 
 // Application des expirations : downgrade programmé / annulation / fin de
-// période. Décalé après la relance.
+// période (après la période de grâce). Décalé après le renouvellement.
 crons.daily(
   'billing-process-expirations',
   { hourUTC: 6, minuteUTC: 30 },
