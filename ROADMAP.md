@@ -45,8 +45,8 @@ monétisé per-user, sans rien casser. On ne paie le coût des fonctionnalités 
 ## État actuel (base technique)
 
 - Mono-utilisateur strict : chaque table porte `userId` (id Better Auth), scopée via `withUser`/`requireUser`.
-- Auth : `@convex-dev/better-auth` (composant NPM), plugins : `convex` uniquement. Pas de plugin `organization`.
-- Veille educarriere : cron Convex (fetch + parse + match mots-clés + dédup), import universel (URL/texte). Déterministe, pas d'IA.
+- Auth : `@convex-dev/better-auth` (composant NPM), plugins : `convex` uniquement. Pas de plugin `organization`. **Auth sociale Google + GitHub + liaison de compte** (depuis les Réglages) livrée 2026-06-15.
+- Veille = **radar de prospection multi-source** : connecteurs pluggables (educarriere + Novojob, validés depuis l'IP Convex ; emploi.ci écarté car 403 anti-bot serveur), cron 6h + déclenchement manuel, santé des sources visible, import universel (URL/texte). Matching déterministe (mots-clés inclus/exclus), pas d'IA dans la détection. Reframe 2026-06-15.
 - Déployé : Convex prod `decisive-mongoose-364`, front `filon-xi.vercel.app` (Vercel, Nitro preset).
 
 ---
@@ -104,10 +104,27 @@ Vendre le résultat au moment de la valeur ou de la friction, jamais à froid. T
 ### Phase 3 — Super premium IA (à l'acte)
 Industrialise le savoir-faire manuel (kits de candidature). Coût variable → métrage. IA déclenchée par l'utilisateur, à l'acte (pas d'agent autonome ici).
 
-- [ ] Scoring de pertinence d'une opportunité vs profil
-- [ ] Brouillon auto lettre / email / CV ciblé par opportunité
-- [ ] Quota de crédits IA/mois par palier + métrage + au-delà à l'usage
-- [ ] Matching sémantique veille (au-delà du mot-clé)
+- [x] **Scoring de pertinence** d'une opportunité (0-100 + action recommandée postuler/démarcher/ignorer + justification) — livré 2026-06-15 (`veille/ai.analyzeSignal`, carte sur la fiche opportunité, en cache pour ne pas re-débiter)
+- [x] **Brouillon auto** du 1er message (candidature ou démarchage selon l'action recommandée) — livré 2026-06-15 (`veille/ai.draftMessage`)
+- [x] Quota de crédits IA/mois par palier + métrage + au-delà à l'usage — livré 2026-06-15 (gating crédit-based partagé `lib/aiGate`, dégustation)
+- [ ] Matching sémantique veille (au-delà du mot-clé) — la veille reste déterministe ; multi-source ajouté mais le matching sémantique reste à faire
+
+#### Radar de prospection multi-source + IA à l'acte + Auth sociale · LIVRÉ 2026-06-15
+Reframe de la « Veille educarriere » en **radar de prospection multi-source** (educarriere n'est plus présenté comme exclusif ; la veille sert à postuler ET à démarcher).
+
+- [x] **Fix upsell prod (ConvexError)** : les `Error` brutes sont masquées en prod par Convex (« Server Error »). `planLimitError`/`aiCreditError`/`requireCopilot` lancent désormais des `ConvexError` typées ; détection client via `error.data`. Répare tout le surfaçage freemium/crédits en prod (cause du « L'enregistrement a échoué »).
+- [x] **Connecteurs pluggables** (`convex/veille/connectors.ts`) : educarriere + Novojob auto, parsers purs validés sur HTML réel ; ajouter une source = une entrée.
+- [x] **Santé des sources** (`veilleSourceHealth`) : fin de l'échec muet, statut opérationnel/indisponible visible (panneau dédié).
+- [x] **Veille enrichie** : nom, intention (postuler/démarcher/les deux), mots-clés inclus + exclus, sources ciblées, notif. Carte premium + dialog d'édition riche.
+- [x] **« Lancer maintenant »** (`runNow`, cooldown 90s) = veille manuelle des comptes gratuits + notification cloche (`veille_import`) à l'import.
+- [x] **IA à l'acte sur la fiche opportunité** : score + action + brouillon, gating crédit-based + fair-use, teaser upsell quand solde épuisé.
+- [x] **Auth sociale Google + GitHub** + liaison/déliaison de compte (Réglages > Connexions), garde-fou dernier moyen de connexion. Secrets posés en env Convex (dev+prod), redirect_uri = origine app.
+- [x] **`/simplify`** : gate crédits partagé (`lib/aiGate`), requête signal factorisée, fetch connecteurs parallélisé, `CONNECTOR_META` dérivé.
+
+**Suivis ouverts (post-session) :**
+- [ ] Filtre **localisation** de la veille : champ collecté/stocké mais pas encore appliqué par le moniteur (le brancher sur le matching, ou le retirer).
+- [ ] **Migration ConvexError des chemins paiement** : `convex/billing.ts` + `convex/paystack.ts` lancent encore des `Error` brutes masquées en prod (messages d'annulation/checkout). À migrer vers un `userError` générique.
+- [ ] Connecteurs supplémentaires (jobivoire.ci = SPA non scrapable statiquement ; la plupart des boards CI modernes sont des SPA).
 
 ### Phase IA — Copilot in-app & IA agentique (nouveau 5e tier)
 Au-delà de l'IA à l'acte : une **IA agentique présente partout** dans l'app, débloquée par un **palier dédié AU-DESSUS de Pro+ IA** (« Filon Copilot »). v1 = chatbot copilote ; cible = actions assistées sur le pipeline, la veille et les propositions.
