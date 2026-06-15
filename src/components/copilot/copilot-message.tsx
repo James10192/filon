@@ -10,6 +10,7 @@ import {
   type ToolPart,
 } from '~/components/ai-elements/tool'
 import { CopilotApprovalCard } from './copilot-approval-card'
+import { renderToolResult } from './copilot-tool-result'
 
 type ApprovalOutput = {
   approvalRequired?: true
@@ -107,6 +108,17 @@ function ToolPartView({
         onDecision={(decision) => onDecision(approval.tool, decision)}
       />
     )
+  }
+
+  // Rendu riche (generative UI) quand le résultat est disponible : tuiles,
+  // barres, listes premium au lieu d'un JSON brut.
+  const toolName =
+    part.type === 'dynamic-tool'
+      ? part.toolName
+      : part.type.replace(/^tool-/, '')
+  if (part.state === 'output-available') {
+    const rich = renderToolResult(toolName, part.output)
+    if (rich) return <>{rich}</>
   }
 
   return (
