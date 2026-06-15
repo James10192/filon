@@ -31,7 +31,7 @@ export function PlanCardShell({
   isCurrent?: boolean
   cta: ReactNode
 }) {
-  const isPaid = data.key === 'pro' || data.key === 'pro_ai'
+  const isPaid = data.key === 'pro' || data.key === 'pro_ai' || data.key === 'copilot'
   const isTeam = data.key === 'team'
   const price = isPaid ? PRICING[data.key as PaidPlan][interval] : null
 
@@ -104,7 +104,7 @@ export function PlanCard({
   pendingPlan: PaidPlan | null
   onUpgrade: (plan: PaidPlan) => void
 }) {
-  const isPaid = data.key === 'pro' || data.key === 'pro_ai'
+  const isPaid = data.key === 'pro' || data.key === 'pro_ai' || data.key === 'copilot'
   const isTeam = data.key === 'team'
 
   return (
@@ -177,7 +177,7 @@ function PlanCta({
       onClick={() => onUpgrade(plan)}
     >
       {isPending && <Loader2 className="size-4 animate-spin" />}
-      Passer à {planKey === 'pro' ? 'Pro' : 'Pro+ IA'}
+      Passer à {planKey === 'pro' ? 'Pro' : planKey === 'pro_ai' ? 'Pro+ IA' : 'Copilot'}
     </Button>
   )
 }
