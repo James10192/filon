@@ -56,6 +56,9 @@ export const myPlan = query({
     planRenewsAt: number | null
     autoRenew: boolean
     pendingPlan: Plan | null
+    // Métadonnées carte enregistrée (auto-débit possible) ou null si aucune /
+    // paiement mobile money. Permet à l'UI d'afficher « Visa ···· 4242 ».
+    card: { last4: string; bank: string | null; brand: string | null } | null
     limits: (typeof PLAN_LIMITS)[Plan]
   } | null> => {
     const authUser = await (async () => {
@@ -76,6 +79,13 @@ export const myPlan = query({
       // Absence d'`autoRenew` = renouvellement actif par défaut.
       autoRenew: doc?.autoRenew ?? true,
       pendingPlan: doc?.pendingPlan ?? null,
+      card: doc?.cardAuthCode
+        ? {
+            last4: doc.cardLast4 ?? '????',
+            bank: doc.cardBank ?? null,
+            brand: doc.cardBrand ?? null,
+          }
+        : null,
       limits: PLAN_LIMITS[plan],
     }
   },
@@ -203,15 +213,20 @@ export const applySubscription = internalMutation({
       subscriptionRef?: string
       paystackCustomerCode?: string
       // Un paiement réussi remet le cycle de vie « propre » : on réactive le
-      // renouvellement et on efface tout downgrade/annulation programmé.
+      // renouvellement, on efface tout downgrade/annulation programmé et on
+      // remet à zéro le compteur de tentatives d'auto-débit de la période.
       autoRenew: true
       pendingPlan: undefined
       renewalReminderAt: undefined
+      renewalAttempts: undefined
+      lastChargeAttemptAt: undefined
     } = {
       plan: args.plan,
       autoRenew: true,
       pendingPlan: undefined,
       renewalReminderAt: undefined,
+      renewalAttempts: undefined,
+      lastChargeAttemptAt: undefined,
     }
     if (args.planInterval !== undefined) patch.planInterval = args.planInterval
     if (args.planRenewsAt !== undefined) patch.planRenewsAt = args.planRenewsAt
@@ -224,6 +239,89 @@ export const applySubscription = internalMutation({
 
     await ctx.db.patch(doc._id, patch)
     return true
+  },
+})
+
+/**
+ * `internal.billing.saveCardAuthorization` : mémorise une autorisation carte
+ * RÉUTILISABLE Paystack sur la ligne user, pour l'auto-débit du cron de
+ * renouvellement. Appelée par `verifyCheckout`/webhook UNIQUEMENT quand
+ * `authorization.reusable === true` (carte) ; jamais pour le mobile money
+ * (paiement ponctuel sans mandat). Patch dynamique, jamais d'`undefined`.
+ */
+export const saveCardAuthorization = internalMutation({
+  args: {
+    userId: v.optional(v.string()),
+    email: v.optional(v.string()),
+    authorizationCode: v.string(),
+    last4: v.optional(v.string()),
+    bank: v.optional(v.string()),
+    brand: v.optional(v.string()),
+  },
+  handler: async (ctx, args): Promise<boolean> => {
+    let doc: Doc<'users'> | null = null
+    if (args.userId) doc = await userByAuthId(ctx, args.userId)
+    if (!doc && args.email) {
+      doc = await ctx.db
+        .query('users')
+        .withIndex('by_email', (q) => q.eq('email', args.email!))
+        .unique()
+    }
+    if (!doc) return false
+
+    const patch: {
+      cardAuthCode: string
+      cardLast4?: string
+      cardBank?: string
+      cardBrand?: string
+    } = { cardAuthCode: args.authorizationCode }
+    if (args.last4 !== undefined) patch.cardLast4 = args.last4
+    if (args.bank !== undefined) patch.cardBank = args.bank
+    if (args.brand !== undefined) patch.cardBrand = args.brand
+
+    await ctx.db.patch(doc._id, patch)
+    return true
+  },
+})
+
+/**
+ * `internal.billing.extendPaidPeriod` : prolonge la période payée après un
+ * auto-débit carte RÉUSSI (POST /charge/authorization). Repousse `planRenewsAt`
+ * d'un cycle, conserve le palier/intervalle, et remet le cycle de vie « propre »
+ * (renouvellement actif, compteurs de relance/tentatives effacés). Idempotence :
+ * appelée une seule fois par succès de débit (le cron borne via les compteurs).
+ */
+export const extendPaidPeriod = internalMutation({
+  args: { userId: v.id('users'), nextRenewsAt: v.number() },
+  handler: async (ctx, args): Promise<null> => {
+    await ctx.db.patch(args.userId, {
+      planRenewsAt: args.nextRenewsAt,
+      autoRenew: true,
+      pendingPlan: undefined,
+      renewalReminderAt: undefined,
+      renewalAttempts: undefined,
+      lastChargeAttemptAt: undefined,
+    })
+    return null
+  },
+})
+
+/**
+ * `internal.billing.markChargeAttempt` : incrémente le compteur de tentatives
+ * d'auto-débit (cap géré par le cron) et horodate la tentative, après un échec
+ * de POST /charge/authorization. Sépare l'écriture (mutation) de l'appel réseau
+ * (action), pour rester dans les contraintes Convex.
+ */
+export const markChargeAttempt = internalMutation({
+  args: { userId: v.id('users') },
+  handler: async (ctx, args): Promise<null> => {
+    const doc = await ctx.db.get(args.userId)
+    if (!doc) return null
+    await ctx.db.patch(args.userId, {
+      renewalAttempts: (doc.renewalAttempts ?? 0) + 1,
+      lastChargeAttemptAt: Date.now(),
+    })
+    return null
   },
 })
 

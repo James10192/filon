@@ -34,6 +34,15 @@ import { planOf, type Plan } from './lib/plan'
 const REMINDER_WINDOW_MS = 3 * 24 * 60 * 60 * 1000
 /** Garde-fou anti-boucle sur le lot traité par exécution. */
 const BATCH_LIMIT = 200
+/**
+ * Période de grâce après échéance avant le downgrade automatique vers 'free',
+ * pour un abonnement simplement non renouvelé (ni annulation explicite, ni
+ * downgrade programmé). Le user garde l'accès payant quelques jours de plus,
+ * laissant le temps à une relance / un re-paiement d'aboutir. Les annulations
+ * et downgrades EXPLICITES (`autoRenew === false`, `pendingPlan`) s'appliquent,
+ * eux, dès l'échéance (choix intentionnel du user).
+ */
+const GRACE_MS = 5 * 24 * 60 * 60 * 1000
 
 type LifecyclePatch = {
   plan?: Plan
@@ -77,6 +86,15 @@ export const processExpirations = internalMutation({
       if (typeof doc.planRenewsAt !== 'number' || doc.planRenewsAt >= now) {
         continue
       }
+      // Transition EXPLICITE (annulation `autoRenew=false` ou downgrade
+      // programmé `pendingPlan`) ? Elle s'applique dès l'échéance. Sinon, c'est
+      // un simple non-renouvellement : on respecte la période de grâce.
+      const explicit = doc.autoRenew === false || doc.pendingPlan !== undefined
+      if (!explicit && now < doc.planRenewsAt + GRACE_MS) {
+        continue
+      }
+
+      const wasPaid = planOf(doc.plan ?? null) !== 'free'
       const target = resolveExpiredPlan(doc)
       const patch: LifecyclePatch = {
         plan: target,
@@ -90,6 +108,22 @@ export const processExpirations = internalMutation({
       // Sur 'free' on coupe aussi le renouvellement (cohérence d'état).
       if (target === 'free') patch.autoRenew = false
       await ctx.db.patch(doc._id, patch)
+
+      // Notification de downgrade gracieux (paiement → free). On insère
+      // directement (une mutation ne peut pas appeler une autre mutation). Aucune
+      // donnée utilisateur n'est supprimée : seul le palier change.
+      if (wasPaid && target === 'free') {
+        await ctx.db.insert('notifications', {
+          userId: doc.authId,
+          kind: 'downgraded',
+          title: 'Passage au palier Découverte',
+          body: "Votre abonnement n'a pas été renouvelé. Vos données sont conservées ; repassez Pro quand vous voulez.",
+          actionUrl: '/app/tarifs',
+          read: false,
+          emailSent: false,
+          createdAt: now,
+        })
+      }
       processed += 1
     }
     return { processed }
@@ -97,12 +131,14 @@ export const processExpirations = internalMutation({
 })
 
 /**
- * `internal.billingLifecycle.flagRenewalReminders` : repère les abonnements
- * payants dont l'échéance approche (≤ 3 j) et qui n'ont pas encore été relancés
- * pour la période en cours, puis pose `renewalReminderAt`. C'est le point
- * d'accroche d'une relance (e-mail / notification) : aujourd'hui on se contente
- * de flagger (l'e-mail est hors scope), mais la structure permet de brancher un
- * envoi sans retoucher la logique de sélection.
+ * `internal.billingLifecycle.flagRenewalReminders` : SUPERSÉDÉ par
+ * `billingRenewal.runRenewals` (Axe 2), qui couvre la relance (J-7/J-3/J-1) ET
+ * l'auto-débit carte ET les notifications in-app. Conservé (non câblé au cron)
+ * pour rétro-compatibilité d'appel manuel ; ne pas re-câbler en parallèle de
+ * `runRenewals` (les deux posent `renewalReminderAt`).
+ *
+ * Repère les abonnements payants dont l'échéance approche (≤ 3 j) et qui n'ont
+ * pas encore été relancés pour la période en cours, puis pose `renewalReminderAt`.
  *
  * On ne relance pas les users en annulation programmée vers 'free' au-delà de
  * leur première relance (le flag pose `renewalReminderAt`, donc une seule fois

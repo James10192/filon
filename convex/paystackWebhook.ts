@@ -67,7 +67,13 @@ type PaystackEvent = {
     plan?: { plan_code?: string; interval?: string } | string | null
     subscription_code?: string
     next_payment_date?: string
-    authorization?: { authorization_code?: string; reusable?: boolean }
+    authorization?: {
+      authorization_code?: string
+      reusable?: boolean
+      last4?: string
+      bank?: string
+      brand?: string
+    }
   }
 }
 
@@ -154,6 +160,21 @@ export const handlePaystackWebhook = httpAction(async (ctx, request) => {
             ? { paystackCustomerCode: data.customer.customer_code }
             : {}),
         })
+        // Carte réutilisable → mémoriser l'autorisation pour l'auto-débit cron.
+        // Mobile money : pas de `reusable`, donc rien n'est stocké.
+        const auth = data?.authorization
+        if (auth?.authorization_code && auth.reusable === true) {
+          await ctx.runMutation(internal.billing.saveCardAuthorization, {
+            ...(data?.metadata?.userId
+              ? { userId: data.metadata.userId }
+              : {}),
+            ...(data?.customer?.email ? { email: data.customer.email } : {}),
+            authorizationCode: auth.authorization_code,
+            ...(auth.last4 ? { last4: auth.last4 } : {}),
+            ...(auth.bank ? { bank: auth.bank } : {}),
+            ...(auth.brand ? { brand: auth.brand } : {}),
+          })
+        }
       }
       break
     }
