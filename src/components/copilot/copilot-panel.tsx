@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery } from 'convex/react'
 import { Link } from '@tanstack/react-router'
 import { Coins, PanelLeft, MessagesSquare, ListChecks } from 'lucide-react'
@@ -17,17 +17,40 @@ import { CopilotActivity } from './copilot-activity'
 
 type Tab = 'conversation' | 'activity'
 
+/** Seed contextuel injecté par un bouton « Demander au copilote ». */
+export type CopilotSeed = { prompt: string; nonce: number }
+
 /**
  * Hub copilote assemblé : rail d'historique (repliable) + conversation streamée
  * ou journal d'actions, plus crédits et saisie. Réutilisé par le tiroir et la
  * route plein écran. Gating crédits/accès géré ici.
+ *
+ * `seed` (optionnel) : prompt contextuel injecté depuis une page. À sa
+ * réception, on bascule sur l'onglet conversation, on démarre un nouveau fil et
+ * on pré-remplit la saisie (l'utilisateur valide l'envoi).
  */
-export function CopilotPanel({ onNavigate }: { onNavigate?: () => void }) {
+export function CopilotPanel({
+  onNavigate,
+  seed = null,
+}: {
+  onNavigate?: () => void
+  seed?: CopilotSeed | null
+}) {
   const credits = useQuery(api.aiCredits.myCredits, {})
   const [exhausted, setExhausted] = useState(false)
   const [railOpen, setRailOpen] = useState(true)
   const [tab, setTab] = useState<Tab>('conversation')
+  const [draft, setDraft] = useState('')
   const copilot = useCopilot(() => setExhausted(true))
+
+  // Consomme un seed (nonce) : nouveau fil + pré-remplissage de la saisie.
+  useEffect(() => {
+    if (!seed) return
+    setTab('conversation')
+    copilot.newThread()
+    setDraft(seed.prompt)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seed?.nonce])
 
   if (credits === undefined) return <PanelSkeleton />
   if (!credits || !credits.aiAccess) {
@@ -123,6 +146,8 @@ export function CopilotPanel({ onNavigate }: { onNavigate?: () => void }) {
                 onModeChange={copilot.setMode}
                 sending={copilot.sending}
                 onSubmit={copilot.send}
+                value={draft}
+                onValueChange={setDraft}
               />
             </div>
           </>

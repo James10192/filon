@@ -17,7 +17,12 @@ import {
 import { CopilotPanel } from './copilot-panel'
 
 type CopilotLauncher = {
-  open: () => void
+  /**
+   * Ouvre le tiroir copilote. Avec un `seedPrompt`, le panneau démarre un
+   * nouveau fil et pré-remplit la saisie avec ce prompt (l'utilisateur valide
+   * l'envoi : zéro consommation surprise de crédits).
+   */
+  open: (seedPrompt?: string) => void
   close: () => void
   toggle: () => void
   isOpen: boolean
@@ -29,10 +34,27 @@ const CopilotLauncherContext = createContext<CopilotLauncher | null>(null)
  * Monte le copilote en tiroir (slide-over droite) accessible depuis toute
  * l'application via `useCopilotLauncher` (bouton topbar + raccourci). Le panneau
  * est gaté (accès au palier / crédits) et géré à l'intérieur de `CopilotPanel`.
+ *
+ * Un `seedPrompt` peut être injecté depuis n'importe quelle page (bouton
+ * « Demander au copilote ») : le tiroir s'ouvre, démarre un nouveau fil et
+ * pré-remplit la zone de saisie avec ce prompt contextuel.
  */
 export function CopilotProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false)
-  const open = useCallback(() => setIsOpen(true), [])
+  // Jeton de seed : un compteur incrémenté garantit qu'un même prompt rejoué
+  // re-déclenche bien la pré-saisie (consommé une fois par le panneau).
+  const [seed, setSeed] = useState<{ prompt: string; nonce: number } | null>(
+    null,
+  )
+  const open = useCallback((seedPrompt?: string) => {
+    if (seedPrompt && seedPrompt.trim()) {
+      setSeed((prev) => ({
+        prompt: seedPrompt.trim(),
+        nonce: (prev?.nonce ?? 0) + 1,
+      }))
+    }
+    setIsOpen(true)
+  }, [])
   const close = useCallback(() => setIsOpen(false), [])
   const toggle = useCallback(() => setIsOpen((v) => !v), [])
   const value = useMemo(
@@ -40,10 +62,18 @@ export function CopilotProvider({ children }: { children: React.ReactNode }) {
     [open, close, toggle, isOpen],
   )
 
+  // À la fermeture, on oublie le seed : le panneau se démonte (Sheet Radix), et
+  // une réouverture sans seed (topbar / raccourci) ne doit pas réinjecter le
+  // dernier prompt contextuel.
+  const onOpenChange = useCallback((next: boolean) => {
+    setIsOpen(next)
+    if (!next) setSeed(null)
+  }, [])
+
   return (
     <CopilotLauncherContext.Provider value={value}>
       {children}
-      <Sheet open={isOpen} onOpenChange={setIsOpen}>
+      <Sheet open={isOpen} onOpenChange={onOpenChange}>
         <SheetContent
           side="right"
           className="flex w-full flex-col gap-0 p-0 sm:max-w-xl lg:max-w-2xl"
@@ -60,7 +90,7 @@ export function CopilotProvider({ children }: { children: React.ReactNode }) {
             </SheetDescription>
           </SheetHeader>
           <div className="min-h-0 flex-1">
-            <CopilotPanel onNavigate={close} />
+            <CopilotPanel onNavigate={close} seed={seed} />
           </div>
         </SheetContent>
       </Sheet>

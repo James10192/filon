@@ -21,6 +21,8 @@ import {
   RecentActivitySkeleton,
 } from '~/components/dashboard/recent-activity'
 import { DashboardNudge } from '~/components/dashboard/dashboard-nudge'
+import { DailySuggestions } from '~/components/dashboard/daily-suggestions'
+import { AskCopilotButton } from '~/components/copilot/ask-copilot-button'
 
 export const Route = createFileRoute('/app/')({
   component: DashboardPage,
@@ -71,16 +73,26 @@ function DashboardPage() {
         title={m.dashboard_title()}
         subtitle={m.dashboard_subtitle()}
         actions={
-          <Button onClick={quickCapture.open}>
-            <Plus className="size-4" />
-            {m.dashboard_new_opportunity()}
-          </Button>
+          <div className="flex items-center gap-2">
+            <AskCopilotButton
+              seed={m.copilot_seed_week()}
+              buttonVariant="outline"
+              size="default"
+            />
+            <Button onClick={quickCapture.open}>
+              <Plus className="size-4" />
+              {m.dashboard_new_opportunity()}
+            </Button>
+          </div>
         }
       />
 
       <div className="flex flex-col gap-5">
         {/* Nudge de conversion contextuel (au plus un, dismissible). */}
         <DashboardNudge />
+
+        {/* Suggestions du jour déterministes : pistes d'action -> copilote */}
+        <DailySuggestions />
 
         {/* Hero : entonnoir de conversion du pipeline */}
         <PipelineFunnel />
