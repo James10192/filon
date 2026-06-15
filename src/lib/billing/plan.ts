@@ -16,7 +16,14 @@ export {
   type Interval,
 } from '../../../convex/lib/pricing'
 
-export { PLAN_LIMITS, PLAN_LIMIT_PREFIX, type Plan } from '../../../convex/lib/plan'
+export {
+  PLAN_LIMITS,
+  PLAN_LIMIT_PREFIX,
+  type Plan,
+  type AppErrorData,
+} from '../../../convex/lib/plan'
+
+import type { AppErrorData } from '../../../convex/lib/plan'
 
 /** Formate un montant XOF entier : « 3 500 XOF » (espace fine insécable). */
 export function formatXof(amount: number): string {
@@ -24,18 +31,47 @@ export function formatXof(amount: number): string {
 }
 
 /**
- * Si `error` est une erreur de limite freemium (préfixe `PLAN_LIMIT:`), renvoie
- * le message lisible (sans le préfixe) ; sinon `null`. Le message Convex arrive
- * souvent enveloppé (« Uncaught Error: PLAN_LIMIT:… »), d'où le `indexOf`.
+ * Extrait notre charge utile métier d'une `ConvexError`. CRITIQUE : en prod
+ * Convex masque `error.message` (« Server Error ») mais transmet `error.data`.
+ * On lit donc la `data` typée. Fallback legacy : parse du préfixe dans le
+ * message (utile en dev où le message brut passe encore).
  */
-export function planLimitMessage(error: unknown): string | null {
+function appErrorData(error: unknown): AppErrorData | null {
+  if (error && typeof error === 'object' && 'data' in error) {
+    const data = (error as { data?: unknown }).data
+    if (
+      data &&
+      typeof data === 'object' &&
+      'kind' in data &&
+      'message' in data &&
+      typeof (data as { message?: unknown }).message === 'string'
+    ) {
+      return data as AppErrorData
+    }
+  }
   const raw =
     error instanceof Error
       ? error.message
       : typeof error === 'string'
         ? error
         : ''
-  const idx = raw.indexOf('PLAN_LIMIT:')
-  if (idx === -1) return null
-  return raw.slice(idx + 'PLAN_LIMIT:'.length).trim()
+  for (const kind of ['PLAN_LIMIT', 'AI_CREDIT'] as const) {
+    const idx = raw.indexOf(`${kind}:`)
+    if (idx !== -1) {
+      return { kind, message: raw.slice(idx + kind.length + 1).trim() }
+    }
+  }
+  return null
+}
+
+/** Si `error` est une limite freemium, renvoie le message lisible ; sinon `null`. */
+export function planLimitMessage(error: unknown): string | null {
+  const data = appErrorData(error)
+  return data?.kind === 'PLAN_LIMIT' ? data.message : null
+}
+
+/** Si `error` est un épuisement de crédits IA, renvoie le message ; sinon `null`. */
+export function aiCreditMessage(error: unknown): string | null {
+  const data = appErrorData(error)
+  return data?.kind === 'AI_CREDIT' ? data.message : null
 }

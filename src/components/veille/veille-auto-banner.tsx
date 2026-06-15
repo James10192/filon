@@ -34,12 +34,13 @@ export function VeilleAutoBanner() {
             </p>
           </div>
         </div>
-        {/* Toggle décoratif (ghosté par LockedFeature). */}
+        {/* Toggle décoratif OFF (la veille auto n'est PAS active sur ce palier ;
+            l'afficher ON serait trompeur). Ghosté par LockedFeature. */}
         <span
           aria-hidden
-          className="flex h-6 w-11 shrink-0 items-center rounded-full bg-accent px-0.5"
+          className="flex h-6 w-11 shrink-0 items-center rounded-full bg-border px-0.5"
         >
-          <span className="size-5 translate-x-5 rounded-full bg-white shadow-sm" />
+          <span className="size-5 translate-x-0 rounded-full bg-white shadow-sm" />
         </span>
       </div>
     </LockedFeature>

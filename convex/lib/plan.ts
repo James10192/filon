@@ -12,6 +12,8 @@
  *   garde ses opportunités, il ne peut simplement plus en créer au-delà du cap.
  */
 
+import { ConvexError } from 'convex/values'
+
 export type Plan = 'free' | 'pro' | 'pro_ai' | 'copilot'
 
 /** Limites par palier. `null` = illimité. */
@@ -57,15 +59,22 @@ export function limitsFor(plan: Plan | undefined | null): PlanLimits {
 }
 
 /**
- * Erreur de limite atteinte. Sérialisée avec un préfixe stable que le client
- * détecte pour afficher l'UI d'upsell (toast + lien vers /app/tarifs).
+ * Type de charge utile transportée par nos erreurs métier. CRITIQUE : on lance
+ * une `ConvexError` (pas une `Error` brute), car en PRODUCTION Convex masque le
+ * message des erreurs non-`ConvexError` (« Server Error ») — le client ne verrait
+ * jamais notre message d'upsell. La `data` typée, elle, traverse jusqu'au client.
  */
+export type AppErrorData =
+  | { kind: 'PLAN_LIMIT'; message: string }
+  | { kind: 'AI_CREDIT'; message: string }
+
+/** Préfixe historique (compat dev/logs) ; le mécanisme réel est `data.kind`. */
 export const PLAN_LIMIT_PREFIX = 'PLAN_LIMIT:'
 
-export function planLimitError(message: string): Error {
-  // Ex: "PLAN_LIMIT:Vous avez atteint la limite de 25 opportunités du palier
-  // Découverte. Passez à Pro pour un pipeline illimité."
-  return new Error(`${PLAN_LIMIT_PREFIX}${message}`)
+export function planLimitError(message: string): ConvexError<AppErrorData> {
+  // Ex message : « Vous avez atteint la limite de 25 opportunités du palier
+  // Découverte. Passez à Pro pour un pipeline illimité. »
+  return new ConvexError({ kind: 'PLAN_LIMIT', message })
 }
 
 /** Stages considérés « actifs » (comptés dans le cap freemium). */
@@ -116,14 +125,11 @@ export const FAIR_USE_PLANS: ReadonlySet<Plan> = new Set<Plan>(['copilot'])
 /** Plafond anti-abus en fair-use : multiple de l'allocation mensuelle. */
 export const FAIR_USE_CEILING = 3
 
-/**
- * Erreur de crédits IA épuisés. Préfixe stable détecté côté client pour afficher
- * l'UI d'achat de pack (toast + lien vers /app/tarifs).
- */
+/** Préfixe historique (compat dev/logs) ; le mécanisme réel est `data.kind`. */
 export const AI_CREDIT_PREFIX = 'AI_CREDIT:'
 
 export function aiCreditError(
   message = 'Crédits IA épuisés. Rechargez un pack ou attendez le renouvellement mensuel.',
-): Error {
-  return new Error(`${AI_CREDIT_PREFIX}${message}`)
+): ConvexError<AppErrorData> {
+  return new ConvexError({ kind: 'AI_CREDIT', message })
 }

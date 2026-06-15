@@ -4,6 +4,7 @@ import { useThreadMessages, toUIMessages } from '@convex-dev/agent/react'
 import { api } from '../../../convex/_generated/api'
 import { toast } from '~/components/ui/sonner'
 import { m } from '~/lib/paraglide/messages'
+import { aiCreditMessage } from '~/lib/billing/plan'
 
 export type CopilotMode = 'fast' | 'quality'
 
@@ -54,8 +55,7 @@ export function useCopilot(onCreditExhausted?: () => void) {
       try {
         await sendMessage({ threadId: id, prompt, mode })
       } catch (error) {
-        const message = error instanceof Error ? error.message : ''
-        if (message.startsWith('AI_CREDIT:')) {
+        if (aiCreditMessage(error)) {
           toast.error(m.copilot_credits_empty_title())
           onCreditExhausted?.()
           return
