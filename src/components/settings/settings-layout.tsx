@@ -5,6 +5,7 @@ import { ProfileSection } from './profile-section'
 import { PreferencesSection } from './preferences-section'
 import { AppearanceSection } from './appearance-section'
 import { AccountSection } from './account-section'
+import { LinkedAccountsSection } from './linked-accounts-section'
 import { SubscriptionManagement } from './subscription-management'
 
 type SectionKey = 'compte' | 'preferences'
@@ -51,6 +52,7 @@ export function SettingsLayout() {
             <>
               <ProfileSection />
               <SubscriptionManagement />
+              <LinkedAccountsSection />
               <AccountSection />
             </>
           ) : (

@@ -9,4 +9,15 @@ export const authClient = createAuthClient({
   plugins: [convexClient()],
 })
 
-export const { signIn, signUp, signOut, useSession } = authClient
+// signIn expose .email (mot de passe) et .social (Google/GitHub). linkSocial,
+// listAccounts et unlinkAccount pilotent la liaison/déliaison depuis les
+// Paramètres (cf. account-section).
+export const {
+  signIn,
+  signUp,
+  signOut,
+  useSession,
+  linkSocial,
+  listAccounts,
+  unlinkAccount,
+} = authClient

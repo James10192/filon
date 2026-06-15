@@ -8,6 +8,7 @@ import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
 import { toast } from '~/components/ui/sonner'
 import { AuthShell } from '~/components/marketing/auth-shell'
+import { SocialAuthButtons } from '~/components/marketing/social-auth-buttons'
 import { cn } from '~/lib/utils'
 import { m } from '~/lib/paraglide/messages'
 
@@ -116,6 +117,8 @@ function InscriptionPage() {
         </>
       }
     >
+      <SocialAuthButtons disabled={submitting} callbackURL="/app" />
+
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="name">{m.signup_label_name()}</Label>

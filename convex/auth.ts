@@ -13,6 +13,29 @@ const siteUrl = process.env.SITE_URL ?? 'http://localhost:3000'
 
 const authFunctions: AuthFunctions = internal.auth as AuthFunctions
 
+// Construit dynamiquement la liste des providers sociaux : on n'active un
+// provider QUE si ses deux variables d'environnement sont posées, pour ne pas
+// casser le déploiement tant que les secrets OAuth ne sont pas configurés.
+type OAuthCreds = { clientId: string; clientSecret: string }
+
+function buildSocialProviders(): Record<string, OAuthCreds> {
+  const providers: Record<string, OAuthCreds> = {}
+
+  const googleId = process.env.GOOGLE_CLIENT_ID
+  const googleSecret = process.env.GOOGLE_CLIENT_SECRET
+  if (googleId && googleSecret) {
+    providers.google = { clientId: googleId, clientSecret: googleSecret }
+  }
+
+  const githubId = process.env.GITHUB_CLIENT_ID
+  const githubSecret = process.env.GITHUB_CLIENT_SECRET
+  if (githubId && githubSecret) {
+    providers.github = { clientId: githubId, clientSecret: githubSecret }
+  }
+
+  return providers
+}
+
 export const authComponent = createClient<DataModel>(components.betterAuth, {
   authFunctions,
   triggers: {
@@ -50,6 +73,20 @@ export const createAuth = (ctx: GenericCtx<DataModel>) =>
       autoSignIn: true,
       minPasswordLength: 8,
       requireEmailVerification: false,
+    },
+    // Providers OAuth (Google, GitHub) ajoutés seulement si leurs secrets sont
+    // posés (cf. buildSocialProviders). Les boutons sociaux côté client
+    // resteront inopérants tant que les secrets ne sont pas configurés.
+    socialProviders: buildSocialProviders(),
+    account: {
+      // Liaison de comptes : si un utilisateur a déjà un compte (e-mail/mot de
+      // passe) et se connecte avec Google/GitHub sur la même adresse e-mail
+      // vérifiée, les comptes sont automatiquement liés au lieu d'en créer un
+      // nouveau. Google et GitHub sont déclarés providers de confiance.
+      accountLinking: {
+        enabled: true,
+        trustedProviders: ['google', 'github'],
+      },
     },
     session: {
       expiresIn: 60 * 60 * 24 * 30,
