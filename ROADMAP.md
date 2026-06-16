@@ -160,8 +160,8 @@ Coût lourd, ne se lance qu'au déclencheur réel.
 - [ ] Modèle org + membres + rôles (owner/membre)
 - [ ] Re-scoping des tables métier par `orgId` (migration depuis `userId`)
 - [ ] Pipeline partagé, invitations, tier Entreprise (par siège, sur devis)
-- [ ] **Back-office `/admin`** : gérer users/orgs, métriques d'usage, consultation des feedbacks
-- [ ] **Système de feedback in-app** : collecte des retours utilisateurs, remontée vers /admin
+- [x] **Back-office `/admin`** (users + métriques + feedbacks ; orgs exclus) — livré 2026-06-16 (workflow multi-agent). Accès `requireAdmin` (`users.role='admin'` OU `ADMIN_EMAILS` env), `convex/admin.ts` (amIAdmin/listUsers/metrics/listFeedback/updateFeedbackStatus, seul domaine cross-tenant), route `/app/admin` (3 onglets, guard, entrée sidebar conditionnelle), graphes recharts. Validé en prod.
+- [x] **Système de feedback in-app** — livré 2026-06-16. Widget flottant « Donner mon avis » (type + message + contexte page) monté dans le shell `/app`, table `feedback` (statuts), inbox triable côté /admin. Validé en prod.
 
 ### Durcissement prod (avant ouverture aux vrais users)
 Pas une nouvelle feature : fiabilité/qualité à régler AVANT d'ouvrir aux vrais utilisateurs. Surtout les chemins revenu.
