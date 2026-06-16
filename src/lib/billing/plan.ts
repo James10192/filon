@@ -75,3 +75,9 @@ export function aiCreditMessage(error: unknown): string | null {
   const data = appErrorData(error)
   return data?.kind === 'AI_CREDIT' ? data.message : null
 }
+
+/** Si `error` est un accès refusé (back-office), renvoie le message ; sinon `null`. */
+export function forbiddenMessage(error: unknown): string | null {
+  const data = appErrorData(error)
+  return data?.kind === 'FORBIDDEN' ? data.message : null
+}

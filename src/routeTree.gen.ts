@@ -24,6 +24,7 @@ import { Route as AppOpportunitesRouteImport } from './routes/app/opportunites'
 import { Route as AppEntreprisesRouteImport } from './routes/app/entreprises'
 import { Route as AppDocumentsRouteImport } from './routes/app/documents'
 import { Route as AppCopilotRouteImport } from './routes/app/copilot'
+import { Route as AppAdminRouteImport } from './routes/app/admin'
 import { Route as AppPropositionsIdRouteImport } from './routes/app/propositions.$id'
 import { Route as AppOpportunitesIdRouteImport } from './routes/app/opportunites.$id'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth.$'
@@ -103,6 +104,11 @@ const AppCopilotRoute = AppCopilotRouteImport.update({
   path: '/copilot',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AppAdminRoute = AppAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 const AppPropositionsIdRoute = AppPropositionsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -124,6 +130,7 @@ export interface FileRoutesByFullPath {
   '/app': typeof AppRouteRouteWithChildren
   '/connexion': typeof ConnexionRoute
   '/inscription': typeof InscriptionRoute
+  '/app/admin': typeof AppAdminRoute
   '/app/copilot': typeof AppCopilotRoute
   '/app/documents': typeof AppDocumentsRoute
   '/app/entreprises': typeof AppEntreprisesRoute
@@ -143,6 +150,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/connexion': typeof ConnexionRoute
   '/inscription': typeof InscriptionRoute
+  '/app/admin': typeof AppAdminRoute
   '/app/copilot': typeof AppCopilotRoute
   '/app/documents': typeof AppDocumentsRoute
   '/app/entreprises': typeof AppEntreprisesRoute
@@ -164,6 +172,7 @@ export interface FileRoutesById {
   '/app': typeof AppRouteRouteWithChildren
   '/connexion': typeof ConnexionRoute
   '/inscription': typeof InscriptionRoute
+  '/app/admin': typeof AppAdminRoute
   '/app/copilot': typeof AppCopilotRoute
   '/app/documents': typeof AppDocumentsRoute
   '/app/entreprises': typeof AppEntreprisesRoute
@@ -186,6 +195,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/connexion'
     | '/inscription'
+    | '/app/admin'
     | '/app/copilot'
     | '/app/documents'
     | '/app/entreprises'
@@ -205,6 +215,7 @@ export interface FileRouteTypes {
     | '/'
     | '/connexion'
     | '/inscription'
+    | '/app/admin'
     | '/app/copilot'
     | '/app/documents'
     | '/app/entreprises'
@@ -225,6 +236,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/connexion'
     | '/inscription'
+    | '/app/admin'
     | '/app/copilot'
     | '/app/documents'
     | '/app/entreprises'
@@ -356,6 +368,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCopilotRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/app/admin': {
+      id: '/app/admin'
+      path: '/admin'
+      fullPath: '/app/admin'
+      preLoaderRoute: typeof AppAdminRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
     '/app/propositions/$id': {
       id: '/app/propositions/$id'
       path: '/$id'
@@ -405,6 +424,7 @@ const AppPropositionsRouteWithChildren = AppPropositionsRoute._addFileChildren(
 )
 
 interface AppRouteRouteChildren {
+  AppAdminRoute: typeof AppAdminRoute
   AppCopilotRoute: typeof AppCopilotRoute
   AppDocumentsRoute: typeof AppDocumentsRoute
   AppEntreprisesRoute: typeof AppEntreprisesRoute
@@ -419,6 +439,7 @@ interface AppRouteRouteChildren {
 }
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
+  AppAdminRoute: AppAdminRoute,
   AppCopilotRoute: AppCopilotRoute,
   AppDocumentsRoute: AppDocumentsRoute,
   AppEntreprisesRoute: AppEntreprisesRoute,

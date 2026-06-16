@@ -5,6 +5,7 @@ import {
   LogOut,
   Plus,
   Settings,
+  Shield,
   Sparkles,
   type LucideIcon,
 } from 'lucide-react'
@@ -179,7 +180,45 @@ function SidebarNav() {
           </SidebarGroupContent>
         </SidebarGroup>
       ))}
+      <AdminNavGroup pathname={location.pathname} />
     </>
+  )
+}
+
+/**
+ * Entrée « Administration », visible uniquement pour les admins (back-office).
+ * Le gating se fait côté serveur via `api.admin.amIAdmin` (query publique non
+ * gatée) ; tant que la réponse est indéfinie ou `false`, rien n'est rendu.
+ */
+function AdminNavGroup({ pathname }: { pathname: string }) {
+  const isAdmin = useQuery(api.admin.amIAdmin, {})
+  if (isAdmin !== true) return null
+
+  const active = pathname === '/app/admin' || pathname.startsWith('/app/admin/')
+
+  return (
+    <SidebarGroup>
+      <SidebarGroupLabel className="text-[10px] font-semibold tracking-[0.08em] text-sidebar-foreground/55 uppercase">
+        Administration
+      </SidebarGroupLabel>
+      <SidebarGroupContent>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              asChild
+              isActive={active}
+              tooltip="Administration"
+              className={cn(active && ACTIVE_NAV)}
+            >
+              <Link to="/app/admin" aria-current={active ? 'page' : undefined}>
+                <Shield className="size-4" />
+                <span>Administration</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
   )
 }
 

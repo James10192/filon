@@ -67,6 +67,7 @@ export function limitsFor(plan: Plan | undefined | null): PlanLimits {
 export type AppErrorData =
   | { kind: 'PLAN_LIMIT'; message: string }
   | { kind: 'AI_CREDIT'; message: string }
+  | { kind: 'FORBIDDEN'; message: string }
 
 /** Préfixe historique (compat dev/logs) ; le mécanisme réel est `data.kind`. */
 export const PLAN_LIMIT_PREFIX = 'PLAN_LIMIT:'
@@ -75,6 +76,18 @@ export function planLimitError(message: string): ConvexError<AppErrorData> {
   // Ex message : « Vous avez atteint la limite de 25 opportunités du palier
   // Découverte. Passez à Pro pour un pipeline illimité. »
   return new ConvexError({ kind: 'PLAN_LIMIT', message })
+}
+
+/**
+ * Erreur d'accès refusé (back-office /admin). `ConvexError` (pas `Error` brute) :
+ * en PROD Convex masque le message des erreurs non-`ConvexError`, le client ne
+ * verrait jamais notre message. La `data.kind = 'FORBIDDEN'` traverse jusqu'au
+ * client (cf. `appErrorData` côté `src/lib/billing/plan.ts`).
+ */
+export function forbiddenError(
+  message = 'Accès réservé aux administrateurs.',
+): ConvexError<AppErrorData> {
+  return new ConvexError({ kind: 'FORBIDDEN', message })
 }
 
 /** Stages considérés « actifs » (comptés dans le cap freemium). */

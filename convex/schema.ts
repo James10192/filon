@@ -25,6 +25,10 @@ export default defineSchema({
     // Vrai quand l'utilisateur a importe sa propre photo : empeche le sync
     // social (trigger `user.onUpdate`) d'ecraser une photo choisie a la main.
     customImage: v.optional(v.boolean()),
+    // Role applicatif. Absent = utilisateur normal. `admin` = acces au back-office
+    // /admin (cross-tenant). L'acces admin peut aussi etre accorde par allowlist
+    // d'e-mails (env `ADMIN_EMAILS`) sans ce champ — cf. `requireAdmin`.
+    role: v.optional(v.union(v.literal('admin'))),
     createdAt: v.number(),
     // --- Abonnement (Phase 2, additif) ---
     // Tous ces champs sont optionnels : les lignes existantes restent valides.
@@ -424,6 +428,8 @@ export default defineSchema({
   })
     .index('by_user', ['userId'])
     .index('by_user_created', ['userId', 'createdAt'])
+    // Lecture cross-tenant des métriques admin (somme des crédits du mois).
+    .index('by_created', ['createdAt'])
     .index('by_thread', ['threadId']),
 
   // Préférences de permission du copilote (1 ligne par user). `mode` pilote le
@@ -469,4 +475,26 @@ export default defineSchema({
   })
     .index('by_user_created', ['userId', 'createdAt'])
     .index('by_thread', ['threadId']),
+
+  // Feedback in-app (widget). Scope `userId` cote soumission (requireUser) ;
+  // lecture cross-tenant reservee au back-office /admin (requireAdmin).
+  // `context` = chemin de la page d'ou le feedback a ete envoye (debug). Le cycle
+  // de traitement va de `new` -> `in_progress` -> `done`, avec une note interne.
+  feedback: defineTable({
+    userId: v.string(),
+    type: v.union(v.literal('bug'), v.literal('idea'), v.literal('other')),
+    message: v.string(),
+    context: v.optional(v.string()),
+    status: v.union(
+      v.literal('new'),
+      v.literal('in_progress'),
+      v.literal('done'),
+    ),
+    adminNote: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index('by_user', ['userId'])
+    .index('by_status', ['status'])
+    .index('by_created', ['createdAt'])
+    .index('by_status_created', ['status', 'createdAt']),
 })

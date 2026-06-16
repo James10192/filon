@@ -313,5 +313,21 @@
   "renewal_renew_now": "Renew now",
   "renewal_card_auto": "Automatic renewal enabled",
   "renewal_no_card": "Renewal by reminder at expiry",
-  "renewal_error": "Renewal link unavailable. Please try again."
+  "renewal_error": "Renewal link unavailable. Please try again.",
+  "feedback_open": "Share feedback",
+  "feedback_title": "Share feedback",
+  "feedback_description": "A bug, an idea, a remark: tell us everything, we read every message.",
+  "feedback_type_label": "Type",
+  "feedback_type_bug": "Bug",
+  "feedback_type_idea": "Idea",
+  "feedback_type_other": "Other",
+  "feedback_message_label": "Your message",
+  "feedback_message_placeholder": "Describe the bug, the idea or the remark.",
+  "feedback_context_label": "Page",
+  "feedback_cancel": "Cancel",
+  "feedback_submit": "Send",
+  "feedback_submitting": "Sending…",
+  "feedback_success": "Thanks, your feedback has been sent.",
+  "feedback_error": "Could not send. Please try again in a moment.",
+  "feedback_message_required": "The message cannot be empty."
 }

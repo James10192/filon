@@ -5,7 +5,14 @@ import type {
 } from 'convex/server'
 import type { DataModel } from '../_generated/dataModel'
 import { authComponent } from '../auth'
-import { aiAccess, planOf, planLimitError, type Plan } from './plan'
+import {
+  aiAccess,
+  forbiddenError,
+  planOf,
+  planLimitError,
+  type Plan,
+} from './plan'
+import type { Doc } from '../_generated/dataModel'
 
 /**
  * Contexte d'un utilisateur authentifié.
@@ -99,6 +106,71 @@ export async function requireCopilot(
     throw planLimitError('Le copilote IA n’est pas disponible sur ce palier.')
   }
   return plan
+}
+
+/**
+ * Allowlist d'e-mails administrateurs, lue depuis `process.env.ADMIN_EMAILS`
+ * (liste séparée par virgules). Normalisée (trim, lowercase). Permet d'accorder
+ * l'accès /admin sans poser `users.role` en base (utile pour le compte de Marcel).
+ */
+function adminAllowlist(): Set<string> {
+  const raw = process.env.ADMIN_EMAILS ?? ''
+  return new Set(
+    raw
+      .split(',')
+      .map((e) => e.trim().toLowerCase())
+      .filter((e) => e.length > 0),
+  )
+}
+
+/** Résout la ligne `users` applicative du user courant (ou null). */
+async function userDocOf(
+  ctx: AnyCtx,
+  userId: string,
+): Promise<Doc<'users'> | null> {
+  return ctx.db
+    .query('users')
+    .withIndex('by_authId', (q) => q.eq('authId', userId))
+    .unique()
+}
+
+/**
+ * Le user courant est-il administrateur ? Vrai si `users.role === 'admin'` OU si
+ * son e-mail figure dans l'allowlist `ADMIN_EMAILS`. Ne throw jamais : renvoie
+ * `false` pour un visiteur non authentifié. Sert au guard de route et à l'entrée
+ * de sidebar côté client (query publique `admin.amIAdmin`).
+ */
+export async function isAdmin(ctx: AnyCtx): Promise<boolean> {
+  const authUser = await authComponent.safeGetAuthUser(ctx)
+  if (!authUser) return false
+  const userId = authUser._id
+  const email = ((authUser as { email?: string }).email ?? '').toLowerCase()
+  if (email && adminAllowlist().has(email)) return true
+  const doc = await userDocOf(ctx, userId)
+  return doc?.role === 'admin'
+}
+
+/**
+ * Garde d'accès au back-office /admin. Résout le user courant, vérifie qu'il est
+ * administrateur (`role === 'admin'` ou e-mail dans `ADMIN_EMAILS`). Throw une
+ * `ConvexError` `FORBIDDEN` sinon. À appeler en tête de TOUTE fonction admin :
+ * c'est le SEUL endroit autorisé à lire en cross-tenant (sans scope `userId`).
+ */
+export async function requireAdmin(ctx: AnyCtx): Promise<AuthedUser> {
+  const authUser = await authComponent.safeGetAuthUser(ctx)
+  if (!authUser) {
+    throw forbiddenError()
+  }
+  const userId = authUser._id
+  const email = ((authUser as { email?: string }).email ?? '').toLowerCase()
+  const allowed = email && adminAllowlist().has(email)
+  if (!allowed) {
+    const doc = await userDocOf(ctx, userId)
+    if (doc?.role !== 'admin') {
+      throw forbiddenError()
+    }
+  }
+  return { userId, email }
 }
 
 /**

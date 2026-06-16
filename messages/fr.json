@@ -313,5 +313,21 @@
   "renewal_renew_now": "Renouveler maintenant",
   "renewal_card_auto": "Renouvellement automatique activé",
   "renewal_no_card": "Renouvellement par rappel à l'échéance",
-  "renewal_error": "Lien de renouvellement indisponible. Réessayez."
+  "renewal_error": "Lien de renouvellement indisponible. Réessayez.",
+  "feedback_open": "Donner mon avis",
+  "feedback_title": "Donner mon avis",
+  "feedback_description": "Un bug, une idée, une remarque : dites-nous tout, on lit chaque message.",
+  "feedback_type_label": "Type",
+  "feedback_type_bug": "Bug",
+  "feedback_type_idea": "Idée",
+  "feedback_type_other": "Autre",
+  "feedback_message_label": "Votre message",
+  "feedback_message_placeholder": "Décrivez le bug, l'idée ou la remarque.",
+  "feedback_context_label": "Page concernée",
+  "feedback_cancel": "Annuler",
+  "feedback_submit": "Envoyer",
+  "feedback_submitting": "Envoi en cours…",
+  "feedback_success": "Merci, votre retour a bien été envoyé.",
+  "feedback_error": "Envoi impossible. Réessayez dans un instant.",
+  "feedback_message_required": "Le message ne peut pas être vide."
 }
