@@ -1,7 +1,7 @@
 import { v } from 'convex/values'
 import { action, mutation, query } from './_generated/server'
 import { api } from './_generated/api'
-import type { Doc } from './_generated/dataModel'
+import type { Doc, Id } from './_generated/dataModel'
 import { isAdmin, requireAdmin, type QueryCtx } from './lib/withUser'
 import { PRICING, type PaidPlan } from './lib/pricing'
 import { forbiddenError, type Plan } from './lib/plan'
@@ -304,13 +304,12 @@ export const userDetail = query({
   args: { userId: v.string() },
   handler: async (ctx, args) => {
     await requireAdmin(ctx)
-    const userId = args.userId
-
-    const user = await ctx.db
-      .query('users')
-      .withIndex('by_authId', (q) => q.eq('authId', userId))
-      .unique()
-    if (!user) throw new Error('Compte introuvable.')
+    // La liste passe l'_id du doc `users` ; on résout le compte par cet id, puis
+    // on scope toutes les sous-requêtes avec son `authId` (= valeur de userId
+    // portée par les tables métier). ConvexError si introuvable (message visible).
+    const user = await ctx.db.get(args.userId as Id<'users'>)
+    if (!user) throw forbiddenError('Compte introuvable.')
+    const userId = user.authId
 
     const [
       opportunities,
