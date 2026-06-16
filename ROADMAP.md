@@ -163,6 +163,13 @@ Coût lourd, ne se lance qu'au déclencheur réel.
 - [ ] **Back-office `/admin`** : gérer users/orgs, métriques d'usage, consultation des feedbacks
 - [ ] **Système de feedback in-app** : collecte des retours utilisateurs, remontée vers /admin
 
+### Durcissement prod (avant ouverture aux vrais users)
+Pas une nouvelle feature : fiabilité/qualité à régler AVANT d'ouvrir aux vrais utilisateurs. Surtout les chemins revenu.
+
+- [ ] **Migration ConvexError des chemins paiement** : `convex/billing.ts` + `convex/paystack.ts` lancent encore des `Error` brutes -> messages masqués en prod (« Server Error ») sur annulation/checkout/changement de palier. Migrer vers un `userError` générique (même mécanisme que `planLimitError`/`aiCreditError`, cf. `lib/plan` + `appErrorData`).
+- [ ] **Filtre localisation de la veille** : champ collecté/stocké mais pas appliqué par le moniteur. Le brancher sur le matching, ou le retirer (ne pas laisser un filtre no-op qui ment à l'utilisateur).
+- [ ] **Audit global des états d'erreur** : repérer les `throw new Error` user-facing restants (500 silencieux), vérifier loading/empty/error sur les surfaces clés.
+
 ---
 
 ## Actions Marcel (hors agents)
