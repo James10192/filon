@@ -356,7 +356,9 @@ export const userDetail = query({
       ctx.db
         .query('aiCredits')
         .withIndex('by_user', (q) => q.eq('userId', userId))
-        .unique(),
+        // `.first()` (pas `.unique()`) : certains comptes ont un doublon de ligne
+        // crédits (artefact de migration) qui ferait throw `.unique()` -> 500.
+        .first(),
       ctx.db
         .query('aiThreads')
         .withIndex('by_user', (q) => q.eq('userId', userId))
