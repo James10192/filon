@@ -287,8 +287,13 @@ export const sendMessage = action({
       userId,
     })
 
+    // Injecte la date du jour en contexte : l'agent en a besoin pour proposer
+    // des dates de relance concrètes (sinon il ne connaît pas « aujourd'hui »).
+    const today = new Date().toISOString().slice(0, 10)
+    const contextualPrompt = `Contexte (ne pas répondre à ceci) : date du jour = ${today}.\n\n${args.prompt}`
+
     const result = await thread.streamText(
-      { prompt: args.prompt, model: modelFor(mode) },
+      { prompt: contextualPrompt, model: modelFor(mode) },
       { saveStreamDeltas: true },
     )
 

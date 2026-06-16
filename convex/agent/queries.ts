@@ -1,5 +1,5 @@
 import { v } from 'convex/values'
-import { internalQuery } from '../_generated/server'
+import { internalQuery, type QueryCtx } from '../_generated/server'
 import type { Doc } from '../_generated/dataModel'
 
 /**
@@ -42,16 +42,27 @@ const ACTIVE_STAGES = new Set<Stage>([
   'negotiation',
 ])
 
-/** Vue compacte d'une opportunité, pour réponses LLM légères. */
-function compactOpp(o: Doc<'opportunities'>) {
+/**
+ * Vue compacte d'une opportunité, pour réponses LLM légères. Résout le NOM de
+ * l'entreprise (l'agent doit pouvoir la nommer, pas afficher un id) et expose
+ * `nextActionAt`/`hasNextAction` (pour repérer ce qui n'a pas de prochaine action).
+ */
+async function compactOpp(ctx: QueryCtx, o: Doc<'opportunities'>) {
+  let companyName: string | null = null
+  if (o.companyId) {
+    const c = await ctx.db.get(o.companyId)
+    companyName = c?.name ?? null
+  }
   return {
     id: o._id,
     title: o.title,
     type: o.type,
     stage: o.stage,
     priority: o.priority,
-    company: o.companyId ?? null,
+    companyName,
     deadline: o.deadline ?? null,
+    nextActionAt: o.nextActionAt ?? null,
+    hasNextAction: Boolean(o.nextActionAt),
     tags: o.tags,
   }
 }
@@ -96,7 +107,30 @@ export const listOpportunities = internalQuery({
       filtered = filtered.filter((o) => o.priority === args.priority)
     }
     filtered.sort((a, b) => b.createdAt - a.createdAt)
-    return filtered.slice(0, args.limit ?? 20).map(compactOpp)
+    return Promise.all(
+      filtered.slice(0, args.limit ?? 20).map((o) => compactOpp(ctx, o)),
+    )
+  },
+})
+
+/**
+ * Opportunités ACTIVES (hors gagnées/perdues) SANS prochaine action planifiée :
+ * exactement ce qu'il faut relancer en priorité. Triées des plus anciennes aux
+ * plus récentes (les plus vieilles sans action = les plus urgentes). Évite à
+ * l'agent de chercher à l'aveugle quand on demande « propose une étape pour chacune ».
+ */
+export const opportunitiesNeedingAction = internalQuery({
+  args: { userId: v.string(), limit: v.optional(v.number()) },
+  handler: async (ctx, { userId, limit }) => {
+    const rows = await ctx.db
+      .query('opportunities')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .collect()
+    const needing = rows
+      .filter((o) => ACTIVE_STAGES.has(o.stage) && !o.nextActionAt)
+      .sort((a, b) => a.createdAt - b.createdAt)
+      .slice(0, limit ?? 20)
+    return Promise.all(needing.map((o) => compactOpp(ctx, o)))
   },
 })
 
@@ -111,7 +145,7 @@ export const searchOpportunities = internalQuery({
         q.search('title', trimmed).eq('userId', userId),
       )
       .take(8)
-    return docs.map(compactOpp)
+    return Promise.all(docs.map((o) => compactOpp(ctx, o)))
   },
 })
 

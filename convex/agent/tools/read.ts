@@ -54,6 +54,19 @@ export const listOpportunities = createTool({
     }),
 })
 
+export const opportunitiesNeedingAction = createTool({
+  description:
+    "Liste les opportunités ACTIVES (ni gagnées ni perdues) qui n'ont PAS de prochaine action planifiée, à relancer en priorité. À utiliser quand on demande de proposer une prochaine étape pour les opportunités sans suite.",
+  inputSchema: z.object({
+    limit: z.number().int().positive().max(50).optional(),
+  }),
+  execute: async (ctx, input): Promise<unknown> =>
+    ctx.runQuery(internal.agent.queries.opportunitiesNeedingAction, {
+      userId: requireUserId(ctx),
+      ...input,
+    }),
+})
+
 export const searchOpportunities = createTool({
   description:
     'Recherche des opportunités par mot-clé dans leur titre (recherche plein texte).',
@@ -124,6 +137,7 @@ export const findContact = createTool({
 export const readTools = {
   summarize_pipeline: summarizePipeline,
   list_opportunities: listOpportunities,
+  opportunities_needing_action: opportunitiesNeedingAction,
   search_opportunities: searchOpportunities,
   list_proposals: listProposals,
   due_followups: dueFollowups,
