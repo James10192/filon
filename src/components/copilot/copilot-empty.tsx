@@ -23,8 +23,12 @@ export function CopilotEmpty({ onPick }: { onPick: (prompt: string) => void }) {
   ]
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center px-5 py-10">
-      <div className="relative mb-5">
+    // Conteneur scrollable : sur faible hauteur (zoom / petit écran), le contenu
+    // défile au lieu de déborder par-dessus la barre de saisie. `min-h-full` sur
+    // l'enfant le centre quand il y a la place, le laisse grandir et scroller sinon.
+    <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="flex min-h-full flex-col items-center justify-center px-5 py-10">
+        <div className="relative mb-5">
         <div
           aria-hidden
           className="absolute -inset-4 rounded-full bg-accent/20 blur-2xl"
@@ -55,6 +59,7 @@ export function CopilotEmpty({ onPick }: { onPick: (prompt: string) => void }) {
             <span className="text-sm leading-snug text-fg">{text}</span>
           </button>
         ))}
+        </div>
       </div>
     </div>
   )
