@@ -68,11 +68,11 @@ Zéro dépendance externe, buildable tout de suite.
 - [x] **Thème clair/sombre site-wide** : défaut système + toggle persistant — livré 2026-06-14
 - [x] **Polish global** : `cursor: pointer` sur les boutons (régression Tailwind v4), dropdowns non-modaux + `scrollbar-gutter` (anti layout-shift), scrollbar custom — livré 2026-06-14
 
-### Espace Propositions unifié (UX) · EN COURS
+### Espace Propositions unifié (UX) · LIVRÉ
 Même pattern que l'espace Opportunités, appliqué aux propositions/devis.
 
-- [ ] Vues multiples (liste / tableau / cartes) via un view-switcher dédié
-- [ ] Panneau split master-detail (détail + actions de proposition)
+- [x] Vues multiples (liste / tableau / cartes) via un view-switcher dédié — livré 2026-06-14
+- [x] Panneau split master-detail (détail + actions de proposition) — livré 2026-06-14
 
 ### Phase 2 — Abonnements & paliers (Paystack, test mode)
 Pendant la review Paystack (~7 j). Tout testable sans charge réelle, bascule live keys à l'activation.
@@ -118,8 +118,11 @@ Reframe de la « Veille educarriere » en **radar de prospection multi-source** 
 - [x] **Veille enrichie** : nom, intention (postuler/démarcher/les deux), mots-clés inclus + exclus, sources ciblées, notif. Carte premium + dialog d'édition riche.
 - [x] **« Lancer maintenant »** (`runNow`, cooldown 90s) = veille manuelle des comptes gratuits + notification cloche (`veille_import`) à l'import.
 - [x] **IA à l'acte sur la fiche opportunité** : score + action + brouillon, gating crédit-based + fair-use, teaser upsell quand solde épuisé.
-- [x] **Auth sociale Google + GitHub** + liaison/déliaison de compte (Réglages > Connexions), garde-fou dernier moyen de connexion. Secrets posés en env Convex (dev+prod), redirect_uri = origine app.
+- [x] **Expérience de run vivante** (2026-06-15) : « Lancer maintenant » ouvre un panneau (analyse animée par source -> offres captées avec lien fiche) ; `runNow` renvoie un résumé riche ; section **Captures récentes + entonnoir** (captées/en cours/gagnées) qui relie chaque offre à son devenir pipeline (`recentCaptures`).
+- [x] **Auth sociale Google + GitHub** + liaison/déliaison de compte (Réglages > Connexions), garde-fou dernier moyen de connexion. Secrets posés en env Convex (dev+prod), redirect_uri = origine app. **Validé en prod par Marcel.**
+- [x] **Photo de profil** (2026-06-15) : import auto depuis Google/GitHub (`overrideUserInfoOnSignIn`) rafraîchi à chaque connexion via trigger `user.onUpdate`, + upload manuel (Convex storage, flag `customImage` anti-écrasement), avatar partout. **Validé en prod.**
 - [x] **`/simplify`** : gate crédits partagé (`lib/aiGate`), requête signal factorisée, fetch connecteurs parallélisé, `CONNECTOR_META` dérivé.
+- [x] **Fix copilot** (2026-06-16) : état vide rendu scrollable (les suggestions ne chevauchent plus la saisie sur faible hauteur / zoom).
 
 **Suivis ouverts (post-session) :**
 - [ ] Filtre **localisation** de la veille : champ collecté/stocké mais pas encore appliqué par le moniteur (le brancher sur le matching, ou le retirer).
