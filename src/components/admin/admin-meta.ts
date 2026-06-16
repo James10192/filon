@@ -151,6 +151,25 @@ export function paymentStatusMeta(status: string): {
   }
 }
 
+/** Libellés FR des stades du pipeline (vue 360 compte). */
+export const STAGE_LABEL: Record<string, string> = {
+  lead: 'Piste',
+  contacted: 'Contacté',
+  applied: 'Postulé',
+  interview: 'Entretien',
+  negotiation: 'Négociation',
+  won: 'Gagné',
+  lost: 'Perdu',
+}
+
+/** Libellés FR des statuts de proposition. */
+export const PROPOSAL_STATUS_LABEL: Record<string, string> = {
+  draft: 'Brouillon',
+  sent: 'Envoyée',
+  accepted: 'Acceptée',
+  refused: 'Refusée',
+}
+
 /** Initiales d'un nom (max 2 lettres) pour le fallback d'avatar. */
 export function initials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean)

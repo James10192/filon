@@ -29,6 +29,10 @@ export default defineSchema({
     // /admin (cross-tenant). L'acces admin peut aussi etre accorde par allowlist
     // d'e-mails (env `ADMIN_EMAILS`) sans ce champ — cf. `requireAdmin`.
     role: v.optional(v.union(v.literal('admin'))),
+    // Compte suspendu par un administrateur (back-office /admin). Flag seul pour
+    // l'instant : affiché dans la vue 360, l'application effective ailleurs viendra
+    // plus tard. Absent = compte actif.
+    suspended: v.optional(v.boolean()),
     createdAt: v.number(),
     // --- Abonnement (Phase 2, additif) ---
     // Tous ces champs sont optionnels : les lignes existantes restent valides.

@@ -17,6 +17,13 @@ import {
   TableRow,
 } from '~/components/ui/table'
 import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetTitle,
+} from '~/components/ui/sheet'
+import { AdminAccountDetail } from './admin-account-detail'
+import {
   formatDate,
   formatNumber,
   formatRelative,
@@ -41,10 +48,14 @@ type AdminUser = {
  * Section « Utilisateurs » du back-office : table cross-tenant des comptes,
  * tri récents d'abord (côté serveur), recherche client sur nom/email.
  */
-export function AdminUsersPanel() {
-  const users = useQuery(api.admin.listUsers, {}) as
-    | AdminUser[]
-    | undefined
+export function AdminUsersPanel({
+  selectedUserId,
+  onSelect,
+}: {
+  selectedUserId: string | null
+  onSelect: (userId: string | null) => void
+}) {
+  const users = useQuery(api.admin.listUsers, {}) as AdminUser[] | undefined
   const [search, setSearch] = useState('')
 
   const filtered = useMemo(() => {
@@ -57,6 +68,8 @@ export function AdminUsersPanel() {
         (u.name?.toLowerCase().includes(q) ?? false),
     )
   }, [users, search])
+
+  const compact = selectedUserId !== null
 
   return (
     <section className="flex flex-col gap-4">
@@ -78,37 +91,106 @@ export function AdminUsersPanel() {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface shadow-[var(--shadow-card)]">
-        {filtered === undefined ? (
-          <UsersTableSkeleton />
-        ) : filtered.length === 0 ? (
-          <EmptyUsers hasSearch={search.trim().length > 0} />
-        ) : (
-          <UsersTable users={filtered} />
+      <div className="flex gap-5">
+        <div
+          className={
+            compact
+              ? 'w-full shrink-0 lg:w-80'
+              : 'w-full'
+          }
+        >
+          <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface shadow-[var(--shadow-card)]">
+            {filtered === undefined ? (
+              <UsersTableSkeleton />
+            ) : filtered.length === 0 ? (
+              <EmptyUsers hasSearch={search.trim().length > 0} />
+            ) : (
+              <UsersTable
+                users={filtered}
+                compact={compact}
+                selectedUserId={selectedUserId}
+                onSelect={onSelect}
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Panneau détail 360 — desktop : colonne sticky à droite */}
+        {compact && selectedUserId && (
+          <aside className="sticky top-0 hidden h-[calc(100dvh-9rem)] flex-1 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface shadow-[var(--shadow-card)] lg:block">
+            <AdminAccountDetail
+              key={selectedUserId}
+              userId={selectedUserId}
+              onClose={() => onSelect(null)}
+            />
+          </aside>
         )}
       </div>
+
+      {/* Panneau détail 360 — mobile : Sheet plein écran */}
+      <Sheet
+        open={compact}
+        onOpenChange={(open) => !open && onSelect(null)}
+      >
+        <SheetContent
+          side="right"
+          className="w-full max-w-full gap-0 p-0 lg:hidden"
+        >
+          <SheetTitle className="sr-only">Détail du compte</SheetTitle>
+          <SheetDescription className="sr-only">
+            Vue 360 du compte sélectionné.
+          </SheetDescription>
+          {selectedUserId && (
+            <AdminAccountDetail
+              key={selectedUserId}
+              userId={selectedUserId}
+              onClose={() => onSelect(null)}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
     </section>
   )
 }
 
-function UsersTable({ users }: { users: AdminUser[] }) {
+function UsersTable({
+  users,
+  compact,
+  selectedUserId,
+  onSelect,
+}: {
+  users: AdminUser[]
+  compact: boolean
+  selectedUserId: string | null
+  onSelect: (userId: string | null) => void
+}) {
   return (
     <Table>
       <TableHeader>
         <TableRow className="border-border hover:bg-transparent">
           <TableHead className="text-fg-muted">Utilisateur</TableHead>
-          <TableHead className="text-fg-muted">Palier</TableHead>
-          <TableHead className="text-right text-fg-muted">Opp.</TableHead>
-          <TableHead className="text-right text-fg-muted">Veilles</TableHead>
-          <TableHead className="text-fg-muted">Inscription</TableHead>
-          <TableHead className="text-fg-muted">Activité</TableHead>
+          {!compact && (
+            <>
+              <TableHead className="text-fg-muted">Palier</TableHead>
+              <TableHead className="text-right text-fg-muted">Opp.</TableHead>
+              <TableHead className="text-right text-fg-muted">Veilles</TableHead>
+              <TableHead className="text-fg-muted">Inscription</TableHead>
+              <TableHead className="text-fg-muted">Activité</TableHead>
+            </>
+          )}
         </TableRow>
       </TableHeader>
       <TableBody>
         {users.map((u) => {
           const name = u.name?.trim() || u.email
+          const isSelected = u._id === selectedUserId
           return (
-            <TableRow key={u._id} className="border-border">
+            <TableRow
+              key={u._id}
+              onClick={() => onSelect(isSelected ? null : u._id)}
+              data-state={isSelected ? 'selected' : undefined}
+              className="cursor-pointer border-border data-[state=selected]:bg-accent-soft"
+            >
               <TableCell>
                 <div className="flex items-center gap-3">
                   <Avatar className="size-9">
@@ -127,23 +209,27 @@ function UsersTable({ users }: { users: AdminUser[] }) {
                   </div>
                 </div>
               </TableCell>
-              <TableCell>
-                <Badge variant={planBadgeVariant(u.plan)}>
-                  {planLabel(u.plan)}
-                </Badge>
-              </TableCell>
-              <TableCell className="assay text-right text-fg">
-                {formatNumber(u.opportunitiesCount)}
-              </TableCell>
-              <TableCell className="assay text-right text-fg">
-                {formatNumber(u.veillesCount)}
-              </TableCell>
-              <TableCell className="whitespace-nowrap text-sm text-fg-muted">
-                {formatDate(u.createdAt)}
-              </TableCell>
-              <TableCell className="whitespace-nowrap text-sm text-fg-muted">
-                {formatRelative(u.lastActivityAt)}
-              </TableCell>
+              {!compact && (
+                <>
+                  <TableCell>
+                    <Badge variant={planBadgeVariant(u.plan)}>
+                      {planLabel(u.plan)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="assay text-right text-fg">
+                    {formatNumber(u.opportunitiesCount)}
+                  </TableCell>
+                  <TableCell className="assay text-right text-fg">
+                    {formatNumber(u.veillesCount)}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap text-sm text-fg-muted">
+                    {formatDate(u.createdAt)}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap text-sm text-fg-muted">
+                    {formatRelative(u.lastActivityAt)}
+                  </TableCell>
+                </>
+              )}
             </TableRow>
           )
         })}

@@ -20,14 +20,23 @@ export const Route = createFileRoute('/app/admin')({
       { name: 'robots', content: 'noindex, nofollow' },
     ],
   }),
-  validateSearch: (search: Record<string, unknown>): { tab?: AdminTab } => {
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { tab?: AdminTab; compte?: string } => {
     const tab = search.tab
-    return tab === 'metriques' ||
+    const out: { tab?: AdminTab; compte?: string } = {}
+    if (
+      tab === 'metriques' ||
       tab === 'feedbacks' ||
       tab === 'paiements' ||
       tab === 'utilisateurs'
-      ? { tab }
-      : {}
+    ) {
+      out.tab = tab
+    }
+    if (typeof search.compte === 'string' && search.compte.length > 0) {
+      out.compte = search.compte
+    }
+    return out
   },
 })
 
@@ -54,9 +63,22 @@ function AdminPage() {
 }
 
 function AdminContent() {
-  const { tab } = Route.useSearch()
+  const { tab, compte } = Route.useSearch()
   const navigate = useNavigate()
   const active = tab ?? 'utilisateurs'
+
+  const selectAccount = (userId: string | null) =>
+    navigate({
+      to: '/app/admin',
+      search: (prev) => {
+        const next: { tab?: AdminTab; compte?: string } = {
+          tab: (prev.tab as AdminTab | undefined) ?? 'utilisateurs',
+        }
+        if (userId) next.compte = userId
+        return next
+      },
+      replace: true,
+    })
 
   return (
     <div className="flex flex-col">
@@ -84,7 +106,10 @@ function AdminContent() {
         </TabsList>
 
         <TabsContent value="utilisateurs">
-          <AdminUsersPanel />
+          <AdminUsersPanel
+            selectedUserId={compte ?? null}
+            onSelect={selectAccount}
+          />
         </TabsContent>
         <TabsContent value="metriques">
           <AdminMetricsPanel />
