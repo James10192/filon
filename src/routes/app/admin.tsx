@@ -8,6 +8,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
 import { AdminUsersPanel } from '~/components/admin/admin-users-panel'
 import { AdminMetricsPanel } from '~/components/admin/admin-metrics-panel'
 import { AdminFeedbackPanel } from '~/components/admin/admin-feedback-panel'
+import { AdminPaymentsPanel } from '~/components/admin/admin-payments-panel'
+
+type AdminTab = 'utilisateurs' | 'metriques' | 'feedbacks' | 'paiements'
 
 export const Route = createFileRoute('/app/admin')({
   component: AdminPage,
@@ -17,15 +20,14 @@ export const Route = createFileRoute('/app/admin')({
       { name: 'robots', content: 'noindex, nofollow' },
     ],
   }),
-  validateSearch: (
-    search: Record<string, unknown>,
-  ): { tab?: 'utilisateurs' | 'metriques' | 'feedbacks' } => {
+  validateSearch: (search: Record<string, unknown>): { tab?: AdminTab } => {
     const tab = search.tab
-    return tab === 'metriques' || tab === 'feedbacks'
+    return tab === 'metriques' ||
+      tab === 'feedbacks' ||
+      tab === 'paiements' ||
+      tab === 'utilisateurs'
       ? { tab }
-      : tab === 'utilisateurs'
-        ? { tab }
-        : {}
+      : {}
   },
 })
 
@@ -68,7 +70,7 @@ function AdminContent() {
         onValueChange={(value) =>
           navigate({
             to: '/app/admin',
-            search: { tab: value as 'utilisateurs' | 'metriques' | 'feedbacks' },
+            search: { tab: value as AdminTab },
             replace: true,
           })
         }
@@ -78,6 +80,7 @@ function AdminContent() {
           <TabsTrigger value="utilisateurs">Utilisateurs</TabsTrigger>
           <TabsTrigger value="metriques">Métriques</TabsTrigger>
           <TabsTrigger value="feedbacks">Feedbacks</TabsTrigger>
+          <TabsTrigger value="paiements">Paiements</TabsTrigger>
         </TabsList>
 
         <TabsContent value="utilisateurs">
@@ -88,6 +91,9 @@ function AdminContent() {
         </TabsContent>
         <TabsContent value="feedbacks">
           <AdminFeedbackPanel />
+        </TabsContent>
+        <TabsContent value="paiements">
+          <AdminPaymentsPanel />
         </TabsContent>
       </Tabs>
     </div>

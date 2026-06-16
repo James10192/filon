@@ -1,9 +1,10 @@
 import { v } from 'convex/values'
-import { mutation, query } from './_generated/server'
+import { action, mutation, query } from './_generated/server'
+import { api } from './_generated/api'
 import type { Doc } from './_generated/dataModel'
 import { isAdmin, requireAdmin, type QueryCtx } from './lib/withUser'
 import { PRICING, type PaidPlan } from './lib/pricing'
-import type { Plan } from './lib/plan'
+import { forbiddenError, type Plan } from './lib/plan'
 
 /**
  * Back-office /admin · gestion utilisateurs, métriques, feedbacks.
@@ -273,5 +274,73 @@ export const updateFeedbackStatus = mutation({
     if (note) patch.adminNote = note
     await ctx.db.patch(args.id, patch)
     return { ok: true as const }
+  },
+})
+
+/** Une transaction Paystack normalisée (sérialisable) pour le back-office. */
+export type PaystackTransaction = {
+  id: number
+  amount: number
+  currency: string
+  status: string
+  reference: string
+  channel: string | null
+  paidAt: string | null
+  email: string | null
+}
+
+/**
+ * Liste les transactions reçues via Paystack (récentes d'abord). C'est une
+ * ACTION (appel HTTP externe) : pas de `ctx.db`, donc le gating admin passe par
+ * la query publique `amIAdmin` exécutée via `ctx.runQuery`. La clé secrète vit
+ * dans `process.env.PAYSTACK_SECRET_KEY`. Montants ramenés en XOF (Paystack les
+ * expose en sous-unité, ×100).
+ */
+export const paystackTransactions = action({
+  args: { perPage: v.optional(v.number()) },
+  handler: async (ctx, args): Promise<PaystackTransaction[]> => {
+    const ok = await ctx.runQuery(api.admin.amIAdmin, {})
+    if (!ok) throw forbiddenError()
+
+    const key = process.env.PAYSTACK_SECRET_KEY
+    if (!key) throw new Error('Paystack non configuré.')
+
+    const perPage = args.perPage ?? 50
+    const res = await fetch(
+      `https://api.paystack.co/transaction?perPage=${perPage}`,
+      { headers: { Authorization: `Bearer ${key}` } },
+    )
+    const json = (await res.json()) as {
+      status: boolean
+      message: string
+      data?: Array<{
+        id: number
+        amount: number
+        currency: string
+        status: string
+        reference: string
+        channel?: string | null
+        paid_at?: string | null
+        customer?: { email?: string | null } | null
+      }>
+    }
+    if (!json.status) throw new Error(json.message)
+
+    const rows: PaystackTransaction[] = (json.data ?? []).map((t) => ({
+      id: t.id,
+      amount: t.amount / 100,
+      currency: t.currency,
+      status: t.status,
+      reference: t.reference,
+      channel: t.channel ?? null,
+      paidAt: t.paid_at ?? null,
+      email: t.customer?.email ?? null,
+    }))
+    rows.sort((a, b) => {
+      const ta = a.paidAt ? Date.parse(a.paidAt) : 0
+      const tb = b.paidAt ? Date.parse(b.paidAt) : 0
+      return tb - ta
+    })
+    return rows
   },
 })

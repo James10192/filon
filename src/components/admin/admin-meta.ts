@@ -110,6 +110,47 @@ export function formatXof(amount: number): string {
   return `${formatNumber(amount)} XOF`
 }
 
+/** Libellé FR d'un canal de paiement Paystack. */
+export function paymentChannelLabel(channel: string | null): string {
+  switch (channel) {
+    case 'mobile_money':
+      return 'Mobile Money'
+    case 'card':
+      return 'Carte'
+    case 'bank':
+      return 'Virement'
+    case 'bank_transfer':
+      return 'Virement'
+    case 'ussd':
+      return 'USSD'
+    case 'qr':
+      return 'QR'
+    case null:
+      return 'Autre'
+    default:
+      return channel
+  }
+}
+
+/** Variante de badge + libellé FR d'un statut de transaction Paystack. */
+export function paymentStatusMeta(status: string): {
+  label: string
+  variant: 'success' | 'danger' | 'warning' | 'outline'
+} {
+  switch (status) {
+    case 'success':
+      return { label: 'Réussi', variant: 'success' }
+    case 'failed':
+      return { label: 'Échoué', variant: 'danger' }
+    case 'abandoned':
+      return { label: 'Abandonné', variant: 'danger' }
+    case 'pending':
+      return { label: 'En attente', variant: 'warning' }
+    default:
+      return { label: status, variant: 'outline' }
+  }
+}
+
 /** Initiales d'un nom (max 2 lettres) pour le fallback d'avatar. */
 export function initials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean)
