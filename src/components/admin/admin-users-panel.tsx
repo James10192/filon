@@ -23,6 +23,7 @@ import {
   SheetTitle,
 } from '~/components/ui/sheet'
 import { AdminAccountDetail } from './admin-account-detail'
+import { useMediaQuery } from '~/hooks/use-media-query'
 import {
   formatDate,
   formatNumber,
@@ -57,6 +58,8 @@ export function AdminUsersPanel({
 }) {
   const users = useQuery(api.admin.listUsers, {}) as AdminUser[] | undefined
   const [search, setSearch] = useState('')
+  // Le split desktop apparaît à `lg` ; en dessous on bascule sur le Sheet.
+  const isDesktop = useMediaQuery('(min-width: 1024px)')
 
   const filtered = useMemo(() => {
     if (!users) return undefined
@@ -127,14 +130,16 @@ export function AdminUsersPanel({
         )}
       </div>
 
-      {/* Panneau détail 360 — mobile : Sheet plein écran */}
+      {/* Panneau détail 360 — sous `lg` : Sheet plein écran (au-dessus, c'est le
+          split à droite ; ne pas ouvrir le Sheet sinon son overlay assombrit le
+          desktop alors que le panneau est déjà visible). */}
       <Sheet
-        open={compact}
+        open={compact && !isDesktop}
         onOpenChange={(open) => !open && onSelect(null)}
       >
         <SheetContent
           side="right"
-          className="w-full max-w-full gap-0 p-0 lg:hidden"
+          className="w-full max-w-full gap-0 p-0"
         >
           <SheetTitle className="sr-only">Détail du compte</SheetTitle>
           <SheetDescription className="sr-only">
