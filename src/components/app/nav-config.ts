@@ -84,10 +84,10 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       {
         to: '/app/entreprises',
-        label: m.nav_companies,
+        label: m.carnet_page_title,
         icon: Building2,
         exact: false,
-        keywords: 'societes companies carnet contacts',
+        keywords: 'carnet entreprises societes companies contacts particuliers adresses',
       },
       {
         to: '/app/propositions',
