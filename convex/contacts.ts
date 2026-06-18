@@ -3,6 +3,7 @@ import { mutation, query } from './_generated/server'
 import type { Doc, Id } from './_generated/dataModel'
 import { requireUser } from './lib/withUser'
 import { forbiddenError, notFoundError, validationError } from './lib/plan'
+import { ensureTagsForUser } from './tags'
 
 /**
  * Domaine : contacts (interlocuteurs), eventuellement rattaches a une entreprise.
@@ -56,7 +57,16 @@ export const list = query({
     const term = search?.trim().toLowerCase()
     const filtered = term
       ? contacts.filter((c) => {
-          const haystack = [c.name, c.role, c.email, c.phone]
+          const haystack = [
+            c.name,
+            c.role,
+            c.email,
+            c.phone,
+            c.relationship,
+            c.location,
+            c.referredBy,
+            ...(c.tags ?? []),
+          ]
             .filter(Boolean)
             .join(' ')
             .toLowerCase()
@@ -107,12 +117,19 @@ export const get = query({
 export const create = mutation({
   args: {
     name: v.string(),
+    // Optionnel : un contact peut etre un particulier autonome (sans entreprise).
     companyId: v.optional(v.id('companies')),
     role: v.optional(v.string()),
     email: v.optional(v.string()),
     phone: v.optional(v.string()),
     linkedin: v.optional(v.string()),
     notes: v.optional(v.string()),
+    // Carnet de prospection P2P / parrainage / MLM.
+    relationship: v.optional(v.string()),
+    location: v.optional(v.string()),
+    referredBy: v.optional(v.string()),
+    // Etiquettes (noms). Catalogues au passage (idempotent) via `ensureTagsForUser`.
+    tags: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
     const { userId } = await requireUser(ctx)
@@ -129,6 +146,10 @@ export const create = mutation({
       phone?: string
       linkedin?: string
       notes?: string
+      relationship?: string
+      location?: string
+      referredBy?: string
+      tags?: string[]
       createdAt: number
     } = { userId, name, createdAt: Date.now() }
     if (args.companyId) doc.companyId = args.companyId
@@ -137,6 +158,13 @@ export const create = mutation({
     if (args.phone?.trim()) doc.phone = args.phone.trim()
     if (args.linkedin?.trim()) doc.linkedin = args.linkedin.trim()
     if (args.notes?.trim()) doc.notes = args.notes.trim()
+    if (args.relationship?.trim()) doc.relationship = args.relationship.trim()
+    if (args.location?.trim()) doc.location = args.location.trim()
+    if (args.referredBy?.trim()) doc.referredBy = args.referredBy.trim()
+    if (args.tags && args.tags.length > 0) {
+      const tags = await ensureTagsForUser(ctx, userId, args.tags)
+      if (tags.length > 0) doc.tags = tags
+    }
 
     return ctx.db.insert('contacts', doc)
   },
@@ -152,12 +180,19 @@ export const update = mutation({
     phone: v.optional(v.string()),
     linkedin: v.optional(v.string()),
     notes: v.optional(v.string()),
+    relationship: v.optional(v.string()),
+    location: v.optional(v.string()),
+    referredBy: v.optional(v.string()),
+    tags: v.optional(v.array(v.string())),
   },
   handler: async (ctx, { id, ...fields }) => {
     const { userId } = await requireUser(ctx)
     await requireOwnedContact(ctx, id, userId)
 
-    const patch: Record<string, string | Id<'companies'> | undefined> = {}
+    const patch: Record<
+      string,
+      string | string[] | Id<'companies'> | undefined
+    > = {}
     if (fields.name !== undefined) {
       const name = fields.name.trim()
       if (!name) throw validationError('Le nom est requis')
@@ -167,12 +202,25 @@ export const update = mutation({
       await assertOwnedCompany(ctx, fields.companyId, userId)
       patch.companyId = fields.companyId
     }
-    for (const key of ['role', 'email', 'phone', 'linkedin', 'notes'] as const) {
+    for (const key of [
+      'role',
+      'email',
+      'phone',
+      'linkedin',
+      'notes',
+      'relationship',
+      'location',
+      'referredBy',
+    ] as const) {
       const value = fields[key]
       if (value !== undefined) {
         const trimmed = value.trim()
         patch[key] = trimmed ? trimmed : undefined
       }
+    }
+    if (fields.tags !== undefined) {
+      const tags = await ensureTagsForUser(ctx, userId, fields.tags)
+      patch.tags = tags.length > 0 ? tags : undefined
     }
 
     await ctx.db.patch(id, patch)

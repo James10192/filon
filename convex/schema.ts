@@ -113,6 +113,15 @@ export default defineSchema({
     // Horodatage de la dernière tentative d'auto-débit (epoch ms), pour espacer
     // les retries et éviter de re-tenter le même jour.
     lastChargeAttemptAt: v.optional(v.number()),
+    // --- Onboarding adaptatif (additif) ---
+    // Profil d'activite declare a la 1re connexion (ex 'freelance_dev',
+    // 'consultant', 'ambassadeur', 'agent_immo', 'agent_assurance',
+    // 'recruteur', 'autre'). Libre (string) pour rester flexible/generique :
+    // pilote le pre-remplissage des etiquettes et libelles de source.
+    activityType: v.optional(v.string()),
+    // Horodatage de fin d'onboarding (epoch ms). Absent = onboarding non fait :
+    // l'UI affiche l'ecran « quelle est ton activite ? » a la connexion.
+    onboardedAt: v.optional(v.number()),
   })
     .index('by_authId', ['authId'])
     .index('by_email', ['email'])
@@ -168,7 +177,9 @@ export default defineSchema({
       filterFields: ['userId'],
     }),
 
-  // Contacts (interlocuteurs), éventuellement rattachés à une entreprise.
+  // Contacts (interlocuteurs / personnes). Autonomes : rattaches a une entreprise
+  // (`companyId`) OU independants (particulier, ex prospect parrainage/MLM). Le
+  // carnet de contacts existe donc SANS entreprise (`companyId` optionnel).
   contacts: defineTable({
     userId: v.string(),
     companyId: v.optional(v.id('companies')),
@@ -178,6 +189,16 @@ export default defineSchema({
     phone: v.optional(v.string()),
     linkedin: v.optional(v.string()),
     notes: v.optional(v.string()),
+    // --- Carnet de prospection P2P / parrainage / MLM (additif) ---
+    // Comment on connait la personne (relation : « ami », « ancien collegue »).
+    relationship: v.optional(v.string()),
+    // Lieu (ville/quartier) de la personne.
+    location: v.optional(v.string()),
+    // Qui a recommande cette personne (nom libre).
+    referredBy: v.optional(v.string()),
+    // Etiquettes (NOMS, puises dans le catalogue `tags`). Ex « Prospect »,
+    // « Leader », « Inactif ». Optionnel : les lignes existantes restent valides.
+    tags: v.optional(v.array(v.string())),
     createdAt: v.number(),
   })
     .index('by_user', ['userId'])
@@ -196,7 +217,38 @@ export default defineSchema({
     ),
     companyId: v.optional(v.id('companies')),
     contactId: v.optional(v.id('contacts')),
+    // Source d'origine LIBRE (rétro-compat : champ historique, string). Posé par
+    // les imports (educarriere, LinkedIn) ou la saisie manuelle. NE PAS le
+    // transformer en union (des valeurs arbitraires existent en base).
     source: v.optional(v.string()),
+    // --- Cible & origine structurees (additif, modele cible) ---
+    // Nature de la cible suivie : entreprise, particulier (contact autonome),
+    // ou aucune. Absent = derive cote lecture (companyId -> 'company',
+    // contactId -> 'person', sinon 'none').
+    targetType: v.optional(
+      v.union(
+        v.literal('company'),
+        v.literal('person'),
+        v.literal('none'),
+      ),
+    ),
+    // Canal d'origine NORMALISE (distinct de `source` libre) : alimente les
+    // statistiques et le pre-remplissage onboarding. `sourceDetail` porte la
+    // note libre associee (ex « Salon SARA 2026 », « recommande par Awa »).
+    sourceChannel: v.optional(
+      v.union(
+        v.literal('job_board'),
+        v.literal('referral'),
+        v.literal('event'),
+        v.literal('networking'),
+        v.literal('salon'),
+        v.literal('social'),
+        v.literal('inbound'),
+        v.literal('cold'),
+        v.literal('other'),
+      ),
+    ),
+    sourceDetail: v.optional(v.string()),
     url: v.optional(v.string()),
     location: v.optional(v.string()),
     // Compensation libre, ex: "remote · 800k XOF/mois".
@@ -249,6 +301,7 @@ export default defineSchema({
     .index('by_user_sourceUrl', ['userId', 'sourceUrl'])
     .index('by_company', ['companyId'])
     .index('by_contact', ['contactId'])
+    .index('by_user_contact', ['userId', 'contactId'])
     // Recherche plein texte de la palette de commandes (scopee par user).
     .searchIndex('search_title', {
       searchField: 'title',
@@ -320,6 +373,50 @@ export default defineSchema({
       searchField: 'title',
       filterFields: ['userId'],
     }),
+
+  // Catalogue d'etiquettes par utilisateur. SOURCE du select/combobox
+  // d'etiquettes (avec creation inline). Les opportunites/contacts ne stockent
+  // QUE les NOMS dans leur array `tags` ; ce catalogue porte la couleur et evite
+  // le texte libre divergent. Unicite logique (userId, name) garantie par le
+  // code (createTag idempotent) ; l'index `by_user_name` sert la resolution.
+  tags: defineTable({
+    userId: v.string(),
+    name: v.string(),
+    color: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index('by_user', ['userId'])
+    .index('by_user_name', ['userId', 'name']),
+
+  // Destinataires d'une PROPOSITION (offre reutilisable adressee a PLUSIEURS
+  // cibles). Une ligne par couple (proposition × destinataire), chacun suivi
+  // individuellement (statut envoye/accepte/refuse), eventuellement relie a une
+  // opportunite du pipeline. Le destinataire est soit une entreprise, soit une
+  // personne (contact). Retro-compat : `proposals.companyId` reste, le multi-cible
+  // passe par cette table.
+  proposalRecipients: defineTable({
+    userId: v.string(),
+    proposalId: v.id('proposals'),
+    targetType: v.union(v.literal('company'), v.literal('person')),
+    companyId: v.optional(v.id('companies')),
+    contactId: v.optional(v.id('contacts')),
+    status: v.union(
+      v.literal('pending'),
+      v.literal('sent'),
+      v.literal('accepted'),
+      v.literal('refused'),
+    ),
+    opportunityId: v.optional(v.id('opportunities')),
+    amount: v.optional(v.number()),
+    note: v.optional(v.string()),
+    sentAt: v.optional(v.number()),
+    respondedAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_user', ['userId'])
+    .index('by_proposal', ['proposalId'])
+    .index('by_user_status', ['userId', 'status']),
 
   // Bibliothèque de documents (CV, lettres, etc.) via Convex storage.
   documents: defineTable({

@@ -61,6 +61,8 @@ export const me = query({
       headline: undefined as string | undefined,
       image: undefined as string | undefined,
       customImage: undefined as boolean | undefined,
+      activityType: undefined as string | undefined,
+      onboardedAt: undefined as number | undefined,
       createdAt: Date.now(),
     }
   },
@@ -108,6 +110,73 @@ export const updateProfile = mutation({
     if (patch.headline !== undefined) created.headline = patch.headline
 
     await ctx.db.insert('users', created)
+    return null
+  },
+})
+
+/**
+ * Cree la ligne `users` du user courant si elle n'existe pas encore (cas limite
+ * post-inscription, avant l'execution du trigger Better Auth). Retourne le doc.
+ * Factorise le filet de securite utilise par les mutations d'onboarding.
+ */
+async function ensureUserDoc(
+  ctx: MutationCtx,
+  userId: string,
+  email: string,
+): Promise<Doc<'users'>> {
+  const doc = await currentUserDoc(ctx, userId)
+  if (doc) return doc
+  const id = await ctx.db.insert('users', {
+    authId: userId,
+    email,
+    createdAt: Date.now(),
+  })
+  const created = await ctx.db.get(id)
+  if (!created) throw validationError('Profil introuvable après création')
+  return created
+}
+
+/**
+ * `api.users.setActivity` : enregistre le profil d'activite declare a
+ * l'onboarding (ex 'freelance_dev', 'ambassadeur', 'agent_immo'...). Libre
+ * (string) pour rester flexible. Le pre-remplissage des etiquettes/sources par
+ * defaut est pilote cote front a partir de cette valeur. Ne pose PAS `onboardedAt`
+ * (voir `completeOnboarding`). Cree la ligne si absente.
+ */
+export const setActivity = mutation({
+  args: { activityType: v.string() },
+  handler: async (ctx, args): Promise<null> => {
+    const { userId, email } = await requireUser(ctx)
+    const activityType = args.activityType.trim()
+    if (!activityType) throw validationError('Le type d’activité est requis')
+
+    const doc = await ensureUserDoc(ctx, userId, email)
+    await ctx.db.patch(doc._id, { activityType })
+    return null
+  },
+})
+
+/**
+ * `api.users.completeOnboarding` : marque l'onboarding comme termine
+ * (`onboardedAt = maintenant`). Accepte optionnellement `activityType` pour le
+ * poser dans le meme appel. Idempotent : ne re-ecrit pas `onboardedAt` s'il
+ * existe deja. Cree la ligne si absente.
+ */
+export const completeOnboarding = mutation({
+  args: { activityType: v.optional(v.string()) },
+  handler: async (ctx, args): Promise<null> => {
+    const { userId, email } = await requireUser(ctx)
+    const doc = await ensureUserDoc(ctx, userId, email)
+
+    const patch: { onboardedAt?: number; activityType?: string } = {}
+    if (!doc.onboardedAt) patch.onboardedAt = Date.now()
+    if (args.activityType !== undefined) {
+      const activityType = args.activityType.trim()
+      if (activityType) patch.activityType = activityType
+    }
+    if (Object.keys(patch).length > 0) {
+      await ctx.db.patch(doc._id, patch)
+    }
     return null
   },
 })

@@ -31,6 +31,7 @@ import { AppSidebar } from '~/components/app/app-sidebar'
 import { Topbar } from '~/components/app/topbar'
 import { MobileBottombar } from '~/components/app/mobile-bottombar'
 import { FeedbackWidget } from '~/components/app/feedback-widget'
+import { OnboardingDialog } from '~/components/onboarding/onboarding-dialog'
 
 export const Route = createFileRoute('/app')({
   component: AppLayout,
@@ -183,6 +184,7 @@ function ShellLayout({
       </SidebarInset>
       <MobileBottombar />
       <FeedbackWidget />
+      <OnboardingDialog />
     </SidebarProvider>
   )
 }

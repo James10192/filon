@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery } from 'convex/react'
-import { Loader2 } from 'lucide-react'
+import { Building2, Loader2, Plus, Trash2, User } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
 import { Button } from '~/components/ui/button'
@@ -15,6 +15,7 @@ import {
 import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
 import { Textarea } from '~/components/ui/textarea'
+import { Badge } from '~/components/ui/badge'
 import {
   Select,
   SelectContent,
@@ -24,11 +25,41 @@ import {
 } from '~/components/ui/select'
 import { EntityCombobox } from '~/components/ui/entity-combobox'
 import { toast } from '~/components/ui/sonner'
+import { cn } from '~/lib/utils'
+import { STATUS_BADGE } from './proposal-status'
 
 type ProposalDoc = Doc<'proposals'>
 
-const NO_COMPANY = '__none__'
 const CURRENCIES = ['XOF', 'EUR', 'USD'] as const
+
+type RecipientTarget = 'company' | 'person'
+type RecipientStatus = 'pending' | 'sent' | 'accepted' | 'refused'
+
+const RECIPIENT_STATUSES: RecipientStatus[] = [
+  'pending',
+  'sent',
+  'accepted',
+  'refused',
+]
+
+// Le statut d'un destinataire reprend les libelles de proposition, plus
+// "pending" (en attente d'envoi) propre aux destinataires.
+const RECIPIENT_STATUS_LABELS: Record<string, string> = {
+  pending: 'En attente',
+  sent: 'Envoyée',
+  accepted: 'Acceptée',
+  refused: 'Refusée',
+}
+
+const RECIPIENT_STATUS_BADGE: Record<
+  string,
+  NonNullable<React.ComponentProps<typeof Badge>['variant']>
+> = {
+  pending: 'outline',
+  sent: STATUS_BADGE.sent,
+  accepted: STATUS_BADGE.accepted,
+  refused: STATUS_BADGE.refused,
+}
 
 export function ProposalFormDialog({
   open,
@@ -40,51 +71,69 @@ export function ProposalFormDialog({
   /** Si fourni, le dialog edite cette proposition. Sinon, creation. */
   proposal?: ProposalDoc | null
 }) {
-  const isEdit = Boolean(proposal)
   const companies = useQuery(api.companies.list, open ? {} : 'skip')
+  const contacts = useQuery(api.contacts.list, open ? {} : 'skip')
   const create = useMutation(api.proposals.create)
   const update = useMutation(api.proposals.update)
   const createCompany = useMutation(api.companies.create)
+  const createContact = useMutation(api.contacts.create)
+  const addRecipient = useMutation(api.proposalRecipients.addRecipient)
+  const removeRecipient = useMutation(api.proposalRecipients.removeRecipient)
+  const updateRecipientStatus = useMutation(
+    api.proposalRecipients.updateRecipientStatus,
+  )
 
-  /** Cree une entreprise inline depuis le combobox et renvoie son id. */
-  async function handleCreateCompany(name: string) {
-    try {
-      const id = await createCompany({ name })
-      toast.success('Entreprise creee.')
-      return id as string
-    } catch {
-      toast.error("L'entreprise n'a pas pu etre creee.")
-      return null
-    }
-  }
+  // Id de la proposition en cours : celui passe en edition, ou celui cree dans
+  // ce dialog (on bascule alors sur la gestion des destinataires).
+  const [workingId, setWorkingId] = useState<Id<'proposals'> | null>(null)
+  const activeId = proposal?._id ?? workingId
+
+  const recipients = useQuery(
+    api.proposalRecipients.listByProposal,
+    open && activeId ? { proposalId: activeId } : 'skip',
+  )
 
   const [title, setTitle] = useState('')
   const [pitch, setPitch] = useState('')
-  const [companyId, setCompanyId] = useState<string>(NO_COMPANY)
   const [amount, setAmount] = useState('')
   const [currency, setCurrency] = useState<string>('XOF')
   const [submitting, setSubmitting] = useState(false)
   const [errors, setErrors] = useState<{ title?: string; pitch?: string }>({})
+
+  // Composeur de destinataire.
+  const [recipientTarget, setRecipientTarget] =
+    useState<RecipientTarget>('company')
+  const [recipientCompanyId, setRecipientCompanyId] = useState('__none__')
+  const [recipientContactId, setRecipientContactId] = useState('__none__')
+  const [addingRecipient, setAddingRecipient] = useState(false)
+
+  const isComposed = Boolean(activeId)
 
   // Réinitialise le formulaire à chaque ouverture (et selon la cible d'édition).
   useEffect(() => {
     if (!open) return
     setErrors({})
     setSubmitting(false)
+    setWorkingId(null)
+    setRecipientTarget('company')
+    setRecipientCompanyId('__none__')
+    setRecipientContactId('__none__')
     if (proposal) {
       setTitle(proposal.title)
       setPitch(proposal.pitch)
-      setCompanyId(proposal.companyId ?? NO_COMPANY)
       setAmount(proposal.amount !== undefined ? String(proposal.amount) : '')
       setCurrency(proposal.currency ?? 'XOF')
     } else {
       setTitle('')
       setPitch('')
-      setCompanyId(NO_COMPANY)
       setAmount('')
       setCurrency('XOF')
     }
   }, [open, proposal])
+
+  const parsedAmount = useMemo(() => {
+    return amount.trim() ? Number(amount.replace(/\s/g, '')) : undefined
+  }, [amount])
 
   function validate() {
     const next: { title?: string; pitch?: string } = {}
@@ -94,28 +143,47 @@ export function ProposalFormDialog({
     return Object.keys(next).length === 0
   }
 
-  async function handleSubmit(event: React.FormEvent) {
+  async function handleCreateCompany(name: string) {
+    try {
+      const id = await createCompany({ name })
+      toast.success('Entreprise créée.')
+      return id as string
+    } catch {
+      toast.error("L'entreprise n'a pas pu être créée.")
+      return null
+    }
+  }
+
+  async function handleCreateContact(name: string) {
+    try {
+      const id = await createContact({ name })
+      toast.success('Contact créé.')
+      return id as string
+    } catch {
+      toast.error("Le contact n'a pas pu être créé.")
+      return null
+    }
+  }
+
+  /** Enregistre l'offre (titre/pitch/montant/devise). Sur creation, bascule en
+   *  gestion des destinataires sans fermer le dialog. */
+  async function handleSaveOffer(event: React.FormEvent) {
     event.preventDefault()
     if (submitting) return
     if (!validate()) return
-
-    // Args construits dynamiquement : jamais `undefined` envoyé à Convex.
-    const parsedAmount = amount.trim() ? Number(amount.replace(/\s/g, '')) : undefined
     if (parsedAmount !== undefined && Number.isNaN(parsedAmount)) {
-      setErrors((e) => ({ ...e }))
       toast.error('Le montant doit être un nombre.')
       return
     }
 
     setSubmitting(true)
     try {
-      if (isEdit && proposal) {
+      if (proposal) {
         const args: {
           id: Id<'proposals'>
           title: string
           pitch: string
           currency: string
-          companyId?: Id<'companies'>
           amount?: number
         } = {
           id: proposal._id,
@@ -123,54 +191,128 @@ export function ProposalFormDialog({
           pitch: pitch.trim(),
           currency,
         }
-        if (companyId !== NO_COMPANY) args.companyId = companyId as Id<'companies'>
         if (parsedAmount !== undefined) args.amount = parsedAmount
         await update(args)
         toast.success('Proposition mise à jour.')
+      } else if (workingId) {
+        const args: {
+          id: Id<'proposals'>
+          title: string
+          pitch: string
+          currency: string
+          amount?: number
+        } = {
+          id: workingId,
+          title: title.trim(),
+          pitch: pitch.trim(),
+          currency,
+        }
+        if (parsedAmount !== undefined) args.amount = parsedAmount
+        await update(args)
+        toast.success('Offre mise à jour.')
       } else {
         const args: {
           title: string
           pitch: string
           currency: string
-          companyId?: Id<'companies'>
           amount?: number
         } = {
           title: title.trim(),
           pitch: pitch.trim(),
           currency,
         }
-        if (companyId !== NO_COMPANY) args.companyId = companyId as Id<'companies'>
         if (parsedAmount !== undefined) args.amount = parsedAmount
-        await create(args)
-        toast.success('Proposition enregistrée.')
+        const id = await create(args)
+        setWorkingId(id)
+        toast.success('Offre enregistrée. Ajoutez maintenant des destinataires.')
       }
-      onOpenChange(false)
     } catch {
-      toast.error(
-        isEdit
-          ? "La proposition n'a pas pu être mise à jour."
-          : "Impossible d'enregistrer la proposition.",
-      )
+      toast.error("L'offre n'a pas pu être enregistrée.")
     } finally {
       setSubmitting(false)
     }
   }
 
+  async function handleAddRecipient() {
+    if (!activeId || addingRecipient) return
+    const args: {
+      proposalId: Id<'proposals'>
+      targetType: RecipientTarget
+      companyId?: Id<'companies'>
+      contactId?: Id<'contacts'>
+    } = { proposalId: activeId, targetType: recipientTarget }
+
+    if (recipientTarget === 'company') {
+      if (recipientCompanyId === '__none__') {
+        toast.error('Choisissez une entreprise destinataire.')
+        return
+      }
+      args.companyId = recipientCompanyId as Id<'companies'>
+    } else {
+      if (recipientContactId === '__none__') {
+        toast.error('Choisissez un contact destinataire.')
+        return
+      }
+      args.contactId = recipientContactId as Id<'contacts'>
+    }
+
+    setAddingRecipient(true)
+    try {
+      await addRecipient(args)
+      toast.success('Destinataire ajouté.')
+      setRecipientCompanyId('__none__')
+      setRecipientContactId('__none__')
+    } catch {
+      toast.error("Le destinataire n'a pas pu être ajouté.")
+    } finally {
+      setAddingRecipient(false)
+    }
+  }
+
+  async function handleRecipientStatus(
+    id: Id<'proposalRecipients'>,
+    status: RecipientStatus,
+  ) {
+    try {
+      await updateRecipientStatus({ id, status })
+    } catch {
+      toast.error('Le statut n’a pas pu être mis à jour.')
+    }
+  }
+
+  async function handleRemoveRecipient(id: Id<'proposalRecipients'>) {
+    try {
+      await removeRecipient({ id })
+      toast.success('Destinataire retiré.')
+    } catch {
+      toast.error('Le destinataire n’a pas pu être retiré.')
+    }
+  }
+
+  const saveLabel = proposal
+    ? 'Enregistrer'
+    : workingId
+      ? "Mettre à jour l'offre"
+      : "Enregistrer l'offre"
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-h-[90dvh] max-w-lg overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {isEdit ? 'Modifier la proposition' : 'Nouvelle proposition'}
+            {proposal ? 'Modifier la proposition' : 'Nouvelle proposition'}
           </DialogTitle>
           <DialogDescription>
-            {isEdit
-              ? 'Mettez à jour le pitch, la cible ou le montant.'
-              : 'Décrivez ce que vous proposez et à quelle entreprise.'}
+            Composez votre offre, puis adressez-la à un ou plusieurs
+            destinataires (entreprises et particuliers), chacun suivi
+            individuellement.
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        {/* ---------------------------------------------------------------- */}
+        {/* Section : l'offre */}
+        {/* ---------------------------------------------------------------- */}
+        <form onSubmit={handleSaveOffer} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="proposal-title">Titre</Label>
             <Input
@@ -201,26 +343,6 @@ export function ProposalFormDialog({
             )}
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="proposal-company">Entreprise cible</Label>
-            <EntityCombobox
-              id="proposal-company"
-              items={(companies ?? []).map((c) => ({
-                value: c._id,
-                label: c.name,
-              }))}
-              value={companyId}
-              onChange={setCompanyId}
-              onCreate={handleCreateCompany}
-              emptyValue={NO_COMPANY}
-              emptyLabel="Aucune entreprise"
-              placeholder="Aucune entreprise"
-              searchPlaceholder="Rechercher ou creer une entreprise..."
-              noResultLabel="Aucune entreprise trouvee."
-              createLabel="Creer l'entreprise"
-            />
-          </div>
-
           <div className="grid grid-cols-[1fr_auto] gap-3">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="proposal-amount">Montant estimé</Label>
@@ -249,21 +371,195 @@ export function ProposalFormDialog({
             </div>
           </div>
 
-          <DialogFooter className="mt-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={submitting}
-            >
-              Annuler
-            </Button>
-            <Button type="submit" disabled={submitting}>
+          <div className="flex justify-end">
+            <Button type="submit" disabled={submitting} variant="outline">
               {submitting && <Loader2 className="size-4 animate-spin" />}
-              Enregistrer
+              {saveLabel}
             </Button>
-          </DialogFooter>
+          </div>
         </form>
+
+        {/* ---------------------------------------------------------------- */}
+        {/* Section : destinataires */}
+        {/* ---------------------------------------------------------------- */}
+        <div className="flex flex-col gap-3 border-t border-border pt-4">
+          <div>
+            <h3 className="text-sm font-medium text-fg">Destinataires</h3>
+            <p className="text-xs text-fg-muted">
+              {isComposed
+                ? 'Ajoutez les entreprises et particuliers à qui vous adressez cette offre.'
+                : 'Enregistrez d’abord l’offre ci-dessus pour ajouter des destinataires.'}
+            </p>
+          </div>
+
+          {isComposed && (
+            <>
+              {/* Liste des destinataires existants */}
+              {recipients === undefined ? (
+                <div className="flex items-center justify-center gap-2 py-4 text-sm text-fg-subtle">
+                  <Loader2 className="size-4 animate-spin" />
+                  Chargement...
+                </div>
+              ) : recipients.length === 0 ? (
+                <p className="rounded-[var(--radius)] border border-dashed border-border bg-surface-2 px-3 py-4 text-center text-sm text-fg-subtle">
+                  Aucun destinataire pour l’instant.
+                </p>
+              ) : (
+                <ul className="flex flex-col gap-2">
+                  {recipients.map((r) => {
+                    const Icon =
+                      r.targetType === 'company' ? Building2 : User
+                    const name =
+                      r.targetName ??
+                      (r.targetType === 'company'
+                        ? 'Entreprise'
+                        : 'Contact')
+                    return (
+                      <li
+                        key={r._id}
+                        className="flex flex-wrap items-center gap-2 rounded-[var(--radius)] border border-border bg-surface px-3 py-2"
+                      >
+                        <Icon className="size-4 shrink-0 text-fg-subtle" />
+                        <span className="min-w-0 flex-1 truncate text-sm text-fg">
+                          {name}
+                        </span>
+                        <Badge variant={RECIPIENT_STATUS_BADGE[r.status]}>
+                          {RECIPIENT_STATUS_LABELS[r.status]}
+                        </Badge>
+                        <Select
+                          value={r.status}
+                          onValueChange={(v) =>
+                            handleRecipientStatus(r._id, v as RecipientStatus)
+                          }
+                        >
+                          <SelectTrigger
+                            className="h-8 w-32"
+                            aria-label={`Statut de ${name}`}
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {RECIPIENT_STATUSES.map((s) => (
+                              <SelectItem key={s} value={s}>
+                                {RECIPIENT_STATUS_LABELS[s]}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="size-8 text-fg-subtle hover:text-danger"
+                          onClick={() => handleRemoveRecipient(r._id)}
+                          aria-label={`Retirer ${name}`}
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+
+              {/* Composeur d'un nouveau destinataire */}
+              <div className="flex flex-col gap-3 rounded-[var(--radius)] border border-border bg-surface-2 p-3">
+                <div
+                  role="radiogroup"
+                  aria-label="Type de destinataire"
+                  className="grid grid-cols-2 gap-2"
+                >
+                  {(['company', 'person'] as RecipientTarget[]).map((key) => {
+                    const Icon = key === 'company' ? Building2 : User
+                    const label =
+                      key === 'company' ? 'Entreprise' : 'Particulier'
+                    const active = recipientTarget === key
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        role="radio"
+                        aria-checked={active}
+                        onClick={() => setRecipientTarget(key)}
+                        className={cn(
+                          'flex h-11 items-center justify-center gap-1.5 rounded-[var(--radius)] border px-2 text-sm font-medium transition-colors',
+                          active
+                            ? 'border-accent bg-accent-soft text-accent'
+                            : 'border-border bg-surface text-fg-muted hover:bg-surface-2',
+                        )}
+                      >
+                        <Icon className="size-4 shrink-0" />
+                        {label}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {recipientTarget === 'company' ? (
+                  <EntityCombobox
+                    items={(companies ?? []).map((c) => ({
+                      value: c._id,
+                      label: c.name,
+                    }))}
+                    value={recipientCompanyId}
+                    onChange={setRecipientCompanyId}
+                    onCreate={handleCreateCompany}
+                    emptyValue="__none__"
+                    placeholder="Choisir une entreprise"
+                    searchPlaceholder="Rechercher ou créer une entreprise..."
+                    noResultLabel="Aucune entreprise trouvée."
+                    createLabel="Créer l'entreprise"
+                  />
+                ) : (
+                  <EntityCombobox
+                    items={(contacts ?? []).map((c) => {
+                      const companyName =
+                        'companyName' in c ? c.companyName : undefined
+                      return {
+                        value: c._id,
+                        label: companyName
+                          ? `${c.name} · ${companyName}`
+                          : c.name,
+                      }
+                    })}
+                    value={recipientContactId}
+                    onChange={setRecipientContactId}
+                    onCreate={handleCreateContact}
+                    emptyValue="__none__"
+                    placeholder="Choisir un contact"
+                    searchPlaceholder="Rechercher ou créer un contact..."
+                    noResultLabel="Aucun contact trouvé."
+                    createLabel="Créer le contact"
+                  />
+                )}
+
+                <Button
+                  type="button"
+                  onClick={handleAddRecipient}
+                  disabled={addingRecipient}
+                >
+                  {addingRecipient ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Plus className="size-4" />
+                  )}
+                  Ajouter le destinataire
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+
+        <DialogFooter className="mt-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={submitting}
+          >
+            Fermer
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

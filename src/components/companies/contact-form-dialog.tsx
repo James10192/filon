@@ -16,6 +16,7 @@ import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
 import { Textarea } from '~/components/ui/textarea'
 import { EntityCombobox } from '~/components/ui/entity-combobox'
+import { TagCombobox } from '~/components/ui/tag-combobox'
 import { toast } from '~/components/ui/sonner'
 
 type Company = Doc<'companies'>
@@ -62,8 +63,12 @@ export function ContactFormDialog({
     email: '',
     phone: '',
     linkedin: '',
+    relationship: '',
+    location: '',
+    referredBy: '',
     notes: '',
   })
+  const [tags, setTags] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -77,8 +82,12 @@ export function ContactFormDialog({
       email: contact?.email ?? '',
       phone: contact?.phone ?? '',
       linkedin: contact?.linkedin ?? '',
+      relationship: contact?.relationship ?? '',
+      location: contact?.location ?? '',
+      referredBy: contact?.referredBy ?? '',
       notes: contact?.notes ?? '',
     })
+    setTags(contact?.tags ?? [])
   }, [open, contact, defaultCompanyId])
 
   function field<K extends keyof typeof form>(key: K) {
@@ -113,7 +122,11 @@ export function ContactFormDialog({
           email: string
           phone: string
           linkedin: string
+          relationship: string
+          location: string
+          referredBy: string
           notes: string
+          tags: string[]
         } = {
           id: contact._id,
           name,
@@ -121,7 +134,11 @@ export function ContactFormDialog({
           email: form.email.trim(),
           phone: form.phone.trim(),
           linkedin: form.linkedin.trim(),
+          relationship: form.relationship.trim(),
+          location: form.location.trim(),
+          referredBy: form.referredBy.trim(),
           notes: form.notes.trim(),
+          tags,
         }
         if (companyId) args.companyId = companyId
         await updateContact(args)
@@ -134,14 +151,22 @@ export function ContactFormDialog({
           email?: string
           phone?: string
           linkedin?: string
+          relationship?: string
+          location?: string
+          referredBy?: string
           notes?: string
+          tags?: string[]
         } = { name }
         if (companyId) args.companyId = companyId
         if (form.role.trim()) args.role = form.role.trim()
         if (form.email.trim()) args.email = form.email.trim()
         if (form.phone.trim()) args.phone = form.phone.trim()
         if (form.linkedin.trim()) args.linkedin = form.linkedin.trim()
+        if (form.relationship.trim()) args.relationship = form.relationship.trim()
+        if (form.location.trim()) args.location = form.location.trim()
+        if (form.referredBy.trim()) args.referredBy = form.referredBy.trim()
         if (form.notes.trim()) args.notes = form.notes.trim()
+        if (tags.length > 0) args.tags = tags
         await createContact(args)
         toast.success('Contact ajoute.')
       }
@@ -159,7 +184,7 @@ export function ContactFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-h-[90dvh] max-w-lg overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {isEdit ? 'Modifier le contact' : 'Ajouter un contact'}
@@ -167,7 +192,7 @@ export function ContactFormDialog({
           <DialogDescription>
             {isEdit
               ? 'Mettez a jour les coordonnees de ce contact.'
-              : 'Enregistrez un interlocuteur, eventuellement rattache a une entreprise.'}
+              : 'Enregistrez une personne, rattachee a une entreprise ou suivie directement (prospect, parrainage).'}
           </DialogDescription>
         </DialogHeader>
 
@@ -246,6 +271,45 @@ export function ContactFormDialog({
               placeholder="https://linkedin.com/in/..."
               inputMode="url"
             />
+          </div>
+
+          <div className="grid gap-4 border-t border-border pt-4 sm:grid-cols-2">
+            <div className="grid gap-1.5">
+              <Label htmlFor="contact-relationship">Relation</Label>
+              <Input
+                id="contact-relationship"
+                value={form.relationship}
+                onChange={field('relationship')}
+                placeholder="Ex. ami, ancien collegue"
+              />
+              <p className="text-xs text-fg-subtle">
+                Comment vous connaissez cette personne.
+              </p>
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="contact-location">Lieu</Label>
+              <Input
+                id="contact-location"
+                value={form.location}
+                onChange={field('location')}
+                placeholder="Ville, quartier"
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-1.5">
+            <Label htmlFor="contact-referred-by">Recommande par</Label>
+            <Input
+              id="contact-referred-by"
+              value={form.referredBy}
+              onChange={field('referredBy')}
+              placeholder="Qui vous a presente cette personne"
+            />
+          </div>
+
+          <div className="grid gap-1.5">
+            <Label htmlFor="contact-tags">Etiquettes</Label>
+            <TagCombobox id="contact-tags" value={tags} onChange={setTags} />
           </div>
 
           <div className="grid gap-1.5">

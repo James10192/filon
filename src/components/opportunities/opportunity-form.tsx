@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
-import { useQuery } from 'convex/react'
-import { Loader2 } from 'lucide-react'
+import { useMutation, useQuery } from 'convex/react'
+import { Building2, Loader2, User } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
+import type { Id } from '../../../convex/_generated/dataModel'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
@@ -14,13 +15,37 @@ import {
   SelectValue,
 } from '~/components/ui/select'
 import { ValueCombobox } from '~/components/ui/value-combobox'
-import { STAGES, STAGE_META, TYPE_META, type OppType, type Stage } from './meta'
+import { EntityCombobox } from '~/components/ui/entity-combobox'
+import { TagCombobox } from '~/components/ui/tag-combobox'
+import { toast } from '~/components/ui/sonner'
+import { cn } from '~/lib/utils'
+import {
+  SOURCE_CHANNELS,
+  SOURCE_META,
+  STAGES,
+  STAGE_META,
+  TARGET_TYPES,
+  TARGET_TYPE_META,
+  TYPE_META,
+  type OppType,
+  type SourceChannel,
+  type Stage,
+  type TargetType,
+} from './meta'
 
 export type OpportunityFormValues = {
   title: string
   type: OppType
   stage: Stage
+  /** Cible suivie : entreprise / particulier / aucune. */
+  targetType?: TargetType
+  companyId?: Id<'companies'>
+  contactId?: Id<'contacts'>
+  /** Source libre historique (retro-compat). */
   source?: string
+  /** Canal d'origine normalise. */
+  sourceChannel?: SourceChannel
+  sourceDetail?: string
   url?: string
   location?: string
   compensation?: string
@@ -34,7 +59,12 @@ export type OpportunityFormSubmit = {
   title: string
   type: OppType
   stage: Stage
+  targetType: TargetType
+  companyId?: Id<'companies'>
+  contactId?: Id<'contacts'>
   source?: string
+  sourceChannel?: SourceChannel
+  sourceDetail?: string
   url?: string
   location?: string
   compensation?: string
@@ -49,10 +79,26 @@ const TYPE_OPTIONS = Object.entries(TYPE_META) as [
   (typeof TYPE_META)[OppType],
 ][]
 
+const NO_SOURCE = '__none__'
+
+const TARGET_ICONS: Record<TargetType, typeof Building2> = {
+  company: Building2,
+  person: User,
+  none: User,
+}
+
 /** Nettoie une string optionnelle : '' -> undefined (jamais d'undefined explicite côté Convex). */
 function clean(value: string): string | undefined {
   const trimmed = value.trim()
   return trimmed.length > 0 ? trimmed : undefined
+}
+
+/** Cible initiale : derive de targetType, sinon de la presence d'un id. */
+function initialTarget(initial?: Partial<OpportunityFormValues>): TargetType {
+  if (initial?.targetType) return initial.targetType
+  if (initial?.companyId) return 'company'
+  if (initial?.contactId) return 'person'
+  return 'none'
 }
 
 export function OpportunityForm({
@@ -73,7 +119,18 @@ export function OpportunityForm({
   const [title, setTitle] = useState(initial?.title ?? '')
   const [type, setType] = useState<OppType>(initial?.type ?? 'job_offer')
   const [stage, setStage] = useState<Stage>(initial?.stage ?? 'lead')
-  const [source, setSource] = useState(initial?.source ?? '')
+  const [targetType, setTargetType] = useState<TargetType>(
+    initialTarget(initial),
+  )
+  const [companyId, setCompanyId] = useState<string>(
+    initial?.companyId ?? '',
+  )
+  const [contactId, setContactId] = useState<string>(initial?.contactId ?? '')
+  const [sourceChannel, setSourceChannel] = useState<string>(
+    initial?.sourceChannel ?? NO_SOURCE,
+  )
+  const [sourceDetail, setSourceDetail] = useState(initial?.sourceDetail ?? '')
+  const [source] = useState(initial?.source ?? '')
   const [url, setUrl] = useState(initial?.url ?? '')
   const [location, setLocation] = useState(initial?.location ?? '')
   const [compensation, setCompensation] = useState(initial?.compensation ?? '')
@@ -81,19 +138,43 @@ export function OpportunityForm({
   const [nextActionAt, setNextActionAt] = useState(
     initial?.nextActionAt?.slice(0, 10) ?? '',
   )
-  const [tags, setTags] = useState((initial?.tags ?? []).join(', '))
+  const [tags, setTags] = useState<string[]>(initial?.tags ?? [])
   const [description, setDescription] = useState(initial?.description ?? '')
   const [titleError, setTitleError] = useState<string | null>(null)
 
+  const companies = useQuery(api.companies.list, {})
+  const contacts = useQuery(api.contacts.list, {})
+  const createCompany = useMutation(api.companies.create)
+  const createContact = useMutation(api.contacts.create)
+
   // Suggestions derivees des opportunites existantes (coherence des donnees).
   const existing = useQuery(api.opportunities.list, {})
-  const suggestions = useMemo(() => {
-    const list = existing ?? []
-    return {
-      source: list.map((o) => o.source ?? '').filter(Boolean),
-      location: list.map((o) => o.location ?? '').filter(Boolean),
+  const locationSuggestions = useMemo(
+    () => (existing ?? []).map((o) => o.location ?? '').filter(Boolean),
+    [existing],
+  )
+
+  async function handleCreateCompany(name: string) {
+    try {
+      const id = await createCompany({ name })
+      toast.success('Entreprise créée.')
+      return id as string
+    } catch {
+      toast.error("L'entreprise n'a pas pu être créée.")
+      return null
     }
-  }, [existing])
+  }
+
+  async function handleCreateContact(name: string) {
+    try {
+      const id = await createContact({ name })
+      toast.success('Contact créé.')
+      return id as string
+    } catch {
+      toast.error("Le contact n'a pas pu être créé.")
+      return null
+    }
+  }
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
@@ -108,107 +189,216 @@ export function OpportunityForm({
       title: title.trim(),
       type,
       stage,
+      targetType,
       source: clean(source),
+      sourceChannel:
+        sourceChannel !== NO_SOURCE
+          ? (sourceChannel as SourceChannel)
+          : undefined,
+      sourceDetail: clean(sourceDetail),
       url: clean(url),
       location: clean(location),
       compensation: clean(compensation),
       deadline: deadline ? deadline : undefined,
       nextActionAt: nextActionAt ? nextActionAt : undefined,
-      tags: tags
-        .split(',')
-        .map((t) => t.trim())
-        .filter(Boolean),
+      tags,
       description: clean(description),
+    }
+    // La cible n'est rattachee que si elle correspond au type choisi.
+    if (targetType === 'company' && companyId) {
+      values.companyId = companyId as Id<'companies'>
+    }
+    if (targetType === 'person' && contactId) {
+      values.contactId = contactId as Id<'contacts'>
     }
     void onSubmit(values)
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="opp-title">Intitulé</Label>
-        <Input
-          id="opp-title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Ex. Développeur React senior"
-          aria-invalid={titleError ? true : undefined}
-          autoFocus
-        />
-        {titleError && <p className="text-xs text-danger">{titleError}</p>}
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+      {/* ---------------------------------------------------------------- */}
+      {/* Section : l'essentiel */}
+      {/* ---------------------------------------------------------------- */}
+      <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="opp-type">Type</Label>
-          <Select value={type} onValueChange={(v) => setType(v as OppType)}>
-            <SelectTrigger id="opp-type">
-              <SelectValue placeholder="Choisir un type" />
-            </SelectTrigger>
-            <SelectContent>
-              {TYPE_OPTIONS.map(([key, meta]) => (
-                <SelectItem key={key} value={key}>
-                  {meta.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Label htmlFor="opp-title">Intitulé</Label>
+          <Input
+            id="opp-title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Ex. Développeur React senior"
+            aria-invalid={titleError ? true : undefined}
+            autoFocus
+          />
+          {titleError && <p className="text-xs text-danger">{titleError}</p>}
         </div>
 
-        {withStage && (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="opp-stage">Étape</Label>
-            <Select value={stage} onValueChange={(v) => setStage(v as Stage)}>
-              <SelectTrigger id="opp-stage">
-                <SelectValue placeholder="Choisir une étape" />
+            <Label htmlFor="opp-type">Type</Label>
+            <Select value={type} onValueChange={(v) => setType(v as OppType)}>
+              <SelectTrigger id="opp-type">
+                <SelectValue placeholder="Choisir un type" />
               </SelectTrigger>
               <SelectContent>
-                {STAGES.map((key) => (
+                {TYPE_OPTIONS.map(([key, meta]) => (
                   <SelectItem key={key} value={key}>
-                    {STAGE_META[key].label}
+                    {meta.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
+
+          {withStage && (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="opp-stage">Étape</Label>
+              <Select value={stage} onValueChange={(v) => setStage(v as Stage)}>
+                <SelectTrigger id="opp-stage">
+                  <SelectValue placeholder="Choisir une étape" />
+                </SelectTrigger>
+                <SelectContent>
+                  {STAGES.map((key) => (
+                    <SelectItem key={key} value={key}>
+                      {STAGE_META[key].label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ---------------------------------------------------------------- */}
+      {/* Section : Cible */}
+      {/* ---------------------------------------------------------------- */}
+      <fieldset className="flex flex-col gap-3 border-t border-border pt-4">
+        <legend className="text-sm font-medium text-fg">Cible</legend>
+        <p className="-mt-1 text-xs text-fg-muted">
+          Qui suivez-vous pour cette opportunité&nbsp;?
+        </p>
+
+        <div
+          role="radiogroup"
+          aria-label="Type de cible"
+          className="grid grid-cols-3 gap-2"
+        >
+          {TARGET_TYPES.map((key) => {
+            const meta = TARGET_TYPE_META[key]
+            const Icon = TARGET_ICONS[key]
+            const active = targetType === key
+            return (
+              <button
+                key={key}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                onClick={() => setTargetType(key)}
+                className={cn(
+                  'flex h-11 items-center justify-center gap-1.5 rounded-[var(--radius)] border px-2 text-sm font-medium transition-colors',
+                  active
+                    ? 'border-accent bg-accent-soft text-accent'
+                    : 'border-border bg-surface text-fg-muted hover:bg-surface-2',
+                )}
+              >
+                <Icon className="size-4 shrink-0" />
+                <span className="truncate">{meta.label}</span>
+              </button>
+            )
+          })}
+        </div>
+
+        {targetType === 'company' && (
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="opp-company">Entreprise</Label>
+            <EntityCombobox
+              id="opp-company"
+              items={(companies ?? []).map((c) => ({
+                value: c._id,
+                label: c.name,
+              }))}
+              value={companyId || '__none__'}
+              onChange={(v) => setCompanyId(v === '__none__' ? '' : v)}
+              onCreate={handleCreateCompany}
+              emptyValue="__none__"
+              emptyLabel="Aucune entreprise"
+              placeholder="Rattacher une entreprise"
+              searchPlaceholder="Rechercher ou créer une entreprise..."
+              noResultLabel="Aucune entreprise trouvée."
+              createLabel="Créer l'entreprise"
+            />
+          </div>
         )}
-      </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="opp-compensation">Montant estimé</Label>
-          <Input
-            id="opp-compensation"
-            value={compensation}
-            onChange={(e) => setCompensation(e.target.value)}
-            placeholder="Ex. 45 000"
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="opp-location">Lieu</Label>
-          <ValueCombobox
-            id="opp-location"
-            value={location}
-            onChange={setLocation}
-            suggestions={suggestions.location}
-            placeholder="Remote, Abidjan, hybride..."
-            searchPlaceholder="Lieu..."
-          />
-        </div>
-      </div>
+        {targetType === 'person' && (
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="opp-contact">Particulier</Label>
+            <EntityCombobox
+              id="opp-contact"
+              items={(contacts ?? []).map((c) => {
+                const companyName =
+                  'companyName' in c ? c.companyName : undefined
+                return {
+                  value: c._id,
+                  label: companyName ? `${c.name} · ${companyName}` : c.name,
+                }
+              })}
+              value={contactId || '__none__'}
+              onChange={(v) => setContactId(v === '__none__' ? '' : v)}
+              onCreate={handleCreateContact}
+              emptyValue="__none__"
+              emptyLabel="Aucun contact"
+              placeholder="Rattacher un contact"
+              searchPlaceholder="Rechercher ou créer un contact..."
+              noResultLabel="Aucun contact trouvé."
+              createLabel="Créer le contact"
+            />
+            <p className="text-xs text-fg-subtle">
+              Une personne suivie directement (prospect, parrainage). Renseignez
+              ses coordonnées depuis le carnet de contacts.
+            </p>
+          </div>
+        )}
+      </fieldset>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="opp-source">Source</Label>
-          <ValueCombobox
-            id="opp-source"
-            value={source}
-            onChange={setSource}
-            suggestions={suggestions.source}
-            placeholder="LinkedIn, site, recommandation..."
-            searchPlaceholder="Source..."
-          />
+      {/* ---------------------------------------------------------------- */}
+      {/* Section : Contexte / Source */}
+      {/* ---------------------------------------------------------------- */}
+      <fieldset className="flex flex-col gap-3 border-t border-border pt-4">
+        <legend className="text-sm font-medium text-fg">Origine</legend>
+        <p className="-mt-1 text-xs text-fg-muted">
+          D’où vient cette piste&nbsp;?
+        </p>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="opp-source-channel">Source</Label>
+            <Select value={sourceChannel} onValueChange={setSourceChannel}>
+              <SelectTrigger id="opp-source-channel">
+                <SelectValue placeholder="Choisir une source" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NO_SOURCE}>Non précisée</SelectItem>
+                {SOURCE_CHANNELS.map((key) => (
+                  <SelectItem key={key} value={key}>
+                    {SOURCE_META[key].label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="opp-source-detail">Précision</Label>
+            <Input
+              id="opp-source-detail"
+              value={sourceDetail}
+              onChange={(e) => setSourceDetail(e.target.value)}
+              placeholder="Ex. Salon SARA 2026, recommandé par Awa"
+            />
+          </div>
         </div>
+
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="opp-url">Lien</Label>
           <Input
@@ -217,51 +407,80 @@ export function OpportunityForm({
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://..."
+            inputMode="url"
           />
         </div>
-      </div>
+      </fieldset>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      {/* ---------------------------------------------------------------- */}
+      {/* Section : Détails */}
+      {/* ---------------------------------------------------------------- */}
+      <fieldset className="flex flex-col gap-3 border-t border-border pt-4">
+        <legend className="text-sm font-medium text-fg">Détails</legend>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="opp-compensation">Montant estimé</Label>
+            <Input
+              id="opp-compensation"
+              value={compensation}
+              onChange={(e) => setCompensation(e.target.value)}
+              placeholder="Ex. 800 000 XOF/mois"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="opp-location">Lieu</Label>
+            <ValueCombobox
+              id="opp-location"
+              value={location}
+              onChange={setLocation}
+              suggestions={locationSuggestions}
+              placeholder="Remote, Abidjan, hybride..."
+              searchPlaceholder="Lieu..."
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="opp-next">Prochaine relance</Label>
+            <Input
+              id="opp-next"
+              type="date"
+              value={nextActionAt}
+              onChange={(e) => setNextActionAt(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="opp-deadline">Échéance</Label>
+            <Input
+              id="opp-deadline"
+              type="date"
+              value={deadline}
+              onChange={(e) => setDeadline(e.target.value)}
+            />
+          </div>
+        </div>
+
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="opp-next">Prochaine relance</Label>
-          <Input
-            id="opp-next"
-            type="date"
-            value={nextActionAt}
-            onChange={(e) => setNextActionAt(e.target.value)}
+          <Label htmlFor="opp-description">Notes</Label>
+          <Textarea
+            id="opp-description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Détails, contexte, points à suivre"
+            rows={3}
           />
         </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="opp-deadline">Échéance</Label>
-          <Input
-            id="opp-deadline"
-            type="date"
-            value={deadline}
-            onChange={(e) => setDeadline(e.target.value)}
-          />
-        </div>
-      </div>
+      </fieldset>
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="opp-tags">Étiquettes</Label>
-        <Input
-          id="opp-tags"
-          value={tags}
-          onChange={(e) => setTags(e.target.value)}
-          placeholder="Séparées par des virgules"
-        />
-      </div>
-
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="opp-description">Notes</Label>
-        <Textarea
-          id="opp-description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Détails, contexte, points à suivre"
-          rows={3}
-        />
-      </div>
+      {/* ---------------------------------------------------------------- */}
+      {/* Section : Étiquettes */}
+      {/* ---------------------------------------------------------------- */}
+      <fieldset className="flex flex-col gap-3 border-t border-border pt-4">
+        <legend className="text-sm font-medium text-fg">Étiquettes</legend>
+        <TagCombobox id="opp-tags" value={tags} onChange={setTags} />
+      </fieldset>
 
       <div className="flex items-center justify-end gap-2 pt-1">
         {onCancel && (

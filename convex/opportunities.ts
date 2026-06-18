@@ -1,7 +1,7 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import type { Doc, Id } from './_generated/dataModel'
-import type { MutationCtx } from './lib/withUser'
+import type { MutationCtx, QueryCtx } from './lib/withUser'
 import { currentPlan, requireUser } from './lib/withUser'
 import {
   ACTIVE_STAGES,
@@ -10,6 +10,7 @@ import {
   notFoundError,
   planLimitError,
 } from './lib/plan'
+import { ensureTagsForUser } from './tags'
 
 /**
  * Domaine opportunities · coeur du produit.
@@ -46,6 +47,24 @@ const importSourceValidator = v.union(
   v.literal('linkedin'),
   v.literal('autre'),
   v.literal('manuel'),
+)
+
+const targetTypeValidator = v.union(
+  v.literal('company'),
+  v.literal('person'),
+  v.literal('none'),
+)
+
+const sourceChannelValidator = v.union(
+  v.literal('job_board'),
+  v.literal('referral'),
+  v.literal('event'),
+  v.literal('networking'),
+  v.literal('salon'),
+  v.literal('social'),
+  v.literal('inbound'),
+  v.literal('cold'),
+  v.literal('other'),
 )
 
 type Stage = Doc<'opportunities'>['stage']
@@ -115,6 +134,69 @@ async function logStatusChange(
   })
 }
 
+/**
+ * Type des opportunites enrichies renvoyees par les queries : la ligne brute,
+ * plus le nom de la cible resolu (companyName / contactName) et le `targetType`
+ * effectif (derive de companyId/contactId si non explicitement stocke).
+ */
+type EnrichedOpportunity = Doc<'opportunities'> & {
+  companyName?: string
+  contactName?: string
+  effectiveTargetType: 'company' | 'person' | 'none'
+}
+
+/**
+ * Enrichit une liste d'opportunites (deja scopees au user) avec le nom de la
+ * cible. Resout entreprises et contacts par lots avec un cache local (pas de
+ * lecture redondante). `effectiveTargetType` derive du `targetType` stocke, ou a
+ * defaut de la presence d'un companyId/contactId.
+ */
+async function enrichTargets(
+  ctx: QueryCtx,
+  userId: string,
+  rows: Doc<'opportunities'>[],
+): Promise<EnrichedOpportunity[]> {
+  const companyNames = new Map<Id<'companies'>, string | undefined>()
+  const contactNames = new Map<Id<'contacts'>, string | undefined>()
+
+  return Promise.all(
+    rows.map(async (row) => {
+      let companyName: string | undefined
+      let contactName: string | undefined
+
+      if (row.companyId) {
+        if (companyNames.has(row.companyId)) {
+          companyName = companyNames.get(row.companyId)
+        } else {
+          const company = await ctx.db.get(row.companyId)
+          companyName =
+            company && company.userId === userId ? company.name : undefined
+          companyNames.set(row.companyId, companyName)
+        }
+      }
+      if (row.contactId) {
+        if (contactNames.has(row.contactId)) {
+          contactName = contactNames.get(row.contactId)
+        } else {
+          const contact = await ctx.db.get(row.contactId)
+          contactName =
+            contact && contact.userId === userId ? contact.name : undefined
+          contactNames.set(row.contactId, contactName)
+        }
+      }
+
+      const effectiveTargetType: 'company' | 'person' | 'none' =
+        row.targetType ??
+        (row.companyId ? 'company' : row.contactId ? 'person' : 'none')
+
+      const enriched: EnrichedOpportunity = { ...row, effectiveTargetType }
+      if (companyName) enriched.companyName = companyName
+      if (contactName) enriched.contactName = contactName
+      return enriched
+    }),
+  )
+}
+
 export const list = query({
   args: {
     stage: v.optional(stageValidator),
@@ -150,18 +232,22 @@ export const list = query({
     if (args.type && args.stage) {
       rows = rows.filter((o) => o.type === args.type)
     }
-    const search = args.search?.trim().toLowerCase()
-    if (search) {
-      rows = rows.filter(
-        (o) =>
-          o.title.toLowerCase().includes(search) ||
-          (o.compensation?.toLowerCase().includes(search) ?? false) ||
-          (o.location?.toLowerCase().includes(search) ?? false) ||
-          o.tags.some((t) => t.toLowerCase().includes(search)),
-      )
-    }
+    const enriched = await enrichTargets(ctx, userId, rows)
 
-    return rows.sort((a, b) => b.createdAt - a.createdAt)
+    const search = args.search?.trim().toLowerCase()
+    const filtered = search
+      ? enriched.filter(
+          (o) =>
+            o.title.toLowerCase().includes(search) ||
+            (o.compensation?.toLowerCase().includes(search) ?? false) ||
+            (o.location?.toLowerCase().includes(search) ?? false) ||
+            (o.companyName?.toLowerCase().includes(search) ?? false) ||
+            (o.contactName?.toLowerCase().includes(search) ?? false) ||
+            o.tags.some((t) => t.toLowerCase().includes(search)),
+        )
+      : enriched
+
+    return filtered.sort((a, b) => b.createdAt - a.createdAt)
   },
 })
 
@@ -174,9 +260,11 @@ export const board = query({
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .collect()
 
-    const grouped = {} as Record<Stage, Doc<'opportunities'>[]>
+    const enriched = await enrichTargets(ctx, userId, rows)
+
+    const grouped = {} as Record<Stage, EnrichedOpportunity[]>
     for (const stage of STAGES) grouped[stage] = []
-    for (const row of rows) grouped[row.stage].push(row)
+    for (const row of enriched) grouped[row.stage].push(row)
     for (const stage of STAGES) {
       grouped[stage].sort((a, b) => a.order - b.order)
     }
@@ -259,11 +347,22 @@ export const get = query({
 
     const company = doc.companyId ? await ctx.db.get(doc.companyId) : null
     const contact = doc.contactId ? await ctx.db.get(doc.contactId) : null
+    const ownedCompany =
+      company && company.userId === userId ? company : undefined
+    const ownedContact =
+      contact && contact.userId === userId ? contact : undefined
+
+    const effectiveTargetType: 'company' | 'person' | 'none' =
+      doc.targetType ??
+      (doc.companyId ? 'company' : doc.contactId ? 'person' : 'none')
 
     return {
       ...doc,
-      company: company && company.userId === userId ? company : undefined,
-      contact: contact && contact.userId === userId ? contact : undefined,
+      company: ownedCompany,
+      contact: ownedContact,
+      companyName: ownedCompany?.name,
+      contactName: ownedContact?.name,
+      effectiveTargetType,
     }
   },
 })
@@ -274,7 +373,10 @@ export const create = mutation({
     type: typeValidator,
     companyId: v.optional(v.id('companies')),
     contactId: v.optional(v.id('contacts')),
+    targetType: v.optional(targetTypeValidator),
     source: v.optional(v.string()),
+    sourceChannel: v.optional(sourceChannelValidator),
+    sourceDetail: v.optional(v.string()),
     url: v.optional(v.string()),
     location: v.optional(v.string()),
     compensation: v.optional(v.string()),
@@ -292,6 +394,20 @@ export const create = mutation({
   handler: async (ctx, args) => {
     const { userId } = await requireUser(ctx)
     const stage: Stage = args.stage ?? 'lead'
+
+    // Verifie la propriete des cibles fournies (anti-fuite cross-tenant).
+    if (args.companyId) {
+      const company = await ctx.db.get(args.companyId)
+      if (!company || company.userId !== userId) {
+        throw forbiddenError('Non autorisé')
+      }
+    }
+    if (args.contactId) {
+      const contact = await ctx.db.get(args.contactId)
+      if (!contact || contact.userId !== userId) {
+        throw forbiddenError('Non autorisé')
+      }
+    }
 
     // Gating freemium : plafond d'opportunités actives sur le palier gratuit.
     // On ne compte que les stages actifs (les gagnées/perdues ne pèsent pas) et
@@ -318,6 +434,13 @@ export const create = mutation({
     const now = Date.now()
     const order = await nextOrderInStage(ctx, userId, stage)
 
+    // Etiquettes : on garantit leur presence au catalogue (idempotent) et on
+    // stocke les noms normalises dans l'array `tags` de l'opportunite.
+    const tags =
+      args.tags && args.tags.length > 0
+        ? await ensureTagsForUser(ctx, userId, args.tags)
+        : []
+
     // Construction dynamique : jamais `undefined` dans l'insert.
     const doc: Record<string, unknown> = {
       userId,
@@ -325,14 +448,17 @@ export const create = mutation({
       type: args.type,
       stage,
       priority: args.priority ?? 'medium',
-      tags: args.tags ?? [],
+      tags,
       order,
       createdAt: now,
       updatedAt: now,
     }
     if (args.companyId !== undefined) doc.companyId = args.companyId
     if (args.contactId !== undefined) doc.contactId = args.contactId
+    if (args.targetType !== undefined) doc.targetType = args.targetType
     if (args.source !== undefined) doc.source = args.source
+    if (args.sourceChannel !== undefined) doc.sourceChannel = args.sourceChannel
+    if (args.sourceDetail !== undefined) doc.sourceDetail = args.sourceDetail
     if (args.url !== undefined) doc.url = args.url
     if (args.location !== undefined) doc.location = args.location
     if (args.compensation !== undefined) doc.compensation = args.compensation
@@ -372,7 +498,10 @@ export const update = mutation({
     type: v.optional(typeValidator),
     companyId: v.optional(v.id('companies')),
     contactId: v.optional(v.id('contacts')),
+    targetType: v.optional(targetTypeValidator),
     source: v.optional(v.string()),
+    sourceChannel: v.optional(sourceChannelValidator),
+    sourceDetail: v.optional(v.string()),
     url: v.optional(v.string()),
     location: v.optional(v.string()),
     compensation: v.optional(v.string()),
@@ -387,10 +516,28 @@ export const update = mutation({
     const { userId } = await requireUser(ctx)
     await ownedOpportunity(ctx, userId, args.id)
 
+    // Verifie la propriete des cibles fournies (anti-fuite cross-tenant).
+    if (args.companyId !== undefined) {
+      const company = await ctx.db.get(args.companyId)
+      if (!company || company.userId !== userId) {
+        throw forbiddenError('Non autorisé')
+      }
+    }
+    if (args.contactId !== undefined) {
+      const contact = await ctx.db.get(args.contactId)
+      if (!contact || contact.userId !== userId) {
+        throw forbiddenError('Non autorisé')
+      }
+    }
+
     const patch: Record<string, unknown> = { updatedAt: Date.now() }
-    const { id, ...fields } = args
+    const { id, tags, ...fields } = args
     for (const [key, value] of Object.entries(fields)) {
       if (value !== undefined) patch[key] = value
+    }
+    // Etiquettes : cataloguer (idempotent) avant de stocker les noms normalises.
+    if (tags !== undefined) {
+      patch.tags = await ensureTagsForUser(ctx, userId, tags)
     }
     await ctx.db.patch(
       id,

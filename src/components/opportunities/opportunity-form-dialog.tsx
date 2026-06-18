@@ -36,9 +36,14 @@ export function OpportunityFormDialog({
         title: values.title,
         type: values.type,
         stage: values.stage,
+        targetType: values.targetType,
         tags: values.tags,
       }
+      if (values.companyId) args.companyId = values.companyId
+      if (values.contactId) args.contactId = values.contactId
       if (values.source) args.source = values.source
+      if (values.sourceChannel) args.sourceChannel = values.sourceChannel
+      if (values.sourceDetail) args.sourceDetail = values.sourceDetail
       if (values.url) args.url = values.url
       if (values.location) args.location = values.location
       if (values.compensation) args.compensation = values.compensation
@@ -68,7 +73,7 @@ export function OpportunityFormDialog({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Ajouter une opportunité</DialogTitle>
           <DialogDescription>

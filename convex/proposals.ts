@@ -2,6 +2,7 @@ import { v } from 'convex/values'
 import type { Doc, Id } from './_generated/dataModel'
 import { mutation, query } from './_generated/server'
 import { requireUser, type MutationCtx, type QueryCtx } from './lib/withUser'
+import { forbiddenError, notFoundError } from './lib/plan'
 
 /**
  * Domaine : propositions spontanees / demarchage (`api.proposals.*`).
@@ -27,10 +28,10 @@ async function getOwnedProposal(
 ): Promise<Doc<'proposals'>> {
   const proposal = await ctx.db.get(id)
   if (!proposal) {
-    throw new Error('Introuvable')
+    throw notFoundError('Introuvable')
   }
   if (proposal.userId !== userId) {
-    throw new Error('Non autorise')
+    throw forbiddenError('Non autorisé')
   }
   return proposal
 }
@@ -100,6 +101,65 @@ export const get = query({
 })
 
 /**
+ * `api.proposals.withRecipients` : detail d'une proposition + la LISTE de ses
+ * destinataires (entreprises et/ou particuliers), noms de cible resolus et
+ * statuts individuels. C'est la vue multi-cible du modele : la proposition est
+ * une offre reutilisable, chaque destinataire est suivi separement. Garde la
+ * retro-compat : `companyId`/`company` de la proposition restent exposes.
+ */
+export const withRecipients = query({
+  args: { id: v.id('proposals') },
+  handler: async (ctx, args) => {
+    const { userId } = await requireUser(ctx)
+    const proposal = await getOwnedProposal(ctx, userId, args.id)
+
+    let company: Doc<'companies'> | undefined
+    if (proposal.companyId) {
+      const found = await ctx.db.get(proposal.companyId)
+      if (found && found.userId === userId) company = found
+    }
+
+    const recipientRows = await ctx.db
+      .query('proposalRecipients')
+      .withIndex('by_proposal', (q) => q.eq('proposalId', args.id))
+      .collect()
+    const owned = recipientRows.filter((r) => r.userId === userId)
+    owned.sort((a, b) => a.createdAt - b.createdAt)
+
+    // Resolution des noms de cible (cache local, scope garanti par userId).
+    const companyNames = new Map<Id<'companies'>, string | undefined>()
+    const contactNames = new Map<Id<'contacts'>, string | undefined>()
+    const recipients = await Promise.all(
+      owned.map(async (r) => {
+        let targetName: string | undefined
+        if (r.targetType === 'company' && r.companyId) {
+          if (companyNames.has(r.companyId)) {
+            targetName = companyNames.get(r.companyId)
+          } else {
+            const found = await ctx.db.get(r.companyId)
+            targetName =
+              found && found.userId === userId ? found.name : undefined
+            companyNames.set(r.companyId, targetName)
+          }
+        } else if (r.targetType === 'person' && r.contactId) {
+          if (contactNames.has(r.contactId)) {
+            targetName = contactNames.get(r.contactId)
+          } else {
+            const found = await ctx.db.get(r.contactId)
+            targetName =
+              found && found.userId === userId ? found.name : undefined
+            contactNames.set(r.contactId, targetName)
+          }
+        }
+        return targetName ? { ...r, targetName } : { ...r }
+      }),
+    )
+
+    return { ...proposal, company, recipients }
+  },
+})
+
+/**
  * Cree une proposition. Defaults : `status='draft'`, `currency='XOF'`.
  * Si `companyId` fourni, verifie qu'elle appartient au user.
  */
@@ -118,7 +178,7 @@ export const create = mutation({
     if (args.companyId) {
       const company = await ctx.db.get(args.companyId)
       if (!company || company.userId !== userId) {
-        throw new Error('Non autorise')
+        throw forbiddenError('Non autorisé')
       }
     }
 
@@ -174,7 +234,7 @@ export const update = mutation({
     if (args.companyId) {
       const company = await ctx.db.get(args.companyId)
       if (!company || company.userId !== userId) {
-        throw new Error('Non autorise')
+        throw forbiddenError('Non autorisé')
       }
     }
 
