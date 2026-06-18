@@ -278,7 +278,7 @@ export function ContactFormDialog({
             />
           </div>
 
-          <div className="grid gap-4 border-t border-border pt-4 sm:grid-cols-2">
+          <div className="grid items-start gap-4 border-t border-border pt-4 sm:grid-cols-2">
             <div className="grid gap-1.5">
               <Label htmlFor="contact-relationship">
                 {m.carnet_field_relationship()}
