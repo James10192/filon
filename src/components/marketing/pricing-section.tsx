@@ -120,7 +120,7 @@ function PublicCta({
   if (planKey === 'team') {
     return (
       <Button variant="outline" className="w-full" asChild>
-        <a href="mailto:contact@filon.ci?subject=Filon%20%C3%89quipe">
+        <a href="mailto:djedjelipatrick@gmail.com?subject=Filon%20%C3%89quipe">
           {m.pricing_cta_contact()}
         </a>
       </Button>

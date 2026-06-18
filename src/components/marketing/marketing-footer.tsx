@@ -4,7 +4,8 @@ import { m } from '~/lib/paraglide/messages'
 
 const DOCS_URL = 'https://filon-docs.vercel.app'
 const GITHUB_URL = 'https://github.com/James10192'
-const EMAIL = 'Marcel-_12@outlook.fr'
+const EMAIL = 'djedjelipatrick@gmail.com'
+const WHATSAPP_URL = 'https://wa.me/2250141540178'
 
 type FooterLink = { label: string; to?: string; href?: string; hash?: string }
 
@@ -34,6 +35,7 @@ export function MarketingFooter() {
         { label: m.footer_link_login(), to: '/connexion' },
         { label: m.footer_link_signup(), to: '/inscription' },
         { label: m.footer_link_email(), href: `mailto:${EMAIL}` },
+        { label: 'WhatsApp', href: WHATSAPP_URL },
       ],
     },
     {

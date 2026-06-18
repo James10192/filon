@@ -23,7 +23,7 @@ export function LandingCreator() {
     {
       icon: Mail,
       label: m.creator_link_email(),
-      href: 'mailto:Marcel-_12@outlook.fr',
+      href: 'mailto:djedjelipatrick@gmail.com',
     },
   ]
   return (
