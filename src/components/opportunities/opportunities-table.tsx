@@ -1,10 +1,11 @@
 import { useMemo } from 'react'
-import type { Doc, Id } from '../../../convex/_generated/dataModel'
+import type { Id } from '../../../convex/_generated/dataModel'
 import { DataTable } from '~/components/data-table'
 import { OpportunityCard } from './opportunity-card'
 import { buildOpportunityColumns } from './opportunity-columns'
+import type { EnrichedOpportunity } from './types'
 
-type Opportunity = Doc<'opportunities'>
+type Opportunity = EnrichedOpportunity
 
 /**
  * Tableau dense des opportunites (style Linear / Attio) sur TanStack Table.
@@ -15,18 +16,16 @@ type Opportunity = Doc<'opportunities'>
  */
 export function OpportunitiesTable({
   items,
-  companyNames,
   onSelect,
   selectedId,
 }: {
   items: Opportunity[]
-  companyNames: Map<string, string>
   onSelect: (id: Id<'opportunities'>) => void
   selectedId?: Id<'opportunities'> | null
 }) {
   const columns = useMemo(
-    () => buildOpportunityColumns({ companyNames, onOpen: onSelect }),
-    [companyNames, onSelect],
+    () => buildOpportunityColumns({ onOpen: onSelect }),
+    [onSelect],
   )
 
   return (

@@ -17,6 +17,7 @@ import { Button } from '~/components/ui/button'
 import { Badge } from '~/components/ui/badge'
 import { Skeleton } from '~/components/ui/skeleton'
 import { cn } from '~/lib/utils'
+import { EntityDocuments } from '~/components/shared/entity-documents'
 import { ContactRow } from './contact-row'
 
 type Company = Doc<'companies'>
@@ -180,6 +181,13 @@ export function CompanyCard({
                 </Button>
               </div>
             )}
+
+            <div className="mt-4 border-t border-border pt-4">
+              <EntityDocuments
+                entityType="company"
+                entityId={String(company._id)}
+              />
+            </div>
           </div>
         )}
       </div>

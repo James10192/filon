@@ -22,7 +22,7 @@ export function ProposalDetailPane({
   onClose: () => void
   showCloseButton?: boolean
 }) {
-  const proposal = useQuery(api.proposals.get, { id: proposalId })
+  const proposal = useQuery(api.proposals.withRecipients, { id: proposalId })
 
   return (
     <div className="flex h-full flex-col">

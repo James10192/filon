@@ -17,12 +17,15 @@ import {
   DataTableEmpty,
   type FilterChip,
 } from '~/components/data-table'
+import { ExportButton } from '~/components/billing/export-button'
+import { PROPOSAL_COLUMNS } from '~/lib/export'
 import { ProposalsTable } from '../proposals-table'
 import {
   PROPOSAL_STATUSES,
   STATUS_LABELS,
   type ProposalStatus,
 } from '../proposal-status'
+import { useRecipientSummaries } from '../use-recipient-summaries'
 
 type ProposalRow = Doc<'proposals'> & { companyName?: string }
 type StatusFilter = 'all' | ProposalStatus
@@ -62,6 +65,7 @@ export function ListView({
   const proposals = useQuery(api.proposals.list, {}) as
     | ProposalRow[]
     | undefined
+  const recipientSummaries = useRecipientSummaries()
 
   const filtered = useMemo(() => {
     if (!proposals) return undefined
@@ -109,6 +113,13 @@ export function ListView({
         searchLabel="Rechercher une proposition"
         chips={chips}
         onClearAll={reset}
+        actions={
+          <ExportButton
+            base="propositions"
+            rows={filtered ?? []}
+            columns={PROPOSAL_COLUMNS}
+          />
+        }
       >
         <Select
           value={status}
@@ -160,6 +171,7 @@ export function ListView({
       ) : (
         <ProposalsTable
           items={filtered}
+          recipientSummaries={recipientSummaries}
           onSelect={onSelect}
           selectedId={selectedId}
           onEdit={onEdit}

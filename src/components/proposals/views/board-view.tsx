@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useQuery } from 'convex/react'
-import { Building2, Plus, Send } from 'lucide-react'
+import { Building2, Plus, Send, Users } from 'lucide-react'
 import { api } from '../../../../convex/_generated/api'
 import type { Doc, Id } from '../../../../convex/_generated/dataModel'
 import { Button } from '~/components/ui/button'
@@ -11,6 +11,11 @@ import {
   formatAmount,
   type ProposalStatus,
 } from '../proposal-status'
+import {
+  recipientSummaryLabel,
+  type RecipientSummary,
+} from '../recipient-status'
+import { useRecipientSummaries } from '../use-recipient-summaries'
 
 type ProposalRow = Doc<'proposals'> & { companyName?: string }
 
@@ -39,6 +44,7 @@ export function BoardView({
   const proposals = useQuery(api.proposals.list, {}) as
     | ProposalRow[]
     | undefined
+  const recipientSummaries = useRecipientSummaries()
 
   const columns = useMemo(() => {
     const map: Record<ProposalStatus, ProposalRow[]> = {
@@ -91,6 +97,7 @@ export function BoardView({
                     <BoardCard
                       key={p._id}
                       proposal={p}
+                      recipientSummary={recipientSummaries?.get(p._id)}
                       selected={selectedId === p._id}
                       onSelect={() => onSelect(p._id)}
                     />
@@ -107,14 +114,19 @@ export function BoardView({
 
 function BoardCard({
   proposal,
+  recipientSummary,
   selected,
   onSelect,
 }: {
   proposal: ProposalRow
+  recipientSummary?: RecipientSummary
   selected: boolean
   onSelect: () => void
 }) {
   const amount = formatAmount(proposal.amount, proposal.currency)
+  const recipientLabel = recipientSummary
+    ? recipientSummaryLabel(recipientSummary)
+    : null
   return (
     <button
       type="button"
@@ -128,7 +140,12 @@ function BoardCard({
         {proposal.title}
       </span>
       <span className="flex items-center gap-1.5 truncate text-xs text-fg-subtle">
-        {proposal.companyName ? (
+        {recipientLabel ? (
+          <>
+            <Users className="size-3 shrink-0" />
+            <span className="truncate">{recipientLabel}</span>
+          </>
+        ) : proposal.companyName ? (
           <>
             <Building2 className="size-3 shrink-0" />
             <span className="truncate">{proposal.companyName}</span>

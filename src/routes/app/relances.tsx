@@ -10,6 +10,8 @@ import {
   type Followup,
 } from '~/components/relances/followup-item'
 import { NewFollowupDialog } from '~/components/relances/new-followup-dialog'
+import { ExportButton } from '~/components/billing/export-button'
+import { FOLLOWUP_COLUMNS } from '~/lib/export'
 
 export const Route = createFileRoute('/app/relances')({
   component: RelancesPage,
@@ -31,7 +33,25 @@ function RelancesPage() {
       <PageToolbar
         title="Relances"
         subtitle="Ce qu'il faut relancer, classé par échéance. Ne laissez plus filer une piste faute de suivi."
-        actions={<NewFollowupDialog />}
+        actions={
+          <div className="flex items-center gap-2">
+            <ExportButton
+              base="relances"
+              rows={
+                groups
+                  ? [
+                      ...groups.overdue,
+                      ...groups.today,
+                      ...groups.thisWeek,
+                      ...groups.later,
+                    ]
+                  : []
+              }
+              columns={FOLLOWUP_COLUMNS}
+            />
+            <NewFollowupDialog />
+          </div>
+        }
       />
       {groups === undefined ? (
         <LoadingState />

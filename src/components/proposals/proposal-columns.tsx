@@ -1,5 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table'
-import { Building2 } from 'lucide-react'
+import { Building2, Users } from 'lucide-react'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
 import { Badge } from '~/components/ui/badge'
 import { SortableHeader } from '~/components/data-table'
@@ -11,6 +11,10 @@ import {
   STATUS_LABELS,
   type ProposalStatus,
 } from './proposal-status'
+import {
+  recipientSummaryLabel,
+  type RecipientSummary,
+} from './recipient-status'
 
 type Proposal = Doc<'proposals'> & { companyName?: string }
 
@@ -28,9 +32,11 @@ const STATUS_RANK: Record<ProposalStatus, number> = {
 export function buildProposalColumns({
   onOpen,
   onEdit,
+  recipientSummaries,
 }: {
   onOpen: (id: Id<'proposals'>) => void
   onEdit: (proposal: Doc<'proposals'>) => void
+  recipientSummaries?: Map<string, RecipientSummary>
 }): ColumnDef<Proposal, unknown>[] {
   return [
     {
@@ -44,11 +50,18 @@ export function buildProposalColumns({
       meta: { headerClassName: 'w-[42%]' },
       cell: ({ row }) => {
         const p = row.original
+        const summary = recipientSummaries?.get(p._id)
+        const recipientLabel = summary ? recipientSummaryLabel(summary) : null
         return (
           <div className="flex flex-col gap-0.5">
             <span className="truncate font-medium text-fg">{p.title}</span>
             <span className="flex items-center gap-1.5 truncate text-xs text-fg-subtle">
-              {p.companyName ? (
+              {recipientLabel ? (
+                <>
+                  <Users className="size-3 shrink-0" />
+                  <span className="truncate">{recipientLabel}</span>
+                </>
+              ) : p.companyName ? (
                 <>
                   <Building2 className="size-3 shrink-0" />
                   <span className="truncate">{p.companyName}</span>

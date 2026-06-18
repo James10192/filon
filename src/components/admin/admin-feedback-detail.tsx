@@ -1,0 +1,343 @@
+import { useEffect, useState } from 'react'
+import { useMutation, useQuery } from 'convex/react'
+import {
+  Bug,
+  CalendarClock,
+  Lightbulb,
+  Link2,
+  Loader2,
+  Mail,
+  MessageSquare,
+  User,
+  X,
+} from 'lucide-react'
+import { api } from '../../../convex/_generated/api'
+import type { Id } from '../../../convex/_generated/dataModel'
+import type { Plan } from '~/lib/billing/plan'
+import { forbiddenMessage } from '~/lib/billing/plan'
+import { Avatar, AvatarFallback } from '~/components/ui/avatar'
+import { Badge } from '~/components/ui/badge'
+import { Button } from '~/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
+import { Skeleton } from '~/components/ui/skeleton'
+import { Textarea } from '~/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '~/components/ui/select'
+import { toast } from '~/components/ui/sonner'
+import {
+  FEEDBACK_STATUS_LABEL,
+  FEEDBACK_STATUS_ORDER,
+  FEEDBACK_TYPE_LABEL,
+  feedbackStatusVariant,
+  feedbackTypeVariant,
+  formatDate,
+  formatRelative,
+  initials,
+  planBadgeVariant,
+  planLabel,
+  type FeedbackStatus,
+  type FeedbackType,
+} from './admin-meta'
+
+const TYPE_ICON: Record<FeedbackType, typeof Bug> = {
+  bug: Bug,
+  idea: Lightbulb,
+  other: MessageSquare,
+}
+
+/**
+ * Panneau détail d'UN feedback (master-detail du back-office). Charge
+ * `api.admin.feedbackDetail` et présente le message complet, l'auteur résolu
+ * (nom/email/palier), le contexte (page d'origine), la date, plus les actions
+ * admin (statut éditable et note interne) via `updateFeedbackStatus`.
+ */
+export function AdminFeedbackDetail({
+  feedbackId,
+  onClose,
+}: {
+  feedbackId: Id<'feedback'>
+  onClose: () => void
+}) {
+  const detail = useQuery(api.admin.feedbackDetail, { id: feedbackId })
+
+  if (detail === undefined) return <DetailSkeleton onClose={onClose} />
+
+  const { feedback, author } = detail
+  const TypeIcon = TYPE_ICON[feedback.type]
+
+  return (
+    <div className="flex h-full flex-col">
+      <header className="flex items-start justify-between gap-3 border-b border-border px-5 py-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-[var(--radius)] bg-surface-2 text-fg-muted">
+            <TypeIcon className="size-5" />
+          </span>
+          <div className="flex min-w-0 flex-col gap-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant={feedbackTypeVariant(feedback.type)}>
+                {FEEDBACK_TYPE_LABEL[feedback.type]}
+              </Badge>
+              <Badge variant={feedbackStatusVariant(feedback.status)}>
+                {FEEDBACK_STATUS_LABEL[feedback.status]}
+              </Badge>
+            </div>
+            <span className="assay-meta text-xs">
+              {formatDate(feedback.createdAt)}
+            </span>
+          </div>
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onClose}
+          aria-label="Fermer le détail"
+          className="h-11 w-11 shrink-0"
+        >
+          <X className="size-4" />
+        </Button>
+      </header>
+
+      <div className="flex flex-col gap-4 overflow-y-auto px-5 py-5">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Message</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-fg">
+              {feedback.message}
+            </p>
+          </CardContent>
+        </Card>
+
+        <AuthorCard author={author} />
+
+        {feedback.context && <ContextCard context={feedback.context} />}
+
+        <ManageCard
+          feedbackId={feedbackId}
+          status={feedback.status}
+          adminNote={feedback.adminNote}
+        />
+      </div>
+    </div>
+  )
+}
+
+function AuthorCard({
+  author,
+}: {
+  author: {
+    userId: string
+    name?: string
+    email?: string
+    plan: Plan
+  } | null
+}) {
+  if (!author) {
+    return (
+      <Card>
+        <CardContent className="flex items-center gap-3 py-4">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-surface-2 text-fg-subtle">
+            <User className="size-4" />
+          </span>
+          <span className="text-sm text-fg-muted">
+            Auteur introuvable (compte supprimé).
+          </span>
+        </CardContent>
+      </Card>
+    )
+  }
+  const name = author.name?.trim() || author.email || 'Utilisateur'
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-sm">Auteur</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        <div className="flex items-center gap-3">
+          <Avatar className="size-9">
+            <AvatarFallback>{initials(name)}</AvatarFallback>
+          </Avatar>
+          <div className="flex min-w-0 flex-1 flex-col">
+            <span className="truncate font-medium text-fg">{name}</span>
+            {author.email && author.name && (
+              <span className="truncate text-xs text-fg-subtle">
+                {author.email}
+              </span>
+            )}
+          </div>
+          <Badge variant={planBadgeVariant(author.plan)} className="shrink-0">
+            {planLabel(author.plan)}
+          </Badge>
+        </div>
+        {author.email && (
+          <a
+            href={`mailto:${author.email}`}
+            className="inline-flex items-center gap-1.5 text-sm text-accent hover:underline"
+          >
+            <Mail className="size-3.5" />
+            {author.email}
+          </a>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+function ContextCard({ context }: { context: string }) {
+  const isUrl = context.startsWith('/') || context.startsWith('http')
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-sm">Contexte</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-2">
+        <span className="inline-flex items-center gap-2 text-sm text-fg-muted">
+          {isUrl ? (
+            <Link2 className="size-4 text-fg-subtle" />
+          ) : (
+            <CalendarClock className="size-4 text-fg-subtle" />
+          )}
+          <code className="break-all rounded-[var(--radius-sm)] bg-surface-2 px-1.5 py-0.5 text-[11px] text-fg-muted">
+            {context}
+          </code>
+        </span>
+      </CardContent>
+    </Card>
+  )
+}
+
+function ManageCard({
+  feedbackId,
+  status,
+  adminNote,
+}: {
+  feedbackId: Id<'feedback'>
+  status: FeedbackStatus
+  adminNote?: string
+}) {
+  const update = useMutation(api.admin.updateFeedbackStatus)
+  const [note, setNote] = useState(adminNote ?? '')
+  const [saving, setSaving] = useState(false)
+
+  // Resync quand on bascule d'un feedback à l'autre (le composant est remonté
+  // via `key`, mais on garde ce filet en cas de mise à jour optimiste).
+  useEffect(() => {
+    setNote(adminNote ?? '')
+  }, [adminNote])
+
+  const noteDirty = note.trim() !== (adminNote ?? '').trim()
+
+  async function persist(nextStatus: FeedbackStatus, nextNote: string) {
+    setSaving(true)
+    try {
+      const trimmed = nextNote.trim()
+      await update(
+        trimmed
+          ? { id: feedbackId, status: nextStatus, adminNote: trimmed }
+          : { id: feedbackId, status: nextStatus },
+      )
+      toast.success('Retour mis à jour.')
+    } catch (error) {
+      toast.error(
+        forbiddenMessage(error) ??
+          (error instanceof Error ? error.message : 'La mise à jour a échoué.'),
+      )
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-sm">Traitement</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1.5">
+          <span className="text-xs text-fg-subtle">Statut</span>
+          <div className="flex items-center gap-2">
+            <Select
+              value={status}
+              onValueChange={(value) => persist(value as FeedbackStatus, note)}
+              disabled={saving}
+            >
+              <SelectTrigger className="h-11" aria-label="Changer le statut">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {FEEDBACK_STATUS_ORDER.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {FEEDBACK_STATUS_LABEL[s]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {saving && (
+              <Loader2 className="size-4 shrink-0 animate-spin text-fg-subtle" />
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <span className="text-xs text-fg-subtle">Note interne</span>
+          <Textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Note interne (optionnelle)"
+            rows={3}
+            className="resize-none text-sm"
+            aria-label="Note interne"
+          />
+          {noteDirty && (
+            <div className="flex justify-end">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={saving}
+                onClick={() => persist(status, note)}
+              >
+                Enregistrer la note
+              </Button>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function DetailSkeleton({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="flex h-full flex-col">
+      <header className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
+        <div className="flex items-center gap-3">
+          <Skeleton className="size-11 rounded-[var(--radius)]" />
+          <div className="flex flex-col gap-1.5">
+            <Skeleton className="h-5 w-32" />
+            <Skeleton className="h-3 w-24" />
+          </div>
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onClose}
+          aria-label="Fermer le détail"
+          className="h-11 w-11"
+        >
+          <X className="size-4" />
+        </Button>
+      </header>
+      <div className="flex flex-col gap-4 p-5">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} className="h-28 w-full rounded-[var(--radius-lg)]" />
+        ))}
+      </div>
+    </div>
+  )
+}

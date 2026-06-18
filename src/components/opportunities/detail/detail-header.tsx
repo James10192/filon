@@ -5,6 +5,7 @@ import {
   MapPin,
   Coins,
   CalendarClock,
+  Radio,
 } from 'lucide-react'
 import type { api } from '../../../../convex/_generated/api'
 import { m } from '~/lib/paraglide/messages'
@@ -18,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select'
-import { StageChip, TypeChip } from '../chips'
+import { StageChip, TypeChip, TargetChip, sourceLabel } from '../chips'
 import { STAGES, STAGE_META, formatDate, type Stage } from '../meta'
 import { DeleteOpportunityDialog } from './panels'
 
@@ -39,6 +40,12 @@ export function DetailHeader({
   onStage: (next: Stage) => void
 }) {
   const companyName = opportunity.company?.name
+  const targetName = opportunity.companyName ?? opportunity.contactName
+  const source = sourceLabel(
+    opportunity.sourceChannel,
+    opportunity.sourceDetail,
+    opportunity.source,
+  )
   const seed = companyName
     ? m.copilot_seed_opportunity({
         title: opportunity.title,
@@ -52,6 +59,10 @@ export function DetailHeader({
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <TypeChip type={opportunity.type} />
           <StageChip stage={opportunity.stage} />
+          <TargetChip
+            targetType={opportunity.effectiveTargetType}
+            name={targetName}
+          />
         </div>
         <div className="flex shrink-0 items-center gap-1">
           <AskCopilotButton seed={seed} variant="icon" />
@@ -85,9 +96,10 @@ export function DetailHeader({
             {opportunity.location}
           </span>
         )}
-        {opportunity.source && (
+        {source && (
           <span className="inline-flex items-center gap-1.5">
-            Source : {opportunity.source}
+            <Radio className="size-4 text-fg-subtle" />
+            {source}
           </span>
         )}
         {opportunity.deadline && (

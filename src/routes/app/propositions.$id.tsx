@@ -16,7 +16,9 @@ export const Route = createFileRoute('/app/propositions/$id')({
 
 function PropositionDetailPage() {
   const { id } = useParams({ from: '/app/propositions/$id' })
-  const proposal = useQuery(api.proposals.get, { id: id as Id<'proposals'> })
+  const proposal = useQuery(api.proposals.withRecipients, {
+    id: id as Id<'proposals'>,
+  })
 
   return (
     <div className="flex flex-col gap-5">

@@ -1,15 +1,28 @@
-import { MapPin, Coins } from 'lucide-react'
-import type { Doc } from '../../../convex/_generated/dataModel'
-import { StageChip, TypeChip, DueBadge } from './chips'
+import { MapPin, Coins, Radio } from 'lucide-react'
+import {
+  StageChip,
+  TypeChip,
+  DueBadge,
+  TargetChip,
+  TagChips,
+  sourceLabel,
+} from './chips'
+import type { EnrichedOpportunity } from './types'
 
 /** Carte d'opportunité (vue liste / grille mobile). Clic -> sélection. */
 export function OpportunityCard({
   opportunity,
   onSelect,
 }: {
-  opportunity: Doc<'opportunities'>
+  opportunity: EnrichedOpportunity
   onSelect: () => void
 }) {
+  const targetName = opportunity.companyName ?? opportunity.contactName
+  const source = sourceLabel(
+    opportunity.sourceChannel,
+    opportunity.sourceDetail,
+    opportunity.source,
+  )
   return (
     <button
       type="button"
@@ -25,6 +38,12 @@ export function OpportunityCard({
 
       <div className="flex flex-wrap items-center gap-2">
         <TypeChip type={opportunity.type} />
+        {targetName && (
+          <TargetChip
+            targetType={opportunity.effectiveTargetType}
+            name={targetName}
+          />
+        )}
         {opportunity.compensation && (
           <span className="assay inline-flex items-center gap-1.5 text-xs font-medium text-fg-muted">
             <Coins className="size-3.5" />
@@ -37,7 +56,18 @@ export function OpportunityCard({
             {opportunity.location}
           </span>
         )}
+        {source && (
+          <span
+            className="inline-flex max-w-full items-center gap-1.5 text-xs text-fg-subtle"
+            title={source}
+          >
+            <Radio className="size-3.5 shrink-0" />
+            <span className="truncate">{source}</span>
+          </span>
+        )}
       </div>
+
+      <TagChips tags={opportunity.tags} max={4} />
 
       {opportunity.nextActionAt && (
         <div className="flex items-center">

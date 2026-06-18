@@ -9,6 +9,7 @@ import {
   Send,
   Trash2,
   Undo2,
+  Users,
   XCircle,
 } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
@@ -40,15 +41,21 @@ import {
   STATUS_LABELS,
   type ProposalStatus,
 } from './proposal-status'
+import {
+  recipientSummaryLabel,
+  type RecipientSummary,
+} from './recipient-status'
 
 type ProposalRow = Doc<'proposals'> & { companyName?: string }
 
 export function ProposalCard({
   proposal,
+  recipientSummary,
   onSelect,
   onEdit,
 }: {
   proposal: ProposalRow
+  recipientSummary?: RecipientSummary
   onSelect: () => void
   onEdit: (proposal: Doc<'proposals'>) => void
 }) {
@@ -63,6 +70,9 @@ export function ProposalCard({
   const status = proposal.status as ProposalStatus
   const amount = formatAmount(proposal.amount, proposal.currency)
   const sentAt = formatDate(proposal.sentAt)
+  const recipientLabel = recipientSummary
+    ? recipientSummaryLabel(recipientSummary)
+    : null
 
   async function changeStatus(next: ProposalStatus) {
     if (busy) return
@@ -118,7 +128,12 @@ export function ProposalCard({
           >
             {proposal.title}
           </button>
-          {proposal.companyName ? (
+          {recipientLabel ? (
+            <p className="mt-0.5 flex items-center gap-1.5 text-sm text-fg-muted">
+              <Users className="size-3.5 shrink-0 text-fg-subtle" />
+              <span className="truncate">{recipientLabel}</span>
+            </p>
+          ) : proposal.companyName ? (
             <p className="mt-0.5 flex items-center gap-1.5 text-sm text-fg-muted">
               <Building2 className="size-3.5 shrink-0 text-fg-subtle" />
               <span className="truncate">{proposal.companyName}</span>

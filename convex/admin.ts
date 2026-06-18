@@ -282,6 +282,98 @@ export const updateFeedbackStatus = mutation({
   },
 })
 
+/**
+ * Métriques des feedbacks (cross-tenant, réservé admin) : volume total, par
+ * statut (new/in_progress/done), par type (bug/idea/other), reçus sur 7 jours
+ * glissants, et taux de résolution (`done / total`). Sert l'encart de pilotage
+ * du back-office. Lit le journal complet (volume modeste) après `requireAdmin`.
+ */
+export const feedbackMetrics = query({
+  args: {},
+  handler: async (ctx) => {
+    await requireAdmin(ctx)
+
+    const items = await ctx.db.query('feedback').collect()
+    const total = items.length
+
+    const byStatus: Record<Doc<'feedback'>['status'], number> = {
+      new: 0,
+      in_progress: 0,
+      done: 0,
+    }
+    const byType: Record<Doc<'feedback'>['type'], number> = {
+      bug: 0,
+      idea: 0,
+      other: 0,
+    }
+    const since = Date.now() - 7 * 24 * 60 * 60 * 1000
+    let recent7d = 0
+    for (const f of items) {
+      byStatus[f.status] += 1
+      byType[f.type] += 1
+      if (f.createdAt >= since) recent7d += 1
+    }
+
+    const resolutionRate = total === 0 ? 0 : byStatus.done / total
+
+    return { total, byStatus, byType, recent7d, resolutionRate }
+  },
+})
+
+/**
+ * Détail d'UN feedback (cross-tenant, réservé admin) : le feedback complet plus
+ * l'auteur résolu (nom/email/plan) et le contexte (page d'origine). Throw une
+ * `ConvexError` `NOT_FOUND` si l'id est inconnu (message visible côté client).
+ */
+export const feedbackDetail = query({
+  args: { id: v.id('feedback') },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx)
+
+    const feedback = await ctx.db.get(args.id)
+    if (!feedback) throw notFoundError('Feedback introuvable.')
+
+    const author = await ctx.db
+      .query('users')
+      .withIndex('by_authId', (q) => q.eq('authId', feedback.userId))
+      .unique()
+
+    const feedbackOut: {
+      _id: typeof feedback._id
+      type: Doc<'feedback'>['type']
+      message: string
+      status: Doc<'feedback'>['status']
+      context?: string
+      adminNote?: string
+      createdAt: number
+    } = {
+      _id: feedback._id,
+      type: feedback.type,
+      message: feedback.message,
+      status: feedback.status,
+      createdAt: feedback.createdAt,
+    }
+    if (feedback.context) feedbackOut.context = feedback.context
+    if (feedback.adminNote) feedbackOut.adminNote = feedback.adminNote
+
+    const authorOut: {
+      userId: string
+      name?: string
+      email?: string
+      plan: Plan
+    } | null = author
+      ? {
+          userId: author.authId,
+          plan: author.plan ?? 'free',
+        }
+      : null
+    if (author?.name && authorOut) authorOut.name = author.name
+    if (author?.email && authorOut) authorOut.email = author.email
+
+    return { feedback: feedbackOut, author: authorOut }
+  },
+})
+
 const planValidator = v.union(
   v.literal('free'),
   v.literal('pro'),

@@ -11,12 +11,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select'
+import { TagFilter } from '../tag-filter'
 import {
   DataTableToolbar,
   DataTableSkeleton,
   DataTableEmpty,
   type FilterChip,
 } from '~/components/data-table'
+import { ExportButton } from '~/components/billing/export-button'
+import { OPPORTUNITY_COLUMNS } from '~/lib/export'
 import { OpportunitiesTable } from '../opportunities-table'
 import {
   STAGES,
@@ -45,6 +48,8 @@ export type ListFilters = {
   stage: StageFilter
   type: TypeFilter
   priority: PriorityFilter
+  /** Étiquettes sélectionnées : une opportunité doit les porter TOUTES. */
+  tags: string[]
   search: string
 }
 
@@ -52,6 +57,7 @@ export const EMPTY_FILTERS: ListFilters = {
   stage: 'all',
   type: 'all',
   priority: 'all',
+  tags: [],
   search: '',
 }
 
@@ -74,7 +80,7 @@ export function ListView({
   selectedId?: Id<'opportunities'> | null
   onCreate: () => void
 }) {
-  const { stage, type, priority, search } = filters
+  const { stage, type, priority, tags, search } = filters
 
   const queryArgs = useMemo(() => {
     const args: { stage?: Stage; type?: OppType; search?: string } = {}
@@ -86,19 +92,18 @@ export function ListView({
   }, [stage, type, search])
 
   const opportunities = useQuery(api.opportunities.list, queryArgs)
-  const companies = useQuery(api.companies.list, {})
 
-  const companyNames = useMemo(() => {
-    const map = new Map<string, string>()
-    if (companies) for (const c of companies) map.set(c._id, c.name)
-    return map
-  }, [companies])
-
+  // Filtres secondaires en mémoire : priorité + étiquettes (ET logique, comme
+  // le formulaire stocke des noms d'étiquettes normalisés).
   const visible = useMemo(() => {
     if (!opportunities) return undefined
-    if (priority === 'all') return opportunities
-    return opportunities.filter((o) => o.priority === priority)
-  }, [opportunities, priority])
+    let rows = opportunities
+    if (priority !== 'all') rows = rows.filter((o) => o.priority === priority)
+    if (tags.length > 0) {
+      rows = rows.filter((o) => tags.every((t) => o.tags.includes(t)))
+    }
+    return rows
+  }, [opportunities, priority, tags])
 
   const chips = useMemo<FilterChip[]>(() => {
     const out: FilterChip[] = []
@@ -123,6 +128,17 @@ export function ListView({
         onRemove: () => onFiltersChange({ ...filters, priority: 'all' }),
       })
     }
+    for (const tag of tags) {
+      out.push({
+        key: `tag:${tag}`,
+        label: `Étiquette : ${tag}`,
+        onRemove: () =>
+          onFiltersChange({
+            ...filters,
+            tags: filters.tags.filter((t) => t !== tag),
+          }),
+      })
+    }
     const s = search.trim()
     if (s) {
       out.push({
@@ -132,7 +148,7 @@ export function ListView({
       })
     }
     return out
-  }, [stage, type, priority, search, filters, onFiltersChange])
+  }, [stage, type, priority, tags, search, filters, onFiltersChange])
 
   const hasActiveFilters = chips.length > 0
   const reset = () => onFiltersChange(EMPTY_FILTERS)
@@ -146,6 +162,13 @@ export function ListView({
         searchLabel="Rechercher une opportunité"
         chips={chips}
         onClearAll={reset}
+        actions={
+          <ExportButton
+            base="opportunites"
+            rows={visible ?? []}
+            columns={OPPORTUNITY_COLUMNS}
+          />
+        }
       >
         <Select
           value={stage}
@@ -203,6 +226,11 @@ export function ListView({
             ))}
           </SelectContent>
         </Select>
+
+        <TagFilter
+          value={tags}
+          onChange={(next) => onFiltersChange({ ...filters, tags: next })}
+        />
       </DataTableToolbar>
 
       {visible === undefined ? (
@@ -235,7 +263,6 @@ export function ListView({
       ) : (
         <OpportunitiesTable
           items={visible}
-          companyNames={companyNames}
           onSelect={onSelect}
           selectedId={selectedId}
         />

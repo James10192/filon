@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import type { FunctionReturnType } from 'convex/server'
-import { Building2, CalendarClock, Coins } from 'lucide-react'
+import { Building2, CalendarClock, Coins, Users } from 'lucide-react'
 import { api } from '../../../../convex/_generated/api'
 import { Badge } from '~/components/ui/badge'
+import { EntityDocuments } from '~/components/shared/entity-documents'
 import { ProposalFormDialog } from '../proposal-form-dialog'
 import { ProposalDetailActions } from '../proposal-detail-actions'
 import { ProposalFollowupsPanel } from '../proposal-followups-panel'
+import { ProposalRecipientsPanel } from '../proposal-recipients-panel'
 import { DetailPanel } from '../detail-panel'
 import {
   formatAmount,
@@ -15,8 +17,9 @@ import {
   STATUS_LABELS,
   type ProposalStatus,
 } from '../proposal-status'
+import { recipientSummaryLabel, summarizeRecipients } from '../recipient-status'
 
-type LoadedProposal = FunctionReturnType<typeof api.proposals.get>
+type LoadedProposal = FunctionReturnType<typeof api.proposals.withRecipients>
 
 /**
  * Contenu central du détail d'une proposition, partagé par le panneau split
@@ -38,9 +41,13 @@ export function ProposalDetailContent({
   const status = proposal.status as ProposalStatus
   const amount = formatAmount(proposal.amount, proposal.currency)
   const sentAt = formatDate(proposal.sentAt)
-  const { company } = proposal
-  // Le dialog d'édition attend un Doc<'proposals'> sans le champ `company` résolu.
-  const { company: _company, ...proposalDoc } = proposal
+  const { company, recipients } = proposal
+  // Le dialog d'édition attend un Doc<'proposals'> sans les champs résolus
+  // (`company`, `recipients`).
+  const { company: _company, recipients: _recipients, ...proposalDoc } = proposal
+
+  const recipientSummary = summarizeRecipients(recipients)
+  const recipientLabel = recipientSummaryLabel(recipientSummary)
 
   const isPage = layout === 'page'
 
@@ -70,7 +77,12 @@ export function ProposalDetailContent({
         </div>
 
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-border pt-4 text-sm text-fg-muted">
-          {company ? (
+          {recipientLabel ? (
+            <span className="inline-flex items-center gap-1.5">
+              <Users className="size-4 text-fg-subtle" />
+              {recipientLabel}
+            </span>
+          ) : company ? (
             <span className="inline-flex items-center gap-1.5">
               <Building2 className="size-4 text-fg-subtle" />
               {company.name}
@@ -101,16 +113,30 @@ export function ProposalDetailContent({
           isPage ? 'grid grid-cols-1 gap-5 lg:grid-cols-3' : 'flex flex-col gap-5'
         }
       >
-        <section className={isPage ? 'lg:col-span-2' : ''}>
+        <section
+          className={isPage ? 'flex flex-col gap-5 lg:col-span-2' : 'flex flex-col gap-5'}
+        >
           <DetailPanel title="Pitch">
             <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-fg">
               {proposal.pitch}
             </p>
           </DetailPanel>
+
+          <ProposalRecipientsPanel
+            recipients={recipients}
+            currency={proposal.currency}
+          />
+
+          <DetailPanel title="Documents">
+            <EntityDocuments
+              entityType="proposal"
+              entityId={String(proposal._id)}
+            />
+          </DetailPanel>
         </section>
 
         <aside className="flex flex-col gap-5">
-          <CompanyPanel company={company} />
+          {company && <CompanyPanel company={company} />}
           <ProposalFollowupsPanel proposalId={proposal._id} />
         </aside>
       </div>

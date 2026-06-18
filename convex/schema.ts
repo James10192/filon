@@ -439,6 +439,30 @@ export default defineSchema({
     .index('by_user_created', ['userId', 'createdAt'])
     .index('by_opportunity', ['opportunityId']),
 
+  // Liaisons document <-> entite (Documents 360, additif). Un document peut etre
+  // rattache a N'IMPORTE QUELLE entite (opportunite, proposition, contact,
+  // entreprise) via une table de jointure many-to-many. Le rattachement legacy
+  // `documents.opportunityId` reste intact (retro-compat) ; ce modele le complete
+  // sans le remplacer. Unicite logique (documentId, entityType, entityId)
+  // garantie par le code (attachToEntity idempotent). Scope strict `userId`.
+  documentLinks: defineTable({
+    userId: v.string(),
+    documentId: v.id('documents'),
+    entityType: v.union(
+      v.literal('opportunity'),
+      v.literal('proposal'),
+      v.literal('contact'),
+      v.literal('company'),
+    ),
+    // Id de l'entite cible, stocke en string (polymorphe : la table varie selon
+    // `entityType`). La propriete est verifiee au moment du lien.
+    entityId: v.string(),
+    createdAt: v.number(),
+  })
+    .index('by_user', ['userId'])
+    .index('by_document', ['documentId'])
+    .index('by_entity', ['entityType', 'entityId']),
+
   // Préférences utilisateur (1 ligne par user).
   settings: defineTable({
     userId: v.string(),

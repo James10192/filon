@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from '@tanstack/react-router'
+import { useSession } from '~/lib/auth/auth-client'
 import { Button } from '~/components/ui/button'
 import { IntervalToggle } from '~/components/billing/interval-toggle'
 import { PlanCardShell } from '~/components/billing/plan-card'
@@ -18,6 +19,11 @@ export function PricingSection() {
   const [interval, setInterval] = useState<Interval>('monthly')
   const sectionRef = useRef<HTMLElement | null>(null)
   const gridRef = useRef<HTMLDivElement | null>(null)
+  // CTA auth-aware : un visiteur connecte ne doit pas voir « créer un compte »
+  // mais une invitation a choisir / gerer son palier depuis l'app. Tant que la
+  // session n'est pas resolue, on reste sur l'etat deconnecte (pas de flash).
+  const { data: session, isPending } = useSession()
+  const authed = !isPending && Boolean(session)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -95,7 +101,13 @@ export function PricingSection() {
               <PlanCardShell
                 data={card}
                 interval={interval}
-                cta={<PublicCta planKey={card.key} featured={card.featured} />}
+                cta={
+                  <PublicCta
+                    planKey={card.key}
+                    featured={card.featured}
+                    authed={authed}
+                  />
+                }
               />
             </div>
           ))}
@@ -109,13 +121,22 @@ export function PricingSection() {
   )
 }
 
-/** CTA public : inscription pour les paliers self-service, contact pour Équipe. */
+/**
+ * CTA public, auth-aware.
+ *  - Equipe : toujours « Nous contacter » (mailto, sur devis).
+ *  - Visiteur connecte : pas d'inscription. On l'invite a gerer / choisir son
+ *    palier dans l'app (« Tarifs & abonnement » -> /app/tarifs), ou la logique
+ *    Paystack + palier courant vit deja.
+ *  - Visiteur anonyme : inscription (gratuit ou creation de compte).
+ */
 function PublicCta({
   planKey,
   featured,
+  authed,
 }: {
   planKey: (typeof PLAN_CARDS)[number]['key']
   featured?: boolean
+  authed: boolean
 }) {
   if (planKey === 'team') {
     return (
@@ -123,6 +144,19 @@ function PublicCta({
         <a href="mailto:djedjelipatrick@gmail.com?subject=Filon%20%C3%89quipe">
           {m.pricing_cta_contact()}
         </a>
+      </Button>
+    )
+  }
+
+  if (authed) {
+    // Connecte : renvoie vers la page Tarifs in-app (gestion d'abonnement).
+    return (
+      <Button
+        variant={featured ? 'default' : 'outline'}
+        className="w-full"
+        asChild
+      >
+        <Link to="/app/tarifs">{m.nav_pricing_plan()}</Link>
       </Button>
     )
   }

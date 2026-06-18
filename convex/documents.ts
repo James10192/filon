@@ -27,6 +27,45 @@ const docKind = v.union(
 
 type DocKind = 'cv' | 'lettre' | 'portfolio' | 'contrat' | 'autre'
 
+/** Entites auxquelles un document peut etre rattache (Documents 360). */
+const entityType = v.union(
+  v.literal('opportunity'),
+  v.literal('proposal'),
+  v.literal('contact'),
+  v.literal('company'),
+)
+
+type EntityType = 'opportunity' | 'proposal' | 'contact' | 'company'
+
+// Table Convex correspondant a chaque `entityType` (pour la verif de propriete).
+const ENTITY_TABLE: Record<
+  EntityType,
+  'opportunities' | 'proposals' | 'contacts' | 'companies'
+> = {
+  opportunity: 'opportunities',
+  proposal: 'proposals',
+  contact: 'contacts',
+  company: 'companies',
+}
+
+/**
+ * Verifie que l'entite cible existe et appartient au user courant. Resout l'id
+ * polymorphe (`string`) vers le bon document selon `entityType`. Throw si
+ * introuvable ou non possedee.
+ */
+async function assertOwnedEntity(
+  ctx: QueryCtx | MutationCtx,
+  userId: string,
+  type: EntityType,
+  entityId: string,
+): Promise<void> {
+  const table = ENTITY_TABLE[type]
+  const entity = await ctx.db.get(entityId as Id<typeof table>)
+  if (!entity || (entity as { userId?: string }).userId !== userId) {
+    throw new Error('Non autorise')
+  }
+}
+
 /** Charge un document en verifiant qu'il appartient au user courant. */
 async function getOwnedDocument(
   ctx: QueryCtx | MutationCtx,
@@ -197,5 +236,113 @@ export const remove = mutation({
     await ctx.storage.delete(doc.storageId)
     await ctx.db.delete(args.id)
     return null
+  },
+})
+
+// --- Documents 360 : liaisons document <-> entite (additif) ---
+
+/**
+ * Rattache un document a une entite (opportunite, proposition, contact,
+ * entreprise). Verifie que le document ET l'entite appartiennent au user.
+ * Idempotent : un lien deja present n'est pas duplique (on renvoie l'existant).
+ */
+export const attachToEntity = mutation({
+  args: {
+    documentId: v.id('documents'),
+    entityType,
+    entityId: v.string(),
+  },
+  handler: async (ctx, args): Promise<Id<'documentLinks'>> => {
+    const { userId } = await requireUser(ctx)
+    await getOwnedDocument(ctx, userId, args.documentId)
+    await assertOwnedEntity(ctx, userId, args.entityType, args.entityId)
+
+    // Idempotence : un seul lien par (document, entite). On filtre les liens du
+    // document (volume modeste) sur le couple (entityType, entityId).
+    const existingLinks = await ctx.db
+      .query('documentLinks')
+      .withIndex('by_document', (q) => q.eq('documentId', args.documentId))
+      .collect()
+    const already = existingLinks.find(
+      (l) => l.entityType === args.entityType && l.entityId === args.entityId,
+    )
+    if (already) return already._id
+
+    return ctx.db.insert('documentLinks', {
+      userId,
+      documentId: args.documentId,
+      entityType: args.entityType,
+      entityId: args.entityId,
+      createdAt: Date.now(),
+    })
+  },
+})
+
+/**
+ * Detache un document d'une entite : supprime le lien (document, entite).
+ * Verifie la propriete du document. No-op si le lien n'existe pas.
+ */
+export const detachFromEntity = mutation({
+  args: {
+    documentId: v.id('documents'),
+    entityType,
+    entityId: v.string(),
+  },
+  handler: async (ctx, args): Promise<null> => {
+    const { userId } = await requireUser(ctx)
+    await getOwnedDocument(ctx, userId, args.documentId)
+
+    const links = await ctx.db
+      .query('documentLinks')
+      .withIndex('by_document', (q) => q.eq('documentId', args.documentId))
+      .collect()
+    for (const link of links) {
+      if (
+        link.userId === userId &&
+        link.entityType === args.entityType &&
+        link.entityId === args.entityId
+      ) {
+        await ctx.db.delete(link._id)
+      }
+    }
+    return null
+  },
+})
+
+/**
+ * Liste des documents rattaches a une entite (enrichis de leur `url` resolue),
+ * tries par `createdAt desc`. Verifie que l'entite appartient au user. Lit les
+ * liens via l'index `by_entity` (scopes ensuite au user par securite).
+ */
+export const listForEntity = query({
+  args: { entityType, entityId: v.string() },
+  handler: async (ctx, args) => {
+    const { userId } = await requireUser(ctx)
+    await assertOwnedEntity(ctx, userId, args.entityType, args.entityId)
+
+    const links = await ctx.db
+      .query('documentLinks')
+      .withIndex('by_entity', (q) =>
+        q.eq('entityType', args.entityType).eq('entityId', args.entityId),
+      )
+      .collect()
+
+    const docs = await Promise.all(
+      links
+        .filter((l) => l.userId === userId)
+        .map((l) => ctx.db.get(l.documentId)),
+    )
+
+    const owned = docs.filter(
+      (d): d is Doc<'documents'> => d !== null && d.userId === userId,
+    )
+    owned.sort((a, b) => b.createdAt - a.createdAt)
+
+    return Promise.all(
+      owned.map(async (doc) => {
+        const url = await ctx.storage.getUrl(doc.storageId)
+        return { ...doc, url }
+      }),
+    )
   },
 })

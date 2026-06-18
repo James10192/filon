@@ -3,6 +3,7 @@ import type { Doc, Id } from '../../../convex/_generated/dataModel'
 import { DataTable } from '~/components/data-table'
 import { ProposalCard } from './proposal-card'
 import { buildProposalColumns } from './proposal-columns'
+import type { RecipientSummary } from './recipient-status'
 
 type ProposalRow = Doc<'proposals'> & { companyName?: string }
 
@@ -14,18 +15,20 @@ type ProposalRow = Doc<'proposals'> & { companyName?: string }
  */
 export function ProposalsTable({
   items,
+  recipientSummaries,
   onSelect,
   selectedId,
   onEdit,
 }: {
   items: ProposalRow[]
+  recipientSummaries?: Map<string, RecipientSummary>
   onSelect: (id: Id<'proposals'>) => void
   selectedId?: Id<'proposals'> | null
   onEdit: (proposal: Doc<'proposals'>) => void
 }) {
   const columns = useMemo(
-    () => buildProposalColumns({ onOpen: onSelect, onEdit }),
-    [onSelect, onEdit],
+    () => buildProposalColumns({ onOpen: onSelect, onEdit, recipientSummaries }),
+    [onSelect, onEdit, recipientSummaries],
   )
 
   return (
@@ -36,6 +39,7 @@ export function ProposalsTable({
           <ProposalCard
             key={proposal._id}
             proposal={proposal}
+            recipientSummary={recipientSummaries?.get(proposal._id)}
             onSelect={() => onSelect(proposal._id)}
             onEdit={onEdit}
           />

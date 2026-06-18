@@ -1,9 +1,10 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { CalendarClock } from 'lucide-react'
+import { Building2, CalendarClock, Radio, User } from 'lucide-react'
 import { cn } from '~/lib/utils'
 import {
   PRIORITY_META,
+  SOURCE_META,
   TYPE_META,
   followupTone,
   formatShortDate,
@@ -57,6 +58,33 @@ export function KanbanCardContent({
   const showPriority = opportunity.priority !== 'medium'
   const hasFooter = Boolean(opportunity.compensation) || Boolean(tone)
 
+  // Cible : nom + nature (entreprise / particulier). companyName provient de
+  // l'enrichissement serveur ; fallback sur le nom résolu côté colonne.
+  const targetType =
+    opportunity.effectiveTargetType ??
+    opportunity.targetType ??
+    (opportunity.companyId
+      ? 'company'
+      : opportunity.contactId
+        ? 'person'
+        : 'none')
+  const targetName =
+    opportunity.companyName ?? companyName ?? opportunity.contactName
+  const TargetIcon = targetType === 'person' ? User : Building2
+
+  // Source : « canal · précision », repli sur la source libre historique.
+  const source =
+    (opportunity.sourceChannel
+      ? SOURCE_META[opportunity.sourceChannel].label
+      : '') +
+    (opportunity.sourceChannel && opportunity.sourceDetail ? ' · ' : '') +
+    (opportunity.sourceDetail ?? '')
+  const sourceText =
+    source.trim().length > 0 ? source.trim() : (opportunity.source ?? '')
+
+  const tags = opportunity.tags.slice(0, 2)
+  const restTags = opportunity.tags.length - tags.length
+
   return (
     <div
       style={{ borderLeftColor: STAGE_LEFT_VAR[opportunity.stage] }}
@@ -67,11 +95,12 @@ export function KanbanCardContent({
           : 'transition-colors duration-150 hover:border-border-strong hover:bg-surface-2/40',
       )}
     >
-      {/* Surtitre : entreprise (secondaire), ou type si pas d'entreprise. */}
+      {/* Surtitre : cible (entreprise / particulier), ou type si pas de cible. */}
       <div className="flex items-center gap-1.5">
-        {companyName ? (
-          <span className="truncate text-[11px] font-medium uppercase tracking-[0.04em] text-fg-subtle">
-            {companyName}
+        {targetName ? (
+          <span className="inline-flex min-w-0 items-center gap-1 text-[11px] font-medium uppercase tracking-[0.04em] text-fg-subtle">
+            <TargetIcon className="size-3 shrink-0" aria-hidden />
+            <span className="truncate">{targetName}</span>
           </span>
         ) : (
           <span className="truncate text-[11px] font-medium uppercase tracking-[0.04em] text-fg-subtle">
@@ -114,6 +143,36 @@ export function KanbanCardContent({
           </>
         )}
       </div>
+
+      {/* Source : discrète, sur une ligne dédiée si présente. */}
+      {sourceText && (
+        <div
+          className="mt-1.5 flex items-center gap-1.5 text-[11px] text-fg-subtle"
+          title={sourceText}
+        >
+          <Radio className="size-3 shrink-0" aria-hidden />
+          <span className="truncate">{sourceText}</span>
+        </div>
+      )}
+
+      {/* Étiquettes : jusqu'à 2 chips + compteur. */}
+      {opportunity.tags.length > 0 && (
+        <div className="mt-1.5 flex flex-wrap items-center gap-1">
+          {tags.map((tag) => (
+            <span
+              key={tag}
+              className="inline-flex h-5 items-center rounded-[var(--radius-sm)] bg-accent-soft px-1.5 text-[10px] font-medium text-accent"
+            >
+              {tag}
+            </span>
+          ))}
+          {restTags > 0 && (
+            <span className="inline-flex h-5 items-center rounded-[var(--radius-sm)] bg-surface-2 px-1.5 text-[10px] font-medium text-fg-subtle">
+              +{restTags}
+            </span>
+          )}
+        </div>
+      )}
 
       {hasFooter && (
         <div className="mt-2 flex items-center justify-between gap-2 border-t border-border/70 pt-2 text-xs">

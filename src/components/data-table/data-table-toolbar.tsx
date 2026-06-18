@@ -24,6 +24,7 @@ export function DataTableToolbar({
   searchPlaceholder = 'Rechercher...',
   searchLabel = 'Rechercher',
   children,
+  actions,
   chips,
   onClearAll,
   className,
@@ -33,6 +34,11 @@ export function DataTableToolbar({
   searchPlaceholder?: string
   searchLabel?: string
   children?: React.ReactNode
+  /**
+   * Actions de droite de la barre (ex. bouton « Exporter (CSV) »). Epinglees a
+   * droite sur desktop (`lg:ml-auto`), empilees sous les filtres sur mobile.
+   */
+  actions?: React.ReactNode
   chips: FilterChip[]
   onClearAll: () => void
   className?: string
@@ -57,6 +63,11 @@ export function DataTableToolbar({
         {children && (
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:flex lg:w-auto">
             {children}
+          </div>
+        )}
+        {actions && (
+          <div className="flex shrink-0 items-center gap-2 lg:ml-auto">
+            {actions}
           </div>
         )}
       </div>

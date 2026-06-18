@@ -119,6 +119,30 @@ type TypeMeta = {
   fgClass: string
 }
 
+export type SourceChannel =
+  | 'job_board'
+  | 'referral'
+  | 'event'
+  | 'networking'
+  | 'salon'
+  | 'social'
+  | 'inbound'
+  | 'cold'
+  | 'other'
+
+/** Libellés FR du canal d'origine (aligné sur opportunities/meta.ts). */
+export const SOURCE_META: Record<SourceChannel, { label: string }> = {
+  job_board: { label: 'En ligne / Job board' },
+  referral: { label: 'Recommandation' },
+  event: { label: 'Événement' },
+  networking: { label: 'Networking' },
+  salon: { label: 'Salon' },
+  social: { label: 'Réseaux sociaux' },
+  inbound: { label: 'Entrant' },
+  cold: { label: 'Démarchage à froid' },
+  other: { label: 'Autre' },
+}
+
 export const TYPE_META: Record<OppType, TypeMeta> = {
   job_offer: {
     label: 'Candidature',

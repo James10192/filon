@@ -12,13 +12,11 @@ import {
 } from '~/components/ui/dialog'
 import { ActivityTimeline } from '../activity-timeline'
 import { OpportunityForm, type OpportunityFormSubmit } from '../opportunity-form'
+import { buildUpdateArgs } from '../update-args'
 import { STAGE_META, type Stage } from '../meta'
+import { EntityDocuments } from '~/components/shared/entity-documents'
 import { Panel } from './panel'
-import {
-  CompanyContactPanel,
-  FollowupsPanel,
-  AttachedDocumentsPanel,
-} from './panels'
+import { CompanyContactPanel, FollowupsPanel } from './panels'
 import { DetailHeader } from './detail-header'
 import { AiDraftTeaser } from './ai-draft-teaser'
 import { AiSignalCard } from '../ai-signal-card'
@@ -67,20 +65,7 @@ export function OpportunityDetailContent({
   async function handleEdit(values: OpportunityFormSubmit) {
     setEditPending(true)
     try {
-      const args: Record<string, unknown> = {
-        id: opportunity._id,
-        title: values.title,
-        type: values.type,
-        tags: values.tags,
-        source: values.source ?? '',
-        url: values.url ?? '',
-        location: values.location ?? '',
-        compensation: values.compensation ?? '',
-        description: values.description ?? '',
-      }
-      if (values.deadline) args.deadline = values.deadline
-      if (values.nextActionAt) args.nextActionAt = values.nextActionAt
-      await update(args as Parameters<typeof update>[0])
+      await update(buildUpdateArgs(opportunity._id, values))
       toast.success('Modifications enregistrées.')
       setEditOpen(false)
     } catch {
@@ -150,7 +135,12 @@ export function OpportunityDetailContent({
             nextActionAt={opportunity.nextActionAt}
           />
 
-          <AttachedDocumentsPanel opportunityId={opportunity._id} />
+          <Panel title="Documents">
+            <EntityDocuments
+              entityType="opportunity"
+              entityId={String(opportunity._id)}
+            />
+          </Panel>
         </aside>
       </div>
 
@@ -171,7 +161,12 @@ export function OpportunityDetailContent({
             initial={{
               title: opportunity.title,
               type: opportunity.type,
+              targetType: opportunity.effectiveTargetType,
+              companyId: opportunity.companyId,
+              contactId: opportunity.contactId,
               source: opportunity.source,
+              sourceChannel: opportunity.sourceChannel,
+              sourceDetail: opportunity.sourceDetail,
               url: opportunity.url,
               location: opportunity.location,
               compensation: opportunity.compensation,

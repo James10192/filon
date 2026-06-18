@@ -6,6 +6,19 @@ import type { OppType, Priority, Stage } from './pipeline-meta'
  * (cf. docs/API-CONTRACT.md). Typage local côté pipeline : on ne dépend pas
  * d'un autre domaine, seulement du contrat.
  */
+export type SourceChannel =
+  | 'job_board'
+  | 'referral'
+  | 'event'
+  | 'networking'
+  | 'salon'
+  | 'social'
+  | 'inbound'
+  | 'cold'
+  | 'other'
+
+export type TargetType = 'company' | 'person' | 'none'
+
 export type Opportunity = {
   _id: Id<'opportunities'>
   _creationTime: number
@@ -14,7 +27,10 @@ export type Opportunity = {
   type: OppType
   companyId?: Id<'companies'>
   contactId?: Id<'contacts'>
+  targetType?: TargetType
   source?: string
+  sourceChannel?: SourceChannel
+  sourceDetail?: string
   url?: string
   location?: string
   compensation?: string
@@ -28,6 +44,10 @@ export type Opportunity = {
   order: number
   createdAt: number
   updatedAt: number
+  // Champs enrichis renvoyés par `api.opportunities.board` (cf. contrat).
+  companyName?: string
+  contactName?: string
+  effectiveTargetType?: TargetType
 }
 
 export type Board = Record<Stage, Opportunity[]>

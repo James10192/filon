@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
-import { AlertTriangle, FileText } from 'lucide-react'
+import { AlertTriangle, FileText, Library, Link2 } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Doc } from '../../../convex/_generated/dataModel'
 import { Button } from '~/components/ui/button'
@@ -11,6 +11,7 @@ import { PageToolbar } from '~/components/app/page-toolbar'
 import { DocumentCard } from '~/components/documents/document-card'
 import { DocumentRenameDialog } from '~/components/documents/document-rename-dialog'
 import { DocumentUpload } from '~/components/documents/document-upload'
+import { DocumentAttachmentsExplorer } from '~/components/documents/document-attachments-explorer'
 import {
   DOC_KINDS,
   KIND_LABELS,
@@ -32,6 +33,7 @@ function DocumentsPage() {
     | undefined
 
   const [tab, setTab] = useState<TabValue>('all')
+  const [view, setView] = useState<'library' | 'attachments'>('library')
   const [editing, setEditing] = useState<Doc<'documents'> | null>(null)
   const [renameOpen, setRenameOpen] = useState(false)
 
@@ -69,37 +71,59 @@ function DocumentsPage() {
     <div className="flex flex-col">
       <PageToolbar
         title="Documents"
-        subtitle="Votre bibliothèque de CV, lettres, portfolios et contrats, prête à accompagner chaque candidature et chaque proposition."
+        subtitle="Votre bibliothèque de CV, lettres, portfolios et contrats, et leurs rattachements à vos opportunités, propositions et contacts."
       />
 
-      {/* La zone d'upload est toujours visible. Compacte des qu'il y a des docs. */}
-      <DocumentUpload compact={hasDocuments} />
-
       <Tabs
-        value={tab}
-        onValueChange={(v) => setTab(v as TabValue)}
-        className="mt-6"
+        value={view}
+        onValueChange={(v) => setView(v as 'library' | 'attachments')}
       >
         <TabsList className="w-full justify-start overflow-x-auto sm:w-auto">
-          <TabsTrigger value="all">
-            Tous
-            <Count n={counts.all} active={tab === 'all'} />
+          <TabsTrigger value="library">
+            <Library className="size-4" />
+            Bibliothèque
           </TabsTrigger>
-          {DOC_KINDS.map((kind) => (
-            <TabsTrigger key={kind} value={kind}>
-              {KIND_LABELS[kind]}
-              <Count n={counts[kind]} active={tab === kind} />
-            </TabsTrigger>
-          ))}
+          <TabsTrigger value="attachments">
+            <Link2 className="size-4" />
+            Par rattachement
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value={tab}>
-          <DocumentsBody
-            documents={documents}
-            filtered={filtered}
-            tab={tab}
-            onEdit={openEdit}
-          />
+        <TabsContent value="library">
+          {/* La zone d'upload est toujours visible. Compacte des qu'il y a des docs. */}
+          <DocumentUpload compact={hasDocuments} />
+
+          <Tabs
+            value={tab}
+            onValueChange={(v) => setTab(v as TabValue)}
+            className="mt-6"
+          >
+            <TabsList className="w-full justify-start overflow-x-auto sm:w-auto">
+              <TabsTrigger value="all">
+                Tous
+                <Count n={counts.all} active={tab === 'all'} />
+              </TabsTrigger>
+              {DOC_KINDS.map((kind) => (
+                <TabsTrigger key={kind} value={kind}>
+                  {KIND_LABELS[kind]}
+                  <Count n={counts[kind]} active={tab === kind} />
+                </TabsTrigger>
+              ))}
+            </TabsList>
+
+            <TabsContent value={tab}>
+              <DocumentsBody
+                documents={documents}
+                filtered={filtered}
+                tab={tab}
+                onEdit={openEdit}
+              />
+            </TabsContent>
+          </Tabs>
+        </TabsContent>
+
+        <TabsContent value="attachments">
+          <DocumentAttachmentsExplorer />
         </TabsContent>
       </Tabs>
 

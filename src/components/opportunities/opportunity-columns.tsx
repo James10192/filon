@@ -1,13 +1,21 @@
 import type { ColumnDef } from '@tanstack/react-table'
-import { Coins, MapPin } from 'lucide-react'
-import type { Doc, Id } from '../../../convex/_generated/dataModel'
+import { Coins, MapPin, Radio } from 'lucide-react'
+import type { Id } from '../../../convex/_generated/dataModel'
 import { SortableHeader } from '~/components/data-table'
 import { StageChipSelect } from './stage-chip-select'
-import { TypeChip, PriorityChip, DueBadge } from './chips'
+import {
+  TypeChip,
+  PriorityChip,
+  DueBadge,
+  TargetChip,
+  TagChips,
+  sourceLabel,
+} from './chips'
 import { OpportunityRowActions } from './opportunity-row-actions'
 import { STAGES, formatDateShort, type Priority, type Stage } from './meta'
+import type { EnrichedOpportunity } from './types'
 
-type Opportunity = Doc<'opportunities'>
+type Opportunity = EnrichedOpportunity
 
 /** Ordres canoniques de tri (etape = pipeline, priorite = low<med<high). */
 const STAGE_RANK: Record<Stage, number> = Object.fromEntries(
@@ -21,10 +29,8 @@ const PRIORITY_RANK: Record<Priority, number> = { low: 0, medium: 1, high: 2 }
  * d'ouverture du detail (clavier / menu d'actions).
  */
 export function buildOpportunityColumns({
-  companyNames,
   onOpen,
 }: {
-  companyNames: Map<string, string>
   onOpen: (id: Id<'opportunities'>) => void
 }): ColumnDef<Opportunity, unknown>[] {
   return [
@@ -39,8 +45,9 @@ export function buildOpportunityColumns({
       meta: { headerClassName: 'w-[40%]' },
       cell: ({ row }) => {
         const o = row.original
+        const targetName = o.companyName ?? o.contactName
         return (
-          <div className="flex flex-col gap-0.5">
+          <div className="flex flex-col gap-1">
             <span className="flex items-center gap-2">
               <span className="truncate font-medium text-fg">{o.title}</span>
               <TypeChip
@@ -48,8 +55,16 @@ export function buildOpportunityColumns({
                 className="hidden shrink-0 xl:inline-flex"
               />
             </span>
-            <span className="truncate text-xs text-fg-subtle">
-              {companyNames.get(o.companyId ?? '') ?? 'Sans entreprise'}
+            <span className="flex flex-wrap items-center gap-1.5">
+              {targetName ? (
+                <TargetChip
+                  targetType={o.effectiveTargetType}
+                  name={targetName}
+                />
+              ) : (
+                <span className="text-xs text-fg-subtle">Sans cible</span>
+              )}
+              <TagChips tags={o.tags} max={2} />
             </span>
           </div>
         )
@@ -103,6 +118,7 @@ export function buildOpportunityColumns({
       header: () => <span className="eyebrow">Suivi</span>,
       cell: ({ row }) => {
         const o = row.original
+        const source = sourceLabel(o.sourceChannel, o.sourceDetail, o.source)
         return (
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-fg-muted">
             {o.compensation && (
@@ -115,6 +131,15 @@ export function buildOpportunityColumns({
               <span className="inline-flex items-center gap-1 text-fg-subtle">
                 <MapPin className="size-3.5" />
                 {o.location}
+              </span>
+            )}
+            {source && (
+              <span
+                className="inline-flex max-w-[14rem] items-center gap-1 text-fg-subtle"
+                title={source}
+              >
+                <Radio className="size-3.5 shrink-0" />
+                <span className="truncate">{source}</span>
               </span>
             )}
             {o.nextActionAt && <DueBadge date={o.nextActionAt} />}

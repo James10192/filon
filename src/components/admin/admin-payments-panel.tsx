@@ -1,7 +1,13 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAction } from 'convex/react'
 import { ConvexError } from 'convex/values'
-import { CreditCard, RefreshCw, AlertTriangle } from 'lucide-react'
+import {
+  CreditCard,
+  RefreshCw,
+  AlertTriangle,
+  Wallet,
+  CheckCircle2,
+} from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
@@ -16,23 +22,23 @@ import {
   TableRow,
 } from '~/components/ui/table'
 import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetTitle,
+} from '~/components/ui/sheet'
+import { useMediaQuery } from '~/hooks/use-media-query'
+import {
   formatDate,
   formatNumber,
   formatXof,
   paymentChannelLabel,
   paymentStatusMeta,
 } from './admin-meta'
-
-type PaystackTransaction = {
-  id: number
-  amount: number
-  currency: string
-  status: string
-  reference: string
-  channel: string | null
-  paidAt: string | null
-  email: string | null
-}
+import {
+  AdminPaymentDetail,
+  type PaystackTransaction,
+} from './admin-payment-detail'
 
 /** Message d'erreur lisible depuis une erreur Convex (ou un échec réseau). */
 function errorMessage(error: unknown): string {
@@ -49,15 +55,18 @@ function errorMessage(error: unknown): string {
 }
 
 /**
- * Section « Paiements » du back-office : transactions reçues via Paystack.
- * Une action Convex n'est PAS réactive : on charge une fois au montage et on
- * rafraîchit à la demande (bouton « Actualiser »).
+ * Section « Paiements » du back-office : transactions reçues via Paystack en
+ * master-detail (liste à gauche, détail d'une transaction à droite ; Sheet sous
+ * `lg`), précédées de deux mini-widgets de synthèse. Une action Convex n'est PAS
+ * réactive : on charge une fois au montage et on rafraîchit à la demande.
  */
 export function AdminPaymentsPanel() {
   const fetchTransactions = useAction(api.admin.paystackTransactions)
   const [rows, setRows] = useState<PaystackTransaction[] | undefined>(undefined)
   const [error, setError] = useState<string | undefined>(undefined)
   const [refreshing, setRefreshing] = useState(false)
+  const [selectedId, setSelectedId] = useState<number | null>(null)
+  const isDesktop = useMediaQuery('(min-width: 1024px)')
 
   const load = useCallback(
     async (withToast: boolean) => {
@@ -82,59 +91,202 @@ export function AdminPaymentsPanel() {
     void load(false)
   }, [load])
 
+  // Si la transaction sélectionnée disparaît après actualisation, on referme.
+  useEffect(() => {
+    if (selectedId === null || !rows) return
+    if (!rows.some((t) => t.id === selectedId)) setSelectedId(null)
+  }, [rows, selectedId])
+
   const loading = rows === undefined
+  const selected = useMemo(
+    () => rows?.find((t) => t.id === selectedId) ?? null,
+    [rows, selectedId],
+  )
+  const compact = selected !== null
 
   return (
-    <section className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-fg-muted">
-          {loading
-            ? 'Chargement des paiements.'
-            : `${formatNumber(rows.length)} transaction${rows.length > 1 ? 's' : ''}, récentes d'abord.`}
-        </p>
-        <Button
-          variant="outline"
-          className="h-11"
-          onClick={() => void load(true)}
-          disabled={refreshing}
-        >
-          <RefreshCw
-            className={`size-4${refreshing ? ' animate-spin' : ''}`}
-            aria-hidden
-          />
-          Actualiser
-        </Button>
+    <section className="flex flex-col gap-5">
+      {rows && rows.length > 0 && <PaymentsSummary rows={rows} />}
+
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-fg-muted">
+            {loading
+              ? 'Chargement des paiements.'
+              : `${formatNumber(rows.length)} transaction${rows.length > 1 ? 's' : ''}, récentes d'abord.`}
+          </p>
+          <Button
+            variant="outline"
+            className="h-11"
+            onClick={() => void load(true)}
+            disabled={refreshing}
+          >
+            <RefreshCw
+              className={`size-4${refreshing ? ' animate-spin' : ''}`}
+              aria-hidden
+            />
+            Actualiser
+          </Button>
+        </div>
+
+        {error && !loading && (rows?.length ?? 0) === 0 ? (
+          <PaymentsError message={error} />
+        ) : (
+          <div className="flex gap-5">
+            <div className={compact ? 'w-full shrink-0 lg:w-96' : 'w-full'}>
+              <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface shadow-[var(--shadow-card)]">
+                {loading ? (
+                  <PaymentsTableSkeleton />
+                ) : rows.length === 0 ? (
+                  <EmptyPayments />
+                ) : (
+                  <>
+                    {/* Mobile (ou liste compacte) : cartes empilées. */}
+                    <ul
+                      className={
+                        compact
+                          ? 'flex flex-col divide-y divide-border'
+                          : 'flex flex-col divide-y divide-border sm:hidden'
+                      }
+                    >
+                      {rows.map((t) => (
+                        <PaymentMobileCard
+                          key={t.id}
+                          tx={t}
+                          selected={t.id === selectedId}
+                          onSelect={setSelectedId}
+                        />
+                      ))}
+                    </ul>
+                    {!compact && (
+                      <div className="hidden sm:block">
+                        <PaymentsTable
+                          rows={rows}
+                          selectedId={selectedId}
+                          onSelect={setSelectedId}
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Panneau détail — desktop : colonne sticky à droite. */}
+            {compact && selected && (
+              <aside className="sticky top-0 hidden h-[calc(100dvh-9rem)] flex-1 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface shadow-[var(--shadow-card)] lg:block">
+                <AdminPaymentDetail
+                  key={selected.id}
+                  tx={selected}
+                  onClose={() => setSelectedId(null)}
+                />
+              </aside>
+            )}
+          </div>
+        )}
       </div>
 
-      {error && !loading && (rows?.length ?? 0) === 0 ? (
-        <PaymentsError message={error} />
-      ) : (
-        <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface shadow-[var(--shadow-card)]">
-          {loading ? (
-            <PaymentsTableSkeleton />
-          ) : rows.length === 0 ? (
-            <EmptyPayments />
-          ) : (
-            <>
-              {/* Mobile : cartes empilées, le tableau à 6 colonnes est illisible
-                  sous sm même en défilement horizontal. */}
-              <ul className="flex flex-col divide-y divide-border sm:hidden">
-                {rows.map((t) => (
-                  <PaymentMobileCard key={t.id} tx={t} />
-                ))}
-              </ul>
-              <div className="hidden sm:block">
-                <PaymentsTable rows={rows} />
-              </div>
-            </>
+      {/* Panneau détail — sous `lg` : Sheet plein écran. */}
+      <Sheet
+        open={compact && !isDesktop}
+        onOpenChange={(open) => !open && setSelectedId(null)}
+      >
+        <SheetContent
+          side="right"
+          className="w-full max-w-full gap-0 p-0 [&>button:last-child]:hidden"
+        >
+          <SheetTitle className="sr-only">Détail de la transaction</SheetTitle>
+          <SheetDescription className="sr-only">
+            Vue détaillée de la transaction sélectionnée.
+          </SheetDescription>
+          {selected && (
+            <AdminPaymentDetail
+              key={selected.id}
+              tx={selected}
+              onClose={() => setSelectedId(null)}
+            />
           )}
-        </div>
-      )}
+        </SheetContent>
+      </Sheet>
     </section>
   )
 }
 
-function PaymentsTable({ rows }: { rows: PaystackTransaction[] }) {
+/** Deux mini-widgets de synthèse : volume encaissé + transactions réussies. */
+function PaymentsSummary({ rows }: { rows: PaystackTransaction[] }) {
+  const successful = rows.filter((t) => t.status === 'success')
+  const collectedXof = successful
+    .filter((t) => t.currency === 'XOF')
+    .reduce((sum, t) => sum + t.amount, 0)
+  return (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <SummaryWidget
+        icon={Wallet}
+        label="Encaissé (XOF)"
+        value={formatXof(collectedXof)}
+        hint="Transactions réussies"
+        accent
+      />
+      <SummaryWidget
+        icon={CheckCircle2}
+        label="Transactions réussies"
+        value={`${formatNumber(successful.length)} / ${formatNumber(rows.length)}`}
+        hint="Sur la période chargée"
+      />
+    </div>
+  )
+}
+
+function SummaryWidget({
+  icon: Icon,
+  label,
+  value,
+  hint,
+  accent,
+}: {
+  icon: typeof Wallet
+  label: string
+  value: string
+  hint: string
+  accent?: boolean
+}) {
+  return (
+    <div className="reveal flex items-start justify-between gap-3 rounded-[var(--radius-lg)] border border-border bg-surface p-5 shadow-[var(--shadow-card)]">
+      <div className="flex min-w-0 flex-col gap-1.5">
+        <span className="eyebrow">{label}</span>
+        <span
+          className={
+            accent
+              ? 'assay text-2xl font-semibold tracking-[-0.02em] text-accent'
+              : 'assay text-2xl font-semibold tracking-[-0.02em] text-fg'
+          }
+        >
+          {value}
+        </span>
+        <span className="assay-meta text-xs">{hint}</span>
+      </div>
+      <span
+        className={
+          accent
+            ? 'flex size-9 shrink-0 items-center justify-center rounded-[var(--radius)] bg-accent-soft text-accent'
+            : 'flex size-9 shrink-0 items-center justify-center rounded-[var(--radius)] bg-surface-2 text-fg-muted'
+        }
+      >
+        <Icon className="size-4.5" />
+      </span>
+    </div>
+  )
+}
+
+function PaymentsTable({
+  rows,
+  selectedId,
+  onSelect,
+}: {
+  rows: PaystackTransaction[]
+  selectedId: number | null
+  onSelect: (id: number | null) => void
+}) {
   return (
     <Table>
       <TableHeader>
@@ -150,8 +302,14 @@ function PaymentsTable({ rows }: { rows: PaystackTransaction[] }) {
       <TableBody>
         {rows.map((t) => {
           const statusMeta = paymentStatusMeta(t.status)
+          const isSelected = t.id === selectedId
           return (
-            <TableRow key={t.id} className="border-border">
+            <TableRow
+              key={t.id}
+              onClick={() => onSelect(isSelected ? null : t.id)}
+              data-state={isSelected ? 'selected' : undefined}
+              className="cursor-pointer border-border data-[state=selected]:bg-accent-soft"
+            >
               <TableCell className="whitespace-nowrap font-medium text-fg">
                 {t.currency === 'XOF'
                   ? formatXof(t.amount)
@@ -180,31 +338,46 @@ function PaymentsTable({ rows }: { rows: PaystackTransaction[] }) {
   )
 }
 
-/** Carte d'une transaction pour l'affichage mobile (sous `sm`). */
-function PaymentMobileCard({ tx }: { tx: PaystackTransaction }) {
+/** Carte d'une transaction (affichage mobile et liste compacte). */
+function PaymentMobileCard({
+  tx,
+  selected,
+  onSelect,
+}: {
+  tx: PaystackTransaction
+  selected: boolean
+  onSelect: (id: number | null) => void
+}) {
   const statusMeta = paymentStatusMeta(tx.status)
   return (
-    <li className="flex flex-col gap-2 px-4 py-3.5">
-      <div className="flex items-start justify-between gap-3">
-        <span className="font-medium text-fg">
-          {tx.currency === 'XOF'
-            ? formatXof(tx.amount)
-            : `${formatNumber(tx.amount)} ${tx.currency}`}
-        </span>
-        <Badge variant={statusMeta.variant} className="shrink-0">
-          {statusMeta.label}
-        </Badge>
-      </div>
-      <p className="truncate text-sm text-fg-muted">{tx.email ?? '—'}</p>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-fg-subtle">
-        <Badge variant="outline" className="shrink-0">
-          {paymentChannelLabel(tx.channel)}
-        </Badge>
-        <span className="truncate font-mono">{tx.reference}</span>
-        <span className="ml-auto whitespace-nowrap">
-          {tx.paidAt ? formatDate(Date.parse(tx.paidAt)) : '—'}
-        </span>
-      </div>
+    <li>
+      <button
+        type="button"
+        onClick={() => onSelect(selected ? null : tx.id)}
+        data-state={selected ? 'selected' : undefined}
+        className="flex min-h-11 w-full flex-col gap-2 px-4 py-3.5 text-left transition-colors hover:bg-surface-2 data-[state=selected]:bg-accent-soft"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <span className="font-medium text-fg">
+            {tx.currency === 'XOF'
+              ? formatXof(tx.amount)
+              : `${formatNumber(tx.amount)} ${tx.currency}`}
+          </span>
+          <Badge variant={statusMeta.variant} className="shrink-0">
+            {statusMeta.label}
+          </Badge>
+        </div>
+        <p className="truncate text-sm text-fg-muted">{tx.email ?? '—'}</p>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-fg-subtle">
+          <Badge variant="outline" className="shrink-0">
+            {paymentChannelLabel(tx.channel)}
+          </Badge>
+          <span className="truncate font-mono">{tx.reference}</span>
+          <span className="ml-auto whitespace-nowrap">
+            {tx.paidAt ? formatDate(Date.parse(tx.paidAt)) : '—'}
+          </span>
+        </div>
+      </button>
     </li>
   )
 }
