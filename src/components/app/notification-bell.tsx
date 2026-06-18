@@ -67,7 +67,7 @@ export function NotificationBell() {
 
       <PopoverContent
         align="end"
-        className="w-[20rem] border-border bg-surface p-0 text-popover-foreground sm:w-[22rem]"
+        className="w-[min(22rem,calc(100vw-2rem))] border-border bg-surface p-0 text-popover-foreground"
       >
         <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
           <p className="text-sm font-medium text-fg">{m.notifications_title()}</p>

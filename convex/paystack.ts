@@ -1,4 +1,4 @@
-import { v } from 'convex/values'
+import { v, ConvexError } from 'convex/values'
 import type { GenericActionCtx } from 'convex/server'
 import { action } from './_generated/server'
 import { internal } from './_generated/api'
@@ -11,6 +11,13 @@ import {
   type Interval,
   type PaidPlan,
 } from './lib/pricing'
+import { planCodeFor } from './lib/paystackPlans'
+
+/** Erreur métier de facturation typée : traverse jusqu'au client (sinon en
+ * prod Convex masque le message des `Error` brutes en « Server Error »). */
+function billingError(message: string): ConvexError<{ kind: 'BILLING'; message: string }> {
+  return new ConvexError({ kind: 'BILLING', message })
+}
 
 /**
  * Domaine paystack · intégration paiement (test mode).
@@ -52,7 +59,7 @@ const kindValidator = v.union(
 function secretKey(): string {
   const key = process.env.PAYSTACK_SECRET_KEY
   if (!key) {
-    throw new Error(
+    throw billingError(
       'Paiement indisponible : PAYSTACK_SECRET_KEY non configurée.',
     )
   }
@@ -88,6 +95,12 @@ export const startCheckout = action({
     plan: v.optional(paidPlanValidator),
     interval: v.optional(intervalValidator),
     packId: v.optional(v.string()),
+    // Canal d'intention choisi côté UI (page Tarifs) :
+    //  - true (défaut abonnement) : CARTE → souscription native Paystack
+    //    récurrente, SI les Plans sont provisionnés (sinon retombe sur ponctuel).
+    //  - false : MOBILE MONEY → paiement PONCTUEL (aucune autorisation
+    //    réutilisable, donc jamais de plan_code transmis).
+    recurring: v.optional(v.boolean()),
   },
   handler: async (
     ctx,
@@ -95,77 +108,122 @@ export const startCheckout = action({
   ): Promise<{ authorizationUrl: string; reference: string }> => {
     const { userId, email } = await requireUserFromAction(ctx)
     if (!email) {
-      throw new Error('E-mail introuvable : impossible de lancer le paiement.')
+      throw billingError(
+        'E-mail introuvable : impossible de lancer le paiement.',
+      )
     }
 
     const kind = args.kind ?? 'subscription'
 
-    // Montant + métadonnées selon le type d'achat.
-    let amountXof: number
-    let metadata: Record<string, unknown>
+    // --- Pack de crédits : strictement PONCTUEL, inchangé. ---
     if (kind === 'credit_pack') {
-      if (!args.packId) {
-        throw new Error('Pack de crédits manquant.')
-      }
+      if (!args.packId) throw billingError('Pack de crédits manquant.')
       const pack = creditPackById(args.packId)
-      if (!pack) throw new Error('Pack de crédits inconnu.')
-      amountXof = pack.priceXof
-      metadata = {
-        userId,
-        kind: 'credit_pack',
-        packId: pack.id,
-        credits: pack.credits,
-        amountXof,
+      if (!pack) throw billingError('Pack de crédits inconnu.')
+      const body = {
+        email,
+        amount: toPaystackSubunit(pack.priceXof),
+        currency: 'XOF',
+        channels: ['card', 'mobile_money'],
+        callback_url: `${appBaseUrl()}/app/tarifs?paystack=return`,
+        metadata: {
+          userId,
+          kind: 'credit_pack',
+          packId: pack.id,
+          credits: pack.credits,
+          amountXof: pack.priceXof,
+          billingMode: 'manual',
+        },
       }
-    } else {
-      if (!args.plan || !args.interval) {
-        throw new Error('Palier ou intervalle manquant.')
-      }
-      const plan = args.plan as PaidPlan
-      const interval = args.interval as Interval
-      amountXof = priceXof(plan, interval)
-      metadata = {
-        userId,
-        kind: 'subscription',
-        plan,
-        interval,
-        amountXof,
-      }
+      return initializeTransaction(body)
     }
 
+    // --- Abonnement : natif (carte) vs ponctuel (mobile money). ---
+    if (!args.plan || !args.interval) {
+      throw billingError('Palier ou intervalle manquant.')
+    }
+    const plan = args.plan as PaidPlan
+    const interval = args.interval as Interval
+    const amountXof = priceXof(plan, interval)
+
+    // Carte récurrente demandée ET Plans provisionnés → souscription NATIVE.
+    const recurring = args.recurring ?? true
+    const planCode = recurring
+      ? planCodeFor(
+          await ctx.runQuery(internal.paystackPlans.planCodeMap, {}),
+          plan,
+          interval,
+        )
+      : null
+
+    if (planCode) {
+      // Mode NATIF : on passe `plan` (Paystack prend le montant du plan, on
+      // n'envoie donc PAS `amount`) et on force `channels: ['card']` (le mobile
+      // money ne peut pas porter un mandat récurrent). Le webhook
+      // `subscription.create` posera billingMode='native' + subscription_code.
+      const body = {
+        email,
+        plan: planCode,
+        channels: ['card'],
+        callback_url: `${appBaseUrl()}/app/tarifs?paystack=return`,
+        metadata: {
+          userId,
+          kind: 'subscription',
+          plan,
+          interval,
+          amountXof,
+          billingMode: 'native',
+        },
+      }
+      return initializeTransaction(body)
+    }
+
+    // Mode PONCTUEL (mobile money, recurring=false, ou Plans non provisionnés) :
+    // comportement actuel conservé. Si les Plans ne sont pas provisionnés, on
+    // garde les deux canaux pour ne pas bloquer l'achat en test-mode.
     const body = {
       email,
       // XOF × 100 (exigence Paystack pour une devise pourtant zéro décimale).
       amount: toPaystackSubunit(amountXof),
       currency: 'XOF',
-      // Carte (récurrent possible) + mobile money (ponctuel).
-      channels: ['card', 'mobile_money'],
+      channels: recurring ? ['card', 'mobile_money'] : ['mobile_money'],
       callback_url: `${appBaseUrl()}/app/tarifs?paystack=return`,
-      metadata,
-    }
-
-    const res = await fetch(`${PAYSTACK_BASE}/transaction/initialize`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${secretKey()}`,
-        'Content-Type': 'application/json',
+      metadata: {
+        userId,
+        kind: 'subscription',
+        plan,
+        interval,
+        amountXof,
+        billingMode: 'manual',
       },
-      body: JSON.stringify(body),
-    })
-
-    const json = (await res.json()) as InitResponse
-    if (!res.ok || !json.status || !json.data) {
-      throw new Error(
-        `Initialisation Paystack échouée : ${json.message ?? res.statusText}`,
-      )
     }
-
-    return {
-      authorizationUrl: json.data.authorization_url,
-      reference: json.data.reference,
-    }
+    return initializeTransaction(body)
   },
 })
+
+/** Initialise une transaction Paystack et renvoie l'`authorization_url`. */
+async function initializeTransaction(
+  body: Record<string, unknown>,
+): Promise<{ authorizationUrl: string; reference: string }> {
+  const res = await fetch(`${PAYSTACK_BASE}/transaction/initialize`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${secretKey()}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  })
+  const json = (await res.json()) as InitResponse
+  if (!res.ok || !json.status || !json.data) {
+    throw billingError(
+      `Initialisation Paystack échouée : ${json.message ?? res.statusText}`,
+    )
+  }
+  return {
+    authorizationUrl: json.data.authorization_url,
+    reference: json.data.reference,
+  }
+}
 
 type VerifyResponse = {
   status: boolean
@@ -257,12 +315,19 @@ export const verifyCheckout = action({
       return { ok: false, kind: 'subscription', plan: null, credits: null }
     }
 
+    // Au retour immédiat, on confirme le palier en mode 'manual' (paiement
+    // ponctuel : c'est le retour client, source de vérité = vérification API).
+    // Si le paiement était une souscription NATIVE (carte), le webhook
+    // `subscription.create` réécrira billingMode='native' + subscription_code +
+    // email_token quand Paystack l'émettra : applySubscription est idempotent et
+    // ne dégrade jamais un user déjà passé en 'native'.
     await ctx.runMutation(internal.billing.applySubscription, {
       ...(userId ? { userId } : {}),
       ...(data.customer?.email ? { email: data.customer.email } : {}),
       plan,
       planInterval: interval,
       planRenewsAt: renewsAt(interval),
+      billingMode: 'manual',
       ...(data.authorization?.authorization_code
         ? { subscriptionRef: data.authorization.authorization_code }
         : {}),

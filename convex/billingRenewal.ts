@@ -57,6 +57,11 @@ function toCandidate(doc: Doc<'users'>): Candidate | null {
   const plan = planOf(doc.plan ?? null)
   if (plan === 'free') return null
   if (typeof doc.planRenewsAt !== 'number') return null
+  // Souscription NATIVE (carte) : Paystack gère débit, retentes et dunning. Le
+  // cron maison ne DOIT PAS la toucher (sinon doublon de relance/débit). On ne
+  // garde que le régime 'manual' (mobile money / ponctuel) et les abonnements
+  // pré-migration sans billingMode (traités comme 'manual').
+  if (doc.billingMode === 'native') return null
   // Annulation programmée vers 'free' : pas de relance de renouvellement (le
   // user a explicitement coupé). Un downgrade vers un autre palier payant reste
   // un renouvellement (palier cible payé à l'échéance) → on le laisse passer.

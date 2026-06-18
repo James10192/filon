@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { createTool } from '@convex-dev/agent'
 import { internal } from '../../_generated/api'
 import type { Id } from '../../_generated/dataModel'
+import { authError } from '../../lib/plan'
 
 /**
  * Outils d'ÉCRITURE du copilote (soumis au flux d'approbation).
@@ -28,7 +29,7 @@ type ApprovalRequired = {
 
 /** Identité utilisateur du ToolCtx (posée par l'action du copilote). */
 function requireUserId(ctx: { userId?: string }): string {
-  if (!ctx.userId) throw new Error('Contexte utilisateur manquant')
+  if (!ctx.userId) throw authError('Contexte utilisateur manquant')
   return ctx.userId
 }
 

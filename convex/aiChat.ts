@@ -10,6 +10,7 @@ import {
 import { internal } from './_generated/api'
 import type { Doc } from './_generated/dataModel'
 import { requireUser, requireUserFromAction, requireCopilot } from './lib/withUser'
+import { forbiddenError, notFoundError } from './lib/plan'
 import { type Plan } from './lib/plan'
 import { creditsForUsage } from './lib/credits'
 import { readCreditState, ensureAiBudget, type AiBudget } from './lib/aiGate'
@@ -180,7 +181,7 @@ export const renameThread = mutation({
       .query('aiThreads')
       .withIndex('by_threadId', (q) => q.eq('threadId', threadId))
       .unique()
-    if (!doc || doc.userId !== userId) throw new Error('Introuvable')
+    if (!doc || doc.userId !== userId) throw notFoundError('Introuvable')
     const clean = title.trim().slice(0, 80)
     if (clean) await ctx.db.patch(doc._id, { title: clean })
     return null
@@ -241,7 +242,7 @@ export const listMessages = query({
       .query('aiThreads')
       .withIndex('by_threadId', (q) => q.eq('threadId', args.threadId))
       .unique()
-    if (!mirror || mirror.userId !== userId) throw new Error('Non autorisé')
+    if (!mirror || mirror.userId !== userId) throw forbiddenError('Non autorisé')
 
     const paginated: PaginationResult<MessageDoc> = await copilot.listMessages(
       ctx,

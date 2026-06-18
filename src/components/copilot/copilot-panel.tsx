@@ -38,7 +38,13 @@ export function CopilotPanel({
 }) {
   const credits = useQuery(api.aiCredits.myCredits, {})
   const [exhausted, setExhausted] = useState(false)
-  const [railOpen, setRailOpen] = useState(true)
+  // Rail d'historique ouvert par défaut sur grand écran, replié sur mobile (où
+  // il occuperait la moitié de la largeur). `matchMedia` côté client uniquement.
+  const [railOpen, setRailOpen] = useState(
+    () =>
+      typeof window === 'undefined' ||
+      window.matchMedia('(min-width: 768px)').matches,
+  )
   const [tab, setTab] = useState<Tab>('conversation')
   const [draft, setDraft] = useState('')
   const copilot = useCopilot(() => setExhausted(true))
@@ -125,6 +131,7 @@ export function CopilotPanel({
                 sending={copilot.sending}
                 onPick={copilot.send}
                 onDecision={copilot.approve}
+                onNavigate={onNavigate}
               />
             </div>
             <div className="shrink-0 space-y-2.5 border-t border-border p-3">

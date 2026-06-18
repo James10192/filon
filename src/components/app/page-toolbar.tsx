@@ -43,8 +43,8 @@ export function PageToolbar({
         className,
       )}
     >
-      <div className="flex flex-wrap items-start justify-between gap-3 pb-3">
-        <div className="min-w-0">
+      <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2 pb-3">
+        <div className="min-w-0 flex-1 basis-48">
           <h1 className="truncate text-[19px] font-semibold leading-tight tracking-[-0.02em] text-fg">
             {title}
           </h1>
@@ -53,7 +53,9 @@ export function PageToolbar({
           )}
         </div>
         {actions && (
-          <div className="flex shrink-0 items-center gap-2">{actions}</div>
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            {actions}
+          </div>
         )}
       </div>
       {children && <div className="pb-3">{children}</div>}

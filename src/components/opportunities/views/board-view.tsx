@@ -76,7 +76,7 @@ function BoardSkeleton() {
         {STAGE_ORDER.slice(0, 5).map((stage) => (
           <div
             key={stage}
-            className="flex w-[304px] shrink-0 flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface shadow-[var(--shadow-card)]"
+            className="flex w-[82vw] max-w-[304px] shrink-0 flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface shadow-[var(--shadow-card)] sm:w-[304px]"
           >
             <Skeleton className="h-px w-full rounded-none" />
             <div className="flex items-center gap-2 px-3.5 pb-2.5 pt-3">

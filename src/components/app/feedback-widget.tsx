@@ -121,7 +121,7 @@ function FeedbackDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="grid max-h-[85vh] w-[calc(100%-2rem)] grid-rows-[auto_minmax(0,1fr)] overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <span className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] bg-accent-soft text-accent">
@@ -132,7 +132,10 @@ function FeedbackDialog({
           <DialogDescription>{m.feedback_description()}</DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="grid gap-4">
+        <form
+          onSubmit={handleSubmit}
+          className="-mx-1 grid min-h-0 gap-4 overflow-y-auto px-1"
+        >
           <div className="grid gap-2">
             <Label htmlFor="feedback-type">{m.feedback_type_label()}</Label>
             <Select

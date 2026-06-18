@@ -57,7 +57,12 @@ export function RunNowButton() {
 
   return (
     <>
-      <Button variant="outline" onClick={handleRun} disabled={running}>
+      <Button
+        variant="outline"
+        onClick={handleRun}
+        disabled={running}
+        className="flex-1 sm:flex-none"
+      >
         {running ? (
           <Loader2 className="size-4 animate-spin" />
         ) : (

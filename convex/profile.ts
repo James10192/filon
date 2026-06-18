@@ -2,6 +2,7 @@ import { v } from 'convex/values'
 import { mutation } from './_generated/server'
 import type { Doc } from './_generated/dataModel'
 import { requireUser, type MutationCtx } from './lib/withUser'
+import { notFoundError } from './lib/plan'
 
 /**
  * Domaine : photo de profil (`api.profile.*`).
@@ -50,7 +51,7 @@ export const setProfileImage = mutation({
     const { userId, email } = await requireUser(ctx)
 
     const url = await ctx.storage.getUrl(storageId)
-    if (!url) throw new Error('Le fichier importé est introuvable.')
+    if (!url) throw notFoundError('Le fichier importé est introuvable.')
 
     const doc = await currentUserDoc(ctx, userId)
     if (doc) {

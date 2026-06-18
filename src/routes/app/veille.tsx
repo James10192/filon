@@ -38,12 +38,15 @@ function VeillePage() {
         title="Veille"
         subtitle="Votre radar de prospection : surveillez plusieurs sources, captez offres et prospects automatiquement."
         actions={
-          <>
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
             <RunNowButton />
-            <Button onClick={() => setImportOpen(true)}>
+            <Button
+              onClick={() => setImportOpen(true)}
+              className="flex-1 sm:flex-none"
+            >
               Importer une offre
             </Button>
-          </>
+          </div>
         }
       />
 

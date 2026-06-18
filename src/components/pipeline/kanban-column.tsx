@@ -41,7 +41,9 @@ export function KanbanColumn({
     <section
       aria-label={`Colonne ${meta.label}`}
       className={cn(
-        'flex w-[304px] shrink-0 snap-start flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface shadow-[var(--shadow-card)] transition-opacity',
+        // Mobile : colonne fluide qui laisse entrevoir la suivante (indice de
+        // scroll horizontal). >= sm : largeur fixe 304px.
+        'flex w-[82vw] max-w-[304px] shrink-0 snap-start flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface shadow-[var(--shadow-card)] transition-opacity sm:w-[304px]',
         isClosing && !isDragActive && 'opacity-70',
       )}
     >

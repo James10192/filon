@@ -90,12 +90,12 @@ export function ActivityTimeline({
           placeholder="Ajoutez une note, consignez un échange..."
           rows={3}
         />
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <Select
             value={kind}
             onValueChange={(v) => setKind(v as ActivityKind)}
           >
-            <SelectTrigger className="h-9 w-40">
+            <SelectTrigger className="h-11 w-40 sm:h-9">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

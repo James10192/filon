@@ -50,10 +50,33 @@ export default defineSchema({
     ),
     // Échéance de renouvellement / fin de période payée (epoch ms).
     planRenewsAt: v.optional(v.number()),
-    // Référence d'abonnement Paystack (subscription_code) ou de transaction.
+    // Référence d'abonnement Paystack (subscription_code en mode natif, ou
+    // code de transaction/autorisation en mode manuel). Nom STABLE (lu par
+    // admin.userDetail) : ne pas renommer.
     subscriptionRef: v.optional(v.string()),
     // Code client Paystack (customer_code), pour relier les webhooks au user.
     paystackCustomerCode: v.optional(v.string()),
+    // --- Souscriptions Paystack natives (additif, rétro-compatible) ---
+    // Régime de facturation, choisi par CANAL au checkout :
+    //  - 'native'  : paiement CARTE → souscription Paystack récurrente. Paystack
+    //    débite, retente et relance (dunning) tout seul ; le cron maison NE
+    //    sélectionne JAMAIS ces users.
+    //  - 'manual'  : paiement MOBILE MONEY (ou carte legacy) → paiement ponctuel.
+    //    Le cron maison (relances + downgrade à l'échéance) pilote CEUX-LÀ.
+    // Absent = traité comme 'manual' (les abonnements pré-migration restent
+    // pilotés par le cron, zéro régression).
+    billingMode: v.optional(
+      v.union(v.literal('native'), v.literal('manual')),
+    ),
+    // email_token Paystack, REQUIS (avec subscriptionRef = subscription_code)
+    // pour appeler /subscription/disable et /subscription/enable. Posé par le
+    // webhook `subscription.create`. Absent sur les souscriptions natives
+    // pré-migration → annulation via le lien hébergé Paystack (manageLink).
+    subscriptionEmailToken: v.optional(v.string()),
+    // Drapeau informatif (UI) posé après un `invoice.payment_failed` natif :
+    // Paystack retente selon sa politique de dunning, on n'a PAS rétrogradé.
+    // Effacé au prochain `charge.success` réussi. Purement indicatif.
+    nativeDunning: v.optional(v.boolean()),
     // --- Cycle de vie d'abonnement (Phase 2, additif) ---
     // Renouvellement automatique. Absent = traité comme `true` (les abonnements
     // existants restent en renouvellement). Mis à `false` par `cancelAutoRenew`.
@@ -95,9 +118,35 @@ export default defineSchema({
     .index('by_email', ['email'])
     // Résolution d'un user depuis un webhook par son code client Paystack.
     .index('by_paystackCustomer', ['paystackCustomerCode'])
+    // Résolution d'un user depuis un webhook par sa référence d'abonnement
+    // (subscription_code natif). Remplace le `collect()` global de
+    // cancelSubscription par une lecture indexée (subscription.disable /
+    // not_renew arrivent identifiés par subscription_code).
+    .index('by_subscriptionRef', ['subscriptionRef'])
     // Le cron d'échéance itère les abonnements payants par date de
     // renouvellement (bornage par `planRenewsAt`, jamais de scan global).
     .index('by_planRenewsAt', ['planRenewsAt']),
+
+  // Cache des Plans Paystack provisionnés (catalogue côté PSP). Une ligne par
+  // couple (palier × intervalle) : 6 au total (pro/pro_ai/copilot × mensuel/
+  // annuel). Alimenté UNE FOIS par `paystackPlans.ensurePlans` (idempotent) ;
+  // tant que cette table est vide, `planCodeFor` renvoie null et le checkout
+  // retombe automatiquement sur le paiement ponctuel (sécurité test-mode).
+  billingPlans: defineTable({
+    // Clé logique stable : `${plan}_${interval}` (ex 'pro_monthly').
+    planKey: v.string(),
+    plan: v.union(
+      v.literal('pro'),
+      v.literal('pro_ai'),
+      v.literal('copilot'),
+    ),
+    interval: v.union(v.literal('monthly'), v.literal('annual')),
+    // plan_code Paystack (ex 'PLN_xxx'), résolu au runtime par planCodeFor.
+    planCode: v.string(),
+    // Montant XOF entier (sans la sous-unité ×100), pour audit/diagnostic.
+    amountXof: v.number(),
+    updatedAt: v.number(),
+  }).index('by_planKey', ['planKey']),
 
   // Entreprises ciblées (employeurs, clients potentiels).
   companies: defineTable({

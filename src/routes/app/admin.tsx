@@ -98,12 +98,17 @@ function AdminContent() {
         }
         className="gap-5"
       >
-        <TabsList>
-          <TabsTrigger value="utilisateurs">Utilisateurs</TabsTrigger>
-          <TabsTrigger value="metriques">Métriques</TabsTrigger>
-          <TabsTrigger value="feedbacks">Feedbacks</TabsTrigger>
-          <TabsTrigger value="paiements">Paiements</TabsTrigger>
-        </TabsList>
+        {/* Onglets : sur mobile, on autorise le défilement horizontal pour ne
+            jamais rogner un onglet sous 360px (la barre garde sa largeur de
+            contenu mais devient scrollable). */}
+        <div className="-mx-1 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <TabsList className="w-max">
+            <TabsTrigger value="utilisateurs">Utilisateurs</TabsTrigger>
+            <TabsTrigger value="metriques">Métriques</TabsTrigger>
+            <TabsTrigger value="feedbacks">Feedbacks</TabsTrigger>
+            <TabsTrigger value="paiements">Paiements</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="utilisateurs">
           <AdminUsersPanel

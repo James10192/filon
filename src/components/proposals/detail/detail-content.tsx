@@ -58,7 +58,7 @@ export function ProposalDetailContent({
             <Badge variant={STATUS_BADGE[status]} className="shrink-0">
               {STATUS_LABELS[status]}
             </Badge>
-            <h1 className="text-xl font-semibold tracking-[-0.02em] text-fg sm:text-2xl">
+            <h1 className="break-words text-xl font-semibold tracking-[-0.02em] text-fg sm:text-2xl">
               {proposal.title}
             </h1>
             <p className="text-sm text-fg-muted">{STATUS_HINT[status]}</p>

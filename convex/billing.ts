@@ -1,8 +1,15 @@
-import { v } from 'convex/values'
+import { v, ConvexError } from 'convex/values'
 import { internalMutation, mutation, query } from './_generated/server'
 import type { Doc } from './_generated/dataModel'
 import { requireUser } from './lib/withUser'
 import { PLAN_LIMITS, planOf, type Plan } from './lib/plan'
+
+/** Erreur métier de facturation typée : en prod Convex masque le message des
+ * `Error` brutes (« Server Error ») mais transmet `data`. Le client lit
+ * `data.message` (cf. `errorMessage`/`appErrorData`). */
+function billingError(message: string): ConvexError<{ kind: 'BILLING'; message: string }> {
+  return new ConvexError({ kind: 'BILLING', message })
+}
 
 /**
  * Domaine billing · état d'abonnement côté Convex (facturation maison).
@@ -56,6 +63,18 @@ export const myPlan = query({
     planRenewsAt: number | null
     autoRenew: boolean
     pendingPlan: Plan | null
+    // Régime de facturation : 'native' (carte → souscription Paystack récurrente,
+    // gérée par Paystack) ou 'manual' (mobile money / ponctuel, géré par le cron
+    // maison). Pilote le ROUTAGE de l'annulation côté UI (action native vs
+    // mutation locale). 'manual' par défaut (rétro-compat).
+    billingMode: 'native' | 'manual'
+    // Vrai après un échec de cycle natif (dunning Paystack en cours) : l'UI
+    // l'affiche, sans rétrograder (Paystack retente). Purement informatif.
+    nativeDunning: boolean
+    // Une souscription native annulable côté Paystack nécessite l'email_token.
+    // Exposé en booléen (jamais le token brut) : l'UI sait si l'annulation
+    // native directe est possible, sinon elle propose le lien hébergé.
+    canCancelNative: boolean
     // Métadonnées carte enregistrée (auto-débit possible) ou null si aucune /
     // paiement mobile money. Permet à l'UI d'afficher « Visa ···· 4242 ».
     card: { last4: string; bank: string | null; brand: string | null } | null
@@ -72,6 +91,9 @@ export const myPlan = query({
 
     const doc = await userByAuthId(ctx, authUser.userId)
     const plan = planOf(doc?.plan ?? null)
+    // Absence de `billingMode` = 'manual' (abonnements pré-migration pilotés par
+    // le cron). Une souscription native pose explicitement 'native'.
+    const billingMode = doc?.billingMode === 'native' ? 'native' : 'manual'
     return {
       plan,
       planInterval: doc?.planInterval ?? null,
@@ -79,6 +101,12 @@ export const myPlan = query({
       // Absence d'`autoRenew` = renouvellement actif par défaut.
       autoRenew: doc?.autoRenew ?? true,
       pendingPlan: doc?.pendingPlan ?? null,
+      billingMode,
+      nativeDunning: doc?.nativeDunning ?? false,
+      canCancelNative:
+        billingMode === 'native' &&
+        !!doc?.subscriptionRef &&
+        !!doc?.subscriptionEmailToken,
       card: doc?.cardAuthCode
         ? {
             last4: doc.cardLast4 ?? '????',
@@ -114,16 +142,16 @@ export const scheduleDowngrade = mutation({
   handler: async (ctx, args): Promise<null> => {
     const { userId } = await requireUser(ctx)
     const doc = await userByAuthId(ctx, userId)
-    if (!doc) throw new Error('Profil introuvable')
+    if (!doc) throw billingError('Profil introuvable')
 
     const current = planOf(doc.plan ?? null)
     if (PLAN_RANK[args.target] >= PLAN_RANK[current]) {
-      throw new Error(
+      throw billingError(
         'Une montée en palier se fait via un paiement, pas une programmation.',
       )
     }
     if (!doc.planRenewsAt) {
-      throw new Error("Aucune période payée en cours à l'échéance de laquelle programmer.")
+      throw billingError("Aucune période payée en cours à l'échéance de laquelle programmer.")
     }
     // Programme le palier cible ; le renouvellement auto reste tel quel (le user
     // continue de payer, mais le palier baissera). pendingPlan='free' relève de
@@ -143,9 +171,19 @@ export const cancelAutoRenew = mutation({
   handler: async (ctx): Promise<null> => {
     const { userId } = await requireUser(ctx)
     const doc = await userByAuthId(ctx, userId)
-    if (!doc) throw new Error('Profil introuvable')
+    if (!doc) throw billingError('Profil introuvable')
     if (planOf(doc.plan ?? null) === 'free') {
-      throw new Error('Aucun abonnement payant à annuler.')
+      throw billingError('Aucun abonnement payant à annuler.')
+    }
+    // Souscription NATIVE : l'annulation passe par Paystack (action
+    // `paystackSubscription.disableSubscription`), pas par cette mutation. On
+    // refuse ici pour ne pas créer un état incohérent (Paystack continuerait de
+    // débiter alors qu'on aurait coupé le flag local). L'UI route déjà selon
+    // `billingMode`, ce garde-fou couvre les appels directs.
+    if (doc.billingMode === 'native') {
+      throw billingError(
+        'Abonnement par carte : gérez le renouvellement depuis « Gérer mon abonnement ».',
+      )
     }
     await ctx.db.patch(doc._id, { autoRenew: false, pendingPlan: 'free' })
     return null
@@ -162,12 +200,19 @@ export const reactivateAutoRenew = mutation({
   handler: async (ctx): Promise<null> => {
     const { userId } = await requireUser(ctx)
     const doc = await userByAuthId(ctx, userId)
-    if (!doc) throw new Error('Profil introuvable')
+    if (!doc) throw billingError('Profil introuvable')
     if (planOf(doc.plan ?? null) === 'free') {
-      throw new Error('Aucun abonnement payant à réactiver.')
+      throw billingError('Aucun abonnement payant à réactiver.')
+    }
+    // Souscription NATIVE : la réactivation passe par Paystack (action
+    // `paystackSubscription.enableSubscription`). On refuse ici (garde-fou).
+    if (doc.billingMode === 'native') {
+      throw billingError(
+        'Abonnement par carte : gérez le renouvellement depuis « Gérer mon abonnement ».',
+      )
     }
     if (doc.planRenewsAt && doc.planRenewsAt < Date.now()) {
-      throw new Error('Période échue : relancez un paiement pour réactiver.')
+      throw billingError('Période échue : relancez un paiement pour réactiver.')
     }
     await ctx.db.patch(doc._id, {
       autoRenew: true,
@@ -194,6 +239,13 @@ export const applySubscription = internalMutation({
     planRenewsAt: v.optional(v.number()),
     subscriptionRef: v.optional(v.string()),
     paystackCustomerCode: v.optional(v.string()),
+    // Régime de facturation : 'native' (carte → souscription Paystack) ou
+    // 'manual' (mobile money / ponctuel). Posé selon le canal du checkout.
+    billingMode: v.optional(
+      v.union(v.literal('native'), v.literal('manual')),
+    ),
+    // email_token Paystack (souscription native), requis pour disable/enable.
+    subscriptionEmailToken: v.optional(v.string()),
   },
   handler: async (ctx, args): Promise<boolean> => {
     let doc: Doc<'users'> | null = null
@@ -212,14 +264,18 @@ export const applySubscription = internalMutation({
       planRenewsAt?: number
       subscriptionRef?: string
       paystackCustomerCode?: string
+      billingMode?: 'native' | 'manual'
+      subscriptionEmailToken?: string
       // Un paiement réussi remet le cycle de vie « propre » : on réactive le
       // renouvellement, on efface tout downgrade/annulation programmé et on
-      // remet à zéro le compteur de tentatives d'auto-débit de la période.
+      // remet à zéro le compteur de tentatives d'auto-débit de la période. Le
+      // drapeau de dunning natif est levé (un débit a abouti).
       autoRenew: true
       pendingPlan: undefined
       renewalReminderAt: undefined
       renewalAttempts: undefined
       lastChargeAttemptAt: undefined
+      nativeDunning: undefined
     } = {
       plan: args.plan,
       autoRenew: true,
@@ -227,6 +283,7 @@ export const applySubscription = internalMutation({
       renewalReminderAt: undefined,
       renewalAttempts: undefined,
       lastChargeAttemptAt: undefined,
+      nativeDunning: undefined,
     }
     if (args.planInterval !== undefined) patch.planInterval = args.planInterval
     if (args.planRenewsAt !== undefined) patch.planRenewsAt = args.planRenewsAt
@@ -236,8 +293,136 @@ export const applySubscription = internalMutation({
     if (args.paystackCustomerCode !== undefined) {
       patch.paystackCustomerCode = args.paystackCustomerCode
     }
+    // Anti-régression : ne JAMAIS rétrograder un user déjà 'native' vers
+    // 'manual' (le webhook subscription.create est la vérité du mode natif ; le
+    // retour client verifyCheckout, lui, n'écrit que 'manual'). On n'applique
+    // 'manual' que si le user n'est pas déjà passé en 'native'.
+    if (args.billingMode === 'native') {
+      patch.billingMode = 'native'
+    } else if (args.billingMode === 'manual' && doc.billingMode !== 'native') {
+      patch.billingMode = 'manual'
+    }
+    if (args.subscriptionEmailToken !== undefined) {
+      patch.subscriptionEmailToken = args.subscriptionEmailToken
+    }
 
     await ctx.db.patch(doc._id, patch)
+    return true
+  },
+})
+
+/**
+ * `internal.billing.extendNativePeriod` : prolonge la période payée d'une
+ * souscription NATIVE après un cycle Paystack réussi (charge.success avec plan,
+ * ou invoice.update success en filet). Résout par subscription_code (indexé),
+ * code client, puis e-mail. IDEMPOTENT : ne prolonge QUE si la nouvelle échéance
+ * est strictement postérieure à l'échéance courante (évite la double
+ * prolongation entre charge.success et invoice.update). Lève le drapeau de
+ * dunning natif (un débit a abouti). Ne touche jamais aux autres données.
+ */
+export const extendNativePeriod = internalMutation({
+  args: {
+    subscriptionRef: v.optional(v.string()),
+    paystackCustomerCode: v.optional(v.string()),
+    email: v.optional(v.string()),
+    plan: v.optional(planValidator),
+    planInterval: v.optional(intervalValidator),
+    nextRenewsAt: v.number(),
+  },
+  handler: async (ctx, args): Promise<boolean> => {
+    const doc = await resolveBillingUser(ctx, args)
+    if (!doc) return false
+
+    // Idempotence : ne prolonge que vers l'avant. Si l'échéance courante est
+    // déjà ≥ à la cible, le cycle a déjà été pris en compte (rejeu webhook).
+    const current = doc.planRenewsAt ?? 0
+    const patch: {
+      planRenewsAt?: number
+      plan?: Plan
+      planInterval?: 'monthly' | 'annual'
+      billingMode: 'native'
+      autoRenew: true
+      pendingPlan: undefined
+      renewalReminderAt: undefined
+      renewalAttempts: undefined
+      lastChargeAttemptAt: undefined
+      nativeDunning: undefined
+    } = {
+      billingMode: 'native',
+      autoRenew: true,
+      pendingPlan: undefined,
+      renewalReminderAt: undefined,
+      renewalAttempts: undefined,
+      lastChargeAttemptAt: undefined,
+      nativeDunning: undefined,
+    }
+    if (args.nextRenewsAt > current) patch.planRenewsAt = args.nextRenewsAt
+    if (args.plan !== undefined) patch.plan = args.plan
+    if (args.planInterval !== undefined) patch.planInterval = args.planInterval
+
+    await ctx.db.patch(doc._id, patch)
+    return true
+  },
+})
+
+/**
+ * `internal.billing.markNativeDunning` : pose le drapeau informatif
+ * `nativeDunning` après un `invoice.payment_failed` natif. On NE rétrograde PAS
+ * (Paystack retente selon sa politique de dunning) : seul `subscription.disable`
+ * rétrograde réellement. Purement indicatif pour l'UI.
+ */
+export const markNativeDunning = internalMutation({
+  args: {
+    subscriptionRef: v.optional(v.string()),
+    paystackCustomerCode: v.optional(v.string()),
+    email: v.optional(v.string()),
+  },
+  handler: async (ctx, args): Promise<boolean> => {
+    const doc = await resolveBillingUser(ctx, args)
+    if (!doc) return false
+    await ctx.db.patch(doc._id, { nativeDunning: true })
+    return true
+  },
+})
+
+/**
+ * `internal.billing.markNotRenew` : `subscription.not_renew` (la souscription
+ * native n'ira pas au prochain cycle, par annulation Paystack ou dunning
+ * épuisé). On programme le retour en 'free' à l'échéance (pendingPlan='free' +
+ * autoRenew=false) SANS rétrograder tout de suite : l'accès reste jusqu'à
+ * `planRenewsAt`, puis `subscription.disable` (ou le cron pour le mode manuel)
+ * conclura. On garde subscriptionRef pour résoudre le futur disable.
+ */
+export const markNotRenew = internalMutation({
+  args: {
+    subscriptionRef: v.optional(v.string()),
+    paystackCustomerCode: v.optional(v.string()),
+    email: v.optional(v.string()),
+  },
+  handler: async (ctx, args): Promise<boolean> => {
+    const doc = await resolveBillingUser(ctx, args)
+    if (!doc) return false
+    await ctx.db.patch(doc._id, { autoRenew: false, pendingPlan: 'free' })
+    return true
+  },
+})
+
+/**
+ * `internal.billing.markRenewActive` : réactive le renouvellement d'une
+ * souscription native (retour UI immédiat après /subscription/enable). Source de
+ * vérité = Paystack (le cycle suivant confirmera via charge.success). Efface
+ * l'annulation programmée.
+ */
+export const markRenewActive = internalMutation({
+  args: {
+    subscriptionRef: v.optional(v.string()),
+    paystackCustomerCode: v.optional(v.string()),
+    email: v.optional(v.string()),
+  },
+  handler: async (ctx, args): Promise<boolean> => {
+    const doc = await resolveBillingUser(ctx, args)
+    if (!doc) return false
+    await ctx.db.patch(doc._id, { autoRenew: true, pendingPlan: undefined })
     return true
   },
 })
@@ -326,10 +511,51 @@ export const markChargeAttempt = internalMutation({
 })
 
 /**
+ * Résout une ligne `users` à partir des identifiants Paystack d'un webhook :
+ * subscription_code (indexé `by_subscriptionRef`), code client (indexé
+ * `by_paystackCustomer`), puis e-mail. Aucun scan global (l'index
+ * `by_subscriptionRef` remplace l'ancien `collect()`).
+ */
+async function resolveBillingUser(
+  ctx: { db: any },
+  args: {
+    subscriptionRef?: string
+    paystackCustomerCode?: string
+    email?: string
+  },
+): Promise<Doc<'users'> | null> {
+  let doc: Doc<'users'> | null = null
+  if (args.subscriptionRef) {
+    doc = await ctx.db
+      .query('users')
+      .withIndex('by_subscriptionRef', (q: any) =>
+        q.eq('subscriptionRef', args.subscriptionRef),
+      )
+      .unique()
+  }
+  if (!doc && args.paystackCustomerCode) {
+    doc = await ctx.db
+      .query('users')
+      .withIndex('by_paystackCustomer', (q: any) =>
+        q.eq('paystackCustomerCode', args.paystackCustomerCode),
+      )
+      .unique()
+  }
+  if (!doc && args.email) {
+    doc = await ctx.db
+      .query('users')
+      .withIndex('by_email', (q: any) => q.eq('email', args.email))
+      .unique()
+  }
+  return doc
+}
+
+/**
  * `internal.billing.cancelSubscription` : rétrograde un user au palier gratuit
  * (subscription.disable / non-renouvellement). On ne supprime AUCUNE donnée :
- * on retire seulement les privilèges payants. Résout par `subscriptionRef`,
- * `paystackCustomerCode` ou e-mail.
+ * on retire seulement les privilèges payants et on nettoie les références
+ * d'abonnement natif (subscriptionRef / subscriptionEmailToken / cardAuth*).
+ * Résout par `subscriptionRef` (indexé), `paystackCustomerCode` ou e-mail.
  */
 export const cancelSubscription = internalMutation({
   args: {
@@ -338,29 +564,43 @@ export const cancelSubscription = internalMutation({
     email: v.optional(v.string()),
   },
   handler: async (ctx, args): Promise<boolean> => {
-    let doc: Doc<'users'> | null = null
-    if (args.paystackCustomerCode) {
-      doc = await ctx.db
-        .query('users')
-        .withIndex('by_paystackCustomer', (q) =>
-          q.eq('paystackCustomerCode', args.paystackCustomerCode!),
-        )
-        .unique()
-    }
-    if (!doc && args.subscriptionRef) {
-      const all = await ctx.db.query('users').collect()
-      doc = all.find((u) => u.subscriptionRef === args.subscriptionRef) ?? null
-    }
-    if (!doc && args.email) {
-      doc = await ctx.db
-        .query('users')
-        .withIndex('by_email', (q) => q.eq('email', args.email!))
-        .unique()
-    }
+    const doc = await resolveBillingUser(ctx, args)
     if (!doc) return false
 
-    await ctx.db.patch(doc._id, { plan: 'free' })
+    await ctx.db.patch(doc._id, {
+      plan: 'free',
+      autoRenew: false,
+      pendingPlan: undefined,
+      planRenewsAt: undefined,
+      planInterval: undefined,
+      subscriptionRef: undefined,
+      subscriptionEmailToken: undefined,
+      nativeDunning: undefined,
+      cardAuthCode: undefined,
+      cardLast4: undefined,
+      cardBank: undefined,
+      cardBrand: undefined,
+    })
     return true
+  },
+})
+
+/**
+ * `internal.billing.resolveAuthId` : résout l'`authId` (= userId des
+ * notifications) d'un user depuis les identifiants Paystack d'un webhook
+ * (subscription_code indexé, code client, e-mail), ou null. Utilisé par le
+ * webhook pour adresser une notification quand l'event ne porte pas
+ * `metadata.userId` (cycles de renouvellement natifs).
+ */
+export const resolveAuthId = internalMutation({
+  args: {
+    subscriptionRef: v.optional(v.string()),
+    paystackCustomerCode: v.optional(v.string()),
+    email: v.optional(v.string()),
+  },
+  handler: async (ctx, args): Promise<string | null> => {
+    const doc = await resolveBillingUser(ctx, args)
+    return doc?.authId ?? null
   },
 })
 
@@ -423,12 +663,12 @@ export const devSetPlan = mutation({
     const { userId } = await requireUser(ctx)
     const owner = process.env.OWNER_AUTH_ID
     if (!owner || owner !== userId) {
-      throw new Error(
+      throw billingError(
         'Réservé au propriétaire (définir OWNER_AUTH_ID = votre authId).',
       )
     }
     const doc = await userByAuthId(ctx, userId)
-    if (!doc) throw new Error('Profil introuvable')
+    if (!doc) throw billingError('Profil introuvable')
     const patch: { plan: Plan; planInterval?: 'monthly' | 'annual' } = {
       plan: args.plan,
     }

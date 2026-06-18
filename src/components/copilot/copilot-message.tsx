@@ -37,10 +37,12 @@ export function CopilotMessage({
   message,
   pending,
   onDecision,
+  onNavigate,
 }: {
   message: UIMessage
   pending: boolean
   onDecision: (tool: string, decision: 'once' | 'always' | 'deny') => void
+  onNavigate?: () => void
 }) {
   const isUser = message.role === 'user'
 
@@ -78,6 +80,7 @@ export function CopilotMessage({
                 part={part as unknown as ToolPart}
                 pending={pending}
                 onDecision={onDecision}
+                onNavigate={onNavigate}
               />
             )
           }
@@ -92,10 +95,12 @@ function ToolPartView({
   part,
   pending,
   onDecision,
+  onNavigate,
 }: {
   part: ToolPart
   pending: boolean
   onDecision: (tool: string, decision: 'once' | 'always' | 'deny') => void
+  onNavigate?: () => void
 }) {
   const approval =
     part.state === 'output-available' ? asApproval(part.output) : null
@@ -117,7 +122,7 @@ function ToolPartView({
       ? part.toolName
       : part.type.replace(/^tool-/, '')
   if (part.state === 'output-available') {
-    const rich = renderToolResult(toolName, part.output)
+    const rich = renderToolResult(toolName, part.output, onNavigate)
     if (rich) return <>{rich}</>
   }
 

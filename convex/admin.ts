@@ -4,7 +4,12 @@ import { api } from './_generated/api'
 import type { Doc, Id } from './_generated/dataModel'
 import { isAdmin, requireAdmin, type QueryCtx } from './lib/withUser'
 import { PRICING, type PaidPlan } from './lib/pricing'
-import { forbiddenError, type Plan } from './lib/plan'
+import {
+  forbiddenError,
+  notFoundError,
+  validationError,
+  type Plan,
+} from './lib/plan'
 
 /**
  * Back-office /admin · gestion utilisateurs, métriques, feedbacks.
@@ -265,7 +270,7 @@ export const updateFeedbackStatus = mutation({
     await requireAdmin(ctx)
     const existing = await ctx.db.get(args.id)
     if (!existing) {
-      throw new Error('Feedback introuvable.')
+      throw notFoundError('Feedback introuvable.')
     }
     const patch: { status: Doc<'feedback'>['status']; adminNote?: string } = {
       status: args.status,
@@ -504,7 +509,7 @@ export const setUserPlan = mutation({
       .query('users')
       .withIndex('by_authId', (q) => q.eq('authId', args.userId))
       .unique()
-    if (!user) throw new Error('Compte introuvable.')
+    if (!user) throw notFoundError('Compte introuvable.')
     await ctx.db.patch(user._id, { plan: args.plan })
     return { ok: true as const }
   },
@@ -525,7 +530,7 @@ export const setUserRole = mutation({
       .query('users')
       .withIndex('by_authId', (q) => q.eq('authId', args.userId))
       .unique()
-    if (!user) throw new Error('Compte introuvable.')
+    if (!user) throw notFoundError('Compte introuvable.')
     await ctx.db.patch(user._id, {
       role: args.role === 'admin' ? 'admin' : undefined,
     })
@@ -542,7 +547,7 @@ export const setUserSuspended = mutation({
       .query('users')
       .withIndex('by_authId', (q) => q.eq('authId', args.userId))
       .unique()
-    if (!user) throw new Error('Compte introuvable.')
+    if (!user) throw notFoundError('Compte introuvable.')
     await ctx.db.patch(user._id, { suspended: args.suspended })
     return { ok: true as const }
   },
@@ -574,7 +579,7 @@ export const paystackTransactions = action({
     if (!ok) throw forbiddenError()
 
     const key = process.env.PAYSTACK_SECRET_KEY
-    if (!key) throw new Error('Paystack non configuré.')
+    if (!key) throw validationError('Paystack non configuré.')
 
     const perPage = args.perPage ?? 50
     const res = await fetch(
@@ -595,7 +600,7 @@ export const paystackTransactions = action({
         customer?: { email?: string | null } | null
       }>
     }
-    if (!json.status) throw new Error(json.message)
+    if (!json.status) throw validationError(json.message)
 
     const rows: PaystackTransaction[] = (json.data ?? []).map((t) => ({
       id: t.id,

@@ -46,6 +46,8 @@ function appErrorData(error: unknown): AppErrorData | null {
       'message' in data &&
       typeof (data as { message?: unknown }).message === 'string'
     ) {
+      // Générique : tout `kind` typé (PLAN_LIMIT, AI_CREDIT, FORBIDDEN, AUTH,
+      // NOT_FOUND, VALIDATION, ...) est remonté tel quel jusqu'à l'UI.
       return data as AppErrorData
     }
   }
@@ -62,6 +64,17 @@ function appErrorData(error: unknown): AppErrorData | null {
     }
   }
   return null
+}
+
+/**
+ * Message lisible d'une `ConvexError` métier, quel que soit son `kind`. En prod
+ * Convex masque `error.message` mais transmet `error.data` : on lit donc la
+ * `data.message` typée. Si l'erreur n'est pas une `ConvexError` connue, renvoie
+ * le `fallback` fourni. Idéal pour afficher un toast d'échec générique.
+ */
+export function errorMessage(error: unknown, fallback: string): string {
+  const data = appErrorData(error)
+  return data?.message ?? fallback
 }
 
 /** Si `error` est une limite freemium, renvoie le message lisible ; sinon `null`. */

@@ -86,6 +86,12 @@ export const processExpirations = internalMutation({
       if (typeof doc.planRenewsAt !== 'number' || doc.planRenewsAt >= now) {
         continue
       }
+      // Souscription NATIVE (carte) : la fin de période est pilotée par le
+      // webhook `subscription.disable`. NE PAS rétrograder ici (sinon double
+      // downgrade cron + webhook). Le cron ne traite que 'manual' + legacy.
+      if (doc.billingMode === 'native') {
+        continue
+      }
       // Transition EXPLICITE (annulation `autoRenew=false` ou downgrade
       // programmé `pendingPlan`) ? Elle s'applique dès l'échéance. Sinon, c'est
       // un simple non-renouvellement : on respecte la période de grâce.

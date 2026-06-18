@@ -73,13 +73,13 @@ function DashboardPage() {
         title={m.dashboard_title()}
         subtitle={m.dashboard_subtitle()}
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
             <AskCopilotButton
               seed={m.copilot_seed_week()}
               buttonVariant="outline"
               size="default"
             />
-            <Button onClick={quickCapture.open}>
+            <Button onClick={quickCapture.open} className="flex-1 sm:flex-none">
               <Plus className="size-4" />
               {m.dashboard_new_opportunity()}
             </Button>

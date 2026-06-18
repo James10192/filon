@@ -68,6 +68,10 @@ export type AppErrorData =
   | { kind: 'PLAN_LIMIT'; message: string }
   | { kind: 'AI_CREDIT'; message: string }
   | { kind: 'FORBIDDEN'; message: string }
+  | { kind: 'AUTH'; message: string }
+  | { kind: 'NOT_FOUND'; message: string }
+  | { kind: 'VALIDATION'; message: string }
+  | { kind: 'BILLING'; message: string }
 
 /** Préfixe historique (compat dev/logs) ; le mécanisme réel est `data.kind`. */
 export const PLAN_LIMIT_PREFIX = 'PLAN_LIMIT:'
@@ -145,4 +149,33 @@ export function aiCreditError(
   message = 'Crédits IA épuisés. Rechargez un pack ou attendez le renouvellement mensuel.',
 ): ConvexError<AppErrorData> {
   return new ConvexError({ kind: 'AI_CREDIT', message })
+}
+
+/**
+ * Erreur d'authentification. `ConvexError` (pas `Error` brute) : en PROD Convex
+ * masque le message des erreurs non-`ConvexError`, le client ne verrait jamais
+ * notre message. La `data.kind = 'AUTH'` traverse jusqu'au client.
+ */
+export function authError(
+  message = 'Non authentifié',
+): ConvexError<AppErrorData> {
+  return new ConvexError({ kind: 'AUTH', message })
+}
+
+/**
+ * Erreur « ressource introuvable ». `ConvexError` typée pour que le client
+ * affiche un message utile en production (sinon « Server Error »).
+ */
+export function notFoundError(
+  message = 'Introuvable.',
+): ConvexError<AppErrorData> {
+  return new ConvexError({ kind: 'NOT_FOUND', message })
+}
+
+/**
+ * Erreur de validation (champ requis, valeur invalide). `ConvexError` typée
+ * pour que le client affiche le motif précis en production.
+ */
+export function validationError(message: string): ConvexError<AppErrorData> {
+  return new ConvexError({ kind: 'VALIDATION', message })
 }

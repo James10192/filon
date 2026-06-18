@@ -108,12 +108,31 @@ export function AdminUsersPanel({
             ) : filtered.length === 0 ? (
               <EmptyUsers hasSearch={search.trim().length > 0} />
             ) : (
-              <UsersTable
-                users={filtered}
-                compact={compact}
-                selectedUserId={selectedUserId}
-                onSelect={onSelect}
-              />
+              <>
+                {/* Mobile : cartes empilées (tableau illisible sous sm).
+                    Si le panneau détail est ouvert (compact), on garde la liste
+                    réduite au seul utilisateur, qui tient déjà sur mobile. */}
+                {!compact && (
+                  <ul className="flex flex-col divide-y divide-border sm:hidden">
+                    {filtered.map((u) => (
+                      <UserMobileCard
+                        key={u._id}
+                        user={u}
+                        selected={u._id === selectedUserId}
+                        onSelect={onSelect}
+                      />
+                    ))}
+                  </ul>
+                )}
+                <div className={compact ? '' : 'hidden sm:block'}>
+                  <UsersTable
+                    users={filtered}
+                    compact={compact}
+                    selectedUserId={selectedUserId}
+                    onSelect={onSelect}
+                  />
+                </div>
+              </>
             )}
           </div>
         </div>
@@ -139,7 +158,7 @@ export function AdminUsersPanel({
       >
         <SheetContent
           side="right"
-          className="w-full max-w-full gap-0 p-0"
+          className="w-full max-w-full gap-0 p-0 [&>button:last-child]:hidden"
         >
           <SheetTitle className="sr-only">Détail du compte</SheetTitle>
           <SheetDescription className="sr-only">
@@ -240,6 +259,62 @@ function UsersTable({
         })}
       </TableBody>
     </Table>
+  )
+}
+
+/** Carte d'un utilisateur pour l'affichage mobile (sous `sm`). */
+function UserMobileCard({
+  user,
+  selected,
+  onSelect,
+}: {
+  user: AdminUser
+  selected: boolean
+  onSelect: (userId: string | null) => void
+}) {
+  const name = user.name?.trim() || user.email
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={() => onSelect(selected ? null : user._id)}
+        data-state={selected ? 'selected' : undefined}
+        className="flex w-full min-h-11 flex-col gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-2 data-[state=selected]:bg-accent-soft"
+      >
+        <div className="flex items-center gap-3">
+          <Avatar className="size-9 shrink-0">
+            {user.image && <AvatarImage src={user.image} alt={name} />}
+            <AvatarFallback>{initials(name)}</AvatarFallback>
+          </Avatar>
+          <div className="flex min-w-0 flex-1 flex-col">
+            <span className="truncate font-medium text-fg">{name}</span>
+            {user.name && (
+              <span className="truncate text-xs text-fg-subtle">
+                {user.email}
+              </span>
+            )}
+          </div>
+          <Badge variant={planBadgeVariant(user.plan)} className="shrink-0">
+            {planLabel(user.plan)}
+          </Badge>
+        </div>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-fg-muted">
+          <span>
+            <span className="assay font-medium text-fg">
+              {formatNumber(user.opportunitiesCount)}
+            </span>{' '}
+            opp.
+          </span>
+          <span>
+            <span className="assay font-medium text-fg">
+              {formatNumber(user.veillesCount)}
+            </span>{' '}
+            veilles
+          </span>
+          <span className="ml-auto">{formatRelative(user.lastActivityAt)}</span>
+        </div>
+      </button>
+    </li>
   )
 }
 

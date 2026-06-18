@@ -60,7 +60,7 @@ export function DetailHeader({
             size="sm"
             aria-label="Modifier"
             title="Modifier"
-            className="size-9 p-0"
+            className="size-11 p-0 sm:size-9"
             onClick={onEdit}
           >
             <Pencil className="size-4" />

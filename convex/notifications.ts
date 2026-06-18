@@ -2,6 +2,7 @@ import { v } from 'convex/values'
 import { internalMutation, mutation, query } from './_generated/server'
 import type { Doc } from './_generated/dataModel'
 import { requireUser } from './lib/withUser'
+import { notFoundError } from './lib/plan'
 
 /**
  * Domaine notifications · centre de notifications in-app (scope strict `userId`).
@@ -86,7 +87,7 @@ export const markRead = mutation({
     const doc = await ctx.db.get(args.id)
     // Scope : on ne touche que les notifications du user courant.
     if (!doc || doc.userId !== userId) {
-      throw new Error('Notification introuvable')
+      throw notFoundError('Notification introuvable')
     }
     if (!doc.read) await ctx.db.patch(args.id, { read: true })
     return null

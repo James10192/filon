@@ -115,7 +115,18 @@ export function AdminPaymentsPanel() {
           ) : rows.length === 0 ? (
             <EmptyPayments />
           ) : (
-            <PaymentsTable rows={rows} />
+            <>
+              {/* Mobile : cartes empilées, le tableau à 6 colonnes est illisible
+                  sous sm même en défilement horizontal. */}
+              <ul className="flex flex-col divide-y divide-border sm:hidden">
+                {rows.map((t) => (
+                  <PaymentMobileCard key={t.id} tx={t} />
+                ))}
+              </ul>
+              <div className="hidden sm:block">
+                <PaymentsTable rows={rows} />
+              </div>
+            </>
           )}
         </div>
       )}
@@ -166,6 +177,35 @@ function PaymentsTable({ rows }: { rows: PaystackTransaction[] }) {
         })}
       </TableBody>
     </Table>
+  )
+}
+
+/** Carte d'une transaction pour l'affichage mobile (sous `sm`). */
+function PaymentMobileCard({ tx }: { tx: PaystackTransaction }) {
+  const statusMeta = paymentStatusMeta(tx.status)
+  return (
+    <li className="flex flex-col gap-2 px-4 py-3.5">
+      <div className="flex items-start justify-between gap-3">
+        <span className="font-medium text-fg">
+          {tx.currency === 'XOF'
+            ? formatXof(tx.amount)
+            : `${formatNumber(tx.amount)} ${tx.currency}`}
+        </span>
+        <Badge variant={statusMeta.variant} className="shrink-0">
+          {statusMeta.label}
+        </Badge>
+      </div>
+      <p className="truncate text-sm text-fg-muted">{tx.email ?? '—'}</p>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-fg-subtle">
+        <Badge variant="outline" className="shrink-0">
+          {paymentChannelLabel(tx.channel)}
+        </Badge>
+        <span className="truncate font-mono">{tx.reference}</span>
+        <span className="ml-auto whitespace-nowrap">
+          {tx.paidAt ? formatDate(Date.parse(tx.paidAt)) : '—'}
+        </span>
+      </div>
+    </li>
   )
 }
 

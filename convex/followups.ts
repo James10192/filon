@@ -2,6 +2,7 @@ import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import type { Doc, Id } from './_generated/dataModel'
 import { requireUser, type MutationCtx, type QueryCtx } from './lib/withUser'
+import { forbiddenError, notFoundError, validationError } from './lib/plan'
 
 /**
  * Domaine : relances (follow-ups).
@@ -53,8 +54,8 @@ async function assertOwnedOpportunity(
   opportunityId: Id<'opportunities'>,
 ): Promise<void> {
   const opp = await ctx.db.get(opportunityId)
-  if (!opp) throw new Error('Introuvable')
-  if (opp.userId !== userId) throw new Error('Non autorisé')
+  if (!opp) throw notFoundError('Introuvable')
+  if (opp.userId !== userId) throw forbiddenError('Non autorisé')
 }
 
 /** Vérifie qu'une proposition existe et appartient au user. Throw sinon. */
@@ -64,8 +65,8 @@ async function assertOwnedProposal(
   proposalId: Id<'proposals'>,
 ): Promise<void> {
   const proposal = await ctx.db.get(proposalId)
-  if (!proposal) throw new Error('Introuvable')
-  if (proposal.userId !== userId) throw new Error('Non autorisé')
+  if (!proposal) throw notFoundError('Introuvable')
+  if (proposal.userId !== userId) throw forbiddenError('Non autorisé')
 }
 
 /**
@@ -235,8 +236,8 @@ export const create = mutation({
     const { userId } = await requireUser(ctx)
 
     const label = args.label.trim()
-    if (!label) throw new Error('L’intitulé est requis')
-    if (!args.dueDate) throw new Error('La date est requise')
+    if (!label) throw validationError('L’intitulé est requis')
+    if (!args.dueDate) throw validationError('La date est requise')
 
     if (args.opportunityId !== undefined) {
       await assertOwnedOpportunity(ctx, userId, args.opportunityId)
@@ -286,17 +287,17 @@ export const update = mutation({
     const { userId } = await requireUser(ctx)
 
     const existing = await ctx.db.get(args.id)
-    if (!existing) throw new Error('Introuvable')
-    if (existing.userId !== userId) throw new Error('Non autorisé')
+    if (!existing) throw notFoundError('Introuvable')
+    if (existing.userId !== userId) throw forbiddenError('Non autorisé')
 
     const patch: Partial<Doc<'followups'>> = {}
     if (args.label !== undefined) {
       const label = args.label.trim()
-      if (!label) throw new Error('L’intitulé est requis')
+      if (!label) throw validationError('L’intitulé est requis')
       patch.label = label
     }
     if (args.dueDate !== undefined) {
-      if (!args.dueDate) throw new Error('La date est requise')
+      if (!args.dueDate) throw validationError('La date est requise')
       patch.dueDate = args.dueDate
     }
     if (args.opportunityId !== undefined) {
@@ -321,8 +322,8 @@ export const toggle = mutation({
     const { userId } = await requireUser(ctx)
 
     const existing = await ctx.db.get(args.id)
-    if (!existing) throw new Error('Introuvable')
-    if (existing.userId !== userId) throw new Error('Non autorisé')
+    if (!existing) throw notFoundError('Introuvable')
+    if (existing.userId !== userId) throw forbiddenError('Non autorisé')
 
     if (args.done) {
       await ctx.db.patch(args.id, {
@@ -343,8 +344,8 @@ export const remove = mutation({
     const { userId } = await requireUser(ctx)
 
     const existing = await ctx.db.get(args.id)
-    if (!existing) throw new Error('Introuvable')
-    if (existing.userId !== userId) throw new Error('Non autorisé')
+    if (!existing) throw notFoundError('Introuvable')
+    if (existing.userId !== userId) throw forbiddenError('Non autorisé')
 
     await ctx.db.delete(args.id)
     return null

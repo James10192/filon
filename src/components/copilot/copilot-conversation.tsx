@@ -19,11 +19,13 @@ export function CopilotConversation({
   sending,
   onPick,
   onDecision,
+  onNavigate,
 }: {
   messages: UIMessage[]
   sending: boolean
   onPick: (prompt: string) => void
   onDecision: (tool: string, decision: 'once' | 'always' | 'deny') => void
+  onNavigate?: () => void
 }) {
   if (messages.length === 0) {
     return <CopilotEmpty onPick={onPick} />
@@ -41,6 +43,7 @@ export function CopilotConversation({
             message={message}
             pending={sending}
             onDecision={onDecision}
+            onNavigate={onNavigate}
           />
         ))}
         {awaitingReply && (

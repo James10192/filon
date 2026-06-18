@@ -2,6 +2,7 @@ import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import type { Doc } from './_generated/dataModel'
 import { requireUser, type MutationCtx, type QueryCtx } from './lib/withUser'
+import { validationError } from './lib/plan'
 
 /**
  * Domaine : profil applicatif (`api.users.*`).
@@ -82,7 +83,7 @@ export const updateProfile = mutation({
     const patch: { name?: string; headline?: string } = {}
     if (args.name !== undefined) {
       const name = args.name.trim()
-      if (!name) throw new Error('Le nom est requis')
+      if (!name) throw validationError('Le nom est requis')
       patch.name = name
     }
     if (args.headline !== undefined) {

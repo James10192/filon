@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { createTool } from '@convex-dev/agent'
 import { internal } from '../../_generated/api'
+import { authError } from '../../lib/plan'
 
 /**
  * Outils de LECTURE du copilote (exécution automatique, sans approbation).
@@ -12,7 +13,7 @@ import { internal } from '../../_generated/api'
 
 /** Garde l'identité utilisateur du ToolCtx (toujours posée par l'action). */
 function requireUserId(ctx: { userId?: string }): string {
-  if (!ctx.userId) throw new Error('Contexte utilisateur manquant')
+  if (!ctx.userId) throw authError('Contexte utilisateur manquant')
   return ctx.userId
 }
 

@@ -3,6 +3,7 @@ import { mutation, query } from './_generated/server'
 import type { Doc, Id } from './_generated/dataModel'
 import type { AnyCtx } from './lib/withUser'
 import { requireUser } from './lib/withUser'
+import { forbiddenError, notFoundError } from './lib/plan'
 
 /**
  * Domaine activities · timeline d'une opportunité.
@@ -27,8 +28,8 @@ async function assertOwnsOpportunity(
   opportunityId: Id<'opportunities'>,
 ): Promise<void> {
   const opportunity = await ctx.db.get(opportunityId)
-  if (!opportunity) throw new Error('Introuvable')
-  if (opportunity.userId !== userId) throw new Error('Non autorisé')
+  if (!opportunity) throw notFoundError('Introuvable')
+  if (opportunity.userId !== userId) throw forbiddenError('Non autorisé')
 }
 
 export const listByOpportunity = query({
@@ -107,8 +108,8 @@ export const remove = mutation({
   handler: async (ctx, args) => {
     const { userId } = await requireUser(ctx)
     const doc = await ctx.db.get(args.id)
-    if (!doc) throw new Error('Introuvable')
-    if (doc.userId !== userId) throw new Error('Non autorisé')
+    if (!doc) throw notFoundError('Introuvable')
+    if (doc.userId !== userId) throw forbiddenError('Non autorisé')
     await ctx.db.delete(args.id)
     return null
   },

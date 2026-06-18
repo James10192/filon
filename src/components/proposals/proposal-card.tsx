@@ -150,19 +150,21 @@ export function ProposalCard({
       </div>
 
       <div className="mt-1 flex items-center gap-2">
-        <StatusActions status={status} busy={busy} onChange={changeStatus} />
-        {status === 'accepted' && (
-          <Button
-            size="sm"
-            variant="secondary"
-            disabled={busy}
-            onClick={() => setConfirmConvert(true)}
-          >
-            <Rocket className="size-4" />
-            Convertir en mission
-          </Button>
-        )}
-        <div className="ml-auto">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <StatusActions status={status} busy={busy} onChange={changeStatus} />
+          {status === 'accepted' && (
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={busy}
+              onClick={() => setConfirmConvert(true)}
+            >
+              <Rocket className="size-4" />
+              Convertir en mission
+            </Button>
+          )}
+        </div>
+        <div className="ml-auto shrink-0">
           <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
               <Button

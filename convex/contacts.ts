@@ -2,6 +2,7 @@ import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import type { Doc, Id } from './_generated/dataModel'
 import { requireUser } from './lib/withUser'
+import { forbiddenError, notFoundError, validationError } from './lib/plan'
 
 /**
  * Domaine : contacts (interlocuteurs), eventuellement rattaches a une entreprise.
@@ -17,8 +18,8 @@ async function requireOwnedContact(
   userId: string,
 ): Promise<Doc<'contacts'>> {
   const contact = await ctx.db.get(id)
-  if (!contact) throw new Error('Introuvable')
-  if (contact.userId !== userId) throw new Error('Non autorise')
+  if (!contact) throw notFoundError('Introuvable')
+  if (contact.userId !== userId) throw forbiddenError('Non autorise')
   return contact
 }
 
@@ -29,7 +30,7 @@ async function assertOwnedCompany(
   userId: string,
 ): Promise<void> {
   const company = await ctx.db.get(companyId)
-  if (!company || company.userId !== userId) throw new Error('Non autorise')
+  if (!company || company.userId !== userId) throw forbiddenError('Non autorise')
 }
 
 export const list = query({
@@ -116,7 +117,7 @@ export const create = mutation({
   handler: async (ctx, args) => {
     const { userId } = await requireUser(ctx)
     const name = args.name.trim()
-    if (!name) throw new Error('Le nom est requis')
+    if (!name) throw validationError('Le nom est requis')
     if (args.companyId) await assertOwnedCompany(ctx, args.companyId, userId)
 
     const doc: {
@@ -159,7 +160,7 @@ export const update = mutation({
     const patch: Record<string, string | Id<'companies'> | undefined> = {}
     if (fields.name !== undefined) {
       const name = fields.name.trim()
-      if (!name) throw new Error('Le nom est requis')
+      if (!name) throw validationError('Le nom est requis')
       patch.name = name
     }
     if (fields.companyId !== undefined) {

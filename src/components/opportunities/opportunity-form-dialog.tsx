@@ -68,7 +68,7 @@ export function OpportunityFormDialog({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Ajouter une opportunité</DialogTitle>
           <DialogDescription>

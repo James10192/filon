@@ -173,7 +173,10 @@ function ShellLayout({
       <SidebarInset className="h-svh overflow-hidden">
         <Topbar />
         <main className="flex-1 overflow-y-auto">
-          <div className="mx-auto w-full max-w-screen-2xl px-4 py-5 pb-24 md:px-6 lg:px-8 lg:pb-5">
+          {/* Bas reserve a la barre de navigation mobile fixe (~3.5rem) + la
+              zone sure iOS ; en desktop (lg) la sidebar remplace la bottombar
+              donc on revient a un padding normal. */}
+          <div className="mx-auto w-full min-w-0 max-w-screen-2xl px-4 py-5 pb-[calc(6rem+env(safe-area-inset-bottom))] md:px-6 lg:px-8 lg:pb-5">
             <Outlet />
           </div>
         </main>

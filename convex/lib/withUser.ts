@@ -7,6 +7,7 @@ import type { DataModel } from '../_generated/dataModel'
 import { authComponent } from '../auth'
 import {
   aiAccess,
+  authError,
   forbiddenError,
   planOf,
   planLimitError,
@@ -50,7 +51,7 @@ export type AnyCtx = QueryCtx | MutationCtx
 export async function requireUser(ctx: AnyCtx): Promise<AuthedUser> {
   const authUser = await authComponent.safeGetAuthUser(ctx)
   if (!authUser) {
-    throw new Error('Non authentifié')
+    throw authError('Non authentifié')
   }
   return {
     userId: authUser._id,
@@ -68,7 +69,7 @@ export async function requireUserFromAction(
 ): Promise<AuthedUser> {
   const authUser = await authComponent.safeGetAuthUser(ctx)
   if (!authUser) {
-    throw new Error('Non authentifié')
+    throw authError('Non authentifié')
   }
   return {
     userId: authUser._id,

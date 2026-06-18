@@ -93,9 +93,9 @@ function SourceRow({
   return (
     <div className="flex items-start justify-between gap-3 rounded-[var(--radius-sm)] border border-border bg-surface px-4 py-3">
       <div className="min-w-0 space-y-0.5">
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
           <span className="text-sm font-medium text-fg">{label}</span>
-          <span className="truncate text-xs text-fg-subtle">{host}</span>
+          <span className="min-w-0 truncate text-xs text-fg-subtle">{host}</span>
         </div>
         {entry ? (
           entry.lastOkAt ? (

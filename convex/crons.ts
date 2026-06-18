@@ -23,6 +23,11 @@ crons.interval(
 // Renouvellement (Axe 2) : auto-débit carte ~48h avant échéance (minorité avec
 // carte réutilisable) + relances in-app J-7/J-3/J-1 (mobile money et reste).
 // Remplace l'ancien `flagRenewalReminders` (relance seule) par le flux complet.
+//
+// NOTE souscriptions natives : depuis la migration Paystack natif, les users
+// `billingMode === 'native'` (carte) sont EXCLUS en amont (selectCandidates) :
+// Paystack pilote leur récurrence/dunning. Le cron ne traite plus que le régime
+// 'manual' (mobile money + abonnements pré-migration). Planning inchangé.
 crons.daily(
   'billing-renewals',
   { hourUTC: 6, minuteUTC: 0 },
@@ -31,7 +36,8 @@ crons.daily(
 )
 
 // Application des expirations : downgrade programmé / annulation / fin de
-// période (après la période de grâce). Décalé après le renouvellement.
+// période (après la période de grâce). Décalé après le renouvellement. Exclut
+// les souscriptions natives (fin de période pilotée par subscription.disable).
 crons.daily(
   'billing-process-expirations',
   { hourUTC: 6, minuteUTC: 30 },

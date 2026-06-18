@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { action } from '../_generated/server'
 import { internal } from '../_generated/api'
 import { requireUserFromAction } from '../lib/withUser'
+import { notFoundError } from '../lib/plan'
 import { creditsForUsage } from '../lib/credits'
 import { ensureAiBudget } from '../lib/aiGate'
 import { modelFor, MODELS, type AiMode } from '../agent/models'
@@ -90,7 +91,7 @@ export const analyzeSignal = action({
       internal.veille.aiData.loadOpportunityForAi,
       { userId, opportunityId: args.opportunityId },
     )
-    if (!opp) throw new Error('Opportunité introuvable.')
+    if (!opp) throw notFoundError('Opportunité introuvable.')
 
     const gate = await ctx.runQuery(internal.veille.aiData.aiSignalGate, {
       userId,
@@ -153,7 +154,7 @@ export const draftMessage = action({
       internal.veille.aiData.loadOpportunityForAi,
       { userId, opportunityId: args.opportunityId },
     )
-    if (!opp) throw new Error('Opportunité introuvable.')
+    if (!opp) throw notFoundError('Opportunité introuvable.')
 
     const gate = await ctx.runQuery(internal.veille.aiData.aiSignalGate, {
       userId,

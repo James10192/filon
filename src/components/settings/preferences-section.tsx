@@ -138,7 +138,7 @@ export function PreferencesSection() {
           </div>
 
           <div className="flex flex-col gap-2.5">
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
               <div>
                 <Label className="text-sm font-medium text-fg">
                   Libellés des étapes
@@ -154,7 +154,7 @@ export function PreferencesSection() {
                 size="sm"
                 onClick={resetStages}
                 disabled={usingDefaults}
-                className="shrink-0"
+                className="self-start shrink-0"
               >
                 <RotateCcw className="size-4" />
                 Réinitialiser

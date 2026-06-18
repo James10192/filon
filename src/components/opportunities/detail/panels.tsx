@@ -151,7 +151,7 @@ export function DeleteOpportunityDialog({
           size="sm"
           aria-label="Supprimer"
           title="Supprimer"
-          className="size-9 p-0 text-danger hover:bg-surface-2 hover:text-danger"
+          className="size-11 p-0 text-danger hover:bg-surface-2 hover:text-danger sm:size-9"
         >
           <Trash2 className="size-4" />
         </Button>

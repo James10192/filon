@@ -60,14 +60,14 @@ export function BoardView({
   if (proposals.length === 0) return <EmptyState onCreate={onCreate} />
 
   return (
-    <div className="-mx-4 overflow-x-auto px-4 pb-1 md:-mx-6 md:px-6 lg:-mx-8 lg:px-8">
+    <div className="-mx-4 snap-x snap-mandatory overflow-x-auto px-4 pb-1 md:-mx-6 md:snap-none md:px-6 lg:-mx-8 lg:px-8">
       <div className="flex min-w-max gap-4">
         {PROPOSAL_STATUSES.map((status) => {
           const items = columns[status]
           return (
             <section
               key={status}
-              className="flex w-[300px] shrink-0 flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface shadow-[var(--shadow-card)]"
+              className="flex w-[82vw] max-w-[300px] shrink-0 snap-start flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface shadow-[var(--shadow-card)] sm:w-[300px]"
             >
               <span className={`h-px w-full ${STATUS_VEIN[status]}`} />
               <header className="flex items-center gap-2 px-3.5 pb-2.5 pt-3">
@@ -151,7 +151,7 @@ function BoardSkeleton() {
         {PROPOSAL_STATUSES.map((status) => (
           <div
             key={status}
-            className="flex w-[300px] shrink-0 flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface shadow-[var(--shadow-card)]"
+            className="flex w-[82vw] max-w-[300px] shrink-0 flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface shadow-[var(--shadow-card)] sm:w-[300px]"
           >
             <Skeleton className="h-px w-full rounded-none" />
             <div className="flex items-center gap-2 px-3.5 pb-2.5 pt-3">

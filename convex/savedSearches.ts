@@ -2,7 +2,12 @@ import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import type { Doc } from './_generated/dataModel'
 import { currentPlan, requireUser } from './lib/withUser'
-import { limitsFor, planLimitError } from './lib/plan'
+import {
+  forbiddenError,
+  limitsFor,
+  notFoundError,
+  planLimitError,
+} from './lib/plan'
 import { isConnectorId } from './veille/connectors'
 
 const intentValidator = v.union(
@@ -122,8 +127,8 @@ export const update = mutation({
   handler: async (ctx, args): Promise<null> => {
     const { userId } = await requireUser(ctx)
     const doc = await ctx.db.get(args.id)
-    if (!doc) throw new Error('Introuvable')
-    if (doc.userId !== userId) throw new Error('Non autorisé')
+    if (!doc) throw notFoundError('Introuvable')
+    if (doc.userId !== userId) throw forbiddenError('Non autorisé')
 
     const patch: Record<string, unknown> = { updatedAt: Date.now() }
     if (args.keywords !== undefined) {
@@ -150,8 +155,8 @@ export const remove = mutation({
   handler: async (ctx, args): Promise<null> => {
     const { userId } = await requireUser(ctx)
     const doc = await ctx.db.get(args.id)
-    if (!doc) throw new Error('Introuvable')
-    if (doc.userId !== userId) throw new Error('Non autorisé')
+    if (!doc) throw notFoundError('Introuvable')
+    if (doc.userId !== userId) throw forbiddenError('Non autorisé')
 
     await ctx.db.delete(args.id)
     return null

@@ -156,7 +156,7 @@ export function CommandPaletteDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="top-[18%] translate-y-0 overflow-hidden p-0 sm:max-w-xl [&>button]:right-3 [&>button]:top-2">
+      <DialogContent className="top-[8%] w-[calc(100%-2rem)] translate-y-0 overflow-hidden p-0 sm:top-[18%] sm:max-w-xl [&>button]:right-3 [&>button]:top-2">
         <DialogTitle className="sr-only">{m.command_title()}</DialogTitle>
         <DialogDescription className="sr-only">
           {m.command_description()}

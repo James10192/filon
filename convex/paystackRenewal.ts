@@ -1,7 +1,12 @@
-import { v } from 'convex/values'
+import { v, ConvexError } from 'convex/values'
 import { action, internalAction } from './_generated/server'
 import { requireUserFromAction } from './lib/withUser'
 import { priceXof, toPaystackSubunit, type Interval, type PaidPlan } from './lib/pricing'
+
+/** Erreur métier de facturation typée (traverse jusqu'au client en prod). */
+function billingError(message: string): ConvexError<{ kind: 'BILLING'; message: string }> {
+  return new ConvexError({ kind: 'BILLING', message })
+}
 
 /**
  * Domaine paystack · renouvellement (test mode).
@@ -33,7 +38,7 @@ const intervalValidator = v.union(v.literal('monthly'), v.literal('annual'))
 function secretKey(): string {
   const key = process.env.PAYSTACK_SECRET_KEY
   if (!key) {
-    throw new Error('Paiement indisponible : PAYSTACK_SECRET_KEY non configurée.')
+    throw billingError('Paiement indisponible : PAYSTACK_SECRET_KEY non configurée.')
   }
   return key
 }
@@ -109,7 +114,7 @@ export const createRenewalLink = action({
   ): Promise<{ authorizationUrl: string; reference: string }> => {
     const { userId, email } = await requireUserFromAction(ctx)
     if (!email) {
-      throw new Error('E-mail introuvable : impossible de générer le lien.')
+      throw billingError('E-mail introuvable : impossible de générer le lien.')
     }
     const plan = args.plan as PaidPlan
     const interval = args.interval as Interval
@@ -127,12 +132,20 @@ export const createRenewalLink = action({
         currency: 'XOF',
         channels: ['card', 'mobile_money'],
         callback_url: `${appBaseUrl()}/app/tarifs?paystack=return`,
-        metadata: { userId, kind: 'subscription', plan, interval, amountXof, renewal: true },
+        metadata: {
+          userId,
+          kind: 'subscription',
+          plan,
+          interval,
+          amountXof,
+          renewal: true,
+          billingMode: 'manual',
+        },
       }),
     })
     const json = (await res.json()) as InitResponse
     if (!res.ok || !json.status || !json.data) {
-      throw new Error(
+      throw billingError(
         `Initialisation du lien de renouvellement échouée : ${json.message ?? res.statusText}`,
       )
     }

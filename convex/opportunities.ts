@@ -3,7 +3,13 @@ import { mutation, query } from './_generated/server'
 import type { Doc, Id } from './_generated/dataModel'
 import type { MutationCtx } from './lib/withUser'
 import { currentPlan, requireUser } from './lib/withUser'
-import { ACTIVE_STAGES, limitsFor, planLimitError } from './lib/plan'
+import {
+  ACTIVE_STAGES,
+  forbiddenError,
+  limitsFor,
+  notFoundError,
+  planLimitError,
+} from './lib/plan'
 
 /**
  * Domaine opportunities · coeur du produit.
@@ -71,8 +77,8 @@ async function ownedOpportunity(
   id: Id<'opportunities'>,
 ): Promise<Doc<'opportunities'>> {
   const doc = await ctx.db.get(id)
-  if (!doc) throw new Error('Introuvable')
-  if (doc.userId !== userId) throw new Error('Non autorisé')
+  if (!doc) throw notFoundError('Introuvable')
+  if (doc.userId !== userId) throw forbiddenError('Non autorisé')
   return doc
 }
 
@@ -248,8 +254,8 @@ export const get = query({
   handler: async (ctx, args) => {
     const { userId } = await requireUser(ctx)
     const doc = await ctx.db.get(args.id)
-    if (!doc) throw new Error('Introuvable')
-    if (doc.userId !== userId) throw new Error('Non autorisé')
+    if (!doc) throw notFoundError('Introuvable')
+    if (doc.userId !== userId) throw forbiddenError('Non autorisé')
 
     const company = doc.companyId ? await ctx.db.get(doc.companyId) : null
     const contact = doc.contactId ? await ctx.db.get(doc.contactId) : null
