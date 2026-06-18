@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import type { LucideIcon } from 'lucide-react'
 import { Building2, Users, FileText, Send, ArrowUpRight } from 'lucide-react'
+import { m } from '~/lib/paraglide/messages'
 import { Skeleton } from '~/components/ui/skeleton'
 import { formatNumber } from './pipeline-meta'
 
@@ -25,15 +26,15 @@ type Item = {
  */
 export function SecondaryKpis({ summary }: { summary: Summary }) {
   const items: Item[] = [
-    { label: 'Entreprises', value: summary.companiesCount, icon: Building2, to: '/app/entreprises' },
-    { label: 'Contacts', value: summary.contactsCount, icon: Users, to: '/app/entreprises' },
-    { label: 'Propositions', value: summary.proposalsSent, icon: Send, to: '/app/propositions' },
-    { label: 'Documents', value: summary.documentsCount, icon: FileText, to: '/app/documents' },
+    { label: m.dash_carnet_companies(), value: summary.companiesCount, icon: Building2, to: '/app/entreprises' },
+    { label: m.dash_carnet_contacts(), value: summary.contactsCount, icon: Users, to: '/app/entreprises' },
+    { label: m.dash_carnet_proposals(), value: summary.proposalsSent, icon: Send, to: '/app/propositions' },
+    { label: m.dash_carnet_documents(), value: summary.documentsCount, icon: FileText, to: '/app/documents' },
   ]
 
   return (
     <section
-      aria-label="Carnet"
+      aria-label={m.dash_carnet_section_label()}
       className="reveal grid grid-cols-2 gap-px overflow-hidden rounded-[var(--radius-lg)] border border-border bg-border shadow-[var(--shadow-card)] lg:grid-cols-4"
       style={{ ['--reveal-i' as string]: 7 }}
     >

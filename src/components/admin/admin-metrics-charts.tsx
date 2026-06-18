@@ -16,14 +16,7 @@ import {
 } from '~/components/ui/chart'
 import { planLabel } from './admin-meta'
 import type { AdminMetrics } from './admin-kpi-cards'
-
-const signupsConfig = {
-  count: { label: 'Inscriptions', color: 'var(--color-accent)' },
-} satisfies ChartConfig
-
-const plansConfig = {
-  count: { label: 'Comptes' },
-} satisfies ChartConfig
+import { m } from '~/lib/paraglide/messages'
 
 /** Étiquette d'axe X : « 14/06 » à partir d'un 'YYYY-MM-DD'. */
 function dayTick(day: string): string {
@@ -41,10 +34,20 @@ export function SignupsChart({
   data: AdminMetrics['signupsByDay']
 }) {
   const total = data.reduce((s, p) => s + p.count, 0)
+  const signupsConfig = {
+    count: {
+      label: m.admin_chart_signups_label(),
+      color: 'var(--color-accent)',
+    },
+  } satisfies ChartConfig
   return (
     <ChartPanel
-      title="Inscriptions (30 jours)"
-      hint={total > 0 ? `${total} au total` : 'Aucune sur la période'}
+      title={m.admin_chart_signups_title()}
+      hint={
+        total > 0
+          ? m.admin_chart_signups_total({ n: total })
+          : m.admin_chart_signups_empty()
+      }
     >
       <ChartContainer config={signupsConfig} className="aspect-auto h-[220px] w-full">
         <AreaChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
@@ -112,11 +115,20 @@ export function PlanDistributionChart({
     { key: 'copilot', label: planLabel('copilot'), count: distribution.copilot, paid: true },
   ]
   const paidTotal = rows.filter((r) => r.paid).reduce((s, r) => s + r.count, 0)
+  const plansConfig = {
+    count: { label: m.admin_chart_accounts_label() },
+  } satisfies ChartConfig
 
   return (
     <ChartPanel
-      title="Répartition des paliers"
-      hint={paidTotal > 0 ? `${paidTotal} payant${paidTotal > 1 ? 's' : ''}` : 'Aucun payant'}
+      title={m.admin_chart_plans_title()}
+      hint={
+        paidTotal > 0
+          ? paidTotal > 1
+            ? m.admin_chart_paid_plural({ n: paidTotal })
+            : m.admin_chart_paid_one({ n: paidTotal })
+          : m.admin_chart_paid_empty()
+      }
     >
       <ChartContainer config={plansConfig} className="aspect-auto h-[220px] w-full">
         <BarChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>

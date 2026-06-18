@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { Skeleton } from '~/components/ui/skeleton'
 import { formatNumber, formatXof } from './admin-meta'
+import { m } from '~/lib/paraglide/messages'
 
 export type AdminMetrics = {
   totalUsers: number
@@ -61,42 +62,42 @@ export function AdminKpiCards({
   const kpis: Kpi[] = [
     {
       key: 'users',
-      label: 'Utilisateurs',
+      label: m.admin_kpi_users_label(),
       value: formatNumber(metrics.totalUsers),
       icon: Users,
     },
     {
       key: 'mrr',
-      label: 'MRR estimé',
+      label: m.admin_kpi_mrr_label(),
       value: formatXof(metrics.estimatedMrrXof),
-      hint: 'Abonnements payants actifs',
+      hint: m.admin_kpi_mrr_hint(),
       icon: Wallet,
       accent: true,
     },
     {
       key: 'ai',
-      label: 'Crédits IA ce mois',
+      label: m.admin_kpi_ai_label(),
       value: formatNumber(metrics.aiCreditsUsedThisMonth),
-      hint: 'Depuis le 1er du mois',
+      hint: m.admin_kpi_ai_hint(),
       icon: Sparkles,
     },
     {
       key: 'opportunities',
-      label: 'Opportunités',
+      label: m.admin_kpi_opportunities_label(),
       value: formatNumber(metrics.totalOpportunities),
       icon: Briefcase,
     },
     {
       key: 'veilles',
-      label: 'Veilles',
+      label: m.admin_kpi_veilles_label(),
       value: formatNumber(metrics.totalVeilles),
       icon: Rss,
     },
     {
       key: 'feedback',
-      label: 'Feedbacks ouverts',
+      label: m.admin_kpi_feedback_label(),
       value: formatNumber(metrics.feedbackOpen),
-      hint: 'Nouveaux + en cours',
+      hint: m.admin_kpi_feedback_hint(),
       icon: Inbox,
     },
   ]

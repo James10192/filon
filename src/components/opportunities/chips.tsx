@@ -1,4 +1,5 @@
 import { Building2, User } from 'lucide-react'
+import { m } from '~/lib/paraglide/messages'
 import { cn } from '~/lib/utils'
 import {
   STAGE_META,
@@ -178,12 +179,12 @@ export function DueBadge({
       : status === 'today'
         ? 'bg-warning-soft text-warning'
         : 'bg-surface-2 text-fg-muted'
-  const prefix =
+  const text =
     status === 'overdue'
-      ? 'En retard · '
+      ? m.opp_due_overdue({ date: formatDateShort(date) })
       : status === 'today'
-        ? "Aujourd'hui"
-        : ''
+        ? m.opp_due_today()
+        : formatDateShort(date)
   return (
     <span
       className={cn(
@@ -193,7 +194,7 @@ export function DueBadge({
       )}
     >
       <span className="size-1.5 rounded-full bg-current" />
-      {status === 'today' ? prefix : prefix + formatDateShort(date)}
+      {text}
     </span>
   )
 }

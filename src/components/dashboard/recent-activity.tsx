@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Doc } from '../../../convex/_generated/dataModel'
+import { m } from '~/lib/paraglide/messages'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { Skeleton } from '~/components/ui/skeleton'
 
@@ -21,25 +22,25 @@ type RecentActivityItem = Doc<'activities'> & {
   opportunityTitle: string
 }
 
-const KIND_META: Record<ActivityKind, { label: string; icon: LucideIcon }> = {
-  note: { label: 'Note', icon: StickyNote },
-  email: { label: 'E-mail', icon: Mail },
-  call: { label: 'Appel', icon: Phone },
-  interview: { label: 'Entretien', icon: Users },
-  status_change: { label: 'Changement d’étape', icon: ArrowRightLeft },
-  other: { label: 'Activité', icon: CircleDot },
+const KIND_META: Record<ActivityKind, { label: () => string; icon: LucideIcon }> = {
+  note: { label: () => m.dash_activity_kind_note(), icon: StickyNote },
+  email: { label: () => m.dash_activity_kind_email(), icon: Mail },
+  call: { label: () => m.dash_activity_kind_call(), icon: Phone },
+  interview: { label: () => m.dash_activity_kind_interview(), icon: Users },
+  status_change: { label: () => m.dash_activity_kind_status_change(), icon: ArrowRightLeft },
+  other: { label: () => m.dash_activity_kind_other(), icon: CircleDot },
 }
 
 /** Formate un timestamp ms en libellé relatif court FR (ex. « il y a 2 h »). */
 function relativeTime(ms: number): string {
   const diff = Date.now() - ms
   const min = Math.round(diff / 60_000)
-  if (min < 1) return "à l'instant"
-  if (min < 60) return `il y a ${min} min`
+  if (min < 1) return m.dash_activity_time_now()
+  if (min < 60) return m.dash_activity_time_min({ n: min })
   const h = Math.round(min / 60)
-  if (h < 24) return `il y a ${h} h`
+  if (h < 24) return m.dash_activity_time_hour({ n: h })
   const d = Math.round(h / 24)
-  if (d < 7) return `il y a ${d} j`
+  if (d < 7) return m.dash_activity_time_day({ n: d })
   return new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short' }).format(
     new Date(ms),
   )
@@ -63,7 +64,7 @@ export function RecentActivity() {
       <CardHeader className="flex-row items-center justify-between gap-3 space-y-0">
         <CardTitle className="flex items-center gap-2 text-[15px]">
           <ActivityIcon className="size-4.5 text-fg-muted" />
-          Activité récente
+          {m.dash_activity_title()}
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col">
@@ -113,7 +114,7 @@ function TimelineRow({
           </span>
         </div>
         <span className="truncate text-xs text-fg-muted">
-          <span className="text-fg-subtle">{meta.label}</span>
+          <span className="text-fg-subtle">{meta.label()}</span>
           {activity.content ? ` · ${activity.content}` : ''}
         </span>
       </div>
@@ -127,10 +128,9 @@ function EmptyActivity() {
       <span className="flex size-10 items-center justify-center rounded-full bg-surface-2 text-fg-muted">
         <ActivityIcon className="size-5" />
       </span>
-      <p className="text-sm font-medium text-fg">Pas encore d'activité</p>
+      <p className="text-sm font-medium text-fg">{m.dash_activity_empty_title()}</p>
       <p className="max-w-[16rem] text-xs text-fg-muted">
-        Vos notes, e-mails et changements d'étape s'afficheront ici dès votre
-        première interaction sur une opportunité.
+        {m.dash_activity_empty_desc()}
       </p>
     </div>
   )

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQuery } from 'convex/react'
 import { Loader2 } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
+import { m } from '~/lib/paraglide/messages'
 import {
   Dialog,
   DialogContent,
@@ -50,10 +51,10 @@ export function OnboardingDialog() {
         await ensureTags({ names: profile.defaultTags })
       }
       await completeOnboarding({ activityType: selected })
-      toast.success('Bienvenue sur Filon, votre espace est prêt.')
+      toast.success(m.app_onboarding_welcome())
       setDismissed(true)
     } catch {
-      toast.error("La configuration n'a pas pu être enregistrée.")
+      toast.error(m.app_onboarding_save_error())
     } finally {
       setSubmitting(false)
     }
@@ -66,7 +67,7 @@ export function OnboardingDialog() {
       await completeOnboarding({})
       setDismissed(true)
     } catch {
-      toast.error("L'étape n'a pas pu être passée.")
+      toast.error(m.app_onboarding_skip_error())
     } finally {
       setSubmitting(false)
     }
@@ -79,16 +80,15 @@ export function OnboardingDialog() {
         onInteractOutside={(e) => e.preventDefault()}
       >
         <DialogHeader>
-          <DialogTitle>Quelle est votre activité&nbsp;?</DialogTitle>
+          <DialogTitle>{m.app_onboarding_title()}</DialogTitle>
           <DialogDescription>
-            On adapte vos étiquettes et vos libellés à votre métier. Vous pourrez
-            tout modifier ensuite.
+            {m.app_onboarding_description()}
           </DialogDescription>
         </DialogHeader>
 
         <div
           role="radiogroup"
-          aria-label="Profil d'activité"
+          aria-label={m.app_onboarding_activity_label()}
           className="grid grid-cols-1 gap-2 sm:grid-cols-2"
         >
           {ACTIVITY_PROFILES.map((profile) => {
@@ -125,10 +125,10 @@ export function OnboardingDialog() {
                       active ? 'text-accent' : 'text-fg',
                     )}
                   >
-                    {profile.label}
+                    {profile.label()}
                   </span>
                   <span className="block text-xs text-fg-muted">
-                    {profile.hint}
+                    {profile.hint()}
                   </span>
                 </span>
               </button>
@@ -143,7 +143,7 @@ export function OnboardingDialog() {
             onClick={handleSkip}
             disabled={submitting}
           >
-            Passer
+            {m.app_onboarding_skip()}
           </Button>
           <Button
             type="button"
@@ -151,7 +151,7 @@ export function OnboardingDialog() {
             disabled={submitting || !selected}
           >
             {submitting && <Loader2 className="size-4 animate-spin" />}
-            Continuer
+            {m.app_onboarding_continue()}
           </Button>
         </div>
       </DialogContent>

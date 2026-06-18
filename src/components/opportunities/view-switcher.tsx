@@ -1,4 +1,5 @@
 import { List, KanbanSquare, Calendar, type LucideIcon } from 'lucide-react'
+import { m } from '~/lib/paraglide/messages'
 import { cn } from '~/lib/utils'
 
 export type OpportunityView = 'liste' | 'tableau' | 'calendrier'
@@ -11,11 +12,26 @@ export const OPPORTUNITY_VIEWS: OpportunityView[] = [
 
 const VIEW_META: Record<
   OpportunityView,
-  { label: string; icon: LucideIcon }
+  { readonly label: string; icon: LucideIcon }
 > = {
-  liste: { label: 'Liste', icon: List },
-  tableau: { label: 'Tableau', icon: KanbanSquare },
-  calendrier: { label: 'Calendrier', icon: Calendar },
+  liste: {
+    get label() {
+      return m.opp_view_list()
+    },
+    icon: List,
+  },
+  tableau: {
+    get label() {
+      return m.opp_view_board()
+    },
+    icon: KanbanSquare,
+  },
+  calendrier: {
+    get label() {
+      return m.opp_view_calendar()
+    },
+    icon: Calendar,
+  },
 }
 
 /**
@@ -32,7 +48,7 @@ export function ViewSwitcher({
   return (
     <div
       role="tablist"
-      aria-label="Choisir la vue"
+      aria-label={m.opp_view_switcher_aria()}
       className="inline-flex h-9 items-center gap-0.5 rounded-[var(--radius)] border border-border bg-surface-2 p-0.5"
     >
       {OPPORTUNITY_VIEWS.map((view) => {

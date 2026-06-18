@@ -1,4 +1,5 @@
 import { Check, Minus } from 'lucide-react'
+import { m } from '~/lib/paraglide/messages'
 import { COMPARE_ROWS, type CompareRow } from './plan-catalogue'
 
 /**
@@ -11,10 +12,10 @@ export function PlanComparison() {
     <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface shadow-[var(--shadow-card)]">
       <div className="border-b border-border px-5 py-4">
         <h2 className="text-sm font-semibold text-fg">
-          Comparatif des paliers
+          {m.app_compare_title()}
         </h2>
         <p className="mt-0.5 text-sm text-fg-muted">
-          Ce que débloque chaque palier, en un coup d'oeil.
+          {m.app_compare_subtitle()}
         </p>
       </div>
       <div className="overflow-x-auto">
@@ -22,10 +23,10 @@ export function PlanComparison() {
           <thead>
             <tr className="border-b border-border text-left">
               <th className="px-5 py-3 font-medium text-fg-muted">
-                Fonctionnalité
+                {m.app_compare_feature()}
               </th>
               <th className="px-4 py-3 text-center font-medium text-fg-muted">
-                Découverte
+                {m.app_plan_free_name()}
               </th>
               <th className="px-4 py-3 text-center font-medium text-accent">
                 Pro
@@ -41,10 +42,10 @@ export function PlanComparison() {
           <tbody>
             {COMPARE_ROWS.map((row) => (
               <tr
-                key={row.label}
+                key={row.label()}
                 className="border-b border-border/60 last:border-0"
               >
-                <td className="px-5 py-3 text-fg">{row.label}</td>
+                <td className="px-5 py-3 text-fg">{row.label()}</td>
                 <Cell value={row.free} />
                 <Cell value={row.pro} />
                 <Cell value={row.pro_ai} />

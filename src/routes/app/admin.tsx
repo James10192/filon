@@ -9,6 +9,7 @@ import { AdminUsersPanel } from '~/components/admin/admin-users-panel'
 import { AdminMetricsPanel } from '~/components/admin/admin-metrics-panel'
 import { AdminFeedbackPanel } from '~/components/admin/admin-feedback-panel'
 import { AdminPaymentsPanel } from '~/components/admin/admin-payments-panel'
+import { m } from '~/lib/paraglide/messages'
 
 type AdminTab = 'utilisateurs' | 'metriques' | 'feedbacks' | 'paiements'
 
@@ -16,7 +17,7 @@ export const Route = createFileRoute('/app/admin')({
   component: AdminPage,
   head: () => ({
     meta: [
-      { title: 'Filon · Administration' },
+      { title: m.admin_page_title() },
       { name: 'robots', content: 'noindex, nofollow' },
     ],
   }),
@@ -83,8 +84,8 @@ function AdminContent() {
   return (
     <div className="flex flex-col">
       <PageToolbar
-        title="Administration"
-        subtitle="Vue d'ensemble des comptes, de l'activité et des retours utilisateurs."
+        title={m.admin_title()}
+        subtitle={m.admin_subtitle()}
       />
 
       <Tabs
@@ -103,10 +104,10 @@ function AdminContent() {
             contenu mais devient scrollable). */}
         <div className="-mx-1 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <TabsList className="w-max">
-            <TabsTrigger value="utilisateurs">Utilisateurs</TabsTrigger>
-            <TabsTrigger value="metriques">Métriques</TabsTrigger>
-            <TabsTrigger value="feedbacks">Feedbacks</TabsTrigger>
-            <TabsTrigger value="paiements">Paiements</TabsTrigger>
+            <TabsTrigger value="utilisateurs">{m.admin_tab_users()}</TabsTrigger>
+            <TabsTrigger value="metriques">{m.admin_tab_metrics()}</TabsTrigger>
+            <TabsTrigger value="feedbacks">{m.admin_tab_feedbacks()}</TabsTrigger>
+            <TabsTrigger value="paiements">{m.admin_tab_payments()}</TabsTrigger>
           </TabsList>
         </div>
 
@@ -144,9 +145,11 @@ function AdminForbidden() {
       <span className="flex size-12 items-center justify-center rounded-[var(--radius)] bg-danger-soft text-danger">
         <ShieldAlert className="size-6" />
       </span>
-      <p className="text-base font-semibold text-fg">Accès réservé</p>
+      <p className="text-base font-semibold text-fg">
+        {m.admin_forbidden_title()}
+      </p>
       <p className="max-w-sm text-sm text-fg-muted">
-        Cette zone est réservée aux administrateurs. Redirection en cours.
+        {m.admin_forbidden_desc()}
       </p>
     </div>
   )

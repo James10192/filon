@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Doc } from '../../../convex/_generated/dataModel'
+import { m } from '~/lib/paraglide/messages'
 import { Button } from '~/components/ui/button'
 import {
   DropdownMenu,
@@ -63,10 +64,10 @@ export function ProposalDetailActions({
     try {
       await setStatus({ id: proposal._id, status: next })
       toast.success(
-        `Proposition marquée « ${STATUS_LABELS[next].toLowerCase()} ».`,
+        m.prop_toast_status_changed({ label: STATUS_LABELS[next].toLowerCase() }),
       )
     } catch {
-      toast.error("Le statut n'a pas pu être changé.")
+      toast.error(m.prop_toast_status_change_error())
     } finally {
       setBusy(false)
     }
@@ -77,10 +78,10 @@ export function ProposalDetailActions({
     setBusy(true)
     try {
       await remove({ id: proposal._id })
-      toast.success('Proposition supprimée.')
+      toast.success(m.prop_toast_deleted())
       navigate({ to: '/app/propositions', search: { view: 'liste' } })
     } catch {
-      toast.error('La suppression a échoué.')
+      toast.error(m.prop_toast_delete_error())
       setBusy(false)
       setConfirmDelete(false)
     }
@@ -91,14 +92,14 @@ export function ProposalDetailActions({
     setBusy(true)
     try {
       const opportunityId = await convert({ id: proposal._id })
-      toast.success('Convertie en mission dans le pipeline.')
+      toast.success(m.prop_toast_converted())
       setConfirmConvert(false)
       navigate({
         to: '/app/opportunites',
         search: { view: 'liste', id: opportunityId },
       })
     } catch {
-      toast.error('La conversion a échoué.')
+      toast.error(m.prop_toast_convert_error())
       setBusy(false)
       setConfirmConvert(false)
     }
@@ -115,13 +116,13 @@ export function ProposalDetailActions({
           onClick={() => setConfirmConvert(true)}
         >
           <Rocket className="size-4" />
-          Convertir en mission
+          {m.prop_action_convert()}
         </Button>
       )}
 
       <Button variant="outline" size="sm" disabled={busy} onClick={onEdit}>
         <Pencil className="size-4" />
-        Modifier
+        {m.prop_action_edit()}
       </Button>
 
       <DropdownMenu modal={false}>
@@ -129,7 +130,7 @@ export function ProposalDetailActions({
           <Button
             variant="ghost"
             size="icon-sm"
-            aria-label="Plus d'actions"
+            aria-label={m.prop_more_actions_aria()}
             disabled={busy}
           >
             <MoreHorizontal className="size-4" />
@@ -139,7 +140,7 @@ export function ProposalDetailActions({
           {status !== 'draft' && (
             <DropdownMenuItem onSelect={() => changeStatus('draft')}>
               <Undo2 className="size-4" />
-              Repasser en brouillon
+              {m.prop_action_back_to_draft()}
             </DropdownMenuItem>
           )}
           <DropdownMenuSeparator />
@@ -148,7 +149,7 @@ export function ProposalDetailActions({
             onSelect={() => setConfirmDelete(true)}
           >
             <Trash2 className="size-4" />
-            Supprimer
+            {m.prop_action_delete()}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -156,14 +157,13 @@ export function ProposalDetailActions({
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Supprimer cette proposition ?</AlertDialogTitle>
+            <AlertDialogTitle>{m.prop_delete_confirm_title()}</AlertDialogTitle>
             <AlertDialogDescription>
-              « {proposal.title} » sera définitivement supprimée. Cette action
-              est irréversible.
+              {m.prop_delete_confirm_description({ title: proposal.title })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={busy}>Annuler</AlertDialogCancel>
+            <AlertDialogCancel disabled={busy}>{m.prop_cancel()}</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault()
@@ -173,7 +173,7 @@ export function ProposalDetailActions({
               className="bg-danger text-white hover:bg-danger/90"
             >
               {busy && <Loader2 className="size-4 animate-spin" />}
-              Supprimer définitivement
+              {m.prop_delete_confirm_action()}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -182,15 +182,13 @@ export function ProposalDetailActions({
       <AlertDialog open={confirmConvert} onOpenChange={setConfirmConvert}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Convertir en mission ?</AlertDialogTitle>
+            <AlertDialogTitle>{m.prop_convert_confirm_title()}</AlertDialogTitle>
             <AlertDialogDescription>
-              Une opportunité de type mission sera créée dans votre pipeline à
-              partir de cette proposition acceptée. La proposition reste
-              inchangée.
+              {m.prop_convert_confirm_description()}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={busy}>Annuler</AlertDialogCancel>
+            <AlertDialogCancel disabled={busy}>{m.prop_cancel()}</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault()
@@ -199,7 +197,7 @@ export function ProposalDetailActions({
               disabled={busy}
             >
               {busy && <Loader2 className="size-4 animate-spin" />}
-              Convertir
+              {m.prop_convert_confirm_action()}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -222,7 +220,7 @@ function StatusActions({
     return (
       <Button size="sm" disabled={busy} onClick={() => onChange('sent')}>
         <Send className="size-4" />
-        Marquer envoyée
+        {m.prop_action_mark_sent()}
       </Button>
     )
   }
@@ -236,7 +234,7 @@ function StatusActions({
           onClick={() => onChange('accepted')}
         >
           <CheckCircle2 className="size-4" />
-          Acceptée
+          {m.prop_action_accepted()}
         </Button>
         <Button
           size="sm"
@@ -245,7 +243,7 @@ function StatusActions({
           onClick={() => onChange('refused')}
         >
           <XCircle className="size-4" />
-          Refusée
+          {m.prop_action_refused()}
         </Button>
       </>
     )

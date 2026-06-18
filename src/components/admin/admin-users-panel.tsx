@@ -24,6 +24,7 @@ import {
 } from '~/components/ui/sheet'
 import { AdminAccountDetail } from './admin-account-detail'
 import { useMediaQuery } from '~/hooks/use-media-query'
+import { m } from '~/lib/paraglide/messages'
 import {
   formatDate,
   formatNumber,
@@ -79,17 +80,19 @@ export function AdminUsersPanel({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-fg-muted">
           {users
-            ? `${formatNumber(users.length)} compte${users.length > 1 ? 's' : ''}, récents d'abord.`
-            : 'Chargement des comptes.'}
+            ? users.length > 1
+              ? m.admin_users_count_plural({ n: formatNumber(users.length) })
+              : m.admin_users_count_one({ n: formatNumber(users.length) })
+            : m.admin_users_loading()}
         </p>
         <div className="relative w-full sm:w-72">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fg-subtle" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Rechercher par nom ou e-mail"
+            placeholder={m.admin_users_search_placeholder()}
             className="h-11 pl-9"
-            aria-label="Rechercher un utilisateur"
+            aria-label={m.admin_users_search_aria()}
           />
         </div>
       </div>
@@ -160,9 +163,11 @@ export function AdminUsersPanel({
           side="right"
           className="w-full max-w-full gap-0 p-0 [&>button:last-child]:hidden"
         >
-          <SheetTitle className="sr-only">Détail du compte</SheetTitle>
+          <SheetTitle className="sr-only">
+            {m.admin_account_sheet_title()}
+          </SheetTitle>
           <SheetDescription className="sr-only">
-            Vue 360 du compte sélectionné.
+            {m.admin_account_sheet_desc()}
           </SheetDescription>
           {selectedUserId && (
             <AdminAccountDetail
@@ -192,14 +197,14 @@ function UsersTable({
     <Table>
       <TableHeader>
         <TableRow className="border-border hover:bg-transparent">
-          <TableHead className="text-fg-muted">Utilisateur</TableHead>
+          <TableHead className="text-fg-muted">{m.admin_users_col_user()}</TableHead>
           {!compact && (
             <>
-              <TableHead className="text-fg-muted">Palier</TableHead>
-              <TableHead className="text-right text-fg-muted">Opp.</TableHead>
-              <TableHead className="text-right text-fg-muted">Veilles</TableHead>
-              <TableHead className="text-fg-muted">Inscription</TableHead>
-              <TableHead className="text-fg-muted">Activité</TableHead>
+              <TableHead className="text-fg-muted">{m.admin_users_col_plan()}</TableHead>
+              <TableHead className="text-right text-fg-muted">{m.admin_users_col_opp()}</TableHead>
+              <TableHead className="text-right text-fg-muted">{m.admin_users_col_veilles()}</TableHead>
+              <TableHead className="text-fg-muted">{m.admin_users_col_signup()}</TableHead>
+              <TableHead className="text-fg-muted">{m.admin_users_col_activity()}</TableHead>
             </>
           )}
         </TableRow>
@@ -303,13 +308,13 @@ function UserMobileCard({
             <span className="assay font-medium text-fg">
               {formatNumber(user.opportunitiesCount)}
             </span>{' '}
-            opp.
+            {m.admin_users_opp_suffix()}
           </span>
           <span>
             <span className="assay font-medium text-fg">
               {formatNumber(user.veillesCount)}
             </span>{' '}
-            veilles
+            {m.admin_users_veilles_suffix()}
           </span>
           <span className="ml-auto">{formatRelative(user.lastActivityAt)}</span>
         </div>
@@ -325,12 +330,12 @@ function EmptyUsers({ hasSearch }: { hasSearch: boolean }) {
         <Users className="size-5" />
       </span>
       <p className="text-sm font-medium text-fg">
-        {hasSearch ? 'Aucun résultat' : 'Aucun utilisateur'}
+        {hasSearch ? m.admin_users_empty_search_title() : m.admin_users_empty_title()}
       </p>
       <p className="max-w-xs text-sm text-fg-muted">
         {hasSearch
-          ? 'Aucun compte ne correspond à cette recherche.'
-          : 'Les comptes inscrits apparaîtront ici.'}
+          ? m.admin_users_empty_search_desc()
+          : m.admin_users_empty_desc()}
       </p>
     </div>
   )
@@ -362,13 +367,15 @@ export function AdminError({ error }: { error: unknown }) {
     error.data &&
     'message' in error.data
       ? String((error.data as { message: unknown }).message)
-      : 'Une erreur est survenue lors du chargement.'
+      : m.admin_error_generic()
   return (
     <div className="flex flex-col items-center justify-center gap-2 rounded-[var(--radius-lg)] border border-border bg-surface px-6 py-16 text-center shadow-[var(--shadow-card)]">
       <span className="flex size-11 items-center justify-center rounded-[var(--radius)] bg-danger-soft text-danger">
         <AlertTriangle className="size-5" />
       </span>
-      <p className="text-sm font-medium text-fg">Chargement impossible</p>
+      <p className="text-sm font-medium text-fg">
+        {m.admin_load_failed()}
+      </p>
       <p className="max-w-xs text-sm text-fg-muted">{message}</p>
     </div>
   )

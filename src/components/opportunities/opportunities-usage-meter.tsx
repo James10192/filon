@@ -1,5 +1,6 @@
 import { useQuery } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
+import { m } from '~/lib/paraglide/messages'
 import { useUpsell } from '~/lib/billing/use-upsell'
 import { UsageMeter } from '~/components/billing/usage-meter'
 
@@ -25,7 +26,7 @@ export function OpportunitiesUsageMeter() {
 
   return (
     <UsageMeter
-      label="Opportunités actives"
+      label={m.opp_usage_active_label()}
       used={summary.activeCount}
       limit={limit}
       className="mb-4"

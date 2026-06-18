@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Plus } from 'lucide-react'
+import { m } from '~/lib/paraglide/messages'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
 import { useMediaQuery } from '~/lib/use-media-query'
 import { cn } from '~/lib/utils'
@@ -83,14 +84,14 @@ export function ProposalWorkspace({
   return (
     <div className="flex flex-col">
       <PageToolbar
-        title="Propositions"
-        subtitle="Suivez vos propositions spontanées et votre prospection, du brouillon à la signature."
+        title={m.prop_page_title()}
+        subtitle={m.prop_page_subtitle()}
         actions={
           <>
             <ViewSwitcher value={view} onChange={onViewChange} />
             <Button onClick={openCreate} className="shrink-0">
               <Plus className="size-4" />
-              <span className="hidden sm:inline">Nouvelle proposition</span>
+              <span className="hidden sm:inline">{m.prop_new()}</span>
             </Button>
           </>
         }
@@ -126,10 +127,9 @@ export function ProposalWorkspace({
           side="right"
           className="w-full max-w-full gap-0 p-0 sm:max-w-xl"
         >
-          <SheetTitle className="sr-only">Détail de la proposition</SheetTitle>
+          <SheetTitle className="sr-only">{m.prop_sheet_title()}</SheetTitle>
           <SheetDescription className="sr-only">
-            Détail, statut, pitch, entreprise et relances de la proposition
-            sélectionnée.
+            {m.prop_sheet_description()}
           </SheetDescription>
           {selectedId && (
             <PaneErrorBoundary resetKey={selectedId} onClose={onClose}>

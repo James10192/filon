@@ -18,6 +18,7 @@ import { ValueCombobox } from '~/components/ui/value-combobox'
 import { EntityCombobox } from '~/components/ui/entity-combobox'
 import { TagCombobox } from '~/components/ui/tag-combobox'
 import { toast } from '~/components/ui/sonner'
+import { m } from '~/lib/paraglide/messages'
 import { cn } from '~/lib/utils'
 import {
   SOURCE_CHANNELS,
@@ -105,7 +106,7 @@ export function OpportunityForm({
   initial,
   onSubmit,
   onCancel,
-  submitLabel = 'Enregistrer',
+  submitLabel = m.opp_save(),
   withStage = true,
   pending = false,
 }: {
@@ -157,10 +158,10 @@ export function OpportunityForm({
   async function handleCreateCompany(name: string) {
     try {
       const id = await createCompany({ name })
-      toast.success('Entreprise créée.')
+      toast.success(m.opp_company_created())
       return id as string
     } catch {
-      toast.error("L'entreprise n'a pas pu être créée.")
+      toast.error(m.opp_company_create_error())
       return null
     }
   }
@@ -168,10 +169,10 @@ export function OpportunityForm({
   async function handleCreateContact(name: string) {
     try {
       const id = await createContact({ name })
-      toast.success('Contact créé.')
+      toast.success(m.opp_contact_created())
       return id as string
     } catch {
-      toast.error("Le contact n'a pas pu être créé.")
+      toast.error(m.opp_contact_create_error())
       return null
     }
   }
@@ -180,7 +181,7 @@ export function OpportunityForm({
     event.preventDefault()
     if (pending) return
     if (title.trim().length === 0) {
-      setTitleError("L'intitulé est obligatoire.")
+      setTitleError(m.opp_form_title_required())
       return
     }
     setTitleError(null)
@@ -221,12 +222,12 @@ export function OpportunityForm({
       {/* ---------------------------------------------------------------- */}
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="opp-title">Intitulé</Label>
+          <Label htmlFor="opp-title">{m.opp_form_title_label()}</Label>
           <Input
             id="opp-title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Ex. Développeur React senior"
+            placeholder={m.opp_form_title_placeholder()}
             aria-invalid={titleError ? true : undefined}
             autoFocus
           />
@@ -235,10 +236,10 @@ export function OpportunityForm({
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="opp-type">Type</Label>
+            <Label htmlFor="opp-type">{m.opp_form_type_label()}</Label>
             <Select value={type} onValueChange={(v) => setType(v as OppType)}>
               <SelectTrigger id="opp-type">
-                <SelectValue placeholder="Choisir un type" />
+                <SelectValue placeholder={m.opp_form_type_placeholder()} />
               </SelectTrigger>
               <SelectContent>
                 {TYPE_OPTIONS.map(([key, meta]) => (
@@ -252,10 +253,10 @@ export function OpportunityForm({
 
           {withStage && (
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="opp-stage">Étape</Label>
+              <Label htmlFor="opp-stage">{m.opp_form_stage_label()}</Label>
               <Select value={stage} onValueChange={(v) => setStage(v as Stage)}>
                 <SelectTrigger id="opp-stage">
-                  <SelectValue placeholder="Choisir une étape" />
+                  <SelectValue placeholder={m.opp_form_stage_placeholder()} />
                 </SelectTrigger>
                 <SelectContent>
                   {STAGES.map((key) => (
@@ -274,14 +275,14 @@ export function OpportunityForm({
       {/* Section : Cible */}
       {/* ---------------------------------------------------------------- */}
       <fieldset className="flex flex-col gap-3 border-t border-border pt-4">
-        <legend className="text-sm font-medium text-fg">Cible</legend>
+        <legend className="text-sm font-medium text-fg">{m.opp_form_target_legend()}</legend>
         <p className="-mt-1 text-xs text-fg-muted">
-          Qui suivez-vous pour cette opportunité&nbsp;?
+          {m.opp_form_target_hint()}
         </p>
 
         <div
           role="radiogroup"
-          aria-label="Type de cible"
+          aria-label={m.opp_form_target_type_aria()}
           className="grid grid-cols-3 gap-2"
         >
           {TARGET_TYPES.map((key) => {
@@ -311,7 +312,7 @@ export function OpportunityForm({
 
         {targetType === 'company' && (
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="opp-company">Entreprise</Label>
+            <Label htmlFor="opp-company">{m.opp_target_company()}</Label>
             <EntityCombobox
               id="opp-company"
               items={(companies ?? []).map((c) => ({
@@ -322,18 +323,18 @@ export function OpportunityForm({
               onChange={(v) => setCompanyId(v === '__none__' ? '' : v)}
               onCreate={handleCreateCompany}
               emptyValue="__none__"
-              emptyLabel="Aucune entreprise"
-              placeholder="Rattacher une entreprise"
-              searchPlaceholder="Rechercher ou créer une entreprise..."
-              noResultLabel="Aucune entreprise trouvée."
-              createLabel="Créer l'entreprise"
+              emptyLabel={m.opp_company_empty()}
+              placeholder={m.opp_company_placeholder()}
+              searchPlaceholder={m.opp_company_search_placeholder()}
+              noResultLabel={m.opp_company_no_result()}
+              createLabel={m.opp_company_create_label()}
             />
           </div>
         )}
 
         {targetType === 'person' && (
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="opp-contact">Particulier</Label>
+            <Label htmlFor="opp-contact">{m.opp_target_person()}</Label>
             <EntityCombobox
               id="opp-contact"
               items={(contacts ?? []).map((c) => {
@@ -348,15 +349,14 @@ export function OpportunityForm({
               onChange={(v) => setContactId(v === '__none__' ? '' : v)}
               onCreate={handleCreateContact}
               emptyValue="__none__"
-              emptyLabel="Aucun contact"
-              placeholder="Rattacher un contact"
-              searchPlaceholder="Rechercher ou créer un contact..."
-              noResultLabel="Aucun contact trouvé."
-              createLabel="Créer le contact"
+              emptyLabel={m.opp_contact_empty()}
+              placeholder={m.opp_contact_placeholder()}
+              searchPlaceholder={m.opp_contact_search_placeholder()}
+              noResultLabel={m.opp_contact_no_result()}
+              createLabel={m.opp_contact_create_label()}
             />
             <p className="text-xs text-fg-subtle">
-              Une personne suivie directement (prospect, parrainage). Renseignez
-              ses coordonnées depuis le carnet de contacts.
+              {m.opp_contact_hint()}
             </p>
           </div>
         )}
@@ -366,20 +366,20 @@ export function OpportunityForm({
       {/* Section : Contexte / Source */}
       {/* ---------------------------------------------------------------- */}
       <fieldset className="flex flex-col gap-3 border-t border-border pt-4">
-        <legend className="text-sm font-medium text-fg">Origine</legend>
+        <legend className="text-sm font-medium text-fg">{m.opp_form_origin_legend()}</legend>
         <p className="-mt-1 text-xs text-fg-muted">
-          D’où vient cette piste&nbsp;?
+          {m.opp_form_origin_hint()}
         </p>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="opp-source-channel">Source</Label>
+            <Label htmlFor="opp-source-channel">{m.opp_form_source_label()}</Label>
             <Select value={sourceChannel} onValueChange={setSourceChannel}>
               <SelectTrigger id="opp-source-channel">
-                <SelectValue placeholder="Choisir une source" />
+                <SelectValue placeholder={m.opp_form_source_placeholder()} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={NO_SOURCE}>Non précisée</SelectItem>
+                <SelectItem value={NO_SOURCE}>{m.opp_form_source_none()}</SelectItem>
                 {SOURCE_CHANNELS.map((key) => (
                   <SelectItem key={key} value={key}>
                     {SOURCE_META[key].label}
@@ -389,18 +389,18 @@ export function OpportunityForm({
             </Select>
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="opp-source-detail">Précision</Label>
+            <Label htmlFor="opp-source-detail">{m.opp_form_source_detail_label()}</Label>
             <Input
               id="opp-source-detail"
               value={sourceDetail}
               onChange={(e) => setSourceDetail(e.target.value)}
-              placeholder="Ex. Salon SARA 2026, recommandé par Awa"
+              placeholder={m.opp_form_source_detail_placeholder()}
             />
           </div>
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="opp-url">Lien</Label>
+          <Label htmlFor="opp-url">{m.opp_form_url_label()}</Label>
           <Input
             id="opp-url"
             type="url"
@@ -416,34 +416,34 @@ export function OpportunityForm({
       {/* Section : Détails */}
       {/* ---------------------------------------------------------------- */}
       <fieldset className="flex flex-col gap-3 border-t border-border pt-4">
-        <legend className="text-sm font-medium text-fg">Détails</legend>
+        <legend className="text-sm font-medium text-fg">{m.opp_form_details_legend()}</legend>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="opp-compensation">Montant estimé</Label>
+            <Label htmlFor="opp-compensation">{m.opp_form_compensation_label()}</Label>
             <Input
               id="opp-compensation"
               value={compensation}
               onChange={(e) => setCompensation(e.target.value)}
-              placeholder="Ex. 800 000 XOF/mois"
+              placeholder={m.opp_form_compensation_placeholder()}
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="opp-location">Lieu</Label>
+            <Label htmlFor="opp-location">{m.opp_form_location_label()}</Label>
             <ValueCombobox
               id="opp-location"
               value={location}
               onChange={setLocation}
               suggestions={locationSuggestions}
-              placeholder="Remote, Abidjan, hybride..."
-              searchPlaceholder="Lieu..."
+              placeholder={m.opp_form_location_placeholder()}
+              searchPlaceholder={m.opp_form_location_search_placeholder()}
             />
           </div>
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="opp-next">Prochaine relance</Label>
+            <Label htmlFor="opp-next">{m.opp_form_next_action_label()}</Label>
             <Input
               id="opp-next"
               type="date"
@@ -452,7 +452,7 @@ export function OpportunityForm({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="opp-deadline">Échéance</Label>
+            <Label htmlFor="opp-deadline">{m.opp_form_deadline_label()}</Label>
             <Input
               id="opp-deadline"
               type="date"
@@ -463,12 +463,12 @@ export function OpportunityForm({
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="opp-description">Notes</Label>
+          <Label htmlFor="opp-description">{m.opp_form_notes_label()}</Label>
           <Textarea
             id="opp-description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Détails, contexte, points à suivre"
+            placeholder={m.opp_form_notes_placeholder()}
             rows={3}
           />
         </div>
@@ -478,7 +478,7 @@ export function OpportunityForm({
       {/* Section : Étiquettes */}
       {/* ---------------------------------------------------------------- */}
       <fieldset className="flex flex-col gap-3 border-t border-border pt-4">
-        <legend className="text-sm font-medium text-fg">Étiquettes</legend>
+        <legend className="text-sm font-medium text-fg">{m.opp_form_tags_legend()}</legend>
         <TagCombobox id="opp-tags" value={tags} onChange={setTags} />
       </fieldset>
 
@@ -490,7 +490,7 @@ export function OpportunityForm({
             onClick={onCancel}
             disabled={pending}
           >
-            Annuler
+            {m.opp_cancel()}
           </Button>
         )}
         <Button type="submit" disabled={pending}>

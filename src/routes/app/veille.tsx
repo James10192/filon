@@ -9,10 +9,11 @@ import { SourceHealthPanel } from '~/components/veille/source-health-panel'
 import { VeilleAutoBanner } from '~/components/veille/veille-auto-banner'
 import { RunNowButton } from '~/components/veille/run-now-button'
 import { UpgradeNudge } from '~/components/billing/upgrade-nudge'
+import { m } from '~/lib/paraglide/messages'
 
 export const Route = createFileRoute('/app/veille')({
   component: VeillePage,
-  head: () => ({ meta: [{ title: 'Veille · Filon' }] }),
+  head: () => ({ meta: [{ title: m.veille_page_meta_title() }] }),
   // Ouverture directe de l'import depuis la palette de commandes (?import).
   validateSearch: (search: Record<string, unknown>): { import?: boolean } =>
     search.import ? { import: true } : {},
@@ -35,8 +36,8 @@ function VeillePage() {
   return (
     <div className="flex flex-col">
       <PageToolbar
-        title="Veille"
-        subtitle="Votre radar de prospection : surveillez plusieurs sources, captez offres et prospects automatiquement."
+        title={m.veille_title()}
+        subtitle={m.veille_subtitle()}
         actions={
           <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
             <RunNowButton />
@@ -44,7 +45,7 @@ function VeillePage() {
               onClick={() => setImportOpen(true)}
               className="flex-1 sm:flex-none"
             >
-              Importer une offre
+              {m.veille_import_offer()}
             </Button>
           </div>
         }

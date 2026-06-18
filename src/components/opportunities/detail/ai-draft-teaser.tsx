@@ -1,4 +1,5 @@
 import { PenLine } from 'lucide-react'
+import { m } from '~/lib/paraglide/messages'
 import { useUpsell } from '~/lib/billing/use-upsell'
 import { LockedFeature } from '~/components/billing/locked-feature'
 
@@ -19,7 +20,7 @@ export function AiDraftTeaser() {
   return (
     <LockedFeature
       feature="ai_draft"
-      label="Générer un brouillon de candidature"
+      label={m.opp_ai_draft_teaser_label()}
     >
       <div className="flex items-center gap-3 rounded-[var(--radius-lg)] border border-border bg-surface px-4 py-3.5 shadow-[var(--shadow-card)]">
         <span className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-accent-soft text-accent">
@@ -27,10 +28,10 @@ export function AiDraftTeaser() {
         </span>
         <div className="space-y-0.5">
           <h3 className="text-sm font-semibold text-fg">
-            Brouillon de candidature
+            {m.opp_ai_draft_teaser_title()}
           </h3>
           <p className="text-sm text-fg-muted">
-            Lettre ou email ciblé, généré pour cette opportunité.
+            {m.opp_ai_draft_teaser_desc()}
           </p>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { Inbox, Plus } from 'lucide-react'
+import { m } from '~/lib/paraglide/messages'
 import { cn } from '~/lib/utils'
 import { Button } from '~/components/ui/button'
 import { SortableKanbanCard } from './kanban-card'
@@ -39,7 +40,7 @@ export function KanbanColumn({
 
   return (
     <section
-      aria-label={`Colonne ${meta.label}`}
+      aria-label={m.opp_column_aria({ stage: meta.label })}
       className={cn(
         // Mobile : colonne fluide qui laisse entrevoir la suivante (indice de
         // scroll horizontal). >= sm : largeur fixe 304px.
@@ -72,7 +73,7 @@ export function KanbanColumn({
           {potential && (
             <span
               className="assay text-xs font-semibold text-fg-muted"
-              title={`Valeur potentielle cumulée sur « ${meta.label} »`}
+              title={m.opp_column_potential_title({ stage: meta.label })}
             >
               {potential}
             </span>
@@ -81,7 +82,7 @@ export function KanbanColumn({
             variant="ghost"
             size="icon-sm"
             className="-mr-1 size-7 text-fg-subtle opacity-70 transition-opacity hover:text-fg hover:opacity-100 focus-visible:opacity-100 md:opacity-0 md:group-hover/head:opacity-100"
-            aria-label={`Ajouter une opportunité dans « ${meta.label} »`}
+            aria-label={m.opp_column_add_aria({ stage: meta.label })}
             onClick={() => onQuickAdd(stage)}
           >
             <Plus className="size-4" />
@@ -137,9 +138,9 @@ function EmptyColumn({ label, isOver }: { label: string; isOver: boolean }) {
     >
       <Inbox className="size-4 opacity-60" aria-hidden />
       <p className="text-xs leading-snug">
-        Glissez une opportunité ici
+        {m.opp_column_empty_drop()}
         <br />
-        <span className="text-fg-subtle/70">{`pour « ${label} »`}</span>
+        <span className="text-fg-subtle/70">{m.opp_column_empty_for({ stage: label })}</span>
       </p>
     </div>
   )

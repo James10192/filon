@@ -1,4 +1,5 @@
 import { Search, X } from 'lucide-react'
+import { m } from '~/lib/paraglide/messages'
 import { cn } from '~/lib/utils'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
@@ -21,8 +22,8 @@ export type FilterChip = {
 export function DataTableToolbar({
   search,
   onSearchChange,
-  searchPlaceholder = 'Rechercher...',
-  searchLabel = 'Rechercher',
+  searchPlaceholder,
+  searchLabel,
   children,
   actions,
   chips,
@@ -44,6 +45,8 @@ export function DataTableToolbar({
   className?: string
 }) {
   const hasChips = chips.length > 0
+  const resolvedSearchPlaceholder = searchPlaceholder ?? m.shell_search_placeholder()
+  const resolvedSearchLabel = searchLabel ?? m.shell_search_label()
 
   return (
     <div className={cn('flex flex-col gap-2.5', className)}>
@@ -54,9 +57,9 @@ export function DataTableToolbar({
             <Input
               value={search ?? ''}
               onChange={(e) => onSearchChange(e.target.value)}
-              placeholder={searchPlaceholder}
+              placeholder={resolvedSearchPlaceholder}
               className="pl-9"
-              aria-label={searchLabel}
+              aria-label={resolvedSearchLabel}
             />
           </div>
         )}
@@ -80,7 +83,7 @@ export function DataTableToolbar({
               type="button"
               onClick={chip.onRemove}
               className="group inline-flex h-7 items-center gap-1.5 rounded-full border border-border bg-surface-2 pl-2.5 pr-2 text-xs font-medium text-fg-muted transition-colors hover:border-border-strong hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-ring)]"
-              aria-label={`Retirer le filtre ${chip.label}`}
+              aria-label={m.shell_filter_remove({ label: chip.label })}
             >
               {chip.label}
               <X className="size-3 text-fg-subtle transition-colors group-hover:text-fg" />
@@ -92,7 +95,7 @@ export function DataTableToolbar({
             onClick={onClearAll}
             className="h-7 px-2 text-xs text-fg-subtle hover:text-fg"
           >
-            Tout effacer
+            {m.shell_clear_all()}
           </Button>
         </div>
       )}

@@ -42,10 +42,10 @@ import {
 } from '~/components/ui/alert-dialog'
 import { toast } from '~/components/ui/sonner'
 import {
-  FEEDBACK_STATUS_LABEL,
-  FEEDBACK_TYPE_LABEL,
-  PROPOSAL_STATUS_LABEL,
-  STAGE_LABEL,
+  feedbackStatusLabel,
+  feedbackTypeLabel,
+  proposalStatusLabel,
+  stageLabel,
   feedbackStatusVariant,
   feedbackTypeVariant,
   formatDate,
@@ -56,6 +56,7 @@ import {
   planBadgeVariant,
   planLabel,
 } from './admin-meta'
+import { m } from '~/lib/paraglide/messages'
 
 const PLAN_OPTIONS: Plan[] = ['free', 'pro', 'pro_ai', 'copilot']
 const STAGE_ORDER = [
@@ -70,10 +71,7 @@ const STAGE_ORDER = [
 
 /** Message d'erreur lisible (FORBIDDEN ou générique) pour un toast. */
 function errorMessage(error: unknown): string {
-  return (
-    forbiddenMessage(error) ??
-    'Action impossible. Veuillez réessayer.'
-  )
+  return forbiddenMessage(error) ?? m.admin_action_failed()
 }
 
 /**
@@ -108,10 +106,10 @@ export function AdminAccountDetail({
             <div className="flex items-center gap-2">
               <span className="truncate font-semibold text-fg">{name}</span>
               {profile.role === 'admin' && (
-                <Badge variant="info">Admin</Badge>
+                <Badge variant="info">{m.admin_badge_admin()}</Badge>
               )}
               {profile.suspended && (
-                <Badge variant="danger">Suspendu</Badge>
+                <Badge variant="danger">{m.admin_badge_suspended()}</Badge>
               )}
             </div>
             <span className="truncate text-sm text-fg-muted">
@@ -123,7 +121,7 @@ export function AdminAccountDetail({
           variant="ghost"
           size="icon"
           onClick={onClose}
-          aria-label="Fermer le détail"
+          aria-label={m.admin_close_detail()}
           className="h-11 w-11 shrink-0"
         >
           <X className="size-4" />
@@ -165,11 +163,11 @@ function ProfileMeta({
     <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm text-fg-muted">
       <span className="inline-flex items-center gap-1.5">
         <CalendarClock className="size-4 text-fg-subtle" />
-        Inscrit le {formatDate(createdAt)}
+        {m.admin_account_registered_on({ date: formatDate(createdAt) })}
       </span>
       <span className="inline-flex items-center gap-1.5">
         <Sparkles className="size-4 text-fg-subtle" />
-        Activité {formatRelative(lastActivityAt)}
+        {m.admin_account_activity({ date: formatRelative(lastActivityAt) })}
       </span>
     </div>
   )
@@ -191,21 +189,21 @@ function SubscriptionCard({
 }) {
   const intervalLabel =
     abonnement.planInterval === 'annual'
-      ? 'Annuel'
+      ? m.admin_billing_annual()
       : abonnement.planInterval === 'monthly'
-        ? 'Mensuel'
+        ? m.admin_billing_monthly()
         : null
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between gap-2 space-y-0">
-        <CardTitle className="text-sm">Abonnement</CardTitle>
+        <CardTitle className="text-sm">{m.admin_subscription_title()}</CardTitle>
         <Badge variant={planBadgeVariant(plan)}>{planLabel(plan)}</Badge>
       </CardHeader>
       <CardContent className="grid grid-cols-2 gap-4">
-        <Metric label="MRR" value={formatXof(abonnement.mrrXof)} />
-        <Metric label="Facturation" value={intervalLabel ?? '—'} />
+        <Metric label={m.admin_metric_mrr()} value={formatXof(abonnement.mrrXof)} />
+        <Metric label={m.admin_metric_billing()} value={intervalLabel ?? '—'} />
         <Metric
-          label="Renouvellement"
+          label={m.admin_metric_renewal()}
           value={
             abonnement.planRenewsAt
               ? formatDate(abonnement.planRenewsAt)
@@ -213,14 +211,14 @@ function SubscriptionCard({
           }
         />
         <Metric
-          label="Auto-renouvellement"
-          value={abonnement.autoRenew ? 'Activé' : 'Désactivé'}
+          label={m.admin_metric_auto_renew()}
+          value={abonnement.autoRenew ? m.admin_enabled() : m.admin_disabled()}
         />
         <div className="col-span-2 flex items-center gap-2 text-sm text-fg-muted">
           <CreditCard className="size-4 text-fg-subtle" />
           {abonnement.cardLast4
             ? `${abonnement.cardBrand ? `${abonnement.cardBrand} ` : ''}···· ${abonnement.cardLast4}`
-            : 'Aucune carte enregistrée'}
+            : m.admin_no_card()}
         </div>
       </CardContent>
     </Card>
@@ -248,14 +246,14 @@ function ActivityCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-sm">Activité produit</CardTitle>
+        <CardTitle className="text-sm">{m.admin_activity_title()}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between text-sm">
             <span className="inline-flex items-center gap-1.5 text-fg-muted">
               <Briefcase className="size-4 text-fg-subtle" />
-              Opportunités
+              {m.admin_activity_opportunities()}
             </span>
             <span className="assay font-medium text-fg">
               {formatNumber(activite.opportunitiesTotal)}
@@ -267,7 +265,7 @@ function ActivityCard({
               return (
                 <div key={stage} className="flex items-center gap-2">
                   <span className="w-24 shrink-0 text-xs text-fg-subtle">
-                    {STAGE_LABEL[stage]}
+                    {stageLabel(stage)}
                   </span>
                   <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-2">
                     <div
@@ -287,32 +285,32 @@ function ActivityCard({
         <div className="grid grid-cols-2 gap-3 border-t border-border pt-4 sm:grid-cols-3">
           <StatChip
             icon={<Radar className="size-4" />}
-            label="Veilles"
+            label={m.admin_stat_veilles()}
             value={`${activite.veilles.enabled}/${activite.veilles.total}`}
           />
           <StatChip
             icon={<MessageSquare className="size-4" />}
-            label="Propositions"
+            label={m.admin_stat_proposals()}
             value={formatNumber(activite.proposals.total)}
           />
           <StatChip
             icon={<Building2 className="size-4" />}
-            label="Entreprises"
+            label={m.admin_stat_companies()}
             value={formatNumber(activite.companies)}
           />
           <StatChip
             icon={<Users className="size-4" />}
-            label="Contacts"
+            label={m.admin_stat_contacts()}
             value={formatNumber(activite.contacts)}
           />
           <StatChip
             icon={<CalendarClock className="size-4" />}
-            label="Relances"
+            label={m.admin_stat_followups()}
             value={`${activite.followups.open}/${activite.followups.total}`}
           />
           <StatChip
             icon={<FileText className="size-4" />}
-            label="Documents"
+            label={m.admin_stat_documents()}
             value={formatNumber(activite.documents)}
           />
         </div>
@@ -323,7 +321,7 @@ function ActivityCard({
               .filter(([, n]) => n > 0)
               .map(([status, n]) => (
                 <Badge key={status} variant="outline">
-                  {PROPOSAL_STATUS_LABEL[status] ?? status} · {n}
+                  {proposalStatusLabel(status)} · {n}
                 </Badge>
               ))}
           </div>
@@ -349,15 +347,15 @@ function AiCard({
     <Card>
       <CardHeader className="flex-row items-center gap-2 space-y-0">
         <Bot className="size-4 text-accent" />
-        <CardTitle className="text-sm">Copilote IA</CardTitle>
+        <CardTitle className="text-sm">{m.admin_ai_title()}</CardTitle>
       </CardHeader>
       <CardContent className="grid grid-cols-3 gap-4">
-        <Metric label="Solde" value={formatNumber(ia.balance)} />
-        <Metric label="Packs" value={formatNumber(ia.packBalance)} />
-        <Metric label="Allocation" value={formatNumber(ia.allowance)} />
-        <Metric label="Conso. ce mois" value={formatNumber(ia.usedThisMonth)} />
-        <Metric label="Conversations" value={formatNumber(ia.threads)} />
-        <Metric label="Actions" value={formatNumber(ia.actions)} />
+        <Metric label={m.admin_ai_balance()} value={formatNumber(ia.balance)} />
+        <Metric label={m.admin_ai_packs()} value={formatNumber(ia.packBalance)} />
+        <Metric label={m.admin_ai_allowance()} value={formatNumber(ia.allowance)} />
+        <Metric label={m.admin_ai_used_month()} value={formatNumber(ia.usedThisMonth)} />
+        <Metric label={m.admin_ai_threads()} value={formatNumber(ia.threads)} />
+        <Metric label={m.admin_ai_actions()} value={formatNumber(ia.actions)} />
       </CardContent>
     </Card>
   )
@@ -369,7 +367,7 @@ function VeilleCard({ captures }: { captures: number }) {
       <CardContent className="flex items-center justify-between py-4">
         <span className="inline-flex items-center gap-2 text-sm text-fg-muted">
           <Radar className="size-4 text-fg-subtle" />
-          Offres captées par la veille
+          {m.admin_veille_captures()}
         </span>
         <span className="assay font-medium text-fg">
           {formatNumber(captures)}
@@ -396,22 +394,22 @@ function FeedbacksCard({
     <Card>
       <CardHeader>
         <CardTitle className="text-sm">
-          Feedbacks ({formatNumber(feedbacks.total)})
+          {m.admin_feedbacks_card_title({ n: formatNumber(feedbacks.total) })}
         </CardTitle>
       </CardHeader>
       <CardContent>
         {feedbacks.items.length === 0 ? (
-          <p className="text-sm text-fg-muted">Aucun retour envoyé.</p>
+          <p className="text-sm text-fg-muted">{m.admin_feedbacks_card_empty()}</p>
         ) : (
           <ul className="flex flex-col gap-3">
             {feedbacks.items.map((f, i) => (
               <li key={i} className="flex flex-col gap-1.5">
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant={feedbackTypeVariant(f.type)}>
-                    {FEEDBACK_TYPE_LABEL[f.type]}
+                    {feedbackTypeLabel(f.type)}
                   </Badge>
                   <Badge variant={feedbackStatusVariant(f.status)}>
-                    {FEEDBACK_STATUS_LABEL[f.status]}
+                    {feedbackStatusLabel(f.status)}
                   </Badge>
                   <span className="text-xs text-fg-subtle">
                     {formatRelative(f.createdAt)}
@@ -464,11 +462,11 @@ function AdminActions({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-sm">Actions administrateur</CardTitle>
+        <CardTitle className="text-sm">{m.admin_actions_title()}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
-          <span className="text-xs text-fg-subtle">Palier</span>
+          <span className="text-xs text-fg-subtle">{m.admin_actions_plan()}</span>
           <Select
             value={plan}
             onValueChange={(value) => setPendingPlan(value as Plan)}
@@ -497,12 +495,12 @@ function AdminActions({
             {isAdminRole ? (
               <>
                 <ShieldOff className="size-4" />
-                Retirer admin
+                {m.admin_action_revoke_admin()}
               </>
             ) : (
               <>
                 <Shield className="size-4" />
-                Accorder admin
+                {m.admin_action_grant_admin()}
               </>
             )}
           </Button>
@@ -512,7 +510,7 @@ function AdminActions({
             disabled={busy}
             onClick={() => setConfirmSuspend(true)}
           >
-            {suspended ? 'Réactiver' : 'Suspendre'}
+            {suspended ? m.admin_action_reactivate() : m.admin_action_suspend()}
           </Button>
         </div>
       </CardContent>
@@ -524,15 +522,15 @@ function AdminActions({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Changer le palier ?</AlertDialogTitle>
+            <AlertDialogTitle>{m.admin_confirm_plan_title()}</AlertDialogTitle>
             <AlertDialogDescription>
-              Le compte passera au palier{' '}
-              {pendingPlan ? planLabel(pendingPlan) : ''}. Cette action est
-              immédiate.
+              {m.admin_confirm_plan_desc({
+                plan: pendingPlan ? planLabel(pendingPlan) : '',
+              })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogCancel>{m.admin_cancel()}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 const next = pendingPlan
@@ -540,11 +538,11 @@ function AdminActions({
                 if (next)
                   void run(
                     () => setUserPlan({ userId, plan: next }),
-                    `Palier mis à jour : ${planLabel(next)}.`,
+                    m.admin_toast_plan_updated({ plan: planLabel(next) }),
                   )
               }}
             >
-              Confirmer
+              {m.admin_confirm()}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -555,16 +553,18 @@ function AdminActions({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {isAdminRole ? "Retirer l'accès admin ?" : "Accorder l'accès admin ?"}
+              {isAdminRole
+                ? m.admin_confirm_revoke_admin_title()
+                : m.admin_confirm_grant_admin_title()}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {isAdminRole
-                ? 'Ce compte perdra l’accès au back-office.'
-                : 'Ce compte aura un accès complet au back-office et aux données cross-tenant.'}
+                ? m.admin_confirm_revoke_admin_desc()
+                : m.admin_confirm_grant_admin_desc()}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogCancel>{m.admin_cancel()}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 setConfirmRole(false)
@@ -574,11 +574,13 @@ function AdminActions({
                       userId,
                       role: isAdminRole ? null : 'admin',
                     }),
-                  isAdminRole ? 'Rôle admin retiré.' : 'Rôle admin accordé.',
+                  isAdminRole
+                    ? m.admin_toast_admin_revoked()
+                    : m.admin_toast_admin_granted(),
                 )
               }}
             >
-              Confirmer
+              {m.admin_confirm()}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -589,27 +591,31 @@ function AdminActions({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {suspended ? 'Réactiver ce compte ?' : 'Suspendre ce compte ?'}
+              {suspended
+                ? m.admin_confirm_reactivate_title()
+                : m.admin_confirm_suspend_title()}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {suspended
-                ? 'Le compte sera de nouveau marqué comme actif.'
-                : 'Le compte sera marqué comme suspendu.'}
+                ? m.admin_confirm_reactivate_desc()
+                : m.admin_confirm_suspend_desc()}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogCancel>{m.admin_cancel()}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 const next = !suspended
                 setConfirmSuspend(false)
                 void run(
                   () => setUserSuspended({ userId, suspended: next }),
-                  next ? 'Compte suspendu.' : 'Compte réactivé.',
+                  next
+                    ? m.admin_toast_suspended()
+                    : m.admin_toast_reactivated(),
                 )
               }}
             >
-              Confirmer
+              {m.admin_confirm()}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -662,7 +668,7 @@ function DetailSkeleton({ onClose }: { onClose: () => void }) {
           variant="ghost"
           size="icon"
           onClick={onClose}
-          aria-label="Fermer le détail"
+          aria-label={m.admin_close_detail()}
           className="h-11 w-11"
         >
           <X className="size-4" />

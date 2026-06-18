@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
+import { m } from '~/lib/paraglide/messages'
 import { cn } from '~/lib/utils'
 import { Button } from '~/components/ui/button'
 import { Textarea } from '~/components/ui/textarea'
@@ -64,9 +65,9 @@ export function ActivityTimeline({
       await add({ opportunityId, kind, content: trimmed })
       setContent('')
       setKind('note')
-      toast.success('Activité ajoutée.')
+      toast.success(m.opp_activity_added())
     } catch {
-      toast.error("L'activité n'a pas pu être ajoutée.")
+      toast.error(m.opp_activity_add_error())
     } finally {
       setPending(false)
     }
@@ -75,9 +76,9 @@ export function ActivityTimeline({
   async function handleRemove(id: Id<'activities'>) {
     try {
       await remove({ id })
-      toast.success('Activité supprimée.')
+      toast.success(m.opp_activity_removed())
     } catch {
-      toast.error('La suppression a échoué.')
+      toast.error(m.opp_delete_error())
     }
   }
 
@@ -87,7 +88,7 @@ export function ActivityTimeline({
         <Textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="Ajoutez une note, consignez un échange..."
+          placeholder={m.opp_activity_placeholder()}
           rows={3}
         />
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -116,7 +117,7 @@ export function ActivityTimeline({
             ) : (
               <Send className="size-4" />
             )}
-            Ajouter
+            {m.opp_add()}
           </Button>
         </div>
       </form>
@@ -125,7 +126,7 @@ export function ActivityTimeline({
         <TimelineSkeleton />
       ) : activities.length === 0 ? (
         <p className="rounded-[var(--radius)] border border-dashed border-border px-4 py-8 text-center text-sm text-fg-muted">
-          Aucune activité, ajoutez une note ou planifiez une relance.
+          {m.opp_activity_empty()}
         </p>
       ) : (
         <ol className="flex flex-col">
@@ -161,7 +162,7 @@ export function ActivityTimeline({
                       type="button"
                       onClick={() => handleRemove(activity._id)}
                       className="shrink-0 rounded-md p-1 text-fg-subtle opacity-0 transition-opacity hover:bg-surface-2 hover:text-danger focus-visible:opacity-100 group-hover:opacity-100"
-                      aria-label="Supprimer cette activité"
+                      aria-label={m.opp_activity_delete_aria()}
                     >
                       <Trash2 className="size-3.5" />
                     </button>

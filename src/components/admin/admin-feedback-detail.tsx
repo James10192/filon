@@ -30,9 +30,9 @@ import {
 } from '~/components/ui/select'
 import { toast } from '~/components/ui/sonner'
 import {
-  FEEDBACK_STATUS_LABEL,
+  feedbackStatusLabel,
   FEEDBACK_STATUS_ORDER,
-  FEEDBACK_TYPE_LABEL,
+  feedbackTypeLabel,
   feedbackStatusVariant,
   feedbackTypeVariant,
   formatDate,
@@ -43,6 +43,7 @@ import {
   type FeedbackStatus,
   type FeedbackType,
 } from './admin-meta'
+import { m } from '~/lib/paraglide/messages'
 
 const TYPE_ICON: Record<FeedbackType, typeof Bug> = {
   bug: Bug,
@@ -80,10 +81,10 @@ export function AdminFeedbackDetail({
           <div className="flex min-w-0 flex-col gap-1">
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant={feedbackTypeVariant(feedback.type)}>
-                {FEEDBACK_TYPE_LABEL[feedback.type]}
+                {feedbackTypeLabel(feedback.type)}
               </Badge>
               <Badge variant={feedbackStatusVariant(feedback.status)}>
-                {FEEDBACK_STATUS_LABEL[feedback.status]}
+                {feedbackStatusLabel(feedback.status)}
               </Badge>
             </div>
             <span className="assay-meta text-xs">
@@ -95,7 +96,7 @@ export function AdminFeedbackDetail({
           variant="ghost"
           size="icon"
           onClick={onClose}
-          aria-label="Fermer le détail"
+          aria-label={m.admin_close_detail()}
           className="h-11 w-11 shrink-0"
         >
           <X className="size-4" />
@@ -105,7 +106,7 @@ export function AdminFeedbackDetail({
       <div className="flex flex-col gap-4 overflow-y-auto px-5 py-5">
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Message</CardTitle>
+            <CardTitle className="text-sm">{m.admin_feedback_message_title()}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="whitespace-pre-wrap text-sm leading-relaxed text-fg">
@@ -146,17 +147,17 @@ function AuthorCard({
             <User className="size-4" />
           </span>
           <span className="text-sm text-fg-muted">
-            Auteur introuvable (compte supprimé).
+            {m.admin_author_not_found()}
           </span>
         </CardContent>
       </Card>
     )
   }
-  const name = author.name?.trim() || author.email || 'Utilisateur'
+  const name = author.name?.trim() || author.email || m.admin_user_generic()
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-sm">Auteur</CardTitle>
+        <CardTitle className="text-sm">{m.admin_author_title()}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         <div className="flex items-center gap-3">
@@ -194,7 +195,7 @@ function ContextCard({ context }: { context: string }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-sm">Contexte</CardTitle>
+        <CardTitle className="text-sm">{m.admin_context_title()}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-2">
         <span className="inline-flex items-center gap-2 text-sm text-fg-muted">
@@ -242,11 +243,11 @@ function ManageCard({
           ? { id: feedbackId, status: nextStatus, adminNote: trimmed }
           : { id: feedbackId, status: nextStatus },
       )
-      toast.success('Retour mis à jour.')
+      toast.success(m.admin_toast_feedback_updated())
     } catch (error) {
       toast.error(
         forbiddenMessage(error) ??
-          (error instanceof Error ? error.message : 'La mise à jour a échoué.'),
+          (error instanceof Error ? error.message : m.admin_toast_update_failed()),
       )
     } finally {
       setSaving(false)
@@ -256,24 +257,24 @@ function ManageCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-sm">Traitement</CardTitle>
+        <CardTitle className="text-sm">{m.admin_manage_title()}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
-          <span className="text-xs text-fg-subtle">Statut</span>
+          <span className="text-xs text-fg-subtle">{m.admin_manage_status()}</span>
           <div className="flex items-center gap-2">
             <Select
               value={status}
               onValueChange={(value) => persist(value as FeedbackStatus, note)}
               disabled={saving}
             >
-              <SelectTrigger className="h-11" aria-label="Changer le statut">
+              <SelectTrigger className="h-11" aria-label={m.admin_manage_status_aria()}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {FEEDBACK_STATUS_ORDER.map((s) => (
                   <SelectItem key={s} value={s}>
-                    {FEEDBACK_STATUS_LABEL[s]}
+                    {feedbackStatusLabel(s)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -285,14 +286,14 @@ function ManageCard({
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <span className="text-xs text-fg-subtle">Note interne</span>
+          <span className="text-xs text-fg-subtle">{m.admin_internal_note()}</span>
           <Textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="Note interne (optionnelle)"
+            placeholder={m.admin_internal_note_placeholder()}
             rows={3}
             className="resize-none text-sm"
-            aria-label="Note interne"
+            aria-label={m.admin_internal_note()}
           />
           {noteDirty && (
             <div className="flex justify-end">
@@ -302,7 +303,7 @@ function ManageCard({
                 disabled={saving}
                 onClick={() => persist(status, note)}
               >
-                Enregistrer la note
+                {m.admin_save_note()}
               </Button>
             </div>
           )}
@@ -327,7 +328,7 @@ function DetailSkeleton({ onClose }: { onClose: () => void }) {
           variant="ghost"
           size="icon"
           onClick={onClose}
-          aria-label="Fermer le détail"
+          aria-label={m.admin_close_detail()}
           className="h-11 w-11"
         >
           <X className="size-4" />

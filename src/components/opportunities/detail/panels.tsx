@@ -4,6 +4,7 @@ import type { FunctionReturnType } from 'convex/server'
 import { Building2, User, FileText, Loader2, Trash2 } from 'lucide-react'
 import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
+import { m } from '~/lib/paraglide/messages'
 import { cn } from '~/lib/utils'
 import { Button } from '~/components/ui/button'
 import { Skeleton } from '~/components/ui/skeleton'
@@ -33,10 +34,10 @@ export function CompanyContactPanel({
   contact?: LoadedOpportunity['contact']
 }) {
   return (
-    <Panel title="Entreprise et contact">
+    <Panel title={m.opp_panel_company_contact()}>
       {!company && !contact ? (
         <p className="text-sm text-fg-muted">
-          Aucune entreprise ni contact rattaché.
+          {m.opp_company_contact_empty()}
         </p>
       ) : (
         <div className="flex flex-col gap-3 text-sm">
@@ -93,13 +94,13 @@ export function AttachedDocumentsPanel({
 
   return (
     <Panel
-      title="Documents"
+      title={m.opp_panel_documents()}
       action={
         <Link
           to="/app/documents"
           className="text-sm font-medium text-accent hover:underline"
         >
-          Gérer
+          {m.opp_documents_manage()}
         </Link>
       }
     >
@@ -110,7 +111,7 @@ export function AttachedDocumentsPanel({
         </div>
       ) : documents.length === 0 ? (
         <p className="text-sm text-fg-muted">
-          Aucun document rattaché à cette opportunité.
+          {m.opp_documents_empty()}
         </p>
       ) : (
         <ul className="flex flex-col gap-2">
@@ -149,8 +150,8 @@ export function DeleteOpportunityDialog({
         <Button
           variant="ghost"
           size="sm"
-          aria-label="Supprimer"
-          title="Supprimer"
+          aria-label={m.opp_action_delete()}
+          title={m.opp_action_delete()}
           className="size-11 p-0 text-danger hover:bg-surface-2 hover:text-danger sm:size-9"
         >
           <Trash2 className="size-4" />
@@ -158,14 +159,13 @@ export function DeleteOpportunityDialog({
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Supprimer cette opportunité ?</AlertDialogTitle>
+          <AlertDialogTitle>{m.opp_delete_confirm_title()}</AlertDialogTitle>
           <AlertDialogDescription>
-            Cette action est irréversible. La timeline d'activité sera également
-            supprimée. Les relances et documents seront détachés.
+            {m.opp_delete_confirm_desc()}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Annuler</AlertDialogCancel>
+          <AlertDialogCancel>{m.opp_cancel()}</AlertDialogCancel>
           <AlertDialogAction
             onClick={(e) => {
               e.preventDefault()
@@ -175,7 +175,7 @@ export function DeleteOpportunityDialog({
             className="bg-danger text-white hover:bg-danger/90"
           >
             {pending && <Loader2 className="size-4 animate-spin" />}
-            Supprimer définitivement
+            {m.opp_delete_confirm_action()}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

@@ -15,6 +15,7 @@ import type { Doc } from '../../../convex/_generated/dataModel'
 import { Button } from '~/components/ui/button'
 import { Badge } from '~/components/ui/badge'
 import { cn } from '~/lib/utils'
+import { m } from '~/lib/paraglide/messages'
 import { EntityDocuments } from '~/components/shared/entity-documents'
 
 type Contact = Doc<'contacts'> & { companyName?: string }
@@ -51,7 +52,7 @@ export function ParticularCard({
             </h3>
             <Badge variant="outline" className="gap-1">
               <User className="size-3" />
-              Particulier
+              {m.carnet_particular_badge()}
             </Badge>
             {contact.role && (
               <span className="truncate text-xs text-fg-subtle">
@@ -122,7 +123,7 @@ export function ParticularCard({
           <Button
             variant="ghost"
             size="icon-sm"
-            aria-label="Modifier le particulier"
+            aria-label={m.carnet_particular_edit_aria()}
             onClick={() => onEdit(contact)}
           >
             <Pencil className="size-4" />
@@ -130,7 +131,7 @@ export function ParticularCard({
           <Button
             variant="ghost"
             size="icon-sm"
-            aria-label="Supprimer le particulier"
+            aria-label={m.carnet_particular_delete_aria()}
             className="text-fg-muted hover:text-danger"
             onClick={() => onDelete(contact)}
           >
@@ -146,7 +147,7 @@ export function ParticularCard({
           aria-expanded={expanded}
           className="flex h-11 w-full items-center gap-2 px-4 text-sm font-medium text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg md:px-5"
         >
-          <span>Détails et documents</span>
+          <span>{m.carnet_details_and_documents()}</span>
           <ChevronDown
             className={cn(
               'ml-auto size-4 text-fg-subtle transition-transform',
@@ -160,7 +161,7 @@ export function ParticularCard({
             {contact.referredBy && (
               <p className="inline-flex items-center gap-1.5 text-xs text-fg-muted">
                 <UserPlus className="size-3.5 text-fg-subtle" />
-                Recommandé par {contact.referredBy}
+                {m.carnet_referred_by_label({ name: contact.referredBy })}
               </p>
             )}
             {contact.notes && (

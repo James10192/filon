@@ -7,6 +7,8 @@
  * la source de verite metier ; seuls les libelles sont editables.
  */
 
+import { m } from '~/lib/paraglide/messages'
+
 /** Cle de stage (code metier, anglais) dans l'ordre canonique du pipeline. */
 export type StageKey =
   | 'lead'
@@ -51,16 +53,27 @@ export const STAGE_COLOR_VAR: Record<StageKey, string> = {
 }
 
 /** Devises proposees (Afrique de l'Ouest en tete, cf. contexte produit). */
-export const CURRENCIES: { value: string; label: string }[] = [
-  { value: 'XOF', label: 'XOF · Franc CFA (UEMOA)' },
-  { value: 'XAF', label: 'XAF · Franc CFA (CEMAC)' },
-  { value: 'EUR', label: 'EUR · Euro' },
-  { value: 'USD', label: 'USD · Dollar américain' },
-  { value: 'GBP', label: 'GBP · Livre sterling' },
-  { value: 'MAD', label: 'MAD · Dirham marocain' },
-  { value: 'NGN', label: 'NGN · Naira nigérian' },
-  { value: 'CAD', label: 'CAD · Dollar canadien' },
+export const CURRENCIES: { value: string; label: () => string }[] = [
+  { value: 'XOF', label: m.app_currency_xof },
+  { value: 'XAF', label: m.app_currency_xaf },
+  { value: 'EUR', label: m.app_currency_eur },
+  { value: 'USD', label: m.app_currency_usd },
+  { value: 'GBP', label: m.app_currency_gbp },
+  { value: 'MAD', label: m.app_currency_mad },
+  { value: 'NGN', label: m.app_currency_ngn },
+  { value: 'CAD', label: m.app_currency_cad },
 ]
+
+/** Libelle localise par defaut d'une etape (pour l'affichage : placeholder, aria). */
+export const STAGE_LABEL_MESSAGES: Record<StageKey, () => string> = {
+  lead: m.app_stage_lead,
+  contacted: m.app_stage_contacted,
+  applied: m.app_stage_applied,
+  interview: m.app_stage_interview,
+  negotiation: m.app_stage_negotiation,
+  won: m.app_stage_won,
+  lost: m.app_stage_lost,
+}
 
 /**
  * Convertit un tableau de libelles personnalises (ordre = STAGE_ORDER) en

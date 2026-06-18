@@ -8,6 +8,7 @@ import {
 import { ConvexProvider } from 'convex/react'
 import { ConvexBetterAuthProvider } from '@convex-dev/better-auth/react'
 import { Loader2 } from 'lucide-react'
+import { m } from '~/lib/paraglide/messages'
 import { authClient, useSession } from '~/lib/auth/auth-client'
 import { Skeleton } from '~/components/ui/skeleton'
 import {
@@ -37,7 +38,7 @@ export const Route = createFileRoute('/app')({
   component: AppLayout,
   head: () => ({
     meta: [
-      { title: 'Filon · Espace de travail' },
+      { title: m.shell_page_title() },
       { name: 'robots', content: 'noindex, nofollow' },
     ],
   }),
@@ -99,7 +100,7 @@ function AuthGate() {
   if (!session) return null
 
   const user = session.user
-  const displayName = user?.name?.trim() || user?.email || 'Mon compte'
+  const displayName = user?.name?.trim() || user?.email || m.shell_account_fallback()
   const email = user?.email ?? ''
 
   return <AppShell displayName={displayName} email={email} />

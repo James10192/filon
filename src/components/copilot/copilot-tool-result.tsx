@@ -8,6 +8,7 @@ import {
   MapPin,
   type LucideIcon,
 } from 'lucide-react'
+import { m } from '~/lib/paraglide/messages'
 import { ProgressBar } from '~/components/ui/progress-bar'
 import { Badge } from '~/components/ui/badge'
 import {
@@ -51,9 +52,11 @@ export function renderToolResult(
           onNavigate={onNavigate}
           icon={AlertTriangle}
           label={(n) =>
-            `${n} opportunité${n > 1 ? 's' : ''} à relancer en priorité`
+            n > 1
+              ? m.app_tool_opps_to_followup_plural({ n })
+              : m.app_tool_opps_to_followup_singular({ n })
           }
-          empty="Rien à relancer : toutes tes opportunités actives ont une prochaine action."
+          empty={m.app_tool_nothing_to_followup()}
         />
       )
     case 'list_opportunities':
@@ -62,8 +65,10 @@ export function renderToolResult(
         <OppList
           items={output as CopilotOpp[]}
           onNavigate={onNavigate}
-          label={(n) => `${n} opportunité${n > 1 ? 's' : ''}`}
-          empty="Aucune opportunité trouvée."
+          label={(n) =>
+            n > 1 ? m.app_tool_opps_plural({ n }) : m.app_tool_opps_singular({ n })
+          }
+          empty={m.app_tool_no_opps()}
         />
       )
 
@@ -72,8 +77,10 @@ export function renderToolResult(
         <List
           items={output as FollowupItem[]}
           icon={BellRing}
-          noun="relance"
-          empty="Aucune relance à venir. Tu es à jour."
+          count={(n) =>
+            n > 1 ? m.app_tool_followups_plural({ n }) : m.app_tool_followups_singular({ n })
+          }
+          empty={m.app_tool_no_followups()}
           row={(f) => {
             const due = dueStatus(f.dueDate)
             return (
@@ -104,8 +111,10 @@ export function renderToolResult(
         <List
           items={output as ProposalItem[]}
           icon={Send}
-          noun="proposition"
-          empty="Aucune proposition."
+          count={(n) =>
+            n > 1 ? m.app_tool_proposals_plural({ n }) : m.app_tool_proposals_singular({ n })
+          }
+          empty={m.app_tool_no_proposals()}
           row={(p) => (
             <>
               <span className="min-w-0 flex-1 truncate text-sm text-fg">
@@ -129,8 +138,10 @@ export function renderToolResult(
         <List
           items={output as CompanyItem[]}
           icon={Building2}
-          noun="entreprise"
-          empty="Aucune entreprise trouvée."
+          count={(n) =>
+            n > 1 ? m.app_tool_companies_plural({ n }) : m.app_tool_companies_singular({ n })
+          }
+          empty={m.app_tool_no_companies()}
           row={(c) => (
             <>
               <Building2 className="size-4 shrink-0 text-fg-subtle" />
@@ -158,8 +169,10 @@ export function renderToolResult(
         <List
           items={output as ContactItem[]}
           icon={User}
-          noun="contact"
-          empty="Aucun contact trouvé."
+          count={(n) =>
+            n > 1 ? m.app_tool_contacts_plural({ n }) : m.app_tool_contacts_singular({ n })
+          }
+          empty={m.app_tool_no_contacts()}
           row={(c) => (
             <>
               <User className="size-4 shrink-0 text-fg-subtle" />
@@ -251,7 +264,7 @@ function OppList({
       </ul>
       {hidden > 0 && (
         <p className="border-t border-border px-3.5 py-2 text-xs text-fg-subtle">
-          + {hidden} autre{hidden > 1 ? 's' : ''}
+          {hidden > 1 ? m.app_tool_more_plural({ n: hidden }) : m.app_tool_more_singular({ n: hidden })}
         </p>
       )}
     </Card>
@@ -265,14 +278,14 @@ function List<T extends { id: string }>({
   row,
   empty,
   icon,
-  noun,
+  count,
   limit = 8,
 }: {
   items: T[]
   row: (item: T) => React.ReactNode
   empty: string
   icon?: LucideIcon
-  noun?: string
+  count?: (n: number) => string
   limit?: number
 }) {
   if (!items?.length) {
@@ -286,11 +299,8 @@ function List<T extends { id: string }>({
   const hidden = items.length - shown.length
   return (
     <Card>
-      {icon && noun && (
-        <Header
-          icon={icon}
-          label={`${items.length} ${noun}${items.length > 1 ? 's' : ''}`}
-        />
+      {icon && count && (
+        <Header icon={icon} label={count(items.length)} />
       )}
       <ul className="divide-y divide-border">
         {shown.map((item) => (
@@ -301,7 +311,7 @@ function List<T extends { id: string }>({
       </ul>
       {hidden > 0 && (
         <p className="border-t border-border px-3.5 py-2 text-xs text-fg-subtle">
-          + {hidden} autre{hidden > 1 ? 's' : ''}
+          {hidden > 1 ? m.app_tool_more_plural({ n: hidden }) : m.app_tool_more_singular({ n: hidden })}
         </p>
       )}
     </Card>
@@ -323,12 +333,12 @@ function PipelineSummary({ data }: { data: PipelineData }) {
   return (
     <Card>
       <div className="grid grid-cols-3 divide-x divide-border border-b border-border">
-        <Stat label="Total" value={data.total} />
-        <Stat label="Actives" value={data.active} />
-        <Stat label="Gagnées" value={data.won} accent />
+        <Stat label={m.app_tool_pipeline_total()} value={data.total} />
+        <Stat label={m.app_tool_pipeline_active()} value={data.active} />
+        <Stat label={m.app_tool_pipeline_won()} value={data.won} accent />
       </div>
       {data.total === 0 ? (
-        <EmptyHint text="Pipeline vide pour le moment. Demande au copilote de créer une opportunité." />
+        <EmptyHint text={m.app_tool_pipeline_empty()} />
       ) : (
         <div className="space-y-2 p-3.5">
           {stages.map((s) => {

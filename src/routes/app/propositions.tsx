@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { Id } from '../../../convex/_generated/dataModel'
+import { m } from '~/lib/paraglide/messages'
 import {
   PROPOSAL_VIEWS,
   type ProposalView,
@@ -29,7 +30,7 @@ export const Route = createFileRoute('/app/propositions')({
     return out
   },
   component: PropositionsPage,
-  head: () => ({ meta: [{ title: 'Filon · Propositions' }] }),
+  head: () => ({ meta: [{ title: m.prop_meta_title_list() }] }),
 })
 
 /** Restreint la vue (union router globale) à une vue Propositions valide. */

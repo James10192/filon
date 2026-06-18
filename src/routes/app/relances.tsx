@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
 import { AlertTriangle, BellRing, CheckCircle2 } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
+import { m } from '~/lib/paraglide/messages'
 import { Skeleton } from '~/components/ui/skeleton'
 import { Badge } from '~/components/ui/badge'
 import { PageToolbar } from '~/components/app/page-toolbar'
@@ -15,7 +16,7 @@ import { FOLLOWUP_COLUMNS } from '~/lib/export'
 
 export const Route = createFileRoute('/app/relances')({
   component: RelancesPage,
-  head: () => ({ meta: [{ title: 'Relances · Filon' }] }),
+  head: () => ({ meta: [{ title: m.dash_relances_page_title() }] }),
 })
 
 type DueGroups = {
@@ -31,8 +32,8 @@ function RelancesPage() {
   return (
     <div className="flex flex-col">
       <PageToolbar
-        title="Relances"
-        subtitle="Ce qu'il faut relancer, classé par échéance. Ne laissez plus filer une piste faute de suivi."
+        title={m.dash_relances_title()}
+        subtitle={m.dash_relances_subtitle()}
         actions={
           <div className="flex items-center gap-2">
             <ExportButton
@@ -74,23 +75,23 @@ function Content({ groups }: { groups: DueGroups }) {
   return (
     <div className="flex flex-col gap-7">
       <Section
-        title="En retard"
+        title={m.dash_relances_section_overdue()}
         tone="danger"
         items={groups.overdue}
         icon={<AlertTriangle className="size-4 text-danger" />}
       />
       <Section
-        title="Aujourd'hui"
+        title={m.dash_relances_section_today()}
         tone="warning"
         items={groups.today}
         icon={<BellRing className="size-4 text-warning" />}
       />
       <Section
-        title="Cette semaine"
+        title={m.dash_relances_section_week()}
         tone="neutral"
         items={groups.thisWeek}
       />
-      <Section title="Plus tard" tone="neutral" items={groups.later} />
+      <Section title={m.dash_relances_section_later()} tone="neutral" items={groups.later} />
     </div>
   )
 }
@@ -137,11 +138,10 @@ function EmptyState() {
         <CheckCircle2 className="size-6" />
       </span>
       <h2 className="mt-4 text-lg font-semibold tracking-[-0.01em] text-fg">
-        Vous êtes à jour
+        {m.dash_relances_empty_title()}
       </h2>
       <p className="mt-1 max-w-sm text-sm text-fg-muted">
-        Aucune relance prévue. Planifiez votre prochaine relance pour ne rien
-        laisser filer.
+        {m.dash_relances_empty_desc()}
       </p>
       <div className="mt-5">
         <NewFollowupDialog />

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { m } from '~/lib/paraglide/messages'
 
 /**
  * Textes des boîtes de confirmation du cycle de vie (annulation / downgrade).
@@ -23,27 +24,26 @@ export function dialogCopy(
 ): { title: string; description: ReactNode; actionLabel: string; success: string } {
   if (kind === 'cancel') {
     return {
-      title: 'Annuler le renouvellement ?',
+      title: m.app_dialog_cancel_title(),
       description: (
         <>
-          Votre accès Pro reste actif jusqu’à l’échéance{deadline(renewsAtLabel)},
-          puis votre compte repassera en Découverte. Aucune donnée n’est
-          supprimée.
+          {m.app_dialog_cancel_desc_before()}{deadline(renewsAtLabel)}
+          {m.app_dialog_cancel_desc_after()}
         </>
       ),
-      actionLabel: 'Annuler le renouvellement',
-      success: 'Renouvellement annulé. Accès maintenu jusqu’à l’échéance.',
+      actionLabel: m.app_sub_cancel_renewal(),
+      success: m.app_dialog_cancel_success(),
     }
   }
   return {
-    title: 'Passer à Pro à l’échéance ?',
+    title: m.app_dialog_downgrade_title(),
     description: (
       <>
-        Vous conservez Pro+ IA jusqu’à l’échéance{deadline(renewsAtLabel)}, puis
-        votre palier deviendra Pro.
+        {m.app_dialog_downgrade_desc_before()}{deadline(renewsAtLabel)}
+        {m.app_dialog_downgrade_desc_after()}
       </>
     ),
-    actionLabel: 'Programmer le passage à Pro',
-    success: 'Passage à Pro programmé pour l’échéance.',
+    actionLabel: m.app_dialog_downgrade_action(),
+    success: m.app_dialog_downgrade_success(),
   }
 }

@@ -1,14 +1,15 @@
 import { Bug, Lightbulb, MessageSquare } from 'lucide-react'
 import { Badge } from '~/components/ui/badge'
 import {
-  FEEDBACK_STATUS_LABEL,
-  FEEDBACK_TYPE_LABEL,
+  feedbackStatusLabel,
+  feedbackTypeLabel,
   feedbackStatusVariant,
   feedbackTypeVariant,
   formatRelative,
   type FeedbackStatus,
   type FeedbackType,
 } from './admin-meta'
+import { m } from '~/lib/paraglide/messages'
 import type { Id } from '../../../convex/_generated/dataModel'
 
 export type FeedbackEntry = {
@@ -45,7 +46,7 @@ export function AdminFeedbackItem({
   compact: boolean
 }) {
   const author =
-    item.authorName?.trim() || item.authorEmail || 'Utilisateur inconnu'
+    item.authorName?.trim() || item.authorEmail || m.admin_unknown_user()
   const TypeIcon = TYPE_ICON[item.type]
   return (
     <li>
@@ -63,11 +64,11 @@ export function AdminFeedbackItem({
             variant={feedbackStatusVariant(item.status)}
             className="shrink-0"
           >
-            {FEEDBACK_STATUS_LABEL[item.status]}
+            {feedbackStatusLabel(item.status)}
           </Badge>
           {!compact && (
             <Badge variant={feedbackTypeVariant(item.type)} className="shrink-0">
-              {FEEDBACK_TYPE_LABEL[item.type]}
+              {feedbackTypeLabel(item.type)}
             </Badge>
           )}
           <span className="assay-meta ml-auto shrink-0 text-xs">

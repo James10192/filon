@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router'
+import { m } from '~/lib/paraglide/messages'
 import { useUpsell } from '~/lib/billing/use-upsell'
 import { cn } from '~/lib/utils'
 import { ProgressBar } from '~/components/ui/progress-bar'
@@ -56,12 +57,12 @@ export function UsageMeter({
       />
       {near && (
         <p className="mt-2 text-xs leading-relaxed text-fg-muted">
-          Bientôt au plafond du palier Découverte.{' '}
+          {m.app_usage_near_cap()}{' '}
           <Link
             to="/app/tarifs"
             className="font-medium text-accent underline-offset-2 hover:underline"
           >
-            Passez à Pro pour un pipeline illimité.
+            {m.app_usage_upgrade_cta()}
           </Link>
         </p>
       )}

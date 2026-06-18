@@ -1,10 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { m } from '~/lib/paraglide/messages'
 import { PageToolbar } from '~/components/app/page-toolbar'
 import { SettingsLayout } from '~/components/settings/settings-layout'
 
 export const Route = createFileRoute('/app/parametres')({
   component: ParametresPage,
-  head: () => ({ meta: [{ title: 'Paramètres · Filon' }] }),
+  head: () => ({ meta: [{ title: m.app_parametres_page_title() }] }),
 })
 
 /**
@@ -17,8 +18,8 @@ function ParametresPage() {
   return (
     <div className="flex flex-col">
       <PageToolbar
-        title="Paramètres"
-        subtitle="Gérez votre profil, vos préférences de pipeline et votre compte."
+        title={m.app_parametres_title()}
+        subtitle={m.app_parametres_subtitle()}
       />
       <SettingsLayout />
     </div>

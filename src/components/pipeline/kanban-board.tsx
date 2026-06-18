@@ -15,6 +15,7 @@ import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { useMutation } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
+import { m } from '~/lib/paraglide/messages'
 import { toast } from '~/components/ui/sonner'
 import { KanbanCardContent } from './kanban-card'
 import { KanbanColumn } from './kanban-column'
@@ -103,12 +104,12 @@ export function KanbanBoard({
       await reorder({ stage: target.stage, orderedIds })
       if (origin.stage !== target.stage) {
         toast.success(
-          `Opportunité déplacée vers « ${STAGE_META[target.stage].label} ».`,
+          m.opp_moved_to({ stage: STAGE_META[target.stage].label }),
         )
       }
     } catch {
       setLocal(snapshot)
-      toast.error('Le déplacement a échoué.')
+      toast.error(m.opp_move_error())
     }
   }
 

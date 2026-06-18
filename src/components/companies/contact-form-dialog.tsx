@@ -18,6 +18,7 @@ import { Textarea } from '~/components/ui/textarea'
 import { EntityCombobox } from '~/components/ui/entity-combobox'
 import { TagCombobox } from '~/components/ui/tag-combobox'
 import { toast } from '~/components/ui/sonner'
+import { m } from '~/lib/paraglide/messages'
 
 type Company = Doc<'companies'>
 type Contact = Doc<'contacts'>
@@ -48,10 +49,10 @@ export function ContactFormDialog({
   async function handleCreateCompany(name: string) {
     try {
       const id = await createCompany({ name })
-      toast.success('Entreprise creee.')
+      toast.success(m.carnet_company_created())
       return id as string
     } catch {
-      toast.error("L'entreprise n'a pas pu etre creee.")
+      toast.error(m.carnet_company_create_failed())
       return null
     }
   }
@@ -99,7 +100,7 @@ export function ContactFormDialog({
     e.preventDefault()
     const name = form.name.trim()
     if (!name) {
-      setError('Le nom du contact est requis.')
+      setError(m.carnet_contact_name_required())
       return
     }
     setError(null)
@@ -142,7 +143,7 @@ export function ContactFormDialog({
         }
         if (companyId) args.companyId = companyId
         await updateContact(args)
-        toast.success('Modifications enregistrees.')
+        toast.success(m.carnet_changes_saved())
       } else {
         const args: {
           name: string
@@ -168,14 +169,14 @@ export function ContactFormDialog({
         if (form.notes.trim()) args.notes = form.notes.trim()
         if (tags.length > 0) args.tags = tags
         await createContact(args)
-        toast.success('Contact ajoute.')
+        toast.success(m.carnet_contact_added())
       }
       onOpenChange(false)
     } catch {
       toast.error(
         isEdit
-          ? "Les modifications n'ont pas pu etre enregistrees."
-          : "Impossible d'ajouter le contact.",
+          ? m.carnet_changes_save_failed()
+          : m.carnet_contact_add_failed(),
       )
     } finally {
       setBusy(false)
@@ -187,23 +188,25 @@ export function ContactFormDialog({
       <DialogContent className="max-h-[90dvh] max-w-lg overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {isEdit ? 'Modifier le contact' : 'Ajouter un contact'}
+            {isEdit
+              ? m.carnet_contact_dialog_title_edit()
+              : m.carnet_contact_dialog_title_create()}
           </DialogTitle>
           <DialogDescription>
             {isEdit
-              ? 'Mettez a jour les coordonnees de ce contact.'
-              : 'Enregistrez une personne, rattachee a une entreprise ou suivie directement (prospect, parrainage).'}
+              ? m.carnet_contact_dialog_desc_edit()
+              : m.carnet_contact_dialog_desc_create()}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={onSubmit} className="grid gap-4">
           <div className="grid gap-1.5">
-            <Label htmlFor="contact-name">Nom</Label>
+            <Label htmlFor="contact-name">{m.carnet_field_name()}</Label>
             <Input
               id="contact-name"
               value={form.name}
               onChange={field('name')}
-              placeholder="Prenom et nom"
+              placeholder={m.carnet_contact_name_placeholder()}
               aria-invalid={Boolean(error)}
               autoFocus
             />
@@ -212,7 +215,9 @@ export function ContactFormDialog({
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-1.5">
-              <Label htmlFor="contact-company">Entreprise</Label>
+              <Label htmlFor="contact-company">
+                {m.carnet_field_company()}
+              </Label>
               <EntityCombobox
                 id="contact-company"
                 items={companies.map((c) => ({ value: c._id, label: c.name }))}
@@ -220,27 +225,27 @@ export function ContactFormDialog({
                 onChange={(v) => setForm((f) => ({ ...f, companyId: v }))}
                 onCreate={handleCreateCompany}
                 emptyValue={NO_COMPANY}
-                emptyLabel="Sans entreprise"
-                placeholder="Rattacher une entreprise"
-                searchPlaceholder="Rechercher ou creer une entreprise..."
-                noResultLabel="Aucune entreprise trouvee."
-                createLabel="Creer l'entreprise"
+                emptyLabel={m.carnet_no_company()}
+                placeholder={m.carnet_attach_company()}
+                searchPlaceholder={m.carnet_company_search_or_create()}
+                noResultLabel={m.carnet_no_company_found()}
+                createLabel={m.carnet_create_company()}
               />
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="contact-role">Role</Label>
+              <Label htmlFor="contact-role">{m.carnet_field_role()}</Label>
               <Input
                 id="contact-role"
                 value={form.role}
                 onChange={field('role')}
-                placeholder="Ex. CTO, recruteuse"
+                placeholder={m.carnet_role_placeholder()}
               />
             </div>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-1.5">
-              <Label htmlFor="contact-email">E-mail</Label>
+              <Label htmlFor="contact-email">{m.carnet_field_email()}</Label>
               <Input
                 id="contact-email"
                 type="email"
@@ -251,19 +256,19 @@ export function ContactFormDialog({
               />
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="contact-phone">Telephone</Label>
+              <Label htmlFor="contact-phone">{m.carnet_field_phone()}</Label>
               <Input
                 id="contact-phone"
                 value={form.phone}
                 onChange={field('phone')}
-                placeholder="+225 ..."
+                placeholder={m.carnet_phone_placeholder()}
                 inputMode="tel"
               />
             </div>
           </div>
 
           <div className="grid gap-1.5">
-            <Label htmlFor="contact-linkedin">LinkedIn</Label>
+            <Label htmlFor="contact-linkedin">{m.carnet_field_linkedin()}</Label>
             <Input
               id="contact-linkedin"
               value={form.linkedin}
@@ -275,50 +280,54 @@ export function ContactFormDialog({
 
           <div className="grid gap-4 border-t border-border pt-4 sm:grid-cols-2">
             <div className="grid gap-1.5">
-              <Label htmlFor="contact-relationship">Relation</Label>
+              <Label htmlFor="contact-relationship">
+                {m.carnet_field_relationship()}
+              </Label>
               <Input
                 id="contact-relationship"
                 value={form.relationship}
                 onChange={field('relationship')}
-                placeholder="Ex. ami, ancien collegue"
+                placeholder={m.carnet_relationship_placeholder()}
               />
               <p className="text-xs text-fg-subtle">
-                Comment vous connaissez cette personne.
+                {m.carnet_relationship_hint()}
               </p>
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="contact-location">Lieu</Label>
+              <Label htmlFor="contact-location">{m.carnet_field_place()}</Label>
               <Input
                 id="contact-location"
                 value={form.location}
                 onChange={field('location')}
-                placeholder="Ville, quartier"
+                placeholder={m.carnet_place_placeholder()}
               />
             </div>
           </div>
 
           <div className="grid gap-1.5">
-            <Label htmlFor="contact-referred-by">Recommande par</Label>
+            <Label htmlFor="contact-referred-by">
+              {m.carnet_field_referred_by()}
+            </Label>
             <Input
               id="contact-referred-by"
               value={form.referredBy}
               onChange={field('referredBy')}
-              placeholder="Qui vous a presente cette personne"
+              placeholder={m.carnet_referred_by_placeholder()}
             />
           </div>
 
           <div className="grid gap-1.5">
-            <Label htmlFor="contact-tags">Etiquettes</Label>
+            <Label htmlFor="contact-tags">{m.carnet_field_tags()}</Label>
             <TagCombobox id="contact-tags" value={tags} onChange={setTags} />
           </div>
 
           <div className="grid gap-1.5">
-            <Label htmlFor="contact-notes">Notes</Label>
+            <Label htmlFor="contact-notes">{m.carnet_field_notes()}</Label>
             <Textarea
               id="contact-notes"
               value={form.notes}
               onChange={field('notes')}
-              placeholder="Details, contexte, points a suivre"
+              placeholder={m.carnet_notes_placeholder()}
             />
           </div>
 
@@ -329,11 +338,11 @@ export function ContactFormDialog({
               onClick={() => onOpenChange(false)}
               disabled={busy}
             >
-              Annuler
+              {m.carnet_cancel()}
             </Button>
             <Button type="submit" disabled={busy}>
               {busy && <Loader2 className="size-4 animate-spin" />}
-              Enregistrer
+              {m.carnet_save()}
             </Button>
           </DialogFooter>
         </form>

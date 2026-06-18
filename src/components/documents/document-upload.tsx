@@ -6,6 +6,7 @@ import type { Id } from '../../../convex/_generated/dataModel'
 import { cn } from '~/lib/utils'
 import { Button } from '~/components/ui/button'
 import { toast } from '~/components/ui/sonner'
+import { m } from '~/lib/paraglide/messages'
 import { guessKind, type DocKind } from './document-kind'
 
 /** Taille maximale acceptee par fichier (20 Mo). */
@@ -70,8 +71,8 @@ export function DocumentUpload({
     if (tooBig.length > 0) {
       toast.error(
         tooBig.length === 1
-          ? `« ${tooBig[0]!.name} » depasse 20 Mo.`
-          : `${tooBig.length} fichiers depassent 20 Mo.`,
+          ? m.carnet_file_too_big({ name: tooBig[0]!.name })
+          : m.carnet_files_too_big({ n: tooBig.length }),
       )
     }
     if (valid.length === 0) return
@@ -84,12 +85,14 @@ export function DocumentUpload({
           await uploadOne({ file, kind: guessKind(file.name) })
           ok += 1
         } catch {
-          toast.error(`Echec de l'envoi de « ${file.name} ».`)
+          toast.error(m.carnet_upload_failed_for({ name: file.name }))
         }
       }
       if (ok > 0) {
         toast.success(
-          ok === 1 ? 'Document ajoute.' : `${ok} documents ajoutes.`,
+          ok === 1
+            ? m.carnet_document_added()
+            : m.carnet_documents_added({ n: ok }),
         )
       }
     } finally {
@@ -129,7 +132,7 @@ export function DocumentUpload({
         multiple
         className="sr-only"
         onChange={(e) => void handleFiles(e.target.files)}
-        aria-label="Choisir des fichiers a televerser"
+        aria-label={m.carnet_choose_files_aria()}
       />
 
       <span
@@ -148,13 +151,11 @@ export function DocumentUpload({
 
       <div className="flex flex-col gap-1">
         <p className="text-sm font-medium text-fg">
-          {uploading
-            ? 'Envoi en cours...'
-            : 'Glissez vos fichiers ici'}
+          {uploading ? m.carnet_upload_in_progress() : m.carnet_drop_files_here()}
         </p>
         {!uploading && (
           <p className="text-xs text-fg-subtle">
-            CV, lettres, portfolios, contrats. 20 Mo maximum par fichier.
+            {m.carnet_upload_hint()}
           </p>
         )}
       </div>
@@ -167,7 +168,7 @@ export function DocumentUpload({
         onClick={() => inputRef.current?.click()}
       >
         {uploading && <Loader2 className="size-4 animate-spin" />}
-        Choisir un fichier
+        {m.carnet_choose_file()}
       </Button>
     </div>
   )

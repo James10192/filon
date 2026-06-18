@@ -1,13 +1,14 @@
 import { List, KanbanSquare, type LucideIcon } from 'lucide-react'
+import { m } from '~/lib/paraglide/messages'
 import { cn } from '~/lib/utils'
 
 export type ProposalView = 'liste' | 'tableau'
 
 export const PROPOSAL_VIEWS: ProposalView[] = ['liste', 'tableau']
 
-const VIEW_META: Record<ProposalView, { label: string; icon: LucideIcon }> = {
-  liste: { label: 'Liste', icon: List },
-  tableau: { label: 'Tableau', icon: KanbanSquare },
+const VIEW_META: Record<ProposalView, { label: () => string; icon: LucideIcon }> = {
+  liste: { label: () => m.prop_view_list(), icon: List },
+  tableau: { label: () => m.prop_view_board(), icon: KanbanSquare },
 }
 
 /**
@@ -24,7 +25,7 @@ export function ViewSwitcher({
   return (
     <div
       role="tablist"
-      aria-label="Choisir la vue"
+      aria-label={m.prop_view_switcher_aria()}
       className="inline-flex h-9 items-center gap-0.5 rounded-[var(--radius)] border border-border bg-surface-2 p-0.5"
     >
       {PROPOSAL_VIEWS.map((view) => {
@@ -48,7 +49,7 @@ export function ViewSwitcher({
             <Icon
               className={cn('size-4', active ? 'text-accent' : 'text-fg-subtle')}
             />
-            <span className="hidden sm:inline">{meta.label}</span>
+            <span className="hidden sm:inline">{meta.label()}</span>
           </button>
         )
       })}

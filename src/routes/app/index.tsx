@@ -27,7 +27,7 @@ import { AskCopilotButton } from '~/components/copilot/ask-copilot-button'
 export const Route = createFileRoute('/app/')({
   component: DashboardPage,
   errorComponent: DashboardError,
-  head: () => ({ meta: [{ title: 'Tableau de bord · Filon' }] }),
+  head: () => ({ meta: [{ title: m.dash_page_title() }] }),
 })
 
 function DashboardError({ reset }: { reset: () => void }) {
@@ -135,12 +135,11 @@ function OnboardingState({ onCreate }: { onCreate: () => void }) {
             {m.dashboard_onboarding_title()}
           </h2>
           <p className="text-sm text-fg-muted">
-            Dès votre première piste, votre entonnoir, vos relances du jour et
-            votre activité s'animent ici. Capture rapide avec la touche{' '}
+            {m.dash_onboarding_body_before()}{' '}
             <kbd className="rounded border border-border bg-surface-2 px-1.5 py-0.5 font-mono text-xs text-fg-muted">
               n
             </kbd>
-            .
+            {m.dash_onboarding_body_after()}
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-2">

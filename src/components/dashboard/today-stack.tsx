@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
+import { m } from '~/lib/paraglide/messages'
 import { cn } from '~/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { Button } from '~/components/ui/button'
@@ -37,9 +38,9 @@ export function TodayStack() {
     setPending((prev) => new Set(prev).add(id))
     try {
       await toggle({ id, done: true })
-      toast.success('Relance marquée comme faite.')
+      toast.success(m.dash_today_toast_done())
     } catch {
-      toast.error('Action impossible.')
+      toast.error(m.dash_today_toast_error())
     } finally {
       setPending((prev) => {
         const next = new Set(prev)
@@ -70,7 +71,7 @@ export function TodayStack() {
       <CardHeader className="flex-row items-center justify-between gap-3 space-y-0">
         <CardTitle className="flex items-center gap-2 text-[15px]">
           <ListChecks className="size-4.5 text-fg-muted" />
-          Prochaines actions
+          {m.dash_today_title()}
           {!isEmpty && (
             <span
               className={cn(
@@ -85,7 +86,7 @@ export function TodayStack() {
           )}
         </CardTitle>
         <Button variant="ghost" size="sm" asChild>
-          <Link to="/app/relances">Tout voir</Link>
+          <Link to="/app/relances">{m.dash_today_see_all()}</Link>
         </Button>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col gap-0.5">
@@ -161,7 +162,7 @@ function ActionRow({
               tone === 'danger' ? 'text-danger' : 'text-warning',
             )}
           >
-            {tone === 'danger' ? 'En retard' : "Aujourd'hui"}
+            {tone === 'danger' ? m.dash_today_overdue() : m.dash_today_today()}
           </span>
           <span aria-hidden>·</span>
           <span className="assay shrink-0">{formatDateShort(followup.dueDate)}</span>
@@ -173,10 +174,10 @@ function ActionRow({
         className="h-8 shrink-0"
         disabled={busy}
         onClick={onDone}
-        aria-label="Marquer comme faite"
+        aria-label={m.dash_today_mark_done_aria()}
       >
         <Check className="size-4" />
-        <span className="hidden sm:inline">Faite</span>
+        <span className="hidden sm:inline">{m.dash_today_done()}</span>
       </Button>
     </div>
   )
@@ -188,10 +189,9 @@ function EmptyState() {
       <span className="flex size-10 items-center justify-center rounded-full bg-success-soft text-success">
         <Check className="size-5" />
       </span>
-      <p className="text-sm font-medium text-fg">Vous êtes à jour</p>
+      <p className="text-sm font-medium text-fg">{m.dash_today_empty_title()}</p>
       <p className="max-w-[15rem] text-xs text-fg-muted">
-        Aucune relance en retard ni prévue aujourd'hui. Planifiez la suite depuis
-        une opportunité.
+        {m.dash_today_empty_desc()}
       </p>
     </div>
   )

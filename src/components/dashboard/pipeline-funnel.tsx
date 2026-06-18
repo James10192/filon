@@ -11,6 +11,7 @@ import {
   type LabelProps,
 } from 'recharts'
 import { api } from '../../../convex/_generated/api'
+import { m } from '~/lib/paraglide/messages'
 import { Skeleton } from '~/components/ui/skeleton'
 import {
   ChartContainer,
@@ -19,14 +20,44 @@ import {
 } from '~/components/ui/chart'
 import {
   STAGE_COLOR_VAR,
-  STAGE_LABEL,
   STAGE_ORDER,
-  STAGE_SHORT,
   formatCompactValue,
   formatNumber,
   type Stage,
 } from './pipeline-meta'
 import { FunnelTooltip } from './funnel-tooltip'
+
+/** Libellé d'étape (long), internationalisé. */
+function stageLabel(stage: Stage): string {
+  switch (stage) {
+    case 'lead':
+      return m.dash_stage_lead()
+    case 'contacted':
+      return m.dash_stage_contacted()
+    case 'applied':
+      return m.dash_stage_applied()
+    case 'interview':
+      return m.dash_stage_interview()
+    case 'negotiation':
+      return m.dash_stage_negotiation()
+    case 'won':
+      return m.dash_stage_won()
+    case 'lost':
+      return m.dash_stage_lost()
+  }
+}
+
+/** Libellé d'étape court (axes, zones denses), internationalisé. */
+function stageShort(stage: Stage): string {
+  switch (stage) {
+    case 'applied':
+      return m.dash_stage_short_applied()
+    case 'negotiation':
+      return m.dash_stage_short_negotiation()
+    default:
+      return stageLabel(stage)
+  }
+}
 
 type FunnelStage = { stage: Stage; count: number; value: number }
 type Funnel = {
@@ -65,8 +96,8 @@ export function PipelineFunnel() {
     const row = stages.find((s) => s.stage === stage)
     return {
       stage,
-      short: STAGE_SHORT[stage],
-      label: STAGE_LABEL[stage],
+      short: stageShort(stage),
+      label: stageLabel(stage),
       count: row?.count ?? 0,
       value: row?.value ?? 0,
     }
@@ -74,26 +105,26 @@ export function PipelineFunnel() {
 
   return (
     <section
-      aria-label="Entonnoir du pipeline"
+      aria-label={m.dash_funnel_section_label()}
       className="reveal flex flex-col gap-5 rounded-[var(--radius-lg)] border border-border bg-surface p-5 shadow-[var(--shadow-card)] md:p-6"
       style={{ ['--reveal-i' as string]: 0 }}
     >
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-wrap items-end gap-x-8 gap-y-3">
           <HeroStat
-            label="Pipeline actif"
+            label={m.dash_funnel_active_pipeline()}
             value={formatNumber(activeCount)}
-            hint={`${formatNumber(totalCount)} au total`}
+            hint={m.dash_funnel_active_total({ n: formatNumber(totalCount) })}
           />
           <HeroStat
-            label="Valeur potentielle"
+            label={m.dash_funnel_potential_value()}
             value={formatCompactValue(activeValue)}
             unit="XOF"
             accent
             hint={
               wonValue > 0
-                ? `${formatCompactValue(wonValue)} XOF gagnés`
-                : 'Sur les étapes ouvertes'
+                ? m.dash_funnel_won_value({ v: formatCompactValue(wonValue) })
+                : m.dash_funnel_open_stages()
             }
           />
         </div>
@@ -139,7 +170,7 @@ export function PipelineFunnel() {
         </ChartContainer>
       ) : (
         <div className="flex h-[224px] items-center justify-center rounded-[var(--radius)] bg-surface-2">
-          <p className="text-sm text-fg-subtle">Aucune étape peuplée.</p>
+          <p className="text-sm text-fg-subtle">{m.dash_funnel_empty()}</p>
         </div>
       )}
     </section>

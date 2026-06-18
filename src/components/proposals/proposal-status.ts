@@ -1,3 +1,4 @@
+import { m } from '~/lib/paraglide/messages'
 import type { BadgeProps } from '~/components/ui/badge'
 
 /** Statuts d'une proposition spontanée, alignés sur le contrat Convex. */
@@ -12,10 +13,10 @@ export const PROPOSAL_STATUSES: ProposalStatus[] = [
 
 /** Libellés FR par statut, pour les onglets, chips et toasts. */
 export const STATUS_LABELS: Record<ProposalStatus, string> = {
-  draft: 'Brouillon',
-  sent: 'Envoyée',
-  accepted: 'Acceptée',
-  refused: 'Refusée',
+  draft: m.prop_status_draft(),
+  sent: m.prop_status_sent(),
+  accepted: m.prop_status_accepted(),
+  refused: m.prop_status_refused(),
 }
 
 /** Variante de Badge à utiliser pour chaque statut. */
@@ -50,10 +51,10 @@ export function formatAmount(
 
 /** Phrase d'aide contextuelle par statut, pour l'en-tête du détail. */
 export const STATUS_HINT: Record<ProposalStatus, string> = {
-  draft: "Brouillon en cours. Marquez-la envoyée dès qu'elle part.",
-  sent: 'Envoyée. En attente de réponse, planifiez une relance.',
-  accepted: 'Acceptée. Convertissez-la en mission dans le pipeline.',
-  refused: 'Refusée. Gardez la trace, une autre porte s\'ouvrira.',
+  draft: m.prop_status_hint_draft(),
+  sent: m.prop_status_hint_sent(),
+  accepted: m.prop_status_hint_accepted(),
+  refused: m.prop_status_hint_refused(),
 }
 
 /** Formate une date ISO en date courte FR, ou null si absente. */

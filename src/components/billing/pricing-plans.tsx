@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAction, useQuery } from 'convex/react'
 import { CreditCard, Smartphone } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
+import { m } from '~/lib/paraglide/messages'
 import { errorMessage } from '~/lib/billing/plan'
 import { toast } from '~/components/ui/sonner'
 import { Skeleton } from '~/components/ui/skeleton'
@@ -60,7 +61,7 @@ export function PricingPlans() {
       window.location.href = authorizationUrl
     } catch (error) {
       toast.error(
-        errorMessage(error, 'Le lancement du paiement a échoué. Réessayez.'),
+        errorMessage(error, m.app_checkout_error()),
       )
       setPendingPlan(null)
     }
@@ -91,10 +92,7 @@ export function PricingPlans() {
       </div>
 
       <p className="text-center text-sm text-fg-subtle">
-        Paiement par carte ou mobile money (Wave, Orange Money, MTN MoMo). La
-        carte active un renouvellement automatique géré par Paystack ; le mobile
-        money couvre la période choisie, avec une relance de ré-abonnement à
-        l'échéance.
+        {m.app_payment_methods_hint()}
       </p>
 
       <PlanComparison />
@@ -131,16 +129,16 @@ function PaymentChannelDialog({
 }) {
   if (!plan) return null
   const price = formatXof(PRICING[plan][interval])
-  const per = interval === 'annual' ? 'an' : 'mois'
+  const per = interval === 'annual' ? m.app_per_year() : m.app_per_month()
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Passer à {PLAN_LABELS[plan]}</DialogTitle>
+          <DialogTitle>{m.app_upgrade_to({ plan: PLAN_LABELS[plan] })}</DialogTitle>
           <DialogDescription className="leading-relaxed">
             <span className="assay font-medium text-fg">{price}</span> / {per}.
-            Choisissez votre moyen de paiement.
+            {' '}{m.app_choose_payment_method()}
           </DialogDescription>
         </DialogHeader>
 
@@ -152,10 +150,9 @@ function PaymentChannelDialog({
           >
             <CreditCard className="mt-0.5 size-5 shrink-0 text-accent" />
             <span className="flex flex-col gap-0.5">
-              <span className="text-sm font-medium text-fg">Carte bancaire</span>
+              <span className="text-sm font-medium text-fg">{m.app_payment_card()}</span>
               <span className="text-xs leading-relaxed text-fg-muted">
-                Renouvellement automatique géré par Paystack. Annulable à tout
-                moment depuis vos paramètres.
+                {m.app_payment_card_desc()}
               </span>
             </span>
           </button>
@@ -168,18 +165,17 @@ function PaymentChannelDialog({
             <Smartphone className="mt-0.5 size-5 shrink-0 text-accent" />
             <span className="flex flex-col gap-0.5">
               <span className="text-sm font-medium text-fg">
-                Mobile money
+                {m.app_payment_mobile()}
               </span>
               <span className="text-xs leading-relaxed text-fg-muted">
-                Wave, Orange Money, MTN MoMo. Paiement ponctuel couvrant la
-                période, avec une relance avant l'échéance.
+                {m.app_payment_mobile_desc()}
               </span>
             </span>
           </button>
         </div>
 
         <Button variant="ghost" onClick={() => onOpenChange(false)}>
-          Annuler
+          {m.app_cancel()}
         </Button>
       </DialogContent>
     </Dialog>
@@ -199,11 +195,11 @@ function CurrentPlanBanner({
   const label = PLAN_LABELS[plan]
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-[var(--radius)] border border-border bg-surface-2 px-4 py-3 text-sm">
-      <span className="text-fg-muted">Votre palier actuel :</span>
+      <span className="text-fg-muted">{m.app_current_plan_label()}</span>
       <span className="font-medium text-fg">{label}</span>
       {plan === 'free' && (
         <span className="text-fg-subtle">
-          · passez à Pro pour lever les limites.
+          {m.app_current_plan_free_hint()}
         </span>
       )}
     </div>

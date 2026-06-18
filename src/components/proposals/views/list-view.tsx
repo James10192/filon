@@ -3,6 +3,7 @@ import { useQuery } from 'convex/react'
 import { Plus, Send } from 'lucide-react'
 import { api } from '../../../../convex/_generated/api'
 import type { Doc, Id } from '../../../../convex/_generated/dataModel'
+import { m } from '~/lib/paraglide/messages'
 import { Button } from '~/components/ui/button'
 import {
   Select,
@@ -86,7 +87,7 @@ export function ListView({
     if (status !== 'all') {
       out.push({
         key: 'status',
-        label: `Statut : ${STATUS_LABELS[status]}`,
+        label: m.prop_chip_status({ label: STATUS_LABELS[status] }),
         onRemove: () => onFiltersChange({ ...filters, status: 'all' }),
       })
     }
@@ -109,8 +110,8 @@ export function ListView({
       <DataTableToolbar
         search={search}
         onSearchChange={(v) => onFiltersChange({ ...filters, search: v })}
-        searchPlaceholder="Rechercher une proposition..."
-        searchLabel="Rechercher une proposition"
+        searchPlaceholder={m.prop_search_placeholder()}
+        searchLabel={m.prop_search_label()}
         chips={chips}
         onClearAll={reset}
         actions={
@@ -127,11 +128,11 @@ export function ListView({
             onFiltersChange({ ...filters, status: v as StatusFilter })
           }
         >
-          <SelectTrigger className="lg:w-44" aria-label="Filtrer par statut">
-            <SelectValue placeholder="Statut" />
+          <SelectTrigger className="lg:w-44" aria-label={m.prop_filter_status_aria()}>
+            <SelectValue placeholder={m.prop_col_status()} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Tous les statuts</SelectItem>
+            <SelectItem value="all">{m.prop_filter_all_statuses()}</SelectItem>
             {PROPOSAL_STATUSES.map((s) => (
               <SelectItem key={s} value={s}>
                 {STATUS_LABELS[s]}
@@ -147,23 +148,23 @@ export function ListView({
         hasActiveFilters ? (
           <DataTableEmpty
             icon={Send}
-            title="Aucun résultat"
-            message="Aucune proposition ne correspond à ces filtres."
+            title={m.prop_empty_filtered_title()}
+            message={m.prop_empty_filtered_message()}
             action={
               <Button variant="outline" onClick={reset}>
-                Réinitialiser les filtres
+                {m.prop_reset_filters()}
               </Button>
             }
           />
         ) : (
           <DataTableEmpty
             icon={Send}
-            title="Aucune proposition pour l'instant"
-            message="Démarchez les bonnes entreprises sans rien laisser filer. Créez votre première proposition spontanée pour la suivre jusqu'à la signature."
+            title={m.prop_empty_title()}
+            message={m.prop_empty_message()}
             action={
               <Button onClick={onCreate}>
                 <Plus className="size-4" />
-                Nouvelle proposition
+                {m.prop_new()}
               </Button>
             }
           />

@@ -16,6 +16,7 @@ import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import { Skeleton } from '~/components/ui/skeleton'
 import { toast } from '~/components/ui/sonner'
+import { m } from '~/lib/paraglide/messages'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -122,9 +123,9 @@ function EntreprisesPage() {
     if (!companyToDelete) return
     try {
       await removeCompany({ id: companyToDelete._id })
-      toast.success('Entreprise supprimee.')
+      toast.success(m.carnet_company_deleted())
     } catch {
-      toast.error('La suppression a echoue.')
+      toast.error(m.carnet_delete_failed())
     }
   }
 
@@ -132,9 +133,9 @@ function EntreprisesPage() {
     if (!contactToDelete) return
     try {
       await removeContact({ id: contactToDelete._id })
-      toast.success('Particulier supprime.')
+      toast.success(m.carnet_particular_deleted())
     } catch {
-      toast.error('La suppression a echoue.')
+      toast.error(m.carnet_delete_failed())
     }
   }
 
@@ -150,8 +151,8 @@ function EntreprisesPage() {
   return (
     <div className="flex flex-col">
       <PageToolbar
-        title="Carnet"
-        subtitle="Vos entreprises ciblées et les particuliers que vous suivez, reliés à vos opportunités et à vos documents."
+        title={m.carnet_page_title()}
+        subtitle={m.carnet_page_subtitle()}
         actions={
           <div className="flex items-center gap-2">
             <ExportButton
@@ -163,18 +164,18 @@ function EntreprisesPage() {
             <DropdownMenuTrigger asChild>
               <Button>
                 <Plus className="size-4" />
-                Ajouter
+                {m.carnet_add()}
                 <ChevronDown className="size-4 opacity-70" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-52">
               <DropdownMenuItem onSelect={openCreateCompany}>
                 <Building2 className="size-4" />
-                Une entreprise
+                {m.carnet_add_company_menu()}
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={openCreateParticular}>
                 <User className="size-4" />
-                Un particulier
+                {m.carnet_add_particular_menu()}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -188,9 +189,9 @@ function EntreprisesPage() {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Rechercher une entreprise, une personne, une ville..."
+              placeholder={m.carnet_search_placeholder()}
               className="h-11 pl-9"
-              aria-label="Rechercher dans le carnet"
+              aria-label={m.carnet_search_aria()}
             />
           </div>
           <CarnetSegments
@@ -219,12 +220,12 @@ function EntreprisesPage() {
             <SegmentBlock
               show={segment === 'all'}
               icon={<Building2 className="size-4 text-fg-subtle" />}
-              label="Entreprises"
+              label={m.carnet_segment_companies()}
               count={companyCount}
               empty={
                 hasSearch
-                  ? 'Aucune entreprise pour cette recherche.'
-                  : 'Aucune entreprise enregistrée.'
+                  ? m.carnet_no_company_for_search()
+                  : m.carnet_no_company_registered()
               }
               isEmpty={companyCount === 0}
             >
@@ -247,12 +248,12 @@ function EntreprisesPage() {
             <SegmentBlock
               show={segment === 'all'}
               icon={<User className="size-4 text-fg-subtle" />}
-              label="Particuliers"
+              label={m.carnet_segment_people()}
               count={particularCount}
               empty={
                 hasSearch
-                  ? 'Aucun particulier pour cette recherche.'
-                  : 'Aucun particulier suivi pour l’instant.'
+                  ? m.carnet_no_particular_for_search()
+                  : m.carnet_no_particular_followed()
               }
               isEmpty={particularCount === 0}
             >
@@ -286,10 +287,10 @@ function EntreprisesPage() {
       <DeleteConfirmDialog
         open={Boolean(companyToDelete)}
         onOpenChange={(open) => !open && setCompanyToDelete(null)}
-        title="Supprimer cette entreprise ?"
+        title={m.carnet_delete_company_title()}
         description={
           companyToDelete
-            ? `« ${companyToDelete.name} » sera supprimee. Ses contacts et opportunites lies ne seront pas supprimes mais detaches de cette entreprise.`
+            ? m.carnet_delete_company_desc({ name: companyToDelete.name })
             : ''
         }
         onConfirm={confirmDeleteCompany}
@@ -298,10 +299,10 @@ function EntreprisesPage() {
       <DeleteConfirmDialog
         open={Boolean(contactToDelete)}
         onOpenChange={(open) => !open && setContactToDelete(null)}
-        title="Supprimer ce contact ?"
+        title={m.carnet_delete_contact_title()}
         description={
           contactToDelete
-            ? `« ${contactToDelete.name} » sera supprime. Les opportunites liees seront detachees de ce contact.`
+            ? m.carnet_delete_contact_desc({ name: contactToDelete.name })
             : ''
         }
         onConfirm={confirmDeleteContact}
@@ -391,7 +392,7 @@ function EmptyState({
           <Search className="size-5" />
         </span>
         <p className="mt-4 text-sm text-fg-muted">
-          Aucun resultat pour cette recherche.
+          {m.carnet_no_search_result()}
         </p>
       </div>
     )
@@ -402,21 +403,19 @@ function EmptyState({
         <Users className="size-6" />
       </span>
       <h2 className="mt-4 text-lg font-semibold text-fg">
-        Votre carnet est vide.
+        {m.carnet_empty_title()}
       </h2>
       <p className="mt-1 max-w-sm text-sm text-fg-muted">
-        Ajoutez les entreprises que vous ciblez et les particuliers que vous
-        suivez (prospects, relations, parrainages) pour tout relier au meme
-        endroit.
+        {m.carnet_empty_desc()}
       </p>
       <div className="mt-5 flex flex-col gap-2 sm:flex-row">
         <Button onClick={onAddCompany}>
           <Building2 className="size-4" />
-          Ajouter une entreprise
+          {m.carnet_add_a_company()}
         </Button>
         <Button variant="outline" onClick={onAddParticular}>
           <User className="size-4" />
-          Ajouter un particulier
+          {m.carnet_add_a_particular()}
         </Button>
       </div>
     </div>
@@ -430,10 +429,10 @@ export function ErrorState({ onRetry }: { onRetry: () => void }) {
       <AlertTriangle className="mt-0.5 size-5 shrink-0 text-danger" />
       <div className="flex-1">
         <p className="text-sm font-medium text-danger">
-          Le chargement du carnet a echoue.
+          {m.carnet_load_failed()}
         </p>
         <Button variant="outline" size="sm" className="mt-3" onClick={onRetry}>
-          Reessayer
+          {m.carnet_retry()}
         </Button>
       </div>
     </div>

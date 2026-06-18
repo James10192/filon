@@ -1,5 +1,6 @@
 import { Component, type ReactNode } from 'react'
 import { TriangleAlert } from 'lucide-react'
+import { m } from '~/lib/paraglide/messages'
 import { Button } from '~/components/ui/button'
 
 /**
@@ -35,14 +36,14 @@ export class PaneErrorBoundary extends Component<
           </span>
           <div className="space-y-1">
             <h2 className="text-base font-semibold text-fg">
-              Proposition introuvable
+              {m.prop_not_found_title()}
             </h2>
             <p className="mx-auto max-w-xs text-sm text-fg-muted">
-              Cette proposition n'existe pas ou ne vous appartient pas.
+              {m.prop_not_found_message()}
             </p>
           </div>
           <Button variant="outline" onClick={this.props.onClose}>
-            Fermer
+            {m.prop_close()}
           </Button>
         </div>
       )

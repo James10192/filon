@@ -18,7 +18,8 @@ import {
 import { Button } from '~/components/ui/button'
 import { Badge } from '~/components/ui/badge'
 import { cn } from '~/lib/utils'
-import { INTENT_LABELS, type VeilleIntent } from './meta'
+import { intentLabel, type VeilleIntent } from './meta'
+import { m } from '~/lib/paraglide/messages'
 
 /** Résultat riche d'un passage `runNow` (miroir du type backend). */
 export type RunResult = {
@@ -62,15 +63,17 @@ export function RunPanel({
               <Radar className="size-4" />
             </span>
             {state.phase === 'analyzing'
-              ? 'Analyse de vos sources'
+              ? m.veille_run_analyzing_title()
               : state.phase === 'result' && state.result.imported > 0
-                ? `${state.result.imported} nouvelle${state.result.imported > 1 ? 's' : ''} offre${state.result.imported > 1 ? 's' : ''} captée${state.result.imported > 1 ? 's' : ''}`
-                : 'Passage de veille'}
+                ? state.result.imported > 1
+                  ? m.veille_run_captured_title_plural({ n: state.result.imported })
+                  : m.veille_run_captured_title_singular({ n: state.result.imported })
+                : m.veille_run_default_title()}
           </SheetTitle>
           <SheetDescription>
             {state.phase === 'analyzing'
-              ? 'Filon parcourt vos sources surveillées en temps réel.'
-              : 'Résultat du dernier passage manuel.'}
+              ? m.veille_run_analyzing_desc()
+              : m.veille_run_result_desc()}
           </SheetDescription>
         </SheetHeader>
 
@@ -83,12 +86,12 @@ export function RunPanel({
 
         <div className="flex items-center justify-between gap-3 border-t border-border px-6 py-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Fermer
+            {m.veille_run_close()}
           </Button>
           {state.phase === 'result' && state.result.imported > 0 && (
             <Button asChild>
               <Link to="/app/pipeline">
-                Voir le pipeline
+                {m.veille_run_view_pipeline()}
                 <ArrowRight className="size-4" />
               </Link>
             </Button>
@@ -117,7 +120,7 @@ function AnalyzingView() {
           </div>
           <span className="inline-flex shrink-0 items-center gap-1.5 text-xs font-medium text-fg-muted">
             <Loader2 className="size-3.5 animate-spin text-accent" />
-            Analyse…
+            {m.veille_run_source_analyzing()}
           </span>
         </li>
       ))}
@@ -132,8 +135,8 @@ function ResultView({ result }: { result: RunResult }) {
     return (
       <EmptyResult
         icon={<TimerReset className="size-7" />}
-        title="Veille déjà lancée"
-        body={`Pour ménager les sources, réessayez dans ${seconds}s.`}
+        title={m.veille_run_throttled_title()}
+        body={m.veille_run_throttled_body({ n: seconds })}
       />
     )
   }
@@ -144,7 +147,7 @@ function ResultView({ result }: { result: RunResult }) {
 
       {result.imported > 0 ? (
         <div className="space-y-2.5">
-          <h3 className="text-sm font-semibold text-fg">Offres captées</h3>
+          <h3 className="text-sm font-semibold text-fg">{m.veille_run_captured_heading()}</h3>
           <ul className="space-y-2.5">
             {result.captures.map((capture, i) => (
               <li
@@ -159,7 +162,7 @@ function ResultView({ result }: { result: RunResult }) {
                   <div className="flex flex-wrap items-center gap-1.5">
                     <Badge variant="outline">{capture.source}</Badge>
                     <Badge variant="accent">
-                      {INTENT_LABELS[capture.intent]}
+                      {intentLabel(capture.intent)}
                     </Badge>
                   </div>
                 </div>
@@ -174,7 +177,7 @@ function ResultView({ result }: { result: RunResult }) {
                     params={{ id: capture.opportunityId }}
                     search={{ view: 'liste' }}
                   >
-                    Voir
+                    {m.veille_run_view_opportunity()}
                   </Link>
                 </Button>
               </li>
@@ -184,8 +187,8 @@ function ResultView({ result }: { result: RunResult }) {
       ) : (
         <EmptyResult
           icon={<PackageOpen className="size-7" />}
-          title="Aucune nouvelle offre"
-          body="Tout ce qui correspond est déjà dans votre pipeline."
+          title={m.veille_run_empty_title()}
+          body={m.veille_run_empty_body()}
         />
       )}
     </div>
@@ -212,8 +215,10 @@ function SourcesRecap({ sources }: { sources: RunResult['sources'] }) {
           <span className="font-medium text-fg">{source.label}</span>
           <span className="text-fg-subtle">
             {source.ok
-              ? `${source.scanned} analysée${source.scanned > 1 ? 's' : ''}`
-              : 'indisponible'}
+              ? source.scanned > 1
+                ? m.veille_run_scanned_plural({ n: source.scanned })
+                : m.veille_run_scanned_singular({ n: source.scanned })
+              : m.veille_run_source_unavailable()}
           </span>
         </li>
       ))}
@@ -247,8 +252,8 @@ function NoSearchView() {
   return (
     <EmptyResult
       icon={<Radar className="size-7" />}
-      title="Aucune veille active"
-      body="Créez une veille avec quelques mots-clés pour démarrer la capture."
+      title={m.veille_run_nosearch_title()}
+      body={m.veille_run_nosearch_body()}
     />
   )
 }
@@ -257,8 +262,8 @@ function ErrorView() {
   return (
     <EmptyResult
       icon={<PackageOpen className="size-7" />}
-      title="Le passage a échoué"
-      body="Une erreur est survenue pendant l'analyse. Réessayez dans un instant."
+      title={m.veille_run_error_title()}
+      body={m.veille_run_error_body()}
     />
   )
 }

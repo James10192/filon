@@ -9,6 +9,7 @@ import {
   paymentChannelLabel,
   paymentStatusMeta,
 } from './admin-meta'
+import { m } from '~/lib/paraglide/messages'
 
 export type PaystackTransaction = {
   id: number
@@ -61,7 +62,7 @@ export function AdminPaymentDetail({
           variant="ghost"
           size="icon"
           onClick={onClose}
-          aria-label="Fermer le détail"
+          aria-label={m.admin_close_detail()}
           className="h-11 w-11 shrink-0"
         >
           <X className="size-4" />
@@ -71,14 +72,14 @@ export function AdminPaymentDetail({
       <div className="flex flex-col gap-4 overflow-y-auto px-5 py-5">
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Détail de la transaction</CardTitle>
+            <CardTitle className="text-sm">{m.admin_pay_detail_title()}</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-4">
-            <Field label="Montant" value={amountLabel(tx)} />
-            <Field label="Devise" value={tx.currency} />
-            <Field label="Canal" value={paymentChannelLabel(tx.channel)} />
+            <Field label={m.admin_pay_field_amount()} value={amountLabel(tx)} />
+            <Field label={m.admin_pay_field_currency()} value={tx.currency} />
+            <Field label={m.admin_pay_field_channel()} value={paymentChannelLabel(tx.channel)} />
             <Field
-              label="Date de paiement"
+              label={m.admin_pay_field_date()}
               value={tx.paidAt ? formatDate(Date.parse(tx.paidAt)) : '—'}
             />
           </CardContent>
@@ -86,7 +87,7 @@ export function AdminPaymentDetail({
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Client</CardTitle>
+            <CardTitle className="text-sm">{m.admin_pay_client_title()}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
             {tx.email ? (
@@ -100,7 +101,7 @@ export function AdminPaymentDetail({
             ) : (
               <span className="inline-flex items-center gap-2 text-sm text-fg-muted">
                 <Mail className="size-4 shrink-0 text-fg-subtle" />
-                Aucun e-mail client
+                {m.admin_pay_no_email()}
               </span>
             )}
             <span className="inline-flex items-center gap-2 text-sm text-fg-muted">

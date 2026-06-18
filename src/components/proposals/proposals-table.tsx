@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
+import { m } from '~/lib/paraglide/messages'
 import { DataTable } from '~/components/data-table'
 import { ProposalCard } from './proposal-card'
 import { buildProposalColumns } from './proposal-columns'
@@ -56,7 +57,7 @@ export function ProposalsTable({
           getRowId={(row) => row._id}
           selectedRowId={selectedId ?? undefined}
           minWidthClassName="min-w-[720px]"
-          ariaLabel="Tableau des propositions"
+          ariaLabel={m.prop_table_aria()}
         />
       </div>
     </>

@@ -1,5 +1,6 @@
 import type { Column } from '@tanstack/react-table'
 import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react'
+import { m } from '~/lib/paraglide/messages'
 import { cn } from '~/lib/utils'
 
 /**
@@ -30,7 +31,7 @@ export function SortableHeader<TData, TValue>({
         sorted && 'text-fg',
         className,
       )}
-      aria-label={`Trier par ${label}`}
+      aria-label={m.shell_sort_by({ label })}
     >
       {label}
       {sorted === 'asc' ? (

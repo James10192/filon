@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Download, Lock } from 'lucide-react'
+import { m } from '~/lib/paraglide/messages'
 import { useUpsell } from '~/lib/billing/use-upsell'
 import { exportCsv, type CsvColumn } from '~/lib/export'
 import { toast } from '~/components/ui/sonner'
@@ -24,7 +25,7 @@ export function ExportButton<T>({
   rows,
   columns,
   base,
-  label = 'Exporter (CSV)',
+  label = m.app_export_csv(),
   variant = 'outline',
   size = 'sm',
   className,
@@ -56,10 +57,12 @@ export function ExportButton<T>({
     try {
       const count = exportCsv(base, rows!, columns)
       toast.success(
-        `Export réussi : ${count} ligne${count > 1 ? 's' : ''} au format CSV.`,
+        count > 1
+          ? m.app_export_success_plural({ count })
+          : m.app_export_success_singular({ count }),
       )
     } catch {
-      toast.error("L'export a échoué. Réessayez.")
+      toast.error(m.app_export_error())
     }
   }
 
@@ -75,7 +78,7 @@ export function ExportButton<T>({
         // d'agir avant que le palier soit charge (evite un faux upsell au flash).
         disabled={!loaded || (canExport && nothingToExport)}
         onClick={handleClick}
-        aria-label={canExport ? label : `${label} — réservé au palier Pro`}
+        aria-label={canExport ? label : m.app_export_locked_aria({ label })}
       >
         {canExport ? (
           <Download className="size-4" />

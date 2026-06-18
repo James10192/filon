@@ -12,6 +12,7 @@ import {
 import { Skeleton } from '~/components/ui/skeleton'
 import { cn } from '~/lib/utils'
 import { formatRelativeTime } from './meta'
+import { m } from '~/lib/paraglide/messages'
 
 /**
  * Santé des sources auto-surveillées. Croise CONNECTOR_META avec le suivi de
@@ -24,9 +25,9 @@ export function SourceHealthPanel() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Sources surveillées</CardTitle>
+        <CardTitle>{m.veille_health_title()}</CardTitle>
         <CardDescription>
-          État des sources que Filon analyse automatiquement à chaque passage.
+          {m.veille_health_desc()}
         </CardDescription>
       </CardHeader>
 
@@ -63,9 +64,7 @@ export function SourceHealthPanel() {
         <div className="flex items-start gap-3 rounded-[var(--radius-sm)] bg-surface-2 px-4 py-3">
           <Info className="mt-0.5 size-4 shrink-0 text-fg-subtle" />
           <p className="text-xs leading-relaxed text-fg-muted">
-            D'autres sources (LinkedIn, Indeed, agrégateurs) ne sont pas
-            surveillables automatiquement : utilisez «&nbsp;Importer une
-            offre&nbsp;» pour y coller un lien ou un texte.
+            {m.veille_health_note()}
           </p>
         </div>
       </CardContent>
@@ -100,17 +99,19 @@ function SourceRow({
         {entry ? (
           entry.lastOkAt ? (
             <p className="text-xs text-fg-muted">
-              {entry.lastCount ?? 0} offres au dernier passage · il y a{' '}
-              {formatRelativeTime(entry.lastOkAt)}
+              {m.veille_health_last_pass({
+                n: entry.lastCount ?? 0,
+                time: formatRelativeTime(entry.lastOkAt),
+              })}
             </p>
           ) : entry.lastError ? (
             <p className="truncate text-xs text-fg-subtle">{entry.lastError}</p>
           ) : (
-            <p className="text-xs text-fg-subtle">En attente du premier passage</p>
+            <p className="text-xs text-fg-subtle">{m.veille_health_waiting_first()}</p>
           )
         ) : (
           <p className="text-xs text-fg-subtle">
-            En attente du premier passage
+            {m.veille_health_waiting_first()}
           </p>
         )}
       </div>
@@ -136,7 +137,11 @@ function SourceRow({
                 : 'bg-fg-subtle',
           )}
         />
-        {entry ? (entry.ok ? 'Opérationnel' : 'Indisponible') : 'En attente'}
+        {entry
+          ? entry.ok
+            ? m.veille_health_operational()
+            : m.veille_health_unavailable()
+          : m.veille_health_pending()}
       </span>
     </div>
   )

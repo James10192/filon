@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import type { Id } from '../../../convex/_generated/dataModel'
+import { m } from '~/lib/paraglide/messages'
 import { useMediaQuery } from '~/lib/use-media-query'
 import { cn } from '~/lib/utils'
 import { Button } from '~/components/ui/button'
@@ -72,14 +73,14 @@ export function OpportunityWorkspace({
   return (
     <div className="flex flex-col">
       <PageToolbar
-        title="Opportunités"
-        subtitle="Toutes vos pistes, candidatures, propositions et missions."
+        title={m.opp_workspace_title()}
+        subtitle={m.opp_workspace_subtitle()}
         actions={
           <>
             <ViewSwitcher value={view} onChange={onViewChange} />
             <Button onClick={quickCapture.open}>
               <Plus className="size-4" />
-              <span className="hidden sm:inline">Ajouter</span>
+              <span className="hidden sm:inline">{m.opp_add()}</span>
             </Button>
           </>
         }
@@ -115,9 +116,9 @@ export function OpportunityWorkspace({
           side="right"
           className="w-full max-w-full gap-0 p-0 sm:max-w-xl"
         >
-          <SheetTitle className="sr-only">Détail de l'opportunité</SheetTitle>
+          <SheetTitle className="sr-only">{m.opp_detail_sheet_title()}</SheetTitle>
           <SheetDescription className="sr-only">
-            Détail, étape, activité et relances de l'opportunité sélectionnée.
+            {m.opp_detail_sheet_description()}
           </SheetDescription>
           {selectedId && (
             <PaneErrorBoundary resetKey={selectedId} onClose={onClose}>

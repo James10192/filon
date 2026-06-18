@@ -17,6 +17,7 @@ import { Button } from '~/components/ui/button'
 import { Badge } from '~/components/ui/badge'
 import { Skeleton } from '~/components/ui/skeleton'
 import { cn } from '~/lib/utils'
+import { m } from '~/lib/paraglide/messages'
 import { EntityDocuments } from '~/components/shared/entity-documents'
 import { ContactRow } from './contact-row'
 
@@ -87,8 +88,9 @@ export function CompanyCard({
             )}
             <span className="inline-flex items-center gap-1.5">
               <Target className="size-3.5 text-fg-subtle" />
-              {opportunityCount}{' '}
-              {opportunityCount > 1 ? 'opportunites' : 'opportunite'}
+              {opportunityCount > 1
+                ? m.carnet_opportunity_count_plural({ n: opportunityCount })
+                : m.carnet_opportunity_count_one({ n: opportunityCount })}
             </span>
           </div>
 
@@ -103,7 +105,7 @@ export function CompanyCard({
           <Button
             variant="ghost"
             size="icon-sm"
-            aria-label="Modifier l'entreprise"
+            aria-label={m.carnet_company_edit_aria()}
             onClick={() => onEdit(company)}
           >
             <Pencil className="size-4" />
@@ -111,7 +113,7 @@ export function CompanyCard({
           <Button
             variant="ghost"
             size="icon-sm"
-            aria-label="Supprimer l'entreprise"
+            aria-label={m.carnet_company_delete_aria()}
             className="text-fg-muted hover:text-danger"
             onClick={() => onDelete(company)}
           >
@@ -129,7 +131,7 @@ export function CompanyCard({
           className="flex h-11 w-full items-center gap-2 px-4 text-sm font-medium text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg md:px-5"
         >
           <Users className="size-4 text-fg-subtle" />
-          <span>Contacts</span>
+          <span>{m.carnet_contacts_label()}</span>
           <ChevronDown
             className={cn(
               'ml-auto size-4 text-fg-subtle transition-transform',
@@ -148,7 +150,7 @@ export function CompanyCard({
             ) : contacts.length === 0 ? (
               <div className="rounded-[var(--radius)] border border-dashed border-border bg-surface-2/50 px-4 py-6 text-center">
                 <p className="text-sm text-fg-muted">
-                  Aucun contact pour cette entreprise.
+                  {m.carnet_no_contact_for_company()}
                 </p>
                 <Button
                   variant="outline"
@@ -157,7 +159,7 @@ export function CompanyCard({
                   onClick={() => onAddContact(company._id)}
                 >
                   <Plus className="size-4" />
-                  Ajouter un contact
+                  {m.carnet_add_contact()}
                 </Button>
               </div>
             ) : (
@@ -177,7 +179,7 @@ export function CompanyCard({
                   onClick={() => onAddContact(company._id)}
                 >
                   <Plus className="size-4" />
-                  Ajouter un contact
+                  {m.carnet_add_contact()}
                 </Button>
               </div>
             )}

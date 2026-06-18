@@ -8,6 +8,7 @@ import { useQuery } from 'convex/react'
 import { ArrowLeft } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
+import { m } from '~/lib/paraglide/messages'
 import { Button } from '~/components/ui/button'
 import { Skeleton } from '~/components/ui/skeleton'
 import { OpportunityDetailContent } from '~/components/opportunities/detail/detail-content'
@@ -16,7 +17,7 @@ export const Route = createFileRoute('/app/opportunites/$id')({
   component: OpportuniteDetailPage,
   // get() relance « Introuvable » / « Non autorisé » : captée par cet errorComponent.
   errorComponent: () => <NotFoundRoute />,
-  head: () => ({ meta: [{ title: 'Opportunité · Filon' }] }),
+  head: () => ({ meta: [{ title: m.opp_detail_page_title() }] }),
 })
 
 function OpportuniteDetailPage() {
@@ -35,7 +36,7 @@ function OpportuniteDetailPage() {
           className="inline-flex items-center gap-1.5 text-sm font-medium text-fg-muted transition-colors hover:text-fg"
         >
           <ArrowLeft className="size-4" />
-          Opportunités
+          {m.opp_workspace_title()}
         </Link>
       </div>
 
@@ -58,9 +59,9 @@ function NotFoundRoute() {
   const navigate = useNavigate()
   return (
     <div className="flex flex-col items-center justify-center gap-4 rounded-[var(--radius-lg)] border border-dashed border-border bg-surface px-6 py-16 text-center">
-      <h1 className="text-lg font-semibold text-fg">Opportunité introuvable</h1>
+      <h1 className="text-lg font-semibold text-fg">{m.opp_not_found_title()}</h1>
       <p className="text-sm text-fg-muted">
-        Cette opportunité n'existe pas ou ne vous appartient pas.
+        {m.opp_not_found_message()}
       </p>
       <Button
         variant="outline"
@@ -69,7 +70,7 @@ function NotFoundRoute() {
         }
       >
         <ArrowLeft className="size-4" />
-        Retour aux opportunités
+        {m.opp_back_to_opportunities()}
       </Button>
     </div>
   )

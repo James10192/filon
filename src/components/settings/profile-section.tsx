@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useMutation, useQuery } from 'convex/react'
 import { Loader2 } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
+import { m } from '~/lib/paraglide/messages'
 import { toast } from '~/components/ui/sonner'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
@@ -61,7 +62,7 @@ export function ProfileSection() {
     e.preventDefault()
     const trimmedName = name.trim()
     if (!trimmedName) {
-      setError('Le nom est requis.')
+      setError(m.app_profile_name_required())
       return
     }
 
@@ -73,10 +74,10 @@ export function ProfileSection() {
 
     try {
       await updateProfile(args)
-      toast.success('Modifications enregistrées.')
+      toast.success(m.app_changes_saved())
     } catch {
-      toast.error("Les modifications n'ont pas pu être enregistrées.")
-      setError('Les modifications n’ont pas pu être enregistrées. Réessayez.')
+      toast.error(m.app_changes_save_error())
+      setError(m.app_changes_save_error_retry())
     } finally {
       setSaving(false)
     }
@@ -86,43 +87,42 @@ export function ProfileSection() {
     <Card>
       <form onSubmit={onSubmit}>
         <CardHeader>
-          <CardTitle>Profil</CardTitle>
+          <CardTitle>{m.app_profile_title()}</CardTitle>
           <CardDescription>
-            Ces informations personnalisent votre espace. Le nom apparaît dans
-            le menu de votre compte.
+            {m.app_profile_description()}
           </CardDescription>
         </CardHeader>
 
         <CardContent className="flex flex-col gap-5">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="profile-name">Nom</Label>
+            <Label htmlFor="profile-name">{m.app_profile_name()}</Label>
             <Input
               id="profile-name"
               value={name}
               maxLength={MAX_NAME}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Ex. Marcel Djedjé"
+              placeholder={m.app_profile_name_placeholder()}
               aria-invalid={Boolean(error) && !name.trim()}
               autoComplete="name"
             />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="profile-headline">Accroche</Label>
+            <Label htmlFor="profile-headline">{m.app_profile_headline()}</Label>
             <Input
               id="profile-headline"
               value={headline}
               maxLength={MAX_HEADLINE}
               onChange={(e) => setHeadline(e.target.value)}
-              placeholder="Ex. Développeur full-stack · freelance"
+              placeholder={m.app_profile_headline_placeholder()}
             />
             <p className="text-xs text-fg-subtle">
-              Une ligne qui vous décrit. Optionnelle.
+              {m.app_profile_headline_hint()}
             </p>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="profile-email">Adresse e-mail</Label>
+            <Label htmlFor="profile-email">{m.app_profile_email()}</Label>
             <Input
               id="profile-email"
               value={email}
@@ -131,8 +131,7 @@ export function ProfileSection() {
               className="text-fg-muted"
             />
             <p className="text-xs text-fg-subtle">
-              L’adresse e-mail est liée à votre connexion et ne peut pas être
-              modifiée ici.
+              {m.app_profile_email_hint()}
             </p>
           </div>
 
@@ -146,7 +145,7 @@ export function ProfileSection() {
         <CardFooter className="justify-end">
           <Button type="submit" disabled={saving || !dirty}>
             {saving && <Loader2 className="size-4 animate-spin" />}
-            Enregistrer
+            {m.app_save()}
           </Button>
         </CardFooter>
       </form>

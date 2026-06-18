@@ -68,7 +68,7 @@ export function SubscriptionManagement() {
       setDialog(null)
     } catch (error) {
       toast.error(
-        errorMessage(error, 'Action impossible pour le moment. Réessayez.'),
+        errorMessage(error, m.app_sub_action_error()),
       )
     } finally {
       setPending(false)
@@ -139,9 +139,9 @@ export function SubscriptionManagement() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Gérer mon abonnement</CardTitle>
+        <CardTitle>{m.app_sub_title()}</CardTitle>
         <CardDescription>
-          Palier, renouvellement et changements programmés.
+          {m.app_sub_description()}
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
@@ -155,19 +155,19 @@ export function SubscriptionManagement() {
               </Badge>
               {myPlan.planInterval && (
                 <span className="text-sm text-fg-muted">
-                  {myPlan.planInterval === 'annual' ? 'Annuel' : 'Mensuel'}
+                  {myPlan.planInterval === 'annual' ? m.app_annual() : m.app_monthly()}
                 </span>
               )}
               {!isFree && !autoRenew && (
-                <Badge variant="outline">Renouvellement coupé</Badge>
+                <Badge variant="outline">{m.app_sub_renewal_off()}</Badge>
               )}
             </div>
 
             {renewsLabel && (
               <p className="text-sm text-fg-muted">
                 {autoRenew && !pendingPlan
-                  ? 'Période payée jusqu’au '
-                  : 'Accès maintenu jusqu’au '}
+                  ? m.app_sub_paid_until()
+                  : m.app_sub_access_until()}
                 <span className="assay">{renewsLabel}</span>
               </p>
             )}
@@ -175,16 +175,15 @@ export function SubscriptionManagement() {
             {pendingPlan && renewsLabel && (
               <p className="rounded-[var(--radius)] bg-accent-soft px-3 py-2 text-sm text-accent">
                 {pendingPlan === 'free'
-                  ? 'Repasse en Découverte le '
-                  : `Passe à ${PLAN_LABELS[pendingPlan]} le `}
+                  ? m.app_sub_downgrade_free_on()
+                  : m.app_sub_change_to_on({ plan: PLAN_LABELS[pendingPlan] })}
                 <span className="assay">{renewsLabel}</span>
               </p>
             )}
 
             {isFree && (
               <p className="text-sm text-fg-muted">
-                Vous êtes sur le palier gratuit. Passez à Pro pour lever les
-                limites.
+                {m.app_sub_free_hint()}
               </p>
             )}
 
@@ -209,7 +208,7 @@ export function SubscriptionManagement() {
                   ) : isNative ? (
                     <>
                       <p className="text-sm font-medium text-fg">
-                        Abonnement par carte
+                        {m.app_sub_card_subscription()}
                       </p>
                       <p className="text-xs text-fg-muted">
                         {m.renewal_card_auto()}
@@ -226,8 +225,7 @@ export function SubscriptionManagement() {
 
             {!isFree && nativeDunning && (
               <p className="rounded-[var(--radius)] bg-warning-soft px-3 py-2 text-sm text-warning">
-                Le dernier débit de votre carte a échoué. Paystack va réessayer.
-                Vérifiez votre moyen de paiement pour ne pas perdre l'accès.
+                {m.app_sub_dunning()}
               </p>
             )}
           </div>
@@ -237,7 +235,7 @@ export function SubscriptionManagement() {
           <Button variant={isFree ? 'default' : 'outline'} asChild>
             <Link to="/app/tarifs">
               <Sparkles className="size-4" />
-              {isFree ? 'Choisir un palier' : 'Changer de palier'}
+              {isFree ? m.app_sub_choose_plan() : m.app_sub_change_plan()}
             </Link>
           </Button>
 
@@ -258,7 +256,7 @@ export function SubscriptionManagement() {
             pendingPlan !== 'free' && (
               <Button variant="outline" onClick={() => setDialog('downgrade')}>
                 <ArrowDownRight className="size-4" />
-                Programmer Pro
+                {m.app_sub_schedule_pro()}
               </Button>
             )}
 
@@ -271,14 +269,14 @@ export function SubscriptionManagement() {
               disabled={managing}
             >
               <ExternalLink className="size-4" />
-              Gérer mon abonnement
+              {m.app_sub_manage_subscription()}
             </Button>
           )}
 
           {!isFree && autoRenew && (!isNative || canCancelNative) && (
             <Button variant="ghost" onClick={() => setDialog('cancel')}>
               <XCircle className="size-4" />
-              Annuler le renouvellement
+              {m.app_sub_cancel_renewal()}
             </Button>
           )}
 
@@ -288,13 +286,13 @@ export function SubscriptionManagement() {
               onClick={() =>
                 run(
                   () => (isNative ? enableNative({}) : reactivate({})),
-                  'Renouvellement réactivé.',
+                  m.app_sub_renewal_reactivated(),
                 )
               }
               disabled={pending}
             >
               <RotateCcw className="size-4" />
-              Réactiver
+              {m.app_sub_reactivate()}
             </Button>
           )}
 
@@ -306,7 +304,7 @@ export function SubscriptionManagement() {
               disabled={managing}
             >
               <ExternalLink className="size-4" />
-              Gérer ma carte
+              {m.app_sub_manage_card()}
             </Button>
           )}
         </div>

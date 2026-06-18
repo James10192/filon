@@ -29,6 +29,7 @@ import {
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
 import { toast } from '~/components/ui/sonner'
+import { m } from '~/lib/paraglide/messages'
 import {
   KIND_ICONS,
   KIND_LABELS,
@@ -67,9 +68,9 @@ export function DocumentCard({
     setBusy(true)
     try {
       await remove({ id: document._id })
-      toast.success('Document supprime.')
+      toast.success(m.carnet_document_deleted())
     } catch {
-      toast.error('La suppression a echoue.')
+      toast.error(m.carnet_delete_failed())
     } finally {
       setBusy(false)
       setConfirmDelete(false)
@@ -95,10 +96,12 @@ export function DocumentCard({
           </h3>
           <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-fg-subtle">
             <Badge variant="outline" className="h-5 px-1.5">
-              {KIND_LABELS[kind]}
+              {KIND_LABELS[kind]()}
             </Badge>
             {size && <span className="tabular-nums">{size}</span>}
-            {createdAt && <span>Ajoute le {createdAt}</span>}
+            {createdAt && (
+              <span>{m.carnet_document_added_on({ date: createdAt })}</span>
+            )}
           </div>
         </div>
         <DropdownMenu modal={false}>
@@ -106,7 +109,7 @@ export function DocumentCard({
             <Button
               variant="ghost"
               size="icon-sm"
-              aria-label="Actions"
+              aria-label={m.carnet_actions_aria()}
               disabled={busy}
             >
               <MoreHorizontal className="size-4" />
@@ -115,7 +118,7 @@ export function DocumentCard({
           <DropdownMenuContent align="end" className="w-48">
             <DropdownMenuItem onSelect={() => onEdit(document)}>
               <Pencil className="size-4" />
-              Modifier
+              {m.carnet_edit()}
             </DropdownMenuItem>
             {available && (
               <DropdownMenuItem asChild>
@@ -124,7 +127,7 @@ export function DocumentCard({
                   download={document.name}
                 >
                   <Download className="size-4" />
-                  Telecharger
+                  {m.carnet_download()}
                 </a>
               </DropdownMenuItem>
             )}
@@ -134,7 +137,7 @@ export function DocumentCard({
               onSelect={() => setConfirmDelete(true)}
             >
               <Trash2 className="size-4" />
-              Supprimer
+              {m.carnet_delete()}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -150,18 +153,18 @@ export function DocumentCard({
               onClick={openInNewTab}
             >
               <Eye className="size-4" />
-              Apercu
+              {m.carnet_preview()}
             </Button>
             <Button size="sm" variant="outline" asChild>
               <a href={document.url ?? undefined} download={document.name}>
                 <Download className="size-4" />
-                <span className="sr-only">Telecharger</span>
+                <span className="sr-only">{m.carnet_download()}</span>
               </a>
             </Button>
           </>
         ) : (
           <p className="text-xs text-fg-subtle">
-            Fichier indisponible.
+            {m.carnet_file_unavailable()}
           </p>
         )}
       </div>
@@ -169,14 +172,15 @@ export function DocumentCard({
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Supprimer ce document ?</AlertDialogTitle>
+            <AlertDialogTitle>{m.carnet_delete_document_title()}</AlertDialogTitle>
             <AlertDialogDescription>
-              « {document.name} » sera definitivement supprime, fichier compris.
-              Cette action est irreversible.
+              {m.carnet_delete_document_desc({ name: document.name })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={busy}>Annuler</AlertDialogCancel>
+            <AlertDialogCancel disabled={busy}>
+              {m.carnet_cancel()}
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault()
@@ -185,7 +189,7 @@ export function DocumentCard({
               disabled={busy}
               className="bg-danger text-[var(--color-accent-fg)] hover:bg-danger/90"
             >
-              Supprimer definitivement
+              {m.carnet_delete_permanently()}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

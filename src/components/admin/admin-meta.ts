@@ -3,6 +3,7 @@
  * Garde les composants visuels légers (pas de logique de format inline).
  */
 
+import { m } from '~/lib/paraglide/messages'
 import { PLAN_LABELS, type Plan } from '~/lib/billing/plan'
 
 export type FeedbackStatus = 'new' | 'in_progress' | 'done'
@@ -29,11 +30,16 @@ export function planLabel(plan: Plan): string {
   return PLAN_LABELS[plan] ?? plan
 }
 
-/** Libellé FR d'un statut de feedback. */
-export const FEEDBACK_STATUS_LABEL: Record<FeedbackStatus, string> = {
-  new: 'Nouveau',
-  in_progress: 'En cours',
-  done: 'Traité',
+/** Libellé d'un statut de feedback. */
+export function feedbackStatusLabel(status: FeedbackStatus): string {
+  switch (status) {
+    case 'new':
+      return m.admin_feedback_status_new()
+    case 'in_progress':
+      return m.admin_feedback_status_in_progress()
+    case 'done':
+      return m.admin_feedback_status_done()
+  }
 }
 
 /** Ordre d'affichage des statuts dans les filtres et les Select. */
@@ -57,11 +63,16 @@ export function feedbackStatusVariant(
   }
 }
 
-/** Libellé FR d'un type de feedback. */
-export const FEEDBACK_TYPE_LABEL: Record<FeedbackType, string> = {
-  bug: 'Bug',
-  idea: 'Idée',
-  other: 'Autre',
+/** Libellé d'un type de feedback. */
+export function feedbackTypeLabel(type: FeedbackType): string {
+  switch (type) {
+    case 'bug':
+      return m.admin_feedback_type_bug()
+    case 'idea':
+      return m.admin_feedback_type_idea()
+    case 'other':
+      return m.admin_feedback_type_other()
+  }
 }
 
 /** Variante de badge pour un type de feedback. */
@@ -87,16 +98,16 @@ export function formatDate(epochMs: number): string {
   }).format(new Date(epochMs))
 }
 
-/** Date relative concise FR : « il y a 3 j », « il y a 2 h », « à l'instant ». */
+/** Date relative concise : « il y a 3 j », « il y a 2 h », « à l'instant ». */
 export function formatRelative(epochMs: number): string {
   const diff = Date.now() - epochMs
-  if (diff < 60_000) return "à l'instant"
+  if (diff < 60_000) return m.admin_relative_now()
   const minutes = Math.floor(diff / 60_000)
-  if (minutes < 60) return `il y a ${minutes} min`
+  if (minutes < 60) return m.admin_relative_minutes({ n: minutes })
   const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `il y a ${hours} h`
+  if (hours < 24) return m.admin_relative_hours({ n: hours })
   const days = Math.floor(hours / 24)
-  if (days < 30) return `il y a ${days} j`
+  if (days < 30) return m.admin_relative_days({ n: days })
   return formatDate(epochMs)
 }
 
@@ -110,64 +121,83 @@ export function formatXof(amount: number): string {
   return `${formatNumber(amount)} XOF`
 }
 
-/** Libellé FR d'un canal de paiement Paystack. */
+/** Libellé d'un canal de paiement Paystack. */
 export function paymentChannelLabel(channel: string | null): string {
   switch (channel) {
     case 'mobile_money':
-      return 'Mobile Money'
+      return m.admin_payment_channel_mobile_money()
     case 'card':
-      return 'Carte'
+      return m.admin_payment_channel_card()
     case 'bank':
-      return 'Virement'
+      return m.admin_payment_channel_transfer()
     case 'bank_transfer':
-      return 'Virement'
+      return m.admin_payment_channel_transfer()
     case 'ussd':
-      return 'USSD'
+      return m.admin_payment_channel_ussd()
     case 'qr':
-      return 'QR'
+      return m.admin_payment_channel_qr()
     case null:
-      return 'Autre'
+      return m.admin_payment_channel_other()
     default:
       return channel
   }
 }
 
-/** Variante de badge + libellé FR d'un statut de transaction Paystack. */
+/** Variante de badge + libellé d'un statut de transaction Paystack. */
 export function paymentStatusMeta(status: string): {
   label: string
   variant: 'success' | 'danger' | 'warning' | 'outline'
 } {
   switch (status) {
     case 'success':
-      return { label: 'Réussi', variant: 'success' }
+      return { label: m.admin_payment_status_success(), variant: 'success' }
     case 'failed':
-      return { label: 'Échoué', variant: 'danger' }
+      return { label: m.admin_payment_status_failed(), variant: 'danger' }
     case 'abandoned':
-      return { label: 'Abandonné', variant: 'danger' }
+      return { label: m.admin_payment_status_abandoned(), variant: 'danger' }
     case 'pending':
-      return { label: 'En attente', variant: 'warning' }
+      return { label: m.admin_payment_status_pending(), variant: 'warning' }
     default:
       return { label: status, variant: 'outline' }
   }
 }
 
-/** Libellés FR des stades du pipeline (vue 360 compte). */
-export const STAGE_LABEL: Record<string, string> = {
-  lead: 'Piste',
-  contacted: 'Contacté',
-  applied: 'Postulé',
-  interview: 'Entretien',
-  negotiation: 'Négociation',
-  won: 'Gagné',
-  lost: 'Perdu',
+/** Libellés des stades du pipeline (vue 360 compte). */
+export function stageLabel(stage: string): string {
+  switch (stage) {
+    case 'lead':
+      return m.admin_stage_lead()
+    case 'contacted':
+      return m.admin_stage_contacted()
+    case 'applied':
+      return m.admin_stage_applied()
+    case 'interview':
+      return m.admin_stage_interview()
+    case 'negotiation':
+      return m.admin_stage_negotiation()
+    case 'won':
+      return m.admin_stage_won()
+    case 'lost':
+      return m.admin_stage_lost()
+    default:
+      return stage
+  }
 }
 
-/** Libellés FR des statuts de proposition. */
-export const PROPOSAL_STATUS_LABEL: Record<string, string> = {
-  draft: 'Brouillon',
-  sent: 'Envoyée',
-  accepted: 'Acceptée',
-  refused: 'Refusée',
+/** Libellés des statuts de proposition. */
+export function proposalStatusLabel(status: string): string {
+  switch (status) {
+    case 'draft':
+      return m.admin_proposal_status_draft()
+    case 'sent':
+      return m.admin_proposal_status_sent()
+    case 'accepted':
+      return m.admin_proposal_status_accepted()
+    case 'refused':
+      return m.admin_proposal_status_refused()
+    default:
+      return status
+  }
 }
 
 /** Initiales d'un nom (max 2 lettres) pour le fallback d'avatar. */

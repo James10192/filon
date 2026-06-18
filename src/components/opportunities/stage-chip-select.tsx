@@ -3,6 +3,7 @@ import { useMutation } from 'convex/react'
 import { Check, ChevronDown } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
+import { m } from '~/lib/paraglide/messages'
 import { cn } from '~/lib/utils'
 import { toast } from '~/components/ui/sonner'
 import {
@@ -47,10 +48,10 @@ export function StageChipSelect({
     setOptimistic(next)
     try {
       await setStage({ id, stage: next })
-      toast.success(`Étape changée en « ${STAGE_META[next].label} ».`)
+      toast.success(m.opp_stage_changed({ stage: STAGE_META[next].label }))
     } catch {
       setOptimistic(previous === stage ? null : previous)
-      toast.error("Le changement d'étape a échoué.")
+      toast.error(m.opp_stage_change_error())
     }
   }
 
@@ -66,7 +67,7 @@ export function StageChipSelect({
             meta.chip,
             className,
           )}
-          aria-label={`Etape : ${meta.label}. Changer.`}
+          aria-label={m.opp_stage_select_aria({ stage: meta.label })}
         >
           <span className={cn('size-1.5 shrink-0 rounded-full', meta.dot)} />
           <span className="truncate">{compact ? meta.short : meta.label}</span>
@@ -78,7 +79,7 @@ export function StageChipSelect({
         className="min-w-[13rem]"
         onClick={(e) => e.stopPropagation()}
       >
-        <DropdownMenuLabel>Changer l'etape</DropdownMenuLabel>
+        <DropdownMenuLabel>{m.opp_stage_change_label()}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {STAGES.map((s) => {
           const sMeta = STAGE_META[s]

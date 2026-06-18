@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import type { Doc } from '../../../convex/_generated/dataModel'
 import { api } from '../../../convex/_generated/api'
+import { m } from '~/lib/paraglide/messages'
 import { Button } from '~/components/ui/button'
 import { toast } from '~/components/ui/sonner'
 import {
@@ -63,10 +64,10 @@ export function OpportunityRowActions({
     setRemoving(true)
     try {
       await remove({ id: opportunity._id })
-      toast.success('Opportunité supprimée.')
+      toast.success(m.opp_removed())
       setConfirmOpen(false)
     } catch {
-      toast.error('La suppression a échoué.')
+      toast.error(m.opp_delete_error())
     } finally {
       setRemoving(false)
     }
@@ -80,7 +81,7 @@ export function OpportunityRowActions({
             variant="ghost"
             size="icon-sm"
             className="text-fg-subtle opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100 data-[state=open]:opacity-100"
-            aria-label="Actions"
+            aria-label={m.opp_row_actions_aria()}
           >
             <MoreHorizontal className="size-4" />
           </Button>
@@ -88,11 +89,11 @@ export function OpportunityRowActions({
         <DropdownMenuContent align="end">
           <DropdownMenuItem onSelect={onOpen}>
             <SquareArrowOutUpRight className="size-4" />
-            Ouvrir
+            {m.opp_action_open()}
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => setEditOpen(true)}>
             <Pencil className="size-4" />
-            Modifier
+            {m.opp_action_edit()}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
@@ -103,7 +104,7 @@ export function OpportunityRowActions({
             }}
           >
             <Trash2 className="size-4" />
-            Supprimer
+            {m.opp_action_delete()}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -111,14 +112,13 @@ export function OpportunityRowActions({
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Supprimer cette opportunité ?</AlertDialogTitle>
+            <AlertDialogTitle>{m.opp_delete_confirm_title()}</AlertDialogTitle>
             <AlertDialogDescription>
-              Cette action est irréversible. La timeline d'activité sera
-              également supprimée. Les relances et documents seront détachés.
+              {m.opp_delete_confirm_desc()}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={removing}>Annuler</AlertDialogCancel>
+            <AlertDialogCancel disabled={removing}>{m.opp_cancel()}</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault()
@@ -128,7 +128,7 @@ export function OpportunityRowActions({
               className="bg-danger text-white hover:bg-danger/90"
             >
               {removing && <Loader2 className="size-4 animate-spin" />}
-              Supprimer définitivement
+              {m.opp_delete_confirm_action()}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -160,10 +160,10 @@ function EditDialog({
     try {
       // update() ne change pas le stage (cf. contrat). Forwarde cible + source.
       await update(buildUpdateArgs(opportunity._id, values))
-      toast.success('Modifications enregistrées.')
+      toast.success(m.opp_changes_saved())
       onOpenChange(false)
     } catch {
-      toast.error("Les modifications n'ont pas pu être enregistrées.")
+      toast.error(m.opp_changes_save_error())
     } finally {
       setPending(false)
     }
@@ -182,15 +182,15 @@ function EditDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Modifier l'opportunité</DialogTitle>
+          <DialogTitle>{m.opp_edit_title()}</DialogTitle>
           <DialogDescription>
-            L'étape se change directement depuis le tableau.
+            {m.opp_edit_desc_table()}
           </DialogDescription>
         </DialogHeader>
         {open && (
           <OpportunityForm
             withStage={false}
-            submitLabel="Enregistrer"
+            submitLabel={m.opp_save()}
             pending={pending}
             onCancel={() => onOpenChange(false)}
             onSubmit={handleEdit}

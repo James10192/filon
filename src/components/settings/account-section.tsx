@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Loader2, LogOut } from 'lucide-react'
+import { m } from '~/lib/paraglide/messages'
 import { authClient } from '~/lib/auth/auth-client'
 import { toast } from '~/components/ui/sonner'
 import { Button } from '~/components/ui/button'
@@ -43,25 +44,24 @@ export function AccountSection() {
       })
     } catch {
       setSigningOut(false)
-      toast.error('La déconnexion a échoué. Réessayez.')
+      toast.error(m.app_account_signout_error())
     }
   }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Compte</CardTitle>
+        <CardTitle>{m.app_account_title()}</CardTitle>
         <CardDescription>
-          Gérez votre session sur cet appareil.
+          {m.app_account_description()}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col gap-3 rounded-[var(--radius)] border border-border bg-surface-2 p-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <p className="text-sm font-medium text-fg">Se déconnecter</p>
+            <p className="text-sm font-medium text-fg">{m.app_account_signout()}</p>
             <p className="mt-0.5 text-sm text-fg-muted">
-              Vous reviendrez à la page d’accueil. Vos données restent en
-              sécurité.
+              {m.app_account_signout_hint()}
             </p>
           </div>
 
@@ -69,20 +69,19 @@ export function AccountSection() {
             <AlertDialogTrigger asChild>
               <Button variant="outline" className="shrink-0">
                 <LogOut className="size-4" />
-                Se déconnecter
+                {m.app_account_signout()}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Se déconnecter de Filon ?</AlertDialogTitle>
+                <AlertDialogTitle>{m.app_account_signout_confirm_title()}</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Votre session sur cet appareil sera fermée. Vous pourrez vous
-                  reconnecter à tout moment.
+                  {m.app_account_signout_confirm_desc()}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel disabled={signingOut}>
-                  Annuler
+                  {m.app_cancel()}
                 </AlertDialogCancel>
                 <AlertDialogAction
                   onClick={(e) => {
@@ -92,7 +91,7 @@ export function AccountSection() {
                   disabled={signingOut}
                 >
                   {signingOut && <Loader2 className="size-4 animate-spin" />}
-                  Se déconnecter
+                  {m.app_account_signout()}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

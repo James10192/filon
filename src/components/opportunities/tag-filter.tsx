@@ -2,6 +2,7 @@ import * as React from 'react'
 import { useQuery } from 'convex/react'
 import { Check, ChevronDown, Loader2, Tag } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
+import { m } from '~/lib/paraglide/messages'
 import { cn } from '~/lib/utils'
 import { Button } from '~/components/ui/button'
 import {
@@ -83,7 +84,7 @@ export function TagFilter({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          aria-label="Filtrer par étiquette"
+          aria-label={m.opp_tag_filter_aria()}
           id={id}
           className="h-11 justify-between gap-2 px-3 font-normal text-fg-subtle lg:h-9 lg:w-44"
         >
@@ -91,8 +92,10 @@ export function TagFilter({
             <Tag className="size-4 shrink-0 text-fg-subtle" />
             <span className="truncate">
               {value.length > 0
-                ? `${value.length} étiquette${value.length > 1 ? 's' : ''}`
-                : 'Étiquette'}
+                ? value.length > 1
+                  ? m.opp_tag_filter_count_plural({ n: value.length })
+                  : m.opp_tag_filter_count_one({ n: value.length })
+                : m.opp_tag_filter_label()}
             </span>
           </span>
           <ChevronDown className="size-4 shrink-0 text-fg-subtle" />
@@ -100,18 +103,18 @@ export function TagFilter({
       </PopoverTrigger>
       <PopoverContent className="w-56 p-0" align="start">
         <Command>
-          <CommandInput placeholder="Rechercher une étiquette..." />
+          <CommandInput placeholder={m.opp_tag_search_placeholder()} />
           <CommandList>
             {catalogue === undefined ? (
               <div className="flex items-center justify-center gap-2 py-6 text-sm text-fg-subtle">
                 <Loader2 className="size-4 animate-spin" />
-                Chargement...
+                {m.opp_loading()}
               </div>
             ) : options.length === 0 ? (
-              <CommandEmpty>Aucune étiquette pour l'instant.</CommandEmpty>
+              <CommandEmpty>{m.opp_tag_empty()}</CommandEmpty>
             ) : (
               <>
-                <CommandEmpty>Aucune étiquette trouvée.</CommandEmpty>
+                <CommandEmpty>{m.opp_tag_no_result()}</CommandEmpty>
                 <CommandGroup>
                   {options.map((opt) => {
                     const isSelected = selectedSet.has(opt.name.toLowerCase())

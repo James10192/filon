@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from '~/components/ui/select'
 import { toast } from '~/components/ui/sonner'
+import { m } from '~/lib/paraglide/messages'
 import { DOC_KINDS, KIND_LABELS, type DocKind } from './document-kind'
 
 /**
@@ -56,17 +57,17 @@ export function DocumentRenameDialog({
     event.preventDefault()
     if (submitting || !document) return
     if (!name.trim()) {
-      setError('Un nom est requis.')
+      setError(m.carnet_name_required())
       return
     }
 
     setSubmitting(true)
     try {
       await update({ id: document._id, name: name.trim(), kind })
-      toast.success('Modifications enregistrees.')
+      toast.success(m.carnet_changes_saved())
       onOpenChange(false)
     } catch {
-      toast.error("Les modifications n'ont pas pu etre enregistrees.")
+      toast.error(m.carnet_changes_save_failed())
     } finally {
       setSubmitting(false)
     }
@@ -76,15 +77,15 @@ export function DocumentRenameDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Modifier le document</DialogTitle>
+          <DialogTitle>{m.carnet_document_dialog_title()}</DialogTitle>
           <DialogDescription>
-            Renommez le document ou changez son type. Le fichier reste inchange.
+            {m.carnet_document_dialog_desc()}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="document-name">Nom</Label>
+            <Label htmlFor="document-name">{m.carnet_field_name()}</Label>
             <Input
               id="document-name"
               value={name}
@@ -92,7 +93,7 @@ export function DocumentRenameDialog({
                 setName(e.target.value)
                 if (error) setError(null)
               }}
-              placeholder="Ex. CV developpeur React 2026"
+              placeholder={m.carnet_document_name_placeholder()}
               aria-invalid={Boolean(error)}
               autoFocus
             />
@@ -100,7 +101,7 @@ export function DocumentRenameDialog({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="document-kind">Type</Label>
+            <Label htmlFor="document-kind">{m.carnet_field_type()}</Label>
             <Select value={kind} onValueChange={(v) => setKind(v as DocKind)}>
               <SelectTrigger id="document-kind">
                 <SelectValue />
@@ -108,7 +109,7 @@ export function DocumentRenameDialog({
               <SelectContent>
                 {DOC_KINDS.map((k) => (
                   <SelectItem key={k} value={k}>
-                    {KIND_LABELS[k]}
+                    {KIND_LABELS[k]()}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -122,11 +123,11 @@ export function DocumentRenameDialog({
               onClick={() => onOpenChange(false)}
               disabled={submitting}
             >
-              Annuler
+              {m.carnet_cancel()}
             </Button>
             <Button type="submit" disabled={submitting}>
               {submitting && <Loader2 className="size-4 animate-spin" />}
-              Enregistrer
+              {m.carnet_save()}
             </Button>
           </DialogFooter>
         </form>

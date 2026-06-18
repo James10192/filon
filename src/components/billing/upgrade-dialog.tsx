@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { Sparkles } from 'lucide-react'
+import { m } from '~/lib/paraglide/messages'
 import {
   FEATURES,
   requiredPlanLabel,
@@ -43,10 +44,9 @@ export function UpgradeDialog({
             </span>
             {copy && <Badge variant="accent">{requiredPlanLabel(copy.requires)}</Badge>}
           </div>
-          <DialogTitle>{copy?.title ?? 'Passer à un palier supérieur'}</DialogTitle>
+          <DialogTitle>{copy?.title ?? m.app_upgrade_generic_title()}</DialogTitle>
           <DialogDescription className="leading-relaxed">
-            {copy?.value ??
-              'Débloquez l’automatisation et l’IA pour prospecter sans limite.'}
+            {copy?.value ?? m.app_upgrade_generic_desc()}
           </DialogDescription>
         </DialogHeader>
 
@@ -54,11 +54,11 @@ export function UpgradeDialog({
           <Button asChild onClick={() => onOpenChange(false)}>
             <Link to="/app/tarifs">
               <Sparkles className="size-4" />
-              Voir les tarifs
+              {m.app_see_pricing()}
             </Link>
           </Button>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Plus tard
+            {m.app_later()}
           </Button>
         </DialogFooter>
       </DialogContent>

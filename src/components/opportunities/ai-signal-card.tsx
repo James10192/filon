@@ -3,6 +3,7 @@ import { useQuery, useAction } from 'convex/react'
 import { Check, Copy, Sparkles, RefreshCw } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
+import { m } from '~/lib/paraglide/messages'
 import { aiCreditMessage } from '~/lib/billing/plan'
 import { Button } from '~/components/ui/button'
 import { Badge } from '~/components/ui/badge'
@@ -46,7 +47,7 @@ export function AiSignalCard({
     if (msg) {
       toast.error(msg, {
         action: {
-          label: 'Voir les forfaits',
+          label: m.opp_ai_see_plans(),
           onClick: () => {
             window.location.href = '/app/tarifs'
           },
@@ -54,7 +55,7 @@ export function AiSignalCard({
       })
       return
     }
-    toast.error("L'analyse IA a échoué. Réessayez dans un instant.")
+    toast.error(m.opp_ai_analyze_error())
   }
 
   async function handleAnalyze(force = false) {
@@ -83,10 +84,10 @@ export function AiSignalCard({
     try {
       await navigator.clipboard.writeText(text)
       setCopied(true)
-      toast.success('Brouillon copié.')
+      toast.success(m.opp_ai_draft_copied())
       setTimeout(() => setCopied(false), 2000)
     } catch {
-      toast.error('La copie a échoué.')
+      toast.error(m.opp_ai_copy_error())
     }
   }
 
@@ -106,15 +107,14 @@ export function AiSignalCard({
         <span className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-accent-soft text-accent">
           <Sparkles className="size-4" />
         </span>
-        <h2 className="text-base font-semibold text-fg">Analyse IA</h2>
+        <h2 className="text-base font-semibold text-fg">{m.opp_ai_title()}</h2>
       </header>
 
       {signal === null ? (
         // État A : pas encore analysé, crédits OK.
         <div className="space-y-4">
           <p className="text-sm text-fg-muted">
-            Laissez l'IA évaluer cette opportunité et vous dire s'il vaut mieux
-            postuler ou démarcher.
+            {m.opp_ai_intro()}
           </p>
           <div className="flex flex-col gap-2">
             <Button
@@ -126,12 +126,12 @@ export function AiSignalCard({
               {analyzing ? (
                 <>
                   <Spinner />
-                  Analyse en cours…
+                  {m.opp_ai_analyzing()}
                 </>
               ) : (
                 <>
                   <Sparkles className="size-4" />
-                  Analyser avec l'IA
+                  {m.opp_ai_analyze_button()}
                 </>
               )}
             </Button>
@@ -148,7 +148,7 @@ export function AiSignalCard({
           </p>
 
           <div className="space-y-3 border-t border-border pt-4">
-            <h3 className="text-sm font-semibold text-fg">Premier message</h3>
+            <h3 className="text-sm font-semibold text-fg">{m.opp_ai_first_message()}</h3>
             {signal.draft ? (
               <div className="space-y-2">
                 <div className="rounded-[var(--radius)] border border-border bg-surface-2 p-3">
@@ -165,19 +165,19 @@ export function AiSignalCard({
                   {copied ? (
                     <>
                       <Check className="size-4" />
-                      Copié
+                      {m.opp_ai_copied()}
                     </>
                   ) : (
                     <>
                       <Copy className="size-4" />
-                      Copier
+                      {m.opp_ai_copy()}
                     </>
                   )}
                 </Button>
               </div>
             ) : locked ? (
               <p className="text-sm text-fg-subtle">
-                Solde de crédits épuisé pour générer un brouillon.
+                {m.opp_ai_credits_empty_draft()}
               </p>
             ) : (
               <div className="flex flex-col gap-2">
@@ -191,12 +191,12 @@ export function AiSignalCard({
                   {drafting ? (
                     <>
                       <Spinner />
-                      Rédaction…
+                      {m.opp_ai_drafting()}
                     </>
                   ) : (
                     <>
                       <Sparkles className="size-4" />
-                      Rédiger le 1er message
+                      {m.opp_ai_draft_button()}
                     </>
                   )}
                 </Button>
@@ -216,7 +216,7 @@ export function AiSignalCard({
                 onClick={() => handleAnalyze(true)}
               >
                 {analyzing ? <Spinner /> : <RefreshCw className="size-4" />}
-                Re-analyser
+                {m.opp_ai_reanalyze()}
               </Button>
             </div>
           )}
@@ -240,16 +240,17 @@ function CreditsHint({ balance }: { balance: number }) {
   if (balance <= 0) return null
   return (
     <p className="text-xs text-fg-subtle">
-      {balance.toLocaleString('fr-FR')}{' '}
-      {balance > 1 ? 'crédits restants' : 'crédit restant'}
+      {balance > 1
+        ? m.opp_ai_credits_remaining_plural({ n: balance.toLocaleString('fr-FR') })
+        : m.opp_ai_credits_remaining_one({ n: balance.toLocaleString('fr-FR') })}
     </p>
   )
 }
 
 const ACTION_META = {
-  apply: { label: 'Postuler', variant: 'success' as const },
-  prospect: { label: 'Démarcher', variant: 'accent' as const },
-  ignore: { label: 'Ignorer', variant: 'outline' as const },
+  apply: { get label() { return m.opp_ai_action_apply() }, variant: 'success' as const },
+  prospect: { get label() { return m.opp_ai_action_prospect() }, variant: 'accent' as const },
+  ignore: { get label() { return m.opp_ai_action_ignore() }, variant: 'outline' as const },
 }
 
 /** Score /100 (anneau coloré) + badge d'action recommandée. */
@@ -302,7 +303,7 @@ function ScoreBlock({
       </div>
       <div className="space-y-1.5">
         <p className="text-xs font-medium uppercase tracking-wide text-fg-subtle">
-          Action recommandée
+          {m.opp_ai_recommended_action()}
         </p>
         <Badge variant={meta.variant}>{meta.label}</Badge>
       </div>
@@ -318,11 +319,10 @@ function AiSignalLocked() {
         <span className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-accent-soft text-accent">
           <Sparkles className="size-4" />
         </span>
-        <h2 className="text-base font-semibold text-fg">Analyse IA</h2>
+        <h2 className="text-base font-semibold text-fg">{m.opp_ai_title()}</h2>
       </header>
       <p className="mb-4 text-sm text-fg-muted">
-        Un score de pertinence, l'action à privilégier (postuler ou démarcher)
-        et un brouillon de premier message, générés pour cette opportunité.
+        {m.opp_ai_locked_desc()}
       </p>
       <Button
         type="button"
@@ -331,7 +331,7 @@ function AiSignalLocked() {
           window.location.href = '/app/tarifs'
         }}
       >
-        Voir les forfaits
+        {m.opp_ai_see_plans()}
       </Button>
     </Shell>
   )

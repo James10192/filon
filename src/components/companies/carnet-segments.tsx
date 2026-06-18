@@ -1,13 +1,15 @@
 import { Building2, User, Users, type LucideIcon } from 'lucide-react'
 import { cn } from '~/lib/utils'
+import { m } from '~/lib/paraglide/messages'
 
 export type CarnetSegment = 'all' | 'companies' | 'people'
 
-const SEGMENTS: { value: CarnetSegment; label: string; icon: LucideIcon }[] = [
-  { value: 'all', label: 'Tout', icon: Users },
-  { value: 'companies', label: 'Entreprises', icon: Building2 },
-  { value: 'people', label: 'Particuliers', icon: User },
-]
+const SEGMENTS: { value: CarnetSegment; label: () => string; icon: LucideIcon }[] =
+  [
+    { value: 'all', label: m.carnet_segment_all, icon: Users },
+    { value: 'companies', label: m.carnet_segment_companies, icon: Building2 },
+    { value: 'people', label: m.carnet_segment_people, icon: User },
+  ]
 
 /**
  * Controle segmente du carnet : bascule entre Tout, Entreprises et
@@ -26,7 +28,7 @@ export function CarnetSegments({
   return (
     <div
       role="tablist"
-      aria-label="Filtrer le carnet"
+      aria-label={m.carnet_filter_aria()}
       className="inline-flex h-9 items-center gap-0.5 self-start rounded-[var(--radius)] border border-border bg-surface-2 p-0.5"
     >
       {SEGMENTS.map((segment) => {
@@ -49,7 +51,7 @@ export function CarnetSegments({
             <Icon
               className={cn('size-4', active ? 'text-accent' : 'text-fg-subtle')}
             />
-            <span className="hidden sm:inline">{segment.label}</span>
+            <span className="hidden sm:inline">{segment.label()}</span>
             <span
               className={cn(
                 'rounded-full px-1.5 text-xs font-medium tabular-nums',

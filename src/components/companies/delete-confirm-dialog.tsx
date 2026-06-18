@@ -12,6 +12,7 @@ import {
 } from '~/components/ui/alert-dialog'
 import { cn } from '~/lib/utils'
 import { buttonVariants } from '~/components/ui/button'
+import { m } from '~/lib/paraglide/messages'
 
 /**
  * Confirmation de suppression generique (AlertDialog Radix, jamais window.confirm).
@@ -51,7 +52,9 @@ export function DeleteConfirmDialog({
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={busy}>Annuler</AlertDialogCancel>
+          <AlertDialogCancel disabled={busy}>
+            {m.carnet_cancel()}
+          </AlertDialogCancel>
           <AlertDialogAction
             onClick={confirm}
             disabled={busy}
@@ -61,7 +64,7 @@ export function DeleteConfirmDialog({
             )}
           >
             {busy && <Loader2 className="size-4 animate-spin" />}
-            Supprimer definitivement
+            {m.carnet_delete_permanently()}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

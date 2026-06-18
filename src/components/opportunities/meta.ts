@@ -5,6 +5,7 @@ import {
   Rocket,
   type LucideIcon,
 } from 'lucide-react'
+import { m } from '~/lib/paraglide/messages'
 
 /**
  * Référentiel partagé des opportunités (stages, types) + helpers de formatage.
@@ -60,47 +61,75 @@ export const STAGES: Stage[] = [
 
 export const STAGE_META: Record<
   Stage,
-  { label: string; short: string; dot: string; chip: string }
+  { readonly label: string; readonly short: string; dot: string; chip: string }
 > = {
   lead: {
-    label: 'Piste',
-    short: 'Piste',
+    get label() {
+      return m.opp_stage_lead()
+    },
+    get short() {
+      return m.opp_stage_lead_short()
+    },
     dot: 'bg-stage-lead',
     chip: 'bg-stage-lead-soft text-stage-lead',
   },
   contacted: {
-    label: 'Contacté',
-    short: 'Contacté',
+    get label() {
+      return m.opp_stage_contacted()
+    },
+    get short() {
+      return m.opp_stage_contacted_short()
+    },
     dot: 'bg-stage-contacted',
     chip: 'bg-stage-contacted-soft text-stage-contacted',
   },
   applied: {
-    label: 'Candidature envoyée',
-    short: 'Envoyée',
+    get label() {
+      return m.opp_stage_applied()
+    },
+    get short() {
+      return m.opp_stage_applied_short()
+    },
     dot: 'bg-stage-applied',
     chip: 'bg-stage-applied-soft text-stage-applied',
   },
   interview: {
-    label: 'Entretien',
-    short: 'Entretien',
+    get label() {
+      return m.opp_stage_interview()
+    },
+    get short() {
+      return m.opp_stage_interview_short()
+    },
     dot: 'bg-stage-interview',
     chip: 'bg-stage-interview-soft text-stage-interview',
   },
   negotiation: {
-    label: 'Négociation',
-    short: 'Négo.',
+    get label() {
+      return m.opp_stage_negotiation()
+    },
+    get short() {
+      return m.opp_stage_negotiation_short()
+    },
     dot: 'bg-stage-negotiation',
     chip: 'bg-stage-negotiation-soft text-stage-negotiation',
   },
   won: {
-    label: 'Gagné',
-    short: 'Gagné',
+    get label() {
+      return m.opp_stage_won()
+    },
+    get short() {
+      return m.opp_stage_won_short()
+    },
     dot: 'bg-stage-won',
     chip: 'bg-stage-won-soft text-stage-won',
   },
   lost: {
-    label: 'Perdu',
-    short: 'Perdu',
+    get label() {
+      return m.opp_stage_lost()
+    },
+    get short() {
+      return m.opp_stage_lost_short()
+    },
     dot: 'bg-stage-lost',
     chip: 'bg-stage-lost-soft text-stage-lost',
   },
@@ -108,29 +137,45 @@ export const STAGE_META: Record<
 
 export const TYPE_META: Record<
   OppType,
-  { label: string; long: string; icon: LucideIcon; fg: string }
+  { readonly label: string; readonly long: string; icon: LucideIcon; fg: string }
 > = {
   job_offer: {
-    label: 'Candidature',
-    long: 'Candidature à une offre',
+    get label() {
+      return m.opp_type_job_offer()
+    },
+    get long() {
+      return m.opp_type_job_offer_long()
+    },
     icon: Briefcase,
     fg: 'text-type-application',
   },
   spontaneous: {
-    label: 'Proposition',
-    long: 'Proposition spontanée',
+    get label() {
+      return m.opp_type_spontaneous()
+    },
+    get long() {
+      return m.opp_type_spontaneous_long()
+    },
     icon: Send,
     fg: 'text-type-pitch',
   },
   prospect: {
-    label: 'Prospection',
-    long: 'Prospection freelance',
+    get label() {
+      return m.opp_type_prospect()
+    },
+    get long() {
+      return m.opp_type_prospect_long()
+    },
     icon: Radar,
     fg: 'text-type-prospect',
   },
   mission: {
-    label: 'Mission',
-    long: 'Mission en cours',
+    get label() {
+      return m.opp_type_mission()
+    },
+    get long() {
+      return m.opp_type_mission_long()
+    },
     icon: Rocket,
     fg: 'text-type-mission',
   },
@@ -142,21 +187,33 @@ export const TYPE_META: Record<
  */
 export const TARGET_TYPE_META: Record<
   TargetType,
-  { label: string; hint: string; order: number }
+  { readonly label: string; readonly hint: string; order: number }
 > = {
   company: {
-    label: 'Entreprise',
-    hint: 'Un employeur ou un client potentiel',
+    get label() {
+      return m.opp_target_company()
+    },
+    get hint() {
+      return m.opp_target_company_hint()
+    },
     order: 0,
   },
   person: {
-    label: 'Particulier',
-    hint: 'Une personne suivie directement (prospect, parrainage)',
+    get label() {
+      return m.opp_target_person()
+    },
+    get hint() {
+      return m.opp_target_person_hint()
+    },
     order: 1,
   },
   none: {
-    label: 'Aucune',
-    hint: 'Pas de cible rattachée pour l’instant',
+    get label() {
+      return m.opp_target_none()
+    },
+    get hint() {
+      return m.opp_target_none_hint()
+    },
     order: 2,
   },
 }
@@ -173,17 +230,62 @@ export const TARGET_TYPES: TargetType[] = (
  */
 export const SOURCE_META: Record<
   SourceChannel,
-  { label: string; order: number }
+  { readonly label: string; order: number }
 > = {
-  job_board: { label: 'En ligne / Job board', order: 0 },
-  referral: { label: 'Recommandation', order: 1 },
-  event: { label: 'Événement', order: 2 },
-  networking: { label: 'Networking', order: 3 },
-  salon: { label: 'Salon', order: 4 },
-  social: { label: 'Réseaux sociaux', order: 5 },
-  inbound: { label: 'Entrant', order: 6 },
-  cold: { label: 'Démarchage à froid', order: 7 },
-  other: { label: 'Autre', order: 8 },
+  job_board: {
+    get label() {
+      return m.opp_source_job_board()
+    },
+    order: 0,
+  },
+  referral: {
+    get label() {
+      return m.opp_source_referral()
+    },
+    order: 1,
+  },
+  event: {
+    get label() {
+      return m.opp_source_event()
+    },
+    order: 2,
+  },
+  networking: {
+    get label() {
+      return m.opp_source_networking()
+    },
+    order: 3,
+  },
+  salon: {
+    get label() {
+      return m.opp_source_salon()
+    },
+    order: 4,
+  },
+  social: {
+    get label() {
+      return m.opp_source_social()
+    },
+    order: 5,
+  },
+  inbound: {
+    get label() {
+      return m.opp_source_inbound()
+    },
+    order: 6,
+  },
+  cold: {
+    get label() {
+      return m.opp_source_cold()
+    },
+    order: 7,
+  },
+  other: {
+    get label() {
+      return m.opp_source_other()
+    },
+    order: 8,
+  },
 }
 
 export const SOURCE_CHANNELS: SourceChannel[] = (
@@ -194,23 +296,62 @@ export const SOURCE_CHANNELS: SourceChannel[] = (
 
 export const PRIORITY_META: Record<
   Priority,
-  { label: string; chip: string }
+  { readonly label: string; chip: string }
 > = {
-  low: { label: 'Basse', chip: 'bg-surface-2 text-fg-muted' },
-  medium: { label: 'Moyenne', chip: 'bg-info-soft text-info' },
-  high: { label: 'Haute', chip: 'bg-warning-soft text-warning' },
+  low: {
+    get label() {
+      return m.opp_priority_low()
+    },
+    chip: 'bg-surface-2 text-fg-muted',
+  },
+  medium: {
+    get label() {
+      return m.opp_priority_medium()
+    },
+    chip: 'bg-info-soft text-info',
+  },
+  high: {
+    get label() {
+      return m.opp_priority_high()
+    },
+    chip: 'bg-warning-soft text-warning',
+  },
 }
 
 export const ACTIVITY_META: Record<
   ActivityKind,
-  { label: string }
+  { readonly label: string }
 > = {
-  note: { label: 'Note' },
-  email: { label: 'E-mail' },
-  call: { label: 'Appel' },
-  interview: { label: 'Entretien' },
-  status_change: { label: "Changement d'étape" },
-  other: { label: 'Autre' },
+  note: {
+    get label() {
+      return m.opp_activity_note()
+    },
+  },
+  email: {
+    get label() {
+      return m.opp_activity_email()
+    },
+  },
+  call: {
+    get label() {
+      return m.opp_activity_call()
+    },
+  },
+  interview: {
+    get label() {
+      return m.opp_activity_interview()
+    },
+  },
+  status_change: {
+    get label() {
+      return m.opp_activity_status_change()
+    },
+  },
+  other: {
+    get label() {
+      return m.opp_activity_other()
+    },
+  },
 }
 
 /** Date ISO -> libellé court FR (ex. « 13 juin 2026 »). */

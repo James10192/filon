@@ -2,6 +2,7 @@ import * as React from 'react'
 import { useMutation, useQuery } from 'convex/react'
 import { Check, ChevronDown, Loader2, Plus, X } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
+import { m } from '~/lib/paraglide/messages'
 import { cn } from '~/lib/utils'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
@@ -34,8 +35,8 @@ export function TagCombobox({
   onChange,
   id,
   disabled = false,
-  placeholder = 'Choisir des étiquettes',
-  searchPlaceholder = 'Rechercher ou créer une étiquette...',
+  placeholder,
+  searchPlaceholder,
 }: {
   /** Noms d'etiquettes selectionnes (source de verite cote parent). */
   value: string[]
@@ -45,6 +46,9 @@ export function TagCombobox({
   placeholder?: string
   searchPlaceholder?: string
 }) {
+  const resolvedPlaceholder = placeholder ?? m.shell_tags_placeholder()
+  const resolvedSearchPlaceholder =
+    searchPlaceholder ?? m.shell_tags_search_placeholder()
   const [open, setOpen] = React.useState(false)
   const [query, setQuery] = React.useState('')
   const [creating, setCreating] = React.useState(false)
@@ -122,7 +126,7 @@ export function TagCombobox({
                 type="button"
                 onClick={() => removeTag(name)}
                 disabled={disabled}
-                aria-label={`Retirer l'étiquette ${name}`}
+                aria-label={m.shell_tags_remove({ name })}
                 className="grid size-4 place-items-center rounded-[var(--radius-sm)] text-accent/70 transition-colors hover:bg-accent/15 hover:text-accent"
               >
                 <X className="size-3" />
@@ -145,8 +149,10 @@ export function TagCombobox({
           >
             <span className="truncate">
               {value.length > 0
-                ? `${value.length} étiquette${value.length > 1 ? 's' : ''}`
-                : placeholder}
+                ? value.length > 1
+                  ? m.shell_tags_count_plural({ n: value.length })
+                  : m.shell_tags_count_singular({ n: value.length })
+                : resolvedPlaceholder}
             </span>
             <ChevronDown className="size-4 shrink-0 text-fg-subtle" />
           </Button>
@@ -161,7 +167,7 @@ export function TagCombobox({
             }
           >
             <CommandInput
-              placeholder={searchPlaceholder}
+              placeholder={resolvedSearchPlaceholder}
               value={query}
               onValueChange={setQuery}
             />
@@ -169,12 +175,12 @@ export function TagCombobox({
               {catalogue === undefined ? (
                 <div className="flex items-center justify-center gap-2 py-6 text-sm text-fg-subtle">
                   <Loader2 className="size-4 animate-spin" />
-                  Chargement...
+                  {m.shell_loading()}
                 </div>
               ) : (
                 <>
                   {!canCreate && (
-                    <CommandEmpty>Aucune étiquette trouvée.</CommandEmpty>
+                    <CommandEmpty>{m.shell_tags_empty()}</CommandEmpty>
                   )}
                   {options.length > 0 && (
                     <CommandGroup>
@@ -220,7 +226,7 @@ export function TagCombobox({
                           <Plus className="size-4" />
                         )}
                         <span className="truncate">
-                          Créer «&nbsp;{trimmed}&nbsp;»
+                          {m.shell_tags_create({ name: trimmed })}
                         </span>
                       </CommandItem>
                     </CommandGroup>

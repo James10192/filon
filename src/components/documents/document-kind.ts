@@ -6,6 +6,7 @@ import {
   File,
   type LucideIcon,
 } from 'lucide-react'
+import { m } from '~/lib/paraglide/messages'
 
 /** Types de document, alignes sur le contrat Convex (`DocKind`). */
 export type DocKind = 'cv' | 'lettre' | 'portfolio' | 'contrat' | 'autre'
@@ -18,13 +19,13 @@ export const DOC_KINDS: DocKind[] = [
   'autre',
 ]
 
-/** Libelles FR par type, pour les filtres, chips et toasts. */
-export const KIND_LABELS: Record<DocKind, string> = {
-  cv: 'CV',
-  lettre: 'Lettre',
-  portfolio: 'Portfolio',
-  contrat: 'Contrat',
-  autre: 'Autre',
+/** Libelles par type, pour les filtres, chips et toasts (i18n). */
+export const KIND_LABELS: Record<DocKind, () => string> = {
+  cv: m.carnet_kind_cv,
+  lettre: m.carnet_kind_lettre,
+  portfolio: m.carnet_kind_portfolio,
+  contrat: m.carnet_kind_contrat,
+  autre: m.carnet_kind_autre,
 }
 
 /** Icone lucide associee a chaque type, pour les tuiles et les en-tetes. */

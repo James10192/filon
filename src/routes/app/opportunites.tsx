@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { Id } from '../../../convex/_generated/dataModel'
+import { m } from '~/lib/paraglide/messages'
 import {
   OPPORTUNITY_VIEWS,
   type OpportunityView,
@@ -23,7 +24,7 @@ export const Route = createFileRoute('/app/opportunites')({
     return id ? { view, id } : { view }
   },
   component: OpportunitesPage,
-  head: () => ({ meta: [{ title: 'Opportunités · Filon' }] }),
+  head: () => ({ meta: [{ title: m.opp_page_title() }] }),
 })
 
 function OpportunitesPage() {

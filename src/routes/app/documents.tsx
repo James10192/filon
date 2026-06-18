@@ -8,6 +8,7 @@ import { Button } from '~/components/ui/button'
 import { Skeleton } from '~/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
 import { PageToolbar } from '~/components/app/page-toolbar'
+import { m } from '~/lib/paraglide/messages'
 import { DocumentCard } from '~/components/documents/document-card'
 import { DocumentRenameDialog } from '~/components/documents/document-rename-dialog'
 import { DocumentUpload } from '~/components/documents/document-upload'
@@ -70,8 +71,8 @@ function DocumentsPage() {
   return (
     <div className="flex flex-col">
       <PageToolbar
-        title="Documents"
-        subtitle="Votre bibliothèque de CV, lettres, portfolios et contrats, et leurs rattachements à vos opportunités, propositions et contacts."
+        title={m.carnet_documents_page_title()}
+        subtitle={m.carnet_documents_page_subtitle()}
       />
 
       <Tabs
@@ -81,11 +82,11 @@ function DocumentsPage() {
         <TabsList className="w-full justify-start overflow-x-auto sm:w-auto">
           <TabsTrigger value="library">
             <Library className="size-4" />
-            Bibliothèque
+            {m.carnet_tab_library()}
           </TabsTrigger>
           <TabsTrigger value="attachments">
             <Link2 className="size-4" />
-            Par rattachement
+            {m.carnet_tab_attachments()}
           </TabsTrigger>
         </TabsList>
 
@@ -100,12 +101,12 @@ function DocumentsPage() {
           >
             <TabsList className="w-full justify-start overflow-x-auto sm:w-auto">
               <TabsTrigger value="all">
-                Tous
+                {m.carnet_tab_all()}
                 <Count n={counts.all} active={tab === 'all'} />
               </TabsTrigger>
               {DOC_KINDS.map((kind) => (
                 <TabsTrigger key={kind} value={kind}>
-                  {KIND_LABELS[kind]}
+                  {KIND_LABELS[kind]()}
                   <Count n={counts[kind]} active={tab === kind} />
                 </TabsTrigger>
               ))}
@@ -163,11 +164,13 @@ function DocumentsBody({
       <div className="flex flex-col items-center gap-2 rounded-[var(--radius-lg)] border border-dashed border-border bg-surface-2/40 px-6 py-12 text-center">
         <p className="text-sm font-medium text-fg">
           {tab === 'all'
-            ? 'Aucun document ajoute.'
-            : `Aucun document de type « ${KIND_LABELS[tab as DocKind]} ».`}
+            ? m.carnet_no_document_added()
+            : m.carnet_no_document_of_type({
+                type: KIND_LABELS[tab as DocKind](),
+              })}
         </p>
         <p className="max-w-sm text-sm text-fg-muted">
-          Glissez un fichier dans la zone ci-dessus pour l'ajouter.
+          {m.carnet_drop_file_to_add()}
         </p>
       </div>
     )
@@ -204,12 +207,10 @@ function EmptyState() {
       </span>
       <div className="flex flex-col gap-1.5">
         <h2 className="text-lg font-semibold text-fg">
-          Aucun document pour l'instant
+          {m.carnet_documents_empty_title()}
         </h2>
         <p className="mx-auto max-w-md text-sm text-fg-muted">
-          Gardez le bon CV et la bonne lettre face a chaque opportunite.
-          Televersez vos fichiers depuis la zone ci-dessus pour demarrer votre
-          bibliotheque.
+          {m.carnet_documents_empty_desc()}
         </p>
       </div>
     </div>
@@ -250,10 +251,10 @@ export function DocumentsError({ onRetry }: { onRetry: () => void }) {
     <div className="flex flex-col items-center gap-3 rounded-[var(--radius-lg)] border border-danger/40 bg-danger-soft px-6 py-10 text-center">
       <AlertTriangle className="size-6 text-danger" />
       <p className="text-sm font-medium text-danger">
-        Impossible de charger les documents.
+        {m.carnet_documents_load_failed()}
       </p>
       <Button variant="outline" onClick={onRetry}>
-        Reessayer
+        {m.carnet_retry()}
       </Button>
     </div>
   )

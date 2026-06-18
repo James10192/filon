@@ -3,6 +3,7 @@ import { useQuery } from 'convex/react'
 import { Plus, Target } from 'lucide-react'
 import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
+import { m } from '~/lib/paraglide/messages'
 import { Button } from '~/components/ui/button'
 import {
   Select,
@@ -110,28 +111,28 @@ export function ListView({
     if (stage !== 'all') {
       out.push({
         key: 'stage',
-        label: `Étape : ${STAGE_META[stage].label}`,
+        label: m.opp_chip_stage({ value: STAGE_META[stage].label }),
         onRemove: () => onFiltersChange({ ...filters, stage: 'all' }),
       })
     }
     if (type !== 'all') {
       out.push({
         key: 'type',
-        label: `Type : ${TYPE_META[type].label}`,
+        label: m.opp_chip_type({ value: TYPE_META[type].label }),
         onRemove: () => onFiltersChange({ ...filters, type: 'all' }),
       })
     }
     if (priority !== 'all') {
       out.push({
         key: 'priority',
-        label: `Priorité : ${PRIORITY_META[priority].label}`,
+        label: m.opp_chip_priority({ value: PRIORITY_META[priority].label }),
         onRemove: () => onFiltersChange({ ...filters, priority: 'all' }),
       })
     }
     for (const tag of tags) {
       out.push({
         key: `tag:${tag}`,
-        label: `Étiquette : ${tag}`,
+        label: m.opp_chip_tag({ value: tag }),
         onRemove: () =>
           onFiltersChange({
             ...filters,
@@ -143,7 +144,7 @@ export function ListView({
     if (s) {
       out.push({
         key: 'search',
-        label: `« ${s} »`,
+        label: m.opp_chip_search({ value: s }),
         onRemove: () => onFiltersChange({ ...filters, search: '' }),
       })
     }
@@ -158,8 +159,8 @@ export function ListView({
       <DataTableToolbar
         search={search}
         onSearchChange={(v) => onFiltersChange({ ...filters, search: v })}
-        searchPlaceholder="Rechercher une opportunité..."
-        searchLabel="Rechercher une opportunité"
+        searchPlaceholder={m.opp_search_placeholder()}
+        searchLabel={m.opp_search_label()}
         chips={chips}
         onClearAll={reset}
         actions={
@@ -176,11 +177,11 @@ export function ListView({
             onFiltersChange({ ...filters, stage: v as StageFilter })
           }
         >
-          <SelectTrigger className="lg:w-40" aria-label="Filtrer par étape">
-            <SelectValue placeholder="Étape" />
+          <SelectTrigger className="lg:w-40" aria-label={m.opp_filter_stage_aria()}>
+            <SelectValue placeholder={m.opp_col_stage()} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Toutes les étapes</SelectItem>
+            <SelectItem value="all">{m.opp_filter_all_stages()}</SelectItem>
             {STAGES.map((s) => (
               <SelectItem key={s} value={s}>
                 {STAGE_META[s].label}
@@ -195,11 +196,11 @@ export function ListView({
             onFiltersChange({ ...filters, type: v as TypeFilter })
           }
         >
-          <SelectTrigger className="lg:w-36" aria-label="Filtrer par type">
-            <SelectValue placeholder="Type" />
+          <SelectTrigger className="lg:w-36" aria-label={m.opp_filter_type_aria()}>
+            <SelectValue placeholder={m.opp_form_type_label()} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Tous les types</SelectItem>
+            <SelectItem value="all">{m.opp_filter_all_types()}</SelectItem>
             {TYPE_OPTIONS.map(([key, meta]) => (
               <SelectItem key={key} value={key}>
                 {meta.label}
@@ -214,11 +215,11 @@ export function ListView({
             onFiltersChange({ ...filters, priority: v as PriorityFilter })
           }
         >
-          <SelectTrigger className="lg:w-36" aria-label="Filtrer par priorité">
-            <SelectValue placeholder="Priorité" />
+          <SelectTrigger className="lg:w-36" aria-label={m.opp_filter_priority_aria()}>
+            <SelectValue placeholder={m.opp_col_priority()} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Toutes priorités</SelectItem>
+            <SelectItem value="all">{m.opp_filter_all_priorities()}</SelectItem>
             {PRIORITY_OPTIONS.map(([key, meta]) => (
               <SelectItem key={key} value={key}>
                 {meta.label}
@@ -239,23 +240,23 @@ export function ListView({
         hasActiveFilters ? (
           <DataTableEmpty
             icon={Target}
-            title="Aucun résultat"
-            message="Aucune opportunité ne correspond à ces filtres."
+            title={m.opp_empty_filtered_title()}
+            message={m.opp_empty_filtered_message()}
             action={
               <Button variant="outline" onClick={reset}>
-                Réinitialiser les filtres
+                {m.opp_reset_filters()}
               </Button>
             }
           />
         ) : (
           <DataTableEmpty
             icon={Target}
-            title="Aucune opportunité pour l'instant"
-            message="Ajoutez votre première piste pour démarrer le suivi."
+            title={m.opp_empty_title()}
+            message={m.opp_empty_message()}
             action={
               <Button onClick={onCreate}>
                 <Plus className="size-4" />
-                Ajouter une opportunité
+                {m.opp_add_opportunity()}
               </Button>
             }
           />

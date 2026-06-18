@@ -1,6 +1,7 @@
 import type { ColumnDef } from '@tanstack/react-table'
 import { Building2, Users } from 'lucide-react'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
+import { m } from '~/lib/paraglide/messages'
 import { Badge } from '~/components/ui/badge'
 import { SortableHeader } from '~/components/data-table'
 import { ProposalRowActions } from './proposal-row-actions'
@@ -42,7 +43,7 @@ export function buildProposalColumns({
     {
       id: 'title',
       accessorKey: 'title',
-      header: ({ column }) => <SortableHeader column={column} label="Proposition" />,
+      header: ({ column }) => <SortableHeader column={column} label={m.prop_col_proposal()} />,
       sortingFn: (a, b) =>
         a.original.title.localeCompare(b.original.title, 'fr', {
           sensitivity: 'base',
@@ -67,7 +68,7 @@ export function buildProposalColumns({
                   <span className="truncate">{p.companyName}</span>
                 </>
               ) : (
-                'Sans entreprise cible'
+                m.prop_no_target_company()
               )}
             </span>
           </div>
@@ -77,7 +78,7 @@ export function buildProposalColumns({
     {
       id: 'status',
       accessorKey: 'status',
-      header: ({ column }) => <SortableHeader column={column} label="Statut" />,
+      header: ({ column }) => <SortableHeader column={column} label={m.prop_col_status()} />,
       sortingFn: (a, b) =>
         STATUS_RANK[a.original.status as ProposalStatus] -
         STATUS_RANK[b.original.status as ProposalStatus],
@@ -89,7 +90,7 @@ export function buildProposalColumns({
     {
       id: 'amount',
       accessorKey: 'amount',
-      header: ({ column }) => <SortableHeader column={column} label="Montant" />,
+      header: ({ column }) => <SortableHeader column={column} label={m.prop_col_amount()} />,
       sortingFn: (a, b) => (a.original.amount ?? -1) - (b.original.amount ?? -1),
       meta: {
         headerClassName: 'hidden lg:table-cell',
@@ -107,7 +108,7 @@ export function buildProposalColumns({
     {
       id: 'sentAt',
       accessorKey: 'sentAt',
-      header: ({ column }) => <SortableHeader column={column} label="Envoyée le" />,
+      header: ({ column }) => <SortableHeader column={column} label={m.prop_col_sent_at()} />,
       sortingFn: (a, b) => {
         const av = a.original.sentAt
           ? new Date(a.original.sentAt).getTime()
@@ -133,7 +134,7 @@ export function buildProposalColumns({
     {
       id: 'actions',
       enableSorting: false,
-      header: () => <span className="sr-only">Actions</span>,
+      header: () => <span className="sr-only">{m.prop_col_actions()}</span>,
       meta: { headerClassName: 'w-12', cellClassName: 'w-12' },
       cell: ({ row }) => (
         <ProposalRowActions

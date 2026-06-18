@@ -1,3 +1,4 @@
+import { m } from '~/lib/paraglide/messages'
 import { STAGE_COLOR_VAR, formatCompactValue, formatNumber, type Stage } from './pipeline-meta'
 
 type FunnelDatum = {
@@ -32,18 +33,18 @@ export function FunnelTooltip({ active, payload }: Props) {
         <span className="text-sm font-medium text-fg">{datum.label}</span>
       </div>
       <div className="mt-1.5 flex items-baseline justify-between gap-4">
-        <span className="text-xs text-fg-muted">Opportunités</span>
+        <span className="text-xs text-fg-muted">{m.dash_tooltip_opportunities()}</span>
         <span className="assay text-sm font-semibold text-fg">
           {formatNumber(datum.count)}
         </span>
       </div>
       <div className="mt-0.5 flex items-baseline justify-between gap-4">
-        <span className="text-xs text-fg-muted">Valeur</span>
+        <span className="text-xs text-fg-muted">{m.dash_tooltip_value()}</span>
         <span className="assay text-sm text-fg">
           {datum.value > 0 ? `${formatCompactValue(datum.value)} XOF` : '·'}
         </span>
       </div>
-      <p className="mt-1.5 text-xs text-fg-subtle">Cliquez pour voir le pipeline.</p>
+      <p className="mt-1.5 text-xs text-fg-subtle">{m.dash_tooltip_click_hint()}</p>
     </div>
   )
 }

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useMutation } from 'convex/react'
 import { Loader2, Plus } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
+import { m } from '~/lib/paraglide/messages'
 import { Button } from '~/components/ui/button'
 import {
   Dialog,
@@ -68,11 +69,11 @@ export function QuickAddDialog({
     try {
       // Args construits dynamiquement : jamais d'undefined transmis à Convex.
       await create({ title: trimmed, type, stage })
-      toast.success('Opportunité ajoutée.')
+      toast.success(m.opp_added())
       onOpenChange(false)
     } catch (error) {
       if (!handlePlanLimit(error)) {
-        toast.error("Impossible d'ajouter l'opportunité.")
+        toast.error(m.opp_add_error())
       }
       setSubmitting(false)
     }
@@ -82,22 +83,21 @@ export function QuickAddDialog({
     <Dialog open={open} onOpenChange={(v) => !submitting && onOpenChange(v)}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Ajouter une opportunité</DialogTitle>
+          <DialogTitle>{m.opp_add_opportunity()}</DialogTitle>
           <DialogDescription>
-            Donnez un intitulé et un type. Vous pourrez compléter les détails
-            ensuite.
+            {m.opp_quick_add_desc()}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="grid gap-4">
           <div className="grid gap-1.5">
-            <Label htmlFor="quick-add-title">Intitulé</Label>
+            <Label htmlFor="quick-add-title">{m.opp_form_title_label()}</Label>
             <Input
               id="quick-add-title"
               ref={titleRef}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Ex. Développeur React senior"
+              placeholder={m.opp_form_title_placeholder()}
               autoComplete="off"
               required
             />
@@ -105,13 +105,13 @@ export function QuickAddDialog({
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-1.5">
-              <Label htmlFor="quick-add-type">Type</Label>
+              <Label htmlFor="quick-add-type">{m.opp_form_type_label()}</Label>
               <Select
                 value={type}
                 onValueChange={(v) => setType(v as OppType)}
               >
                 <SelectTrigger id="quick-add-type">
-                  <SelectValue placeholder="Choisir un type" />
+                  <SelectValue placeholder={m.opp_form_type_placeholder()} />
                 </SelectTrigger>
                 <SelectContent>
                   {TYPE_KEYS.map((key) => (
@@ -124,13 +124,13 @@ export function QuickAddDialog({
             </div>
 
             <div className="grid gap-1.5">
-              <Label htmlFor="quick-add-stage">Étape</Label>
+              <Label htmlFor="quick-add-stage">{m.opp_form_stage_label()}</Label>
               <Select
                 value={stage}
                 onValueChange={(v) => setStage(v as Stage)}
               >
                 <SelectTrigger id="quick-add-stage">
-                  <SelectValue placeholder="Choisir une étape" />
+                  <SelectValue placeholder={m.opp_form_stage_placeholder()} />
                 </SelectTrigger>
                 <SelectContent>
                   {STAGE_ORDER.map((key) => (
@@ -150,7 +150,7 @@ export function QuickAddDialog({
               onClick={() => onOpenChange(false)}
               disabled={submitting}
             >
-              Annuler
+              {m.opp_cancel()}
             </Button>
             <Button type="submit" disabled={submitting || !title.trim()}>
               {submitting ? (
@@ -158,7 +158,7 @@ export function QuickAddDialog({
               ) : (
                 <Plus className="size-4" />
               )}
-              Ajouter
+              {m.opp_add()}
             </Button>
           </DialogFooter>
         </form>

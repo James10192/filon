@@ -3,6 +3,7 @@ import { useMutation } from 'convex/react'
 import { Check, Loader2, Target, Trash2 } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
+import { m } from '~/lib/paraglide/messages'
 import { cn } from '~/lib/utils'
 import { toast } from '~/components/ui/sonner'
 import { Button } from '~/components/ui/button'
@@ -47,10 +48,10 @@ export function FollowupItem({ followup }: { followup: Followup }) {
     try {
       await toggle({ id: followup._id, done: next })
       toast.success(
-        next ? 'Relance marquée comme faite.' : 'Relance rouverte.',
+        next ? m.dash_followup_toast_done() : m.dash_followup_toast_reopened(),
       )
     } catch {
-      toast.error('Action impossible.')
+      toast.error(m.dash_followup_toast_error())
     } finally {
       setBusy(false)
     }
@@ -60,10 +61,10 @@ export function FollowupItem({ followup }: { followup: Followup }) {
     setRemoving(true)
     try {
       await remove({ id: followup._id })
-      toast.success('Relance supprimée.')
+      toast.success(m.dash_followup_toast_removed())
       setConfirmOpen(false)
     } catch {
-      toast.error('La suppression a échoué.')
+      toast.error(m.dash_followup_toast_remove_error())
     } finally {
       setRemoving(false)
     }
@@ -110,7 +111,7 @@ export function FollowupItem({ followup }: { followup: Followup }) {
           <Button
             variant="ghost"
             size="icon-sm"
-            aria-label="Supprimer la relance"
+            aria-label={m.dash_followup_remove_aria()}
             className="shrink-0 text-fg-subtle opacity-0 transition-opacity hover:text-danger focus-visible:opacity-100 group-hover:opacity-100"
           >
             <Trash2 className="size-4" />
@@ -118,14 +119,13 @@ export function FollowupItem({ followup }: { followup: Followup }) {
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Supprimer cette relance ?</AlertDialogTitle>
+            <AlertDialogTitle>{m.dash_followup_remove_confirm_title()}</AlertDialogTitle>
             <AlertDialogDescription>
-              « {followup.label} » sera définitivement supprimée. Cette action
-              est irréversible.
+              {m.dash_followup_remove_confirm_desc({ label: followup.label })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={removing}>Annuler</AlertDialogCancel>
+            <AlertDialogCancel disabled={removing}>{m.dash_followup_cancel()}</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault()
@@ -135,7 +135,7 @@ export function FollowupItem({ followup }: { followup: Followup }) {
               className="bg-danger text-white hover:bg-danger/90"
             >
               {removing && <Loader2 className="size-4 animate-spin" />}
-              Supprimer définitivement
+              {m.dash_followup_remove_confirm_cta()}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -159,7 +159,7 @@ function CheckButton({
       onClick={onToggle}
       disabled={busy}
       aria-pressed={done}
-      aria-label={done ? 'Marquer comme non faite' : 'Marquer comme faite'}
+      aria-label={done ? m.dash_followup_mark_undone_aria() : m.dash_followup_mark_done_aria()}
       className={cn(
         'mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border transition-colors',
         done

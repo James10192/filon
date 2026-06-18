@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { Area, AreaChart } from 'recharts'
 import { api } from '../../../convex/_generated/api'
+import { m } from '~/lib/paraglide/messages'
 import { cn } from '~/lib/utils'
 import { Skeleton } from '~/components/ui/skeleton'
 import { ChartContainer, type ChartConfig } from '~/components/ui/chart'
@@ -48,42 +49,48 @@ export function KpiRow({ summary }: { summary: Summary }) {
 
   const items: KpiCardProps[] = [
     {
-      label: 'Pipeline actif',
+      label: m.dash_kpi_active_pipeline(),
       value: formatNumber(summary.activeCount),
       icon: Briefcase,
       series: trend.opportunities,
       tone: 'neutral',
-      hint: `${formatNumber(sumSeries(trend.opportunities))} créées · 8 sem.`,
+      hint: m.dash_kpi_active_pipeline_hint({ n: formatNumber(sumSeries(trend.opportunities)) }),
     },
     {
-      label: 'Gagnées',
+      label: m.dash_kpi_won(),
       value: formatNumber(summary.wonCount),
       icon: Trophy,
       series: trend.won,
       tone: 'success',
-      hint: `${formatNumber(summary.lostCount)} perdue${summary.lostCount > 1 ? 's' : ''}`,
+      hint:
+        summary.lostCount > 1
+          ? m.dash_kpi_lost_plural({ n: formatNumber(summary.lostCount) })
+          : m.dash_kpi_lost_singular({ n: formatNumber(summary.lostCount) }),
     },
     {
-      label: 'Propositions',
+      label: m.dash_kpi_proposals(),
       value: formatNumber(summary.proposalsSent),
       icon: Send,
       series: trend.proposals,
       tone: 'accent',
-      hint: 'envoyées · 8 sem.',
+      hint: m.dash_kpi_proposals_hint(),
     },
     {
-      label: 'Conversion',
+      label: m.dash_kpi_conversion(),
       value: formatPercent(summary.winRate),
       icon: TrendingUp,
       series: trend.won,
       tone: summary.winRate >= 0.5 ? 'success' : 'neutral',
-      hint: `${formatNumber(summary.wonCount)} / ${formatNumber(summary.wonCount + summary.lostCount)} closes`,
+      hint: m.dash_kpi_conversion_hint({
+        won: formatNumber(summary.wonCount),
+        total: formatNumber(summary.wonCount + summary.lostCount),
+      }),
     },
   ]
 
   return (
     <section
-      aria-label="Indicateurs clés"
+      aria-label={m.dash_kpi_section_label()}
       className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
     >
       {items.map((it, idx) => (

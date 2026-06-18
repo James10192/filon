@@ -1,6 +1,7 @@
 import { Radar } from 'lucide-react'
 import { useUpsell } from '~/lib/billing/use-upsell'
 import { LockedFeature } from '~/components/billing/locked-feature'
+import { m } from '~/lib/paraglide/messages'
 
 /**
  * Hook d'upsell de la veille AUTO (cron toutes les 6h), réservée aux paliers
@@ -16,7 +17,7 @@ export function VeilleAutoBanner() {
   if (canUse('veille_auto')) return null
 
   return (
-    <LockedFeature feature="veille_auto" label="Activez la veille automatique">
+    <LockedFeature feature="veille_auto" label={m.veille_auto_locked_label()}>
       <div className="flex items-center justify-between gap-4 rounded-[var(--radius-lg)] border border-border bg-surface px-5 py-5 shadow-[var(--shadow-card)]">
         <div className="flex items-start gap-3">
           <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-accent-soft text-accent">
@@ -24,13 +25,10 @@ export function VeilleAutoBanner() {
           </span>
           <div className="space-y-1">
             <h3 className="text-sm font-semibold text-fg">
-              Veille automatique
+              {m.veille_auto_title()}
             </h3>
             <p className="max-w-md text-sm leading-relaxed text-fg-muted">
-              Filon surveille vos sources toutes les 6 heures et capte les
-              offres correspondant à vos mots-clés, même quand vous dormez. En
-              Découverte, lancez la veille à la main avec «&nbsp;Lancer
-              maintenant&nbsp;».
+              {m.veille_auto_body()}
             </p>
           </div>
         </div>

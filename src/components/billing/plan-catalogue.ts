@@ -1,86 +1,90 @@
+import { m } from '~/lib/paraglide/messages'
 import type { PaidPlan } from '~/lib/billing/plan'
 
 /**
  * Catalogue déclaratif des paliers pour la page Tarifs (libellés + arguments).
  * Données pures, pas de logique. Les prix viennent de `convex/lib/pricing.ts`
  * (source unique). Les limites chiffrées viennent de `convex/lib/plan.ts`.
+ *
+ * Libellés internationalisés : `name`, `tagline` et `features` sont des
+ * accesseurs (`() => …`) résolus au rendu pour suivre la langue active.
  */
 
 export type PlanKey = 'free' | PaidPlan | 'team'
 
 export type PlanCard = {
   key: PlanKey
-  name: string
-  tagline: string
+  name: () => string
+  tagline: () => string
   /** Palier mis en avant (bordure accent, badge « Recommandé »). */
   featured?: boolean
   /** Arguments clés affichés sous le prix. */
-  features: string[]
+  features: () => string[]
 }
 
 export const PLAN_CARDS: PlanCard[] = [
   {
     key: 'free',
-    name: 'Découverte',
-    tagline: 'Pour démarrer votre prospection, sans frais.',
-    features: [
-      "Jusqu'à 25 opportunités actives",
-      '1 recherche de veille (surveillance manuelle)',
-      'Import manuel des offres',
-      'Pipeline, vues Liste / Tableau / Calendrier',
+    name: m.app_plan_free_name,
+    tagline: m.app_plan_free_tagline,
+    features: () => [
+      m.app_plan_free_feat_1(),
+      m.app_plan_free_feat_2(),
+      m.app_plan_free_feat_3(),
+      m.app_plan_free_feat_4(),
     ],
   },
   {
     key: 'pro',
-    name: 'Pro',
-    tagline: 'Pour prospecter sans limite et automatiser la veille.',
+    name: m.app_plan_pro_name,
+    tagline: m.app_plan_pro_tagline,
     featured: true,
-    features: [
-      'Opportunités illimitées',
-      'Veille automatique + recherches multiples',
-      'Relances, analytique, export',
-      'Toutes les vues, sans plafond',
+    features: () => [
+      m.app_plan_pro_feat_1(),
+      m.app_plan_pro_feat_2(),
+      m.app_plan_pro_feat_3(),
+      m.app_plan_pro_feat_4(),
     ],
   },
   {
     key: 'pro_ai',
-    name: 'Pro+ IA',
-    tagline: "Tout Pro, plus l'assistance par IA à l'acte.",
-    features: [
-      'Tout le palier Pro',
-      'Scoring de pertinence des opportunités',
-      'Brouillons lettre / e-mail / CV ciblés',
-      '300 crédits IA par mois, au-delà à la recharge',
+    name: m.app_plan_pro_ai_name,
+    tagline: m.app_plan_pro_ai_tagline,
+    features: () => [
+      m.app_plan_pro_ai_feat_1(),
+      m.app_plan_pro_ai_feat_2(),
+      m.app_plan_pro_ai_feat_3(),
+      m.app_plan_pro_ai_feat_4(),
     ],
   },
   {
     key: 'copilot',
-    name: 'Copilot',
-    tagline: "L'agent IA qui agit sur votre pipeline.",
-    features: [
-      'Tout le palier Pro+ IA',
-      'Copilote agentique : il analyse et agit (créer, relancer, rédiger)',
-      'Journal des actions de l’agent, traçable et réversible',
-      'Quota IA généreux en usage loyal, sans mur dur',
-      'Clé API perso (BYOK) en option',
+    name: m.app_plan_copilot_name,
+    tagline: m.app_plan_copilot_tagline,
+    features: () => [
+      m.app_plan_copilot_feat_1(),
+      m.app_plan_copilot_feat_2(),
+      m.app_plan_copilot_feat_3(),
+      m.app_plan_copilot_feat_4(),
+      m.app_plan_copilot_feat_5(),
     ],
   },
   {
     key: 'team',
-    name: 'Équipe',
-    tagline: 'Pour les agences et équipes partageant un pipeline.',
-    features: [
-      'Pipeline partagé entre membres',
-      'Rôles et invitations',
-      'Facturation par siège',
-      'Accompagnement dédié',
+    name: m.app_plan_team_name,
+    tagline: m.app_plan_team_tagline,
+    features: () => [
+      m.app_plan_team_feat_1(),
+      m.app_plan_team_feat_2(),
+      m.app_plan_team_feat_3(),
+      m.app_plan_team_feat_4(),
     ],
   },
 ]
 
 /** Tableau comparatif : lignes de fonctionnalités × paliers. */
 export type CompareRow = {
-  label: string
+  label: () => string
   free: string | boolean
   pro: string | boolean
   pro_ai: string | boolean
@@ -88,17 +92,17 @@ export type CompareRow = {
 }
 
 export const COMPARE_ROWS: CompareRow[] = [
-  { label: 'Opportunités actives', free: '25', pro: 'Illimité', pro_ai: 'Illimité', copilot: 'Illimité' },
-  { label: 'Recherches de veille', free: '1', pro: 'Illimité', pro_ai: 'Illimité', copilot: 'Illimité' },
-  { label: 'Veille automatique (moniteur)', free: false, pro: true, pro_ai: true, copilot: true },
-  { label: 'Vues Liste / Tableau / Calendrier', free: true, pro: true, pro_ai: true, copilot: true },
-  { label: 'Relances et analytique', free: false, pro: true, pro_ai: true, copilot: true },
-  { label: 'Export des données', free: false, pro: true, pro_ai: true, copilot: true },
-  { label: 'Crédits IA inclus / mois', free: '25', pro: '100', pro_ai: '300', copilot: '6000' },
-  { label: 'Assistant IA (chat + historique)', free: true, pro: true, pro_ai: true, copilot: true },
-  { label: 'Scoring de pertinence (IA)', free: false, pro: false, pro_ai: true, copilot: true },
-  { label: 'Brouillons lettre / e-mail / CV (IA)', free: false, pro: false, pro_ai: true, copilot: true },
-  { label: 'Copilote agentique (l’IA agit sur le pipeline)', free: false, pro: false, pro_ai: false, copilot: true },
-  { label: 'Journal des actions de l’agent', free: false, pro: false, pro_ai: false, copilot: true },
-  { label: 'Usage loyal sans mur dur · BYOK', free: false, pro: false, pro_ai: false, copilot: true },
+  { label: m.app_compare_active_opps, free: '25', pro: m.app_unlimited(), pro_ai: m.app_unlimited(), copilot: m.app_unlimited() },
+  { label: m.app_compare_watch_searches, free: '1', pro: m.app_unlimited(), pro_ai: m.app_unlimited(), copilot: m.app_unlimited() },
+  { label: m.app_compare_auto_watch, free: false, pro: true, pro_ai: true, copilot: true },
+  { label: m.app_compare_views, free: true, pro: true, pro_ai: true, copilot: true },
+  { label: m.app_compare_followups_analytics, free: false, pro: true, pro_ai: true, copilot: true },
+  { label: m.app_compare_export, free: false, pro: true, pro_ai: true, copilot: true },
+  { label: m.app_compare_ai_credits, free: '25', pro: '100', pro_ai: '300', copilot: '6000' },
+  { label: m.app_compare_ai_assistant, free: true, pro: true, pro_ai: true, copilot: true },
+  { label: m.app_compare_scoring, free: false, pro: false, pro_ai: true, copilot: true },
+  { label: m.app_compare_drafts, free: false, pro: false, pro_ai: true, copilot: true },
+  { label: m.app_compare_agentic, free: false, pro: false, pro_ai: false, copilot: true },
+  { label: m.app_compare_action_log, free: false, pro: false, pro_ai: false, copilot: true },
+  { label: m.app_compare_fair_use_byok, free: false, pro: false, pro_ai: false, copilot: true },
 ]

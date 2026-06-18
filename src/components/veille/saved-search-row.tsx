@@ -15,11 +15,12 @@ import {
 } from '~/components/ui/dropdown-menu'
 import { toast } from '~/components/ui/sonner'
 import { DeleteConfirmDialog } from '~/components/companies/delete-confirm-dialog'
-import { INTENT_LABELS, formatRelativeTime, type VeilleIntent } from './meta'
+import { intentLabel, formatRelativeTime, type VeilleIntent } from './meta'
+import { m } from '~/lib/paraglide/messages'
 
 /** Libellés des sources ciblées, ou « Toutes les sources » si aucune. */
 function sourceLabels(sources?: string[]): string {
-  if (!sources || sources.length === 0) return 'Toutes les sources'
+  if (!sources || sources.length === 0) return m.veille_all_sources()
   return sources
     .map((id) => CONNECTOR_META.find((c) => c.id === id)?.label ?? id)
     .join(', ')
@@ -43,14 +44,15 @@ export function SavedSearchRow({
   const [toggling, setToggling] = useState(false)
 
   const intent: VeilleIntent = search.intent ?? 'apply'
-  const title = search.name?.trim() || search.keywords.join(', ') || 'Veille'
+  const title =
+    search.name?.trim() || search.keywords.join(', ') || m.veille_default_name()
 
   async function toggleEnabled(next: boolean) {
     setToggling(true)
     try {
       await update({ id: search._id, enabled: next })
     } catch {
-      toast.error('La mise à jour a échoué.')
+      toast.error(m.veille_toast_update_failed())
     } finally {
       setToggling(false)
     }
@@ -59,9 +61,9 @@ export function SavedSearchRow({
   async function confirmRemove() {
     try {
       await remove({ id: search._id })
-      toast.success('Veille supprimée.')
+      toast.success(m.veille_toast_deleted())
     } catch {
-      toast.error('La suppression a échoué.')
+      toast.error(m.veille_toast_delete_failed())
     }
   }
 
@@ -70,7 +72,7 @@ export function SavedSearchRow({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 space-y-1">
           <h3 className="truncate text-sm font-semibold text-fg">{title}</h3>
-          <Badge variant="accent">{INTENT_LABELS[intent]}</Badge>
+          <Badge variant="accent">{intentLabel(intent)}</Badge>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
           <div className="flex items-center gap-2">
@@ -78,10 +80,12 @@ export function SavedSearchRow({
               checked={search.enabled}
               onCheckedChange={toggleEnabled}
               disabled={toggling}
-              aria-label={search.enabled ? 'Mettre en pause' : 'Activer'}
+              aria-label={
+                search.enabled ? m.veille_pause() : m.veille_activate()
+              }
             />
             <span className="hidden text-xs font-medium text-fg-muted sm:inline">
-              {search.enabled ? 'Active' : 'En pause'}
+              {search.enabled ? m.veille_status_active() : m.veille_status_paused()}
             </span>
           </div>
           <DropdownMenu>
@@ -90,7 +94,7 @@ export function SavedSearchRow({
                 variant="ghost"
                 size="icon"
                 className="size-11 text-fg-subtle sm:size-9"
-                aria-label="Actions"
+                aria-label={m.veille_actions()}
               >
                 <MoreVertical className="size-4" />
               </Button>
@@ -98,14 +102,14 @@ export function SavedSearchRow({
             <DropdownMenuContent align="end">
               <DropdownMenuItem onSelect={onEdit}>
                 <Pencil className="size-4" />
-                Modifier
+                {m.veille_edit()}
               </DropdownMenuItem>
               <DropdownMenuItem
                 variant="destructive"
                 onSelect={() => setDeleteOpen(true)}
               >
                 <Trash2 className="size-4" />
-                Supprimer
+                {m.veille_delete()}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -120,28 +124,36 @@ export function SavedSearchRow({
         ))}
         {search.excludeKeywords?.map((kw) => (
           <Badge key={`x-${kw}`} variant="outline">
-            sauf {kw}
+            {m.veille_except({ kw })}
           </Badge>
         ))}
       </div>
 
       <div className="mt-3 flex flex-col gap-1 border-t border-border pt-3 text-xs text-fg-subtle sm:flex-row sm:items-center sm:justify-between">
         <span>
-          Sources :{' '}
+          {m.veille_sources_label()}{' '}
           <span className="text-fg-muted">{sourceLabels(search.sources)}</span>
         </span>
         <span>
           {search.lastRunAt
-            ? `Dernier passage ${formatRelativeTime(search.lastRunAt)} · ${search.lastMatchCount ?? 0} offre(s)`
-            : 'Pas encore lancée'}
+            ? (search.lastMatchCount ?? 0) > 1
+              ? m.veille_last_run_plural({
+                  time: formatRelativeTime(search.lastRunAt),
+                  n: search.lastMatchCount ?? 0,
+                })
+              : m.veille_last_run_singular({
+                  time: formatRelativeTime(search.lastRunAt),
+                  n: search.lastMatchCount ?? 0,
+                })
+            : m.veille_not_run_yet()}
         </span>
       </div>
 
       <DeleteConfirmDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
-        title="Supprimer cette veille ?"
-        description="Filon cessera de surveiller ces mots-clés. Les offres déjà importées sont conservées."
+        title={m.veille_delete_dialog_title()}
+        description={m.veille_delete_dialog_desc()}
         onConfirm={confirmRemove}
       />
     </div>

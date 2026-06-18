@@ -2,6 +2,7 @@ import { useQuery } from 'convex/react'
 import { TriangleAlert, X } from 'lucide-react'
 import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
+import { m } from '~/lib/paraglide/messages'
 import { Button } from '~/components/ui/button'
 import { Skeleton } from '~/components/ui/skeleton'
 import { OpportunityDetailContent } from './detail-content'
@@ -33,12 +34,12 @@ export function OpportunityDetailPane({
     <div className="flex h-full flex-col">
       {showCloseButton && (
         <div className="flex items-center justify-between border-b border-border px-4 py-2.5 lg:px-5">
-          <span className="eyebrow">Détail</span>
+          <span className="eyebrow">{m.opp_detail_eyebrow()}</span>
           <Button
             variant="ghost"
             size="icon-sm"
             onClick={onClose}
-            aria-label="Fermer le détail"
+            aria-label={m.opp_detail_close_aria()}
           >
             <X className="size-4" />
           </Button>
@@ -86,14 +87,14 @@ function NotFound({ onClose }: { onClose: () => void }) {
       </span>
       <div className="space-y-1">
         <h2 className="text-base font-semibold text-fg">
-          Opportunité introuvable
+          {m.opp_not_found_title()}
         </h2>
         <p className="mx-auto max-w-xs text-sm text-fg-muted">
-          Cette opportunité n'existe pas ou ne vous appartient pas.
+          {m.opp_not_found_message()}
         </p>
       </div>
       <Button variant="outline" onClick={onClose}>
-        Fermer
+        {m.opp_close()}
       </Button>
     </div>
   )

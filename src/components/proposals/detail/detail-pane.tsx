@@ -2,6 +2,7 @@ import { useQuery } from 'convex/react'
 import { TriangleAlert, X } from 'lucide-react'
 import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
+import { m } from '~/lib/paraglide/messages'
 import { Button } from '~/components/ui/button'
 import { Skeleton } from '~/components/ui/skeleton'
 import { ProposalDetailContent } from './detail-content'
@@ -28,12 +29,12 @@ export function ProposalDetailPane({
     <div className="flex h-full flex-col">
       {showCloseButton && (
         <div className="flex items-center justify-between border-b border-border px-4 py-2.5 lg:px-5">
-          <span className="eyebrow">Détail</span>
+          <span className="eyebrow">{m.prop_detail_eyebrow()}</span>
           <Button
             variant="ghost"
             size="icon-sm"
             onClick={onClose}
-            aria-label="Fermer le détail"
+            aria-label={m.prop_close_detail_aria()}
           >
             <X className="size-4" />
           </Button>

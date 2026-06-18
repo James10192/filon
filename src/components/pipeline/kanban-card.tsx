@@ -1,6 +1,7 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Building2, CalendarClock, Radio, User } from 'lucide-react'
+import { m } from '~/lib/paraglide/messages'
 import { cn } from '~/lib/utils'
 import {
   PRIORITY_META,
@@ -197,9 +198,9 @@ export function KanbanCardContent({
               />
               <CalendarClock className="size-3.5" />
               {tone === 'overdue' ? (
-                'En retard'
+                m.opp_due_overdue_short()
               ) : tone === 'today' ? (
-                "Aujourd'hui"
+                m.opp_due_today()
               ) : (
                 <span className="assay">
                   {formatShortDate(opportunity.nextActionAt)}
@@ -254,7 +255,7 @@ export function SortableKanbanCard({
       {...attributes}
       {...listeners}
       role="button"
-      aria-label={`Opportunité ${opportunity.title}`}
+      aria-label={m.opp_card_aria({ title: opportunity.title })}
       onClick={() => onOpen?.(opportunity._id)}
       onKeyDown={(e) => {
         // Espace est réservé au glisser clavier de dnd-kit ; on n'ouvre qu'avec Entrée.

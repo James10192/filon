@@ -3,6 +3,7 @@ import { Badge } from '~/components/ui/badge'
 import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
 import { Textarea } from '~/components/ui/textarea'
+import { m } from '~/lib/paraglide/messages'
 
 /** Champs éditables d'un aperçu d'offre, prêts pour `opportunities.create`. */
 export type PreviewFields = {
@@ -38,49 +39,48 @@ export function ImportPreviewForm({
         <div className="flex items-start gap-2.5 rounded-[var(--radius)] border border-warning/40 bg-warning-soft px-3 py-2.5">
           <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning" />
           <div className="space-y-0.5">
-            <Badge variant="warning">Analyse partielle</Badge>
+            <Badge variant="warning">{m.veille_preview_partial_badge()}</Badge>
             <p className="text-sm text-fg-muted">
-              Certains champs n'ont pas pu être lus automatiquement. Complétez
-              les informations avant de créer l'opportunité.
+              {m.veille_preview_partial_body()}
             </p>
           </div>
         </div>
       )}
 
       <div className="space-y-1.5">
-        <Label htmlFor="veille-title">Intitulé</Label>
+        <Label htmlFor="veille-title">{m.veille_preview_title_label()}</Label>
         <Input
           id="veille-title"
           value={fields.title}
           onChange={(e) => set('title', e.target.value)}
-          placeholder="Intitulé du poste"
+          placeholder={m.veille_preview_title_placeholder()}
         />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <Label htmlFor="veille-company">Entreprise</Label>
+          <Label htmlFor="veille-company">{m.veille_preview_company_label()}</Label>
           <Input
             id="veille-company"
             value={fields.company}
             onChange={(e) => set('company', e.target.value)}
-            placeholder="Recruteur ou société"
+            placeholder={m.veille_preview_company_placeholder()}
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="veille-location">Lieu</Label>
+          <Label htmlFor="veille-location">{m.veille_preview_location_label()}</Label>
           <Input
             id="veille-location"
             value={fields.location}
             onChange={(e) => set('location', e.target.value)}
-            placeholder="Ville, région"
+            placeholder={m.veille_preview_location_placeholder()}
           />
         </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <Label htmlFor="veille-deadline">Date limite</Label>
+          <Label htmlFor="veille-deadline">{m.veille_preview_deadline_label()}</Label>
           <Input
             id="veille-deadline"
             type="date"
@@ -89,7 +89,7 @@ export function ImportPreviewForm({
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="veille-url">Lien de l'offre</Label>
+          <Label htmlFor="veille-url">{m.veille_preview_url_label()}</Label>
           <Input
             id="veille-url"
             value={fields.sourceUrl}
@@ -100,12 +100,12 @@ export function ImportPreviewForm({
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="veille-notes">Description</Label>
+        <Label htmlFor="veille-notes">{m.veille_preview_notes_label()}</Label>
         <Textarea
           id="veille-notes"
           value={fields.notes}
           onChange={(e) => set('notes', e.target.value)}
-          placeholder="Contenu de l'offre, notes complémentaires..."
+          placeholder={m.veille_preview_notes_placeholder()}
           className="min-h-32"
         />
       </div>

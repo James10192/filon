@@ -3,6 +3,7 @@ import { useQuery } from 'convex/react'
 import { Compass, Plus } from 'lucide-react'
 import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
+import { m } from '~/lib/paraglide/messages'
 import { Button } from '~/components/ui/button'
 import { Skeleton } from '~/components/ui/skeleton'
 import { KanbanBoard } from '~/components/pipeline/kanban-board'
@@ -110,15 +111,14 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
         <Compass className="size-7" />
       </span>
       <h2 className="mt-5 text-lg font-semibold tracking-[-0.01em] text-fg">
-        Aucune opportunité pour l'instant
+        {m.opp_empty_title()}
       </h2>
       <p className="mt-1.5 max-w-sm text-sm text-fg-muted">
-        Ajoutez votre première piste pour démarrer. Candidatures, propositions et
-        missions vivent toutes dans ce tableau.
+        {m.opp_board_empty_message()}
       </p>
       <Button className="mt-6 h-11" onClick={onCreate}>
         <Plus className="size-4" />
-        Ajouter une opportunité
+        {m.opp_add_opportunity()}
       </Button>
     </div>
   )

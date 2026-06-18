@@ -1,6 +1,7 @@
 import { Link2, Mail, Pencil, Phone, Trash2 } from 'lucide-react'
 import type { Doc } from '../../../convex/_generated/dataModel'
 import { Button } from '~/components/ui/button'
+import { m } from '~/lib/paraglide/messages'
 
 type Contact = Doc<'contacts'> & { companyName?: string }
 
@@ -77,7 +78,7 @@ export function ContactRow({
         <Button
           variant="ghost"
           size="icon-sm"
-          aria-label="Modifier le contact"
+          aria-label={m.carnet_contact_edit_aria()}
           onClick={() => onEdit(contact)}
         >
           <Pencil className="size-4" />
@@ -85,7 +86,7 @@ export function ContactRow({
         <Button
           variant="ghost"
           size="icon-sm"
-          aria-label="Supprimer le contact"
+          aria-label={m.carnet_contact_delete_aria()}
           className="text-fg-muted hover:text-danger"
           onClick={() => onDelete(contact)}
         >

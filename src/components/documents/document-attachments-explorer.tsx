@@ -32,6 +32,7 @@ import {
   CommandList,
 } from '~/components/ui/command'
 import { Skeleton } from '~/components/ui/skeleton'
+import { m } from '~/lib/paraglide/messages'
 import {
   EntityDocuments,
   type DocumentEntityType,
@@ -41,12 +42,52 @@ const NO_SELECTION = '__none__'
 
 const ENTITY_META: Record<
   DocumentEntityType,
-  { label: string; plural: string; icon: typeof Target }
+  {
+    label: () => string
+    icon: typeof Target
+    pickPlaceholder: () => string
+    searchPlaceholder: () => string
+    noResult: () => string
+    hintHasItems: () => string
+    hintNoItems: () => string
+  }
 > = {
-  opportunity: { label: 'Opportunité', plural: 'opportunités', icon: Target },
-  proposal: { label: 'Proposition', plural: 'propositions', icon: FileSignature },
-  company: { label: 'Entreprise', plural: 'entreprises', icon: Building2 },
-  contact: { label: 'Contact', plural: 'contacts', icon: User },
+  opportunity: {
+    label: m.carnet_entity_opportunity,
+    icon: Target,
+    pickPlaceholder: m.carnet_pick_opportunity,
+    searchPlaceholder: m.carnet_search_opportunity,
+    noResult: m.carnet_no_opportunity_found,
+    hintHasItems: m.carnet_hint_opportunity,
+    hintNoItems: m.carnet_hint_no_opportunity,
+  },
+  proposal: {
+    label: m.carnet_entity_proposal,
+    icon: FileSignature,
+    pickPlaceholder: m.carnet_pick_proposal,
+    searchPlaceholder: m.carnet_search_proposal,
+    noResult: m.carnet_no_proposal_found,
+    hintHasItems: m.carnet_hint_proposal,
+    hintNoItems: m.carnet_hint_no_proposal,
+  },
+  company: {
+    label: m.carnet_entity_company,
+    icon: Building2,
+    pickPlaceholder: m.carnet_pick_company,
+    searchPlaceholder: m.carnet_search_company,
+    noResult: m.carnet_no_company_found,
+    hintHasItems: m.carnet_hint_company,
+    hintNoItems: m.carnet_hint_no_company,
+  },
+  contact: {
+    label: m.carnet_entity_contact,
+    icon: User,
+    pickPlaceholder: m.carnet_pick_contact,
+    searchPlaceholder: m.carnet_search_contact,
+    noResult: m.carnet_no_contact_found,
+    hintHasItems: m.carnet_hint_contact,
+    hintNoItems: m.carnet_hint_no_contact,
+  },
 }
 
 const ENTITY_ORDER: DocumentEntityType[] = [
@@ -125,14 +166,17 @@ export function DocumentAttachmentsExplorer() {
       <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4 shadow-[var(--shadow-card)] sm:p-5">
         <p className="mb-3 inline-flex items-center gap-2 text-sm font-medium text-fg">
           <Link2 className="size-4 text-fg-subtle" />
-          Voir les documents reliés à une entité
+          {m.carnet_explorer_title()}
         </p>
         <div className="flex flex-col gap-3 sm:flex-row">
           <Select
             value={type}
             onValueChange={(v) => handleTypeChange(v as DocumentEntityType)}
           >
-            <SelectTrigger className="h-11 sm:w-56" aria-label="Type d'entité">
+            <SelectTrigger
+              className="h-11 sm:w-56"
+              aria-label={m.carnet_entity_type_aria()}
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -141,7 +185,7 @@ export function DocumentAttachmentsExplorer() {
                 return (
                   <SelectItem key={t} value={t}>
                     <Icon className="size-4 text-fg-subtle" />
-                    {ENTITY_META[t].label}
+                    {ENTITY_META[t].label()}
                   </SelectItem>
                 )
               })}
@@ -156,9 +200,9 @@ export function DocumentAttachmentsExplorer() {
                 items={items}
                 value={entityId}
                 onChange={setEntityId}
-                placeholder={`Choisir parmi vos ${meta.plural}`}
-                searchPlaceholder={`Rechercher une ${meta.label.toLowerCase()}...`}
-                noResultLabel={`Aucune ${meta.label.toLowerCase()} trouvée.`}
+                placeholder={meta.pickPlaceholder()}
+                searchPlaceholder={meta.searchPlaceholder()}
+                noResultLabel={meta.noResult()}
               />
             )}
           </div>
@@ -267,9 +311,7 @@ function ExplorerHint({
         <Icon className="size-5" />
       </span>
       <p className="max-w-md text-sm text-fg-muted">
-        {hasItems
-          ? `Sélectionnez une ${meta.label.toLowerCase()} ci-dessus pour voir, rattacher ou détacher ses documents.`
-          : `Vous n'avez pas encore de ${meta.plural}. Créez-en pour y rattacher vos documents.`}
+        {hasItems ? meta.hintHasItems() : meta.hintNoItems()}
       </p>
     </div>
   )

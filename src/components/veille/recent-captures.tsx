@@ -14,6 +14,7 @@ import { Skeleton } from '~/components/ui/skeleton'
 import { cn } from '~/lib/utils'
 import { STAGE_META, type Stage } from '~/components/opportunities/meta'
 import { formatRelativeTime } from './meta'
+import { m } from '~/lib/paraglide/messages'
 
 /**
  * Captures récentes : le lien entre une offre détectée par la veille et son
@@ -29,9 +30,9 @@ export function RecentCaptures() {
       <CardHeader>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1">
-            <CardTitle>Captures récentes</CardTitle>
+            <CardTitle>{m.veille_captures_title()}</CardTitle>
             <CardDescription>
-              Le parcours de vos offres captées : de la détection à la signature.
+              {m.veille_captures_desc()}
             </CardDescription>
           </div>
           {data && <Funnel funnel={data.funnel} />}
@@ -113,15 +114,15 @@ function Funnel({
 }) {
   return (
     <div className="flex items-center gap-3 text-xs text-fg-muted">
-      <FunnelStat value={funnel.captured} label="captées" />
+      <FunnelStat value={funnel.captured} label={m.veille_funnel_captured()} />
       <span aria-hidden className="text-border">
         |
       </span>
-      <FunnelStat value={funnel.active} label="en cours" />
+      <FunnelStat value={funnel.active} label={m.veille_funnel_active()} />
       <span aria-hidden className="text-border">
         |
       </span>
-      <FunnelStat value={funnel.won} label="gagnées" accent />
+      <FunnelStat value={funnel.won} label={m.veille_funnel_won()} accent />
     </div>
   )
 }
@@ -158,10 +159,10 @@ function EmptyState() {
       </span>
       <div className="max-w-xs space-y-1">
         <p className="text-sm font-medium text-fg">
-          Vos veilles n'ont encore rien capté
+          {m.veille_captures_empty_title()}
         </p>
         <p className="text-sm leading-relaxed text-fg-muted">
-          Lancez une veille pour démarrer la capture d'offres et de prospects.
+          {m.veille_captures_empty_body()}
         </p>
       </div>
     </div>

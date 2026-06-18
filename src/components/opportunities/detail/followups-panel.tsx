@@ -3,6 +3,7 @@ import { useMutation, useQuery } from 'convex/react'
 import { Loader2, Check, Plus, BellRing } from 'lucide-react'
 import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
+import { m } from '~/lib/paraglide/messages'
 import { cn } from '~/lib/utils'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
@@ -35,12 +36,12 @@ export function FollowupsPanel({
     setPending(true)
     try {
       await create({ label: label.trim(), dueDate, opportunityId })
-      toast.success(`Relance planifiée pour le ${formatDate(dueDate)}.`)
+      toast.success(m.opp_followup_planned({ date: formatDate(dueDate) }))
       setLabel('')
       setDueDate('')
       setAdding(false)
     } catch {
-      toast.error("La relance n'a pas pu être planifiée.")
+      toast.error(m.opp_followup_plan_error())
     } finally {
       setPending(false)
     }
@@ -49,24 +50,24 @@ export function FollowupsPanel({
   async function handleToggle(id: Id<'followups'>, done: boolean) {
     try {
       await toggle({ id, done })
-      toast.success(done ? 'Relance marquée comme faite.' : 'Relance réactivée.')
+      toast.success(done ? m.opp_followup_done() : m.opp_followup_reactivated())
     } catch {
-      toast.error('Action impossible.')
+      toast.error(m.opp_action_impossible())
     }
   }
 
   return (
     <Panel
-      title="Relances"
+      title={m.opp_panel_followups()}
       action={
         <Button
           variant="ghost"
           size="sm"
           onClick={() => setAdding((v) => !v)}
-          aria-label="Planifier une relance"
+          aria-label={m.opp_followup_plan_aria()}
         >
           <Plus className="size-4" />
-          Planifier
+          {m.opp_followup_plan_button()}
         </Button>
       }
     >
@@ -78,14 +79,14 @@ export function FollowupsPanel({
           <Input
             value={label}
             onChange={(e) => setLabel(e.target.value)}
-            placeholder="Relancer par e-mail..."
-            aria-label="Intitulé de la relance"
+            placeholder={m.opp_followup_label_placeholder()}
+            aria-label={m.opp_followup_label_aria()}
           />
           <Input
             type="date"
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
-            aria-label="Date de la relance"
+            aria-label={m.opp_followup_date_aria()}
           />
           <div className="flex justify-end gap-2">
             <Button
@@ -94,7 +95,7 @@ export function FollowupsPanel({
               size="sm"
               onClick={() => setAdding(false)}
             >
-              Annuler
+              {m.opp_cancel()}
             </Button>
             <Button
               type="submit"
@@ -102,7 +103,7 @@ export function FollowupsPanel({
               disabled={pending || !label.trim() || !dueDate}
             >
               {pending && <Loader2 className="size-4 animate-spin" />}
-              Enregistrer
+              {m.opp_save()}
             </Button>
           </div>
         </form>
@@ -118,10 +119,10 @@ export function FollowupsPanel({
           {nextActionAt ? (
             <span className="inline-flex items-center gap-1.5">
               <BellRing className="size-4 text-fg-subtle" />
-              Prochaine action prévue le {formatDateShort(nextActionAt)}.
+              {m.opp_followup_next_action({ date: formatDateShort(nextActionAt) })}
             </span>
           ) : (
-            'Aucune relance prévue.'
+            m.opp_followup_empty()
           )}
         </div>
       ) : (
@@ -141,7 +142,9 @@ export function FollowupsPanel({
                     : 'border-border-strong hover:border-accent',
                 )}
                 aria-label={
-                  followup.done ? 'Réactiver la relance' : 'Marquer comme faite'
+                  followup.done
+                    ? m.opp_followup_reactivate_aria()
+                    : m.opp_followup_mark_done_aria()
                 }
               >
                 {followup.done && <Check className="size-3.5" />}

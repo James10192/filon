@@ -1,6 +1,7 @@
 import type { ColumnDef } from '@tanstack/react-table'
 import { Coins, MapPin, Radio } from 'lucide-react'
 import type { Id } from '../../../convex/_generated/dataModel'
+import { m } from '~/lib/paraglide/messages'
 import { SortableHeader } from '~/components/data-table'
 import { StageChipSelect } from './stage-chip-select'
 import {
@@ -37,7 +38,7 @@ export function buildOpportunityColumns({
     {
       id: 'title',
       accessorKey: 'title',
-      header: ({ column }) => <SortableHeader column={column} label="Opportunité" />,
+      header: ({ column }) => <SortableHeader column={column} label={m.opp_col_opportunity()} />,
       sortingFn: (a, b) =>
         a.original.title.localeCompare(b.original.title, 'fr', {
           sensitivity: 'base',
@@ -62,7 +63,7 @@ export function buildOpportunityColumns({
                   name={targetName}
                 />
               ) : (
-                <span className="text-xs text-fg-subtle">Sans cible</span>
+                <span className="text-xs text-fg-subtle">{m.opp_no_target()}</span>
               )}
               <TagChips tags={o.tags} max={2} />
             </span>
@@ -73,7 +74,7 @@ export function buildOpportunityColumns({
     {
       id: 'stage',
       accessorKey: 'stage',
-      header: ({ column }) => <SortableHeader column={column} label="Étape" />,
+      header: ({ column }) => <SortableHeader column={column} label={m.opp_col_stage()} />,
       sortingFn: (a, b) => STAGE_RANK[a.original.stage] - STAGE_RANK[b.original.stage],
       cell: ({ row }) => (
         <StageChipSelect id={row.original._id} stage={row.original.stage} compact />
@@ -82,7 +83,7 @@ export function buildOpportunityColumns({
     {
       id: 'priority',
       accessorKey: 'priority',
-      header: ({ column }) => <SortableHeader column={column} label="Priorité" />,
+      header: ({ column }) => <SortableHeader column={column} label={m.opp_col_priority()} />,
       sortingFn: (a, b) =>
         PRIORITY_RANK[a.original.priority] - PRIORITY_RANK[b.original.priority],
       meta: { headerClassName: 'hidden lg:table-cell', cellClassName: 'hidden lg:table-cell' },
@@ -91,7 +92,7 @@ export function buildOpportunityColumns({
     {
       id: 'deadline',
       accessorKey: 'deadline',
-      header: ({ column }) => <SortableHeader column={column} label="Échéance" />,
+      header: ({ column }) => <SortableHeader column={column} label={m.opp_col_deadline()} />,
       sortingFn: (a, b) => {
         // Sans echeance -> rejete en fin de tri ascendant.
         const av = a.original.deadline
@@ -115,7 +116,7 @@ export function buildOpportunityColumns({
     {
       id: 'tracking',
       enableSorting: false,
-      header: () => <span className="eyebrow">Suivi</span>,
+      header: () => <span className="eyebrow">{m.opp_col_tracking()}</span>,
       cell: ({ row }) => {
         const o = row.original
         const source = sourceLabel(o.sourceChannel, o.sourceDetail, o.source)
@@ -150,7 +151,7 @@ export function buildOpportunityColumns({
     {
       id: 'actions',
       enableSorting: false,
-      header: () => <span className="sr-only">Actions</span>,
+      header: () => <span className="sr-only">{m.opp_col_actions()}</span>,
       meta: { headerClassName: 'w-12', cellClassName: 'w-12' },
       cell: ({ row }) => (
         <OpportunityRowActions

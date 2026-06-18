@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { ArrowUpRight, CalendarClock } from 'lucide-react'
 import type { Id } from '../../../convex/_generated/dataModel'
+import { m } from '~/lib/paraglide/messages'
 import { Badge } from '~/components/ui/badge'
 import {
   STAGE_META,
@@ -88,7 +89,7 @@ export function CopilotOppCard({
             </Badge>
           )}
           {!opp.hasNextAction && (
-            <Badge variant="warning">Sans prochaine action</Badge>
+            <Badge variant="warning">{m.app_copilot_no_next_action()}</Badge>
           )}
           {opp.deadline && (
             <span

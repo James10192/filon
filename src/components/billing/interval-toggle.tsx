@@ -1,3 +1,4 @@
+import { m } from '~/lib/paraglide/messages'
 import { cn } from '~/lib/utils'
 import { Badge } from '~/components/ui/badge'
 import type { Interval } from '~/lib/billing/plan'
@@ -17,23 +18,23 @@ export function IntervalToggle({
     <div className="flex items-center justify-center gap-3">
       <div
         role="group"
-        aria-label="Période de facturation"
+        aria-label={m.app_billing_period()}
         className="inline-flex items-center rounded-[var(--radius)] border border-border bg-surface-2 p-1"
       >
         <ToggleButton
           active={value === 'monthly'}
           onClick={() => onChange('monthly')}
         >
-          Mensuel
+          {m.app_monthly()}
         </ToggleButton>
         <ToggleButton
           active={value === 'annual'}
           onClick={() => onChange('annual')}
         >
-          Annuel
+          {m.app_annual()}
         </ToggleButton>
       </div>
-      <Badge variant="accent">2 mois offerts</Badge>
+      <Badge variant="accent">{m.app_two_months_free()}</Badge>
     </div>
   )
 }

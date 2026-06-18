@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import type { Id } from '../../../convex/_generated/dataModel'
+import { m } from '~/lib/paraglide/messages'
 import { DataTable } from '~/components/data-table'
 import { OpportunityCard } from './opportunity-card'
 import { buildOpportunityColumns } from './opportunity-columns'
@@ -50,7 +51,7 @@ export function OpportunitiesTable({
           onRowClick={(row) => onSelect(row._id)}
           getRowId={(row) => row._id}
           selectedRowId={selectedId ?? undefined}
-          ariaLabel="Tableau des opportunités"
+          ariaLabel={m.opp_table_aria()}
         />
       </div>
     </>

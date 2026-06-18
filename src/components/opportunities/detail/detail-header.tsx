@@ -69,8 +69,8 @@ export function DetailHeader({
           <Button
             variant="ghost"
             size="sm"
-            aria-label="Modifier"
-            title="Modifier"
+            aria-label={m.opp_action_edit()}
+            title={m.opp_action_edit()}
             className="size-11 p-0 sm:size-9"
             onClick={onEdit}
           >
@@ -105,7 +105,7 @@ export function DetailHeader({
         {opportunity.deadline && (
           <span className="inline-flex items-center gap-1.5">
             <CalendarClock className="size-4 text-fg-subtle" />
-            Échéance{' '}
+            {m.opp_deadline_prefix()}{' '}
             <span className="assay">{formatDate(opportunity.deadline)}</span>
           </span>
         )}
@@ -117,7 +117,7 @@ export function DetailHeader({
             className="inline-flex items-center gap-1.5 font-medium text-accent hover:underline"
           >
             <ExternalLink className="size-4" />
-            Voir l'offre
+            {m.opp_view_offer()}
           </a>
         )}
       </div>
@@ -137,7 +137,7 @@ export function DetailHeader({
 
       <div className="flex flex-col gap-1.5 border-t border-border pt-4 sm:flex-row sm:items-center sm:gap-3">
         <Label className="text-xs uppercase tracking-wide text-fg-subtle">
-          Étape
+          {m.opp_col_stage()}
         </Label>
         <Select
           value={opportunity.stage}

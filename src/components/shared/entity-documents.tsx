@@ -16,6 +16,7 @@ import { Button } from '~/components/ui/button'
 import { Badge } from '~/components/ui/badge'
 import { Skeleton } from '~/components/ui/skeleton'
 import { toast } from '~/components/ui/sonner'
+import { m } from '~/lib/paraglide/messages'
 import {
   Popover,
   PopoverContent,
@@ -64,7 +65,7 @@ export function EntityDocuments({
   entityType,
   entityId,
   /** Titre de la section. Defaut « Documents ». */
-  title = 'Documents',
+  title = m.carnet_documents_section_title(),
   /** Masque l'en-tete (utile si l'hote fournit deja un titre de panneau). */
   hideHeader = false,
   className,
@@ -90,9 +91,9 @@ export function EntityDocuments({
     setDetaching(documentId)
     try {
       await detach({ documentId, entityType, entityId })
-      toast.success('Document detache.')
+      toast.success(m.carnet_document_detached())
     } catch {
-      toast.error('Le detachement a echoue.')
+      toast.error(m.carnet_detach_failed())
     } finally {
       setDetaching(null)
     }
@@ -185,7 +186,7 @@ function LinkedRow({
           {document.name}
         </p>
         <Badge variant="outline" className="mt-0.5 h-5 px-1.5">
-          {KIND_LABELS[kind] ?? 'Document'}
+          {KIND_LABELS[kind] ? KIND_LABELS[kind]() : m.carnet_document_generic()}
         </Badge>
       </div>
       <div className="flex shrink-0 items-center gap-1">
@@ -194,7 +195,7 @@ function LinkedRow({
             variant="ghost"
             size="icon-sm"
             asChild
-            aria-label={`Ouvrir « ${document.name} »`}
+            aria-label={m.carnet_open_document_aria({ name: document.name })}
           >
             <a
               href={document.url ?? undefined}
@@ -209,7 +210,7 @@ function LinkedRow({
           variant="ghost"
           size="icon-sm"
           className="text-fg-muted hover:text-danger"
-          aria-label={`Detacher « ${document.name} »`}
+          aria-label={m.carnet_detach_document_aria({ name: document.name })}
           onClick={onDetach}
           disabled={detaching}
         >
@@ -242,8 +243,7 @@ function EmptyAttachments({
         <Paperclip className="size-4" />
       </span>
       <p className="max-w-xs text-sm text-fg-muted">
-        Aucun document rattache. Reliez un CV, une lettre ou un contrat pour
-        garder le bon fichier a portee de main.
+        {m.carnet_no_linked_document()}
       </p>
       {showHeaderAction && (
         <AttachMenu
@@ -291,11 +291,11 @@ function AttachMenu({
     setBusy(true)
     try {
       await attach({ documentId, entityType, entityId })
-      toast.success('Document rattache.')
+      toast.success(m.carnet_document_attached())
       setOpen(false)
       setQuery('')
     } catch {
-      toast.error('Le rattachement a echoue.')
+      toast.error(m.carnet_attach_failed())
     } finally {
       setBusy(false)
     }
@@ -304,7 +304,7 @@ function AttachMenu({
   async function uploadAndAttach(file: File) {
     if (busy) return
     if (file.size > MAX_SIZE) {
-      toast.error(`« ${file.name} » depasse 20 Mo.`)
+      toast.error(m.carnet_file_too_big({ name: file.name }))
       return
     }
     setBusy(true)
@@ -329,11 +329,11 @@ function AttachMenu({
         size: file.size,
       })) as Id<'documents'>
       await attach({ documentId, entityType, entityId })
-      toast.success('Document televerse et rattache.')
+      toast.success(m.carnet_document_uploaded_attached())
       setOpen(false)
       setQuery('')
     } catch {
-      toast.error("L'envoi du document a echoue.")
+      toast.error(m.carnet_document_upload_failed())
     } finally {
       setBusy(false)
       if (inputRef.current) inputRef.current.value = ''
@@ -355,7 +355,7 @@ function AttachMenu({
             ) : (
               <Plus className="size-4" />
             )}
-            Rattacher un document
+            {m.carnet_attach_a_document()}
           </Button>
         ) : (
           <Button variant="outline" size="sm" disabled={busy}>
@@ -364,7 +364,7 @@ function AttachMenu({
             ) : (
               <Plus className="size-4" />
             )}
-            Rattacher
+            {m.carnet_attach()}
           </Button>
         )}
       </PopoverTrigger>
@@ -375,7 +375,7 @@ function AttachMenu({
           }
         >
           <CommandInput
-            placeholder="Rechercher un document..."
+            placeholder={m.carnet_search_document()}
             value={query}
             onValueChange={setQuery}
           />
@@ -389,11 +389,11 @@ function AttachMenu({
               <>
                 <CommandEmpty>
                   {(library?.length ?? 0) === 0
-                    ? 'Votre bibliotheque est vide.'
-                    : 'Aucun document disponible.'}
+                    ? m.carnet_library_empty()
+                    : m.carnet_no_document_available()}
                 </CommandEmpty>
                 {available.length > 0 && (
-                  <CommandGroup heading="Bibliotheque">
+                  <CommandGroup heading={m.carnet_library_heading()}>
                     {available.map((doc) => {
                       const Icon = KIND_ICONS[doc.kind as DocKind] ?? FileText
                       return (
@@ -419,7 +419,7 @@ function AttachMenu({
                 disabled={busy}
               >
                 <UploadCloud className="size-4 shrink-0 text-accent" />
-                <span>Televerser un nouveau fichier</span>
+                <span>{m.carnet_upload_new_file()}</span>
               </CommandItem>
             </CommandGroup>
           </CommandList>
@@ -432,7 +432,7 @@ function AttachMenu({
             const file = e.target.files?.[0]
             if (file) void uploadAndAttach(file)
           }}
-          aria-label="Choisir un fichier a televerser et rattacher"
+          aria-label={m.carnet_choose_file_attach_aria()}
         />
       </PopoverContent>
     </Popover>

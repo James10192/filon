@@ -1,3 +1,4 @@
+import { m } from '~/lib/paraglide/messages'
 import type { BadgeProps } from '~/components/ui/badge'
 
 /**
@@ -16,10 +17,10 @@ export const RECIPIENT_STATUSES: RecipientStatus[] = [
 
 /** Libelles FR par statut de destinataire. */
 export const RECIPIENT_STATUS_LABELS: Record<RecipientStatus, string> = {
-  pending: 'En attente',
-  sent: 'Envoyée',
-  accepted: 'Acceptée',
-  refused: 'Refusée',
+  pending: m.prop_recipient_status_pending(),
+  sent: m.prop_recipient_status_sent(),
+  accepted: m.prop_recipient_status_accepted(),
+  refused: m.prop_recipient_status_refused(),
 }
 
 /** Variante de Badge a utiliser pour chaque statut de destinataire. */
@@ -35,10 +36,10 @@ export const RECIPIENT_STATUS_BADGE: Record<
 
 /** Phrase d'aide contextuelle par statut, pour le pipeline de la proposition. */
 export const RECIPIENT_STATUS_HINT: Record<RecipientStatus, string> = {
-  pending: "En attente d'envoi. Adressez l'offre à ce destinataire.",
-  sent: 'Envoyée. En attente de réponse, pensez à relancer.',
-  accepted: 'A accepté votre offre. Convertissez-la en mission.',
-  refused: 'A décliné votre offre.',
+  pending: m.prop_recipient_hint_pending(),
+  sent: m.prop_recipient_hint_sent(),
+  accepted: m.prop_recipient_hint_accepted(),
+  refused: m.prop_recipient_hint_refused(),
 }
 
 /** Compteurs agreges sur une liste de destinataires (par statut). */
@@ -80,14 +81,16 @@ export function summarizeRecipients(
 export function recipientSummaryLabel(summary: RecipientSummary): string | null {
   if (summary.total === 0) return null
   const base =
-    summary.total === 1 ? '1 destinataire' : `${summary.total} destinataires`
+    summary.total === 1
+      ? m.prop_summary_recipient_one()
+      : m.prop_summary_recipient_many({ n: summary.total })
   const highlight =
     summary.accepted > 0
-      ? `${summary.accepted} accepté${summary.accepted > 1 ? 's' : ''}`
+      ? m.prop_summary_accepted({ n: summary.accepted, s: summary.accepted > 1 ? 's' : '' })
       : summary.refused > 0
-        ? `${summary.refused} refusé${summary.refused > 1 ? 's' : ''}`
+        ? m.prop_summary_refused({ n: summary.refused, s: summary.refused > 1 ? 's' : '' })
         : summary.sent > 0
-          ? `${summary.sent} envoyée${summary.sent > 1 ? 's' : ''}`
+          ? m.prop_summary_sent({ n: summary.sent, s: summary.sent > 1 ? 's' : '' })
           : null
   return highlight ? `${base} · ${highlight}` : base
 }

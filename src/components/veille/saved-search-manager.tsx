@@ -7,6 +7,7 @@ import { Button } from '~/components/ui/button'
 import { Skeleton } from '~/components/ui/skeleton'
 import { SavedSearchRow } from './saved-search-row'
 import { VeilleEditDialog } from './veille-edit-dialog'
+import { m } from '~/lib/paraglide/messages'
 
 /**
  * Liste des veilles en cartes riches. États gérés : chargement (skeletons),
@@ -33,16 +34,16 @@ export function SavedSearchManager() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold tracking-[-0.01em] text-fg">
-            Vos veilles
+            {m.veille_searches_title()}
           </h2>
           <p className="mt-0.5 text-sm text-fg-muted">
-            Les recherches que Filon surveille pour alimenter votre pipeline.
+            {m.veille_searches_subtitle()}
           </p>
         </div>
         {searches && searches.length > 0 && (
           <Button onClick={openCreate} className="shrink-0">
             <Plus className="size-4" />
-            Nouvelle veille
+            {m.veille_new_search()}
           </Button>
         )}
       </div>
@@ -105,16 +106,15 @@ function SearchList({
         </span>
         <div className="max-w-sm space-y-1.5">
           <h3 className="text-base font-semibold text-fg">
-            Aucune veille pour le moment
+            {m.veille_searches_empty_title()}
           </h3>
           <p className="text-sm leading-relaxed text-fg-muted">
-            Créez une veille avec quelques mots-clés : Filon surveille les
-            sources et capte offres et prospects qui vous correspondent.
+            {m.veille_searches_empty_body()}
           </p>
         </div>
         <Button onClick={onCreate}>
           <Plus className="size-4" />
-          Créer ma première veille
+          {m.veille_create_first()}
         </Button>
       </div>
     )

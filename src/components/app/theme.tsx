@@ -6,6 +6,7 @@ import {
   useState,
 } from 'react'
 import { Moon, Sun } from 'lucide-react'
+import { m } from '~/lib/paraglide/messages'
 import { Button } from '~/components/ui/button'
 
 /**
@@ -118,8 +119,8 @@ export function ThemeToggle({ className }: { className?: string }) {
       size="icon-sm"
       onClick={toggleTheme}
       className={className}
-      aria-label={isDark ? 'Passer en theme clair' : 'Passer en theme sombre'}
-      title={isDark ? 'Theme clair' : 'Theme sombre'}
+      aria-label={isDark ? m.shell_theme_to_light() : m.shell_theme_to_dark()}
+      title={isDark ? m.shell_theme_light() : m.shell_theme_dark()}
     >
       {/* Avant montage, on rend une icone stable (soleil) pour eviter le
           mismatch d'hydratation, puis l'icone reelle prend le relais. */}

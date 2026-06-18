@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Check, Loader2 } from 'lucide-react'
+import { m } from '~/lib/paraglide/messages'
 import { cn } from '~/lib/utils'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
@@ -44,20 +45,20 @@ export function PlanCardShell({
     >
       {data.featured && (
         <Badge variant="accent" className="absolute -top-3 left-6">
-          Recommandé
+          {m.app_plan_recommended()}
         </Badge>
       )}
 
       <div className="flex items-center justify-between gap-2">
-        <h3 className="text-base font-semibold text-fg">{data.name}</h3>
-        {isCurrent && <Badge variant="outline">Palier actuel</Badge>}
+        <h3 className="text-base font-semibold text-fg">{data.name()}</h3>
+        {isCurrent && <Badge variant="outline">{m.app_current_plan()}</Badge>}
       </div>
-      <p className="mt-1 min-h-10 text-sm text-fg-muted">{data.tagline}</p>
+      <p className="mt-1 min-h-10 text-sm text-fg-muted">{data.tagline()}</p>
 
       <div className="mt-4 flex min-h-9 items-baseline gap-1.5">
         {isTeam ? (
           <span className="text-2xl font-semibold leading-9 text-fg">
-            Sur devis
+            {m.app_on_quote()}
           </span>
         ) : price === null ? (
           <span className="assay text-3xl font-semibold text-fg">0 XOF</span>
@@ -67,14 +68,14 @@ export function PlanCardShell({
               {formatXof(price)}
             </span>
             <span className="text-sm text-fg-subtle">
-              / {interval === 'annual' ? 'an' : 'mois'}
+              / {interval === 'annual' ? m.app_per_year() : m.app_per_month()}
             </span>
           </>
         )}
       </div>
 
       <ul className="mt-5 flex flex-1 flex-col gap-2.5">
-        {data.features.map((feature) => (
+        {data.features().map((feature) => (
           <li key={feature} className="flex items-start gap-2.5 text-sm">
             <Check className="mt-0.5 size-4 shrink-0 text-accent" />
             <span className="text-fg-muted">{feature}</span>
@@ -147,7 +148,7 @@ function PlanCta({
   if (isCurrent) {
     return (
       <Button variant="outline" className="w-full" disabled>
-        Palier actuel
+        {m.app_current_plan()}
       </Button>
     )
   }
@@ -155,7 +156,7 @@ function PlanCta({
     return (
       <Button variant="outline" className="w-full" asChild>
         <a href="mailto:djedjelipatrick@gmail.com?subject=Filon%20%C3%89quipe">
-          Nous contacter
+          {m.app_contact_us()}
         </a>
       </Button>
     )
@@ -163,7 +164,7 @@ function PlanCta({
   if (!isPaid) {
     return (
       <Button variant="outline" className="w-full" disabled>
-        Gratuit
+        {m.app_free()}
       </Button>
     )
   }
@@ -177,7 +178,7 @@ function PlanCta({
       onClick={() => onUpgrade(plan)}
     >
       {isPending && <Loader2 className="size-4 animate-spin" />}
-      Passer à {planKey === 'pro' ? 'Pro' : planKey === 'pro_ai' ? 'Pro+ IA' : 'Copilot'}
+      {m.app_upgrade_to({ plan: planKey === 'pro' ? 'Pro' : planKey === 'pro_ai' ? 'Pro+ IA' : 'Copilot' })}
     </Button>
   )
 }

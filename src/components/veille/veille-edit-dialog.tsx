@@ -27,9 +27,10 @@ import { Badge } from '~/components/ui/badge'
 import { toast } from '~/components/ui/sonner'
 import { cn } from '~/lib/utils'
 import { handlePlanLimit } from '~/lib/billing/upsell'
+import { m } from '~/lib/paraglide/messages'
 import {
-  INTENT_LABELS,
-  LOCATION_LABELS,
+  intentLabel,
+  locationLabel,
   toVeilleLocation,
   type VeilleIntent,
   type VeilleLocation,
@@ -126,7 +127,7 @@ export function VeilleEditDialog({
     const finalInclude = addTokens(include, splitTokens(includeDraft))
     const finalExclude = addTokens(exclude, splitTokens(excludeDraft))
     if (finalInclude.length === 0) {
-      toast.error('Ajoutez au moins un mot-clé à inclure.')
+      toast.error(m.veille_form_keyword_required())
       return
     }
 
@@ -146,16 +147,16 @@ export function VeilleEditDialog({
     try {
       if (search) {
         await update({ id: search._id, ...args })
-        toast.success('Veille mise à jour.')
+        toast.success(m.veille_toast_updated())
       } else {
         await create(args as Parameters<typeof create>[0])
-        toast.success('Veille créée. Filon la surveille pour vous.')
+        toast.success(m.veille_toast_created())
       }
       onOpenChange(false)
     } catch (error) {
       if (!handlePlanLimit(error)) {
         toast.error(
-          isEdit ? 'La mise à jour a échoué.' : 'La création a échoué.',
+          isEdit ? m.veille_toast_update_failed() : m.veille_toast_create_failed(),
         )
       }
     } finally {
@@ -168,29 +169,28 @@ export function VeilleEditDialog({
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>
-            {isEdit ? 'Modifier la veille' : 'Nouvelle veille'}
+            {isEdit ? m.veille_form_edit_title() : m.veille_form_create_title()}
           </DialogTitle>
           <DialogDescription>
-            Définissez ce que Filon doit surveiller et ce que vous comptez en
-            faire : postuler, démarcher, ou les deux.
+            {m.veille_form_desc()}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-5">
           {/* Nom */}
           <div className="space-y-1.5">
-            <Label htmlFor="veille-name">Nom de la veille</Label>
+            <Label htmlFor="veille-name">{m.veille_form_name_label()}</Label>
             <Input
               id="veille-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="ex. Missions React à Abidjan"
+              placeholder={m.veille_form_name_placeholder()}
             />
           </div>
 
           {/* Intention */}
           <div className="space-y-1.5">
-            <Label>Intention</Label>
+            <Label>{m.veille_form_intent_label()}</Label>
             <div className="grid grid-cols-3 gap-1.5">
               {INTENTS.map((value) => (
                 <button
@@ -205,7 +205,7 @@ export function VeilleEditDialog({
                       : 'border-border bg-surface text-fg-muted hover:bg-surface-2',
                   )}
                 >
-                  {value === 'both' ? 'Les deux' : INTENT_LABELS[value]}
+                  {value === 'both' ? m.veille_intent_both_short() : intentLabel(value)}
                 </button>
               ))}
             </div>
@@ -213,9 +213,9 @@ export function VeilleEditDialog({
 
           {/* Mots-clés inclus */}
           <ChipField
-            label="Mots-clés"
-            hint="Au moins un. Entrée ou virgule pour ajouter."
-            placeholder="développeur, react, laravel"
+            label={m.veille_form_include_label()}
+            hint={m.veille_form_include_hint()}
+            placeholder={m.veille_form_include_placeholder()}
             chips={include}
             draft={includeDraft}
             onDraftChange={setIncludeDraft}
@@ -226,23 +226,23 @@ export function VeilleEditDialog({
 
           {/* Mots-clés exclus */}
           <ChipField
-            label="Exclure ces mots"
-            hint="Optionnel."
-            placeholder="stage, alternance"
+            label={m.veille_form_exclude_label()}
+            hint={m.veille_form_exclude_hint()}
+            placeholder={m.veille_form_exclude_placeholder()}
             chips={exclude}
             draft={excludeDraft}
             onDraftChange={setExcludeDraft}
             onCommit={commitExclude}
             onRemove={(kw) => setExclude((prev) => prev.filter((k) => k !== kw))}
             chipVariant="outline"
-            chipPrefix="sauf "
+            chipPrefix={m.veille_form_exclude_chip_prefix()}
           />
 
           {/* Sources */}
           <div className="space-y-1.5">
-            <Label>Sources surveillées</Label>
+            <Label>{m.veille_form_sources_label()}</Label>
             <p className="text-xs text-fg-subtle">
-              Rien de coché : toutes les sources sont surveillées.
+              {m.veille_form_sources_hint()}
             </p>
             <div className="flex flex-wrap gap-1.5">
               {CONNECTOR_META.map((c) => {
@@ -269,7 +269,7 @@ export function VeilleEditDialog({
 
           {/* Localisation */}
           <div className="space-y-1.5">
-            <Label htmlFor="veille-location">Localisation</Label>
+            <Label htmlFor="veille-location">{m.veille_form_location_label()}</Label>
             <Select
               value={location}
               onValueChange={(v) => setLocation(v as VeilleLocation)}
@@ -280,7 +280,7 @@ export function VeilleEditDialog({
               <SelectContent>
                 {LOCATIONS.map((value) => (
                   <SelectItem key={value} value={value}>
-                    {LOCATION_LABELS[value]}
+                    {locationLabel(value)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -293,7 +293,7 @@ export function VeilleEditDialog({
             className="flex cursor-pointer items-center justify-between gap-4 rounded-[var(--radius-sm)] border border-border bg-surface px-4 py-3"
           >
             <span className="text-sm font-medium text-fg">
-              Me notifier quand de nouvelles offres sont captées
+              {m.veille_form_notify_label()}
             </span>
             <Switch id="veille-notify" checked={notify} onCheckedChange={setNotify} />
           </label>
@@ -305,11 +305,11 @@ export function VeilleEditDialog({
             onClick={() => onOpenChange(false)}
             disabled={saving}
           >
-            Annuler
+            {m.veille_form_cancel()}
           </Button>
           <Button onClick={handleSave} disabled={saving}>
             {saving && <Loader2 className="size-4 animate-spin" />}
-            Enregistrer
+            {m.veille_form_save()}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -372,7 +372,7 @@ function ChipField({
               <button
                 type="button"
                 onClick={() => onRemove(chip)}
-                aria-label={`Retirer ${chip}`}
+                aria-label={m.veille_form_remove_chip({ chip })}
                 className="-mr-0.5 ml-0.5 flex size-4 items-center justify-center rounded-full transition-colors hover:bg-fg/10"
               >
                 <X className="size-3" />

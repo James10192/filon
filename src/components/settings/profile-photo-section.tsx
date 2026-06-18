@@ -3,6 +3,7 @@ import { useMutation, useQuery } from 'convex/react'
 import { Loader2, Trash2, Upload } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
+import { m } from '~/lib/paraglide/messages'
 import { toast } from '~/components/ui/sonner'
 import { Button } from '~/components/ui/button'
 import {
@@ -54,7 +55,7 @@ export function ProfilePhotoSection() {
 
   if (me === undefined) return <PhotoSkeleton />
 
-  const displayName = me?.name?.trim() || me?.email || 'Mon compte'
+  const displayName = me?.name?.trim() || me?.email || m.app_my_account()
   const image = me?.image
   const isCustom = Boolean(me?.customImage)
   const busy = uploading || removing
@@ -71,11 +72,11 @@ export function ProfilePhotoSection() {
     if (!file) return
 
     if (!file.type.startsWith('image/')) {
-      toast.error('Choisissez un fichier image (PNG, JPG, WebP).')
+      toast.error(m.app_photo_invalid_type())
       return
     }
     if (file.size > MAX_BYTES) {
-      toast.error('Image trop lourde. Taille maximale : 5 Mo.')
+      toast.error(m.app_photo_too_large())
       return
     }
 
@@ -92,9 +93,9 @@ export function ProfilePhotoSection() {
         storageId: Id<'_storage'>
       }
       await setProfileImage({ storageId })
-      toast.success('Photo de profil mise à jour.')
+      toast.success(m.app_photo_updated())
     } catch {
-      toast.error("L'import a échoué. Réessayez.")
+      toast.error(m.app_photo_upload_error())
     } finally {
       setUploading(false)
     }
@@ -104,9 +105,9 @@ export function ProfilePhotoSection() {
     setRemoving(true)
     try {
       await removeProfileImage({})
-      toast.success('Photo retirée.')
+      toast.success(m.app_photo_removed())
     } catch {
-      toast.error('Le retrait a échoué. Réessayez.')
+      toast.error(m.app_photo_remove_error())
     } finally {
       setRemoving(false)
     }
@@ -115,9 +116,9 @@ export function ProfilePhotoSection() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Photo de profil</CardTitle>
+        <CardTitle>{m.app_photo_title()}</CardTitle>
         <CardDescription>
-          Elle apparaît sur votre avatar dans toute l’application.
+          {m.app_photo_description()}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -151,7 +152,7 @@ export function ProfilePhotoSection() {
                 ) : (
                   <Upload className="size-4" />
                 )}
-                Importer une photo
+                {m.app_photo_upload()}
               </Button>
 
               {isCustom && (
@@ -166,15 +167,15 @@ export function ProfilePhotoSection() {
                   ) : (
                     <Trash2 className="size-4" />
                   )}
-                  Retirer
+                  {m.app_photo_remove()}
                 </Button>
               )}
             </div>
 
             <p className="text-xs text-fg-subtle">
               {isCustom
-                ? 'Vous utilisez une photo importée. PNG, JPG ou WebP, 5 Mo maximum.'
-                : 'Si vous avez lié Google ou GitHub, votre photo est synchronisée automatiquement à chaque connexion. Importez-en une pour la remplacer.'}
+                ? m.app_photo_hint_custom()
+                : m.app_photo_hint_synced()}
             </p>
           </div>
         </div>

@@ -39,6 +39,7 @@ import {
   AdminPaymentDetail,
   type PaystackTransaction,
 } from './admin-payment-detail'
+import { m } from '~/lib/paraglide/messages'
 
 /** Message d'erreur lisible depuis une erreur Convex (ou un échec réseau). */
 function errorMessage(error: unknown): string {
@@ -51,7 +52,7 @@ function errorMessage(error: unknown): string {
     return String((error.data as { message: unknown }).message)
   }
   if (error instanceof Error && error.message) return error.message
-  return 'Une erreur est survenue lors du chargement.'
+  return m.admin_error_generic()
 }
 
 /**
@@ -75,11 +76,11 @@ export function AdminPaymentsPanel() {
       try {
         const data = await fetchTransactions({})
         setRows(data)
-        if (withToast) toast.success('Paiements actualisés.')
+        if (withToast) toast.success(m.admin_toast_payments_refreshed())
       } catch (e) {
         setError(errorMessage(e))
         setRows((prev) => prev ?? [])
-        if (withToast) toast.error("Échec de l'actualisation.")
+        if (withToast) toast.error(m.admin_toast_refresh_failed())
       } finally {
         setRefreshing(false)
       }
@@ -112,8 +113,10 @@ export function AdminPaymentsPanel() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-fg-muted">
             {loading
-              ? 'Chargement des paiements.'
-              : `${formatNumber(rows.length)} transaction${rows.length > 1 ? 's' : ''}, récentes d'abord.`}
+              ? m.admin_payments_loading()
+              : rows.length > 1
+                ? m.admin_payments_count_plural({ n: formatNumber(rows.length) })
+                : m.admin_payments_count_one({ n: formatNumber(rows.length) })}
           </p>
           <Button
             variant="outline"
@@ -125,7 +128,7 @@ export function AdminPaymentsPanel() {
               className={`size-4${refreshing ? ' animate-spin' : ''}`}
               aria-hidden
             />
-            Actualiser
+            {m.admin_payments_refresh()}
           </Button>
         </div>
 
@@ -222,16 +225,16 @@ function PaymentsSummary({ rows }: { rows: PaystackTransaction[] }) {
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <SummaryWidget
         icon={Wallet}
-        label="Encaissé (XOF)"
+        label={m.admin_payments_collected()}
         value={formatXof(collectedXof)}
-        hint="Transactions réussies"
+        hint={m.admin_payments_successful_hint()}
         accent
       />
       <SummaryWidget
         icon={CheckCircle2}
-        label="Transactions réussies"
+        label={m.admin_payments_successful()}
         value={`${formatNumber(successful.length)} / ${formatNumber(rows.length)}`}
-        hint="Sur la période chargée"
+        hint={m.admin_payments_period_hint()}
       />
     </div>
   )
@@ -291,12 +294,12 @@ function PaymentsTable({
     <Table>
       <TableHeader>
         <TableRow className="border-border hover:bg-transparent">
-          <TableHead className="text-fg-muted">Montant</TableHead>
-          <TableHead className="text-fg-muted">E-mail client</TableHead>
-          <TableHead className="text-fg-muted">Référence</TableHead>
-          <TableHead className="text-fg-muted">Canal</TableHead>
-          <TableHead className="text-fg-muted">Statut</TableHead>
-          <TableHead className="text-fg-muted">Date</TableHead>
+          <TableHead className="text-fg-muted">{m.admin_pay_col_amount()}</TableHead>
+          <TableHead className="text-fg-muted">{m.admin_pay_col_email()}</TableHead>
+          <TableHead className="text-fg-muted">{m.admin_pay_col_reference()}</TableHead>
+          <TableHead className="text-fg-muted">{m.admin_pay_col_channel()}</TableHead>
+          <TableHead className="text-fg-muted">{m.admin_pay_col_status()}</TableHead>
+          <TableHead className="text-fg-muted">{m.admin_pay_col_date()}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -389,10 +392,10 @@ function EmptyPayments() {
         <CreditCard className="size-5" />
       </span>
       <p className="text-sm font-medium text-fg">
-        Aucun paiement reçu pour le moment
+        {m.admin_payments_empty_title()}
       </p>
       <p className="max-w-xs text-sm text-fg-muted">
-        Les transactions encaissées via Paystack apparaîtront ici.
+        {m.admin_payments_empty_desc()}
       </p>
     </div>
   )
@@ -404,7 +407,7 @@ function PaymentsError({ message }: { message: string }) {
       <span className="flex size-11 items-center justify-center rounded-[var(--radius)] bg-danger-soft text-danger">
         <AlertTriangle className="size-5" />
       </span>
-      <p className="text-sm font-medium text-fg">Chargement impossible</p>
+      <p className="text-sm font-medium text-fg">{m.admin_load_failed()}</p>
       <p className="max-w-xs text-sm text-fg-muted">{message}</p>
     </div>
   )

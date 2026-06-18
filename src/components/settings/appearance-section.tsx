@@ -24,26 +24,25 @@ export function AppearanceSection() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Apparence</CardTitle>
+        <CardTitle>{m.app_appearance_title()}</CardTitle>
         <CardDescription>
-          Choisissez le thème de votre espace. Le réglage est mémorisé sur cet
-          appareil.
+          {m.app_appearance_description()}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div
           role="radiogroup"
-          aria-label="Thème"
+          aria-label={m.app_theme_label()}
           className="grid grid-cols-2 gap-3 sm:max-w-md"
         >
           <ThemeOption
-            label="Clair"
+            label={m.app_theme_light()}
             icon={Sun}
             selected={active === 'light'}
             onSelect={() => setTheme('light')}
           />
           <ThemeOption
-            label="Sombre"
+            label={m.app_theme_dark()}
             icon={Moon}
             selected={active === 'dark'}
             onSelect={() => setTheme('dark')}

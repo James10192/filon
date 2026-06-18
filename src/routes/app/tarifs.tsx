@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useAction } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
+import { m } from '~/lib/paraglide/messages'
 import { toast } from '~/components/ui/sonner'
 import { PageToolbar } from '~/components/app/page-toolbar'
 import { PricingPlans } from '~/components/billing/pricing-plans'
@@ -15,7 +16,7 @@ import { PricingPlans } from '~/components/billing/pricing-plans'
  */
 export const Route = createFileRoute('/app/tarifs')({
   component: TarifsPage,
-  head: () => ({ meta: [{ title: 'Tarifs · Filon' }] }),
+  head: () => ({ meta: [{ title: m.app_tarifs_page_title() }] }),
   validateSearch: (
     search: Record<string, unknown>,
   ): { paystack?: string; reference?: string; trxref?: string } => {
@@ -41,14 +42,12 @@ function TarifsPage() {
         try {
           const res = await verify({ reference: ref })
           if (res.ok) {
-            toast.success('Paiement confirmé. Votre palier est actif.')
+            toast.success(m.app_tarifs_payment_confirmed())
           } else {
-            toast.error(
-              'Paiement non confirmé. Si vous avez été débité, le palier sera activé sous peu.',
-            )
+            toast.error(m.app_tarifs_payment_unconfirmed())
           }
         } catch {
-          toast.error('Vérification du paiement impossible pour le moment.')
+          toast.error(m.app_tarifs_payment_verify_error())
         }
       }
       void navigate({ to: '/app/tarifs', replace: true })
@@ -60,8 +59,8 @@ function TarifsPage() {
   return (
     <div className="flex flex-col">
       <PageToolbar
-        title="Tarifs"
-        subtitle="Choisissez le palier qui accompagne votre prospection. Sans engagement, changez quand vous voulez."
+        title={m.app_tarifs_title()}
+        subtitle={m.app_tarifs_subtitle()}
       />
       <PricingPlans />
     </div>

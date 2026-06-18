@@ -199,7 +199,7 @@ function AdminNavGroup({ pathname }: { pathname: string }) {
   return (
     <SidebarGroup>
       <SidebarGroupLabel className="text-[10px] font-semibold tracking-[0.08em] text-sidebar-foreground/55 uppercase">
-        Administration
+        {m.shell_admin_nav()}
       </SidebarGroupLabel>
       <SidebarGroupContent>
         <SidebarMenu>
@@ -207,12 +207,12 @@ function AdminNavGroup({ pathname }: { pathname: string }) {
             <SidebarMenuButton
               asChild
               isActive={active}
-              tooltip="Administration"
+              tooltip={m.shell_admin_nav()}
               className={cn(active && ACTIVE_NAV)}
             >
               <Link to="/app/admin" aria-current={active ? 'page' : undefined}>
                 <Shield className="size-4" />
-                <span>Administration</span>
+                <span>{m.shell_admin_nav()}</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

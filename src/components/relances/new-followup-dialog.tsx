@@ -3,6 +3,7 @@ import { useMutation, useQuery } from 'convex/react'
 import { Loader2, Plus } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
+import { m } from '~/lib/paraglide/messages'
 import { toast } from '~/components/ui/sonner'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
@@ -67,11 +68,11 @@ export function NewFollowupDialog({
     e.preventDefault()
     const trimmed = label.trim()
     if (!trimmed) {
-      setError("L'intitulé est requis.")
+      setError(m.dash_newfollowup_error_label_required())
       return
     }
     if (!dueDate) {
-      setError('Choisissez une date.')
+      setError(m.dash_newfollowup_error_date_required())
       return
     }
 
@@ -89,11 +90,11 @@ export function NewFollowupDialog({
 
     try {
       await create(args)
-      toast.success(`Relance planifiée pour le ${formatDate(iso)}.`)
+      toast.success(m.dash_newfollowup_toast_success({ date: formatDate(iso) }))
       setOpen(false)
     } catch {
-      toast.error("La relance n'a pas pu être planifiée.")
-      setError("La relance n'a pas pu être planifiée. Réessayez.")
+      toast.error(m.dash_newfollowup_toast_error())
+      setError(m.dash_newfollowup_error_failed())
     } finally {
       setSubmitting(false)
     }
@@ -105,34 +106,33 @@ export function NewFollowupDialog({
         {trigger ?? (
           <Button>
             <Plus className="size-4" />
-            Planifier une relance
+            {m.dash_newfollowup_trigger()}
           </Button>
         )}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Planifier une relance</DialogTitle>
+          <DialogTitle>{m.dash_newfollowup_title()}</DialogTitle>
           <DialogDescription>
-            Notez ce qu'il faut faire et quand. Filon vous le rappellera au bon
-            moment.
+            {m.dash_newfollowup_desc()}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="followup-label">Intitulé</Label>
+            <Label htmlFor="followup-label">{m.dash_newfollowup_label_field()}</Label>
             <Input
               id="followup-label"
               value={label}
               onChange={(e) => setLabel(e.target.value)}
-              placeholder="Ex. Relancer après l'entretien"
+              placeholder={m.dash_newfollowup_label_placeholder()}
               autoFocus
               aria-invalid={Boolean(error) && !label.trim()}
             />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="followup-date">Date de relance</Label>
+            <Label htmlFor="followup-date">{m.dash_newfollowup_date_field()}</Label>
             <Input
               id="followup-date"
               type="date"
@@ -143,14 +143,14 @@ export function NewFollowupDialog({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="followup-opp">Opportunité liée</Label>
+            <Label htmlFor="followup-opp">{m.dash_newfollowup_opp_field()}</Label>
             <Select value={opportunityId} onValueChange={setOpportunityId}>
               <SelectTrigger id="followup-opp">
-                <SelectValue placeholder="Aucune (relance libre)" />
+                <SelectValue placeholder={m.dash_newfollowup_opp_none()} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={NO_OPPORTUNITY}>
-                  Aucune (relance libre)
+                  {m.dash_newfollowup_opp_none()}
                 </SelectItem>
                 {(opportunities ?? []).map((opp) => (
                   <SelectItem key={opp._id} value={opp._id}>
@@ -174,11 +174,11 @@ export function NewFollowupDialog({
               onClick={() => setOpen(false)}
               disabled={submitting}
             >
-              Annuler
+              {m.dash_newfollowup_cancel()}
             </Button>
             <Button type="submit" disabled={submitting}>
               {submitting && <Loader2 className="size-4 animate-spin" />}
-              Planifier
+              {m.dash_newfollowup_submit()}
             </Button>
           </DialogFooter>
         </form>

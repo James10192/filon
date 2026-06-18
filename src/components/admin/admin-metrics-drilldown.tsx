@@ -14,19 +14,32 @@ import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { formatNumber, formatXof, planLabel } from './admin-meta'
 import type { AdminMetrics } from './admin-kpi-cards'
 import type { KpiKey } from './admin-kpi-cards'
+import { m } from '~/lib/paraglide/messages'
 
-type DrillMeta = {
-  title: string
-  icon: LucideIcon
+const DRILL_ICON: Record<KpiKey, LucideIcon> = {
+  users: Users,
+  mrr: Wallet,
+  ai: Sparkles,
+  opportunities: Briefcase,
+  veilles: Rss,
+  feedback: Inbox,
 }
 
-const META: Record<KpiKey, DrillMeta> = {
-  users: { title: 'Utilisateurs', icon: Users },
-  mrr: { title: 'Revenu récurrent', icon: Wallet },
-  ai: { title: 'Crédits IA', icon: Sparkles },
-  opportunities: { title: 'Opportunités', icon: Briefcase },
-  veilles: { title: 'Veilles', icon: Rss },
-  feedback: { title: 'Feedbacks ouverts', icon: Inbox },
+function drillTitle(key: KpiKey): string {
+  switch (key) {
+    case 'users':
+      return m.admin_drill_users()
+    case 'mrr':
+      return m.admin_drill_mrr()
+    case 'ai':
+      return m.admin_drill_ai()
+    case 'opportunities':
+      return m.admin_drill_opportunities()
+    case 'veilles':
+      return m.admin_drill_veilles()
+    case 'feedback':
+      return m.admin_drill_feedback()
+  }
 }
 
 /**
@@ -43,8 +56,7 @@ export function AdminMetricsDrilldown({
   kpiKey: KpiKey
   onClose: () => void
 }) {
-  const meta = META[kpiKey]
-  const Icon = meta.icon
+  const Icon = DRILL_ICON[kpiKey]
   return (
     <div className="flex h-full flex-col">
       <header className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
@@ -52,13 +64,13 @@ export function AdminMetricsDrilldown({
           <span className="flex size-11 shrink-0 items-center justify-center rounded-[var(--radius)] bg-surface-2 text-fg-muted">
             <Icon className="size-5" />
           </span>
-          <span className="truncate font-semibold text-fg">{meta.title}</span>
+          <span className="truncate font-semibold text-fg">{drillTitle(kpiKey)}</span>
         </div>
         <Button
           variant="ghost"
           size="icon"
           onClick={onClose}
-          aria-label="Fermer le détail"
+          aria-label={m.admin_close_detail()}
           className="h-11 w-11 shrink-0"
         >
           <X className="size-4" />
@@ -72,16 +84,16 @@ export function AdminMetricsDrilldown({
         {kpiKey === 'ai' && <AiInsight metrics={metrics} />}
         {kpiKey === 'opportunities' && (
           <SingleStat
-            label="Total des opportunités"
+            label={m.admin_drill_opp_label()}
             value={formatNumber(metrics.totalOpportunities)}
-            hint="Cumul cross-tenant, tous stades confondus."
+            hint={m.admin_drill_opp_hint()}
           />
         )}
         {kpiKey === 'veilles' && (
           <SingleStat
-            label="Veilles configurées"
+            label={m.admin_drill_veilles_label()}
             value={formatNumber(metrics.totalVeilles)}
-            hint="Recherches sauvegardées par les utilisateurs."
+            hint={m.admin_drill_veilles_hint()}
           />
         )}
         {kpiKey === 'feedback' && <FeedbackInsight metrics={metrics} />}
@@ -113,15 +125,15 @@ function PlansBreakdown({ metrics }: { metrics: AdminMetrics }) {
   return (
     <>
       <div className="grid grid-cols-2 gap-3">
-        <StatChip label="MRR estimé" value={formatXof(metrics.estimatedMrrXof)} accent />
+        <StatChip label={m.admin_kpi_mrr_label()} value={formatXof(metrics.estimatedMrrXof)} accent />
         <StatChip
-          label="Conversion payante"
+          label={m.admin_drill_conversion()}
           value={`${conversion} %`}
         />
       </div>
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">Répartition des paliers</CardTitle>
+          <CardTitle className="text-sm">{m.admin_chart_plans_title()}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-2.5">
           {rows.map((r) => (
@@ -154,9 +166,9 @@ function AiInsight({ metrics }: { metrics: AdminMetrics }) {
   return (
     <>
       <SingleStat
-        label="Crédits IA consommés ce mois"
+        label={m.admin_drill_ai_label()}
         value={formatNumber(metrics.aiCreditsUsedThisMonth)}
-        hint="Cumul depuis le 1er du mois courant."
+        hint={m.admin_drill_ai_hint()}
       />
       <Card className="border-accent/30 bg-accent-soft/40">
         <CardContent className="flex items-start gap-3 py-4">
@@ -164,11 +176,9 @@ function AiInsight({ metrics }: { metrics: AdminMetrics }) {
             <Bot className="size-4" />
           </span>
           <div className="min-w-0 space-y-1">
-            <p className="text-sm font-medium text-fg">Lecture Copilote</p>
+            <p className="text-sm font-medium text-fg">{m.admin_drill_ai_insight_title()}</p>
             <p className="text-sm leading-relaxed text-fg-muted">
-              La consommation IA reflète l'adoption des paliers Pro+ IA et
-              Copilote. Une hausse soutenue est un signal d'expansion à suivre
-              de près pour le calibrage des packs de crédits.
+              {m.admin_drill_ai_insight_body()}
             </p>
           </div>
         </CardContent>
@@ -180,9 +190,9 @@ function AiInsight({ metrics }: { metrics: AdminMetrics }) {
 function FeedbackInsight({ metrics }: { metrics: AdminMetrics }) {
   return (
     <SingleStat
-      label="Feedbacks ouverts"
+      label={m.admin_drill_feedback_label()}
       value={formatNumber(metrics.feedbackOpen)}
-      hint="Retours au statut Nouveau ou En cours. Le détail par retour est dans l'onglet Feedbacks."
+      hint={m.admin_drill_feedback_hint()}
     />
   )
 }

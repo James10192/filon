@@ -4,6 +4,7 @@ import { Link } from '@tanstack/react-router'
 import { ArrowUpRight, Building2, Coins, User } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
+import { m } from '~/lib/paraglide/messages'
 import { Badge } from '~/components/ui/badge'
 import {
   Select,
@@ -74,10 +75,12 @@ export function ProposalRecipientsPanel({
     try {
       await updateStatus({ id, status })
       toast.success(
-        `Destinataire marqué « ${RECIPIENT_STATUS_LABELS[status].toLowerCase()} ».`,
+        m.prop_recipient_toast_status_changed({
+          label: RECIPIENT_STATUS_LABELS[status].toLowerCase(),
+        }),
       )
     } catch {
-      toast.error("Le statut n'a pas pu être changé.")
+      toast.error(m.prop_toast_status_change_error())
     } finally {
       setBusyId(null)
     }
@@ -85,7 +88,7 @@ export function ProposalRecipientsPanel({
 
   return (
     <DetailPanel
-      title="Destinataires"
+      title={m.prop_recipients_heading()}
       action={
         summaryLabel ? (
           <span className="text-xs font-medium text-fg-muted">
@@ -96,8 +99,7 @@ export function ProposalRecipientsPanel({
     >
       {recipients.length === 0 ? (
         <p className="text-sm text-fg-muted">
-          Aucun destinataire pour l'instant. Ouvrez « Modifier » pour adresser
-          cette offre à des entreprises ou des particuliers.
+          {m.prop_recipients_panel_empty()}
         </p>
       ) : (
         <ul className="flex flex-col gap-2.5">
@@ -106,7 +108,9 @@ export function ProposalRecipientsPanel({
             const Icon = r.targetType === 'company' ? Building2 : User
             const name =
               r.targetName ??
-              (r.targetType === 'company' ? 'Entreprise' : 'Particulier')
+              (r.targetType === 'company'
+                ? m.prop_fallback_company()
+                : m.prop_target_person())
             const amount = formatAmount(r.amount, currency)
             const linked = r.opportunityId
               ? oppById.get(r.opportunityId)
@@ -134,7 +138,7 @@ export function ProposalRecipientsPanel({
                   >
                     <SelectTrigger
                       className="h-8 w-32"
-                      aria-label={`Statut de ${name}`}
+                      aria-label={m.prop_recipient_status_aria({ name })}
                     >
                       <SelectValue />
                     </SelectTrigger>
@@ -183,7 +187,7 @@ export function ProposalRecipientsPanel({
                       ) : (
                         <span className="inline-flex items-center gap-1.5 text-fg-subtle">
                           <ArrowUpRight className="size-3.5 shrink-0" />
-                          Opportunité liée
+                          {m.prop_linked_opportunity()}
                         </span>
                       ))}
                   </div>

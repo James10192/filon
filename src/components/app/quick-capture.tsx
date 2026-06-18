@@ -104,7 +104,7 @@ export function QuickCaptureProvider({
               repartir d'un etat vierge a chaque ouverture. */}
           {isOpen && (
             <OpportunityForm
-              submitLabel="Ajouter"
+              submitLabel={m.shell_quick_capture_submit()}
               onSubmit={handleSubmit}
               onCancel={close}
               pending={pending}

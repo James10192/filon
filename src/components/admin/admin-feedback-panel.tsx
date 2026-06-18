@@ -19,11 +19,12 @@ import {
 } from '~/components/ui/sheet'
 import { useMediaQuery } from '~/hooks/use-media-query'
 import {
-  FEEDBACK_STATUS_LABEL,
+  feedbackStatusLabel,
   FEEDBACK_STATUS_ORDER,
   formatNumber,
   type FeedbackStatus,
 } from './admin-meta'
+import { m } from '~/lib/paraglide/messages'
 import { AdminFeedbackItem, type FeedbackEntry } from './admin-feedback-item'
 import { AdminFeedbackDetail } from './admin-feedback-detail'
 import {
@@ -73,26 +74,28 @@ export function AdminFeedbackPanel() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-fg-muted">
             {items
-              ? `${formatNumber(items.length)} retour${items.length > 1 ? 's' : ''}, récents d'abord.`
-              : 'Chargement des retours.'}
+              ? items.length > 1
+                ? m.admin_feedback_count_plural({ n: formatNumber(items.length) })
+                : m.admin_feedback_count_one({ n: formatNumber(items.length) })
+              : m.admin_feedback_loading()}
           </p>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-fg-muted">Statut</span>
+            <span className="text-xs font-medium text-fg-muted">{m.admin_feedback_status_filter()}</span>
             <Select
               value={filter}
               onValueChange={(value) => setFilter(value as Filter)}
             >
               <SelectTrigger
                 className="h-11 w-44"
-                aria-label="Filtrer par statut"
+                aria-label={m.admin_feedback_filter_aria()}
               >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tous les statuts</SelectItem>
+                <SelectItem value="all">{m.admin_feedback_all_statuses()}</SelectItem>
                 {FEEDBACK_STATUS_ORDER.map((s) => (
                   <SelectItem key={s} value={s}>
-                    {FEEDBACK_STATUS_LABEL[s]}
+                    {feedbackStatusLabel(s)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -145,9 +148,11 @@ export function AdminFeedbackPanel() {
           side="right"
           className="w-full max-w-full gap-0 p-0 [&>button:last-child]:hidden"
         >
-          <SheetTitle className="sr-only">Détail du retour</SheetTitle>
+          <SheetTitle className="sr-only">
+            {m.admin_feedback_sheet_title()}
+          </SheetTitle>
           <SheetDescription className="sr-only">
-            Vue détaillée du retour sélectionné.
+            {m.admin_feedback_sheet_desc()}
           </SheetDescription>
           {selectedId && (
             <AdminFeedbackDetail
@@ -169,12 +174,12 @@ function EmptyFeedback({ filtered }: { filtered: boolean }) {
         <Inbox className="size-5" />
       </span>
       <p className="text-sm font-medium text-fg">
-        {filtered ? 'Aucun retour pour ce statut' : 'Aucun retour'}
+        {filtered ? m.admin_feedback_empty_filtered_title() : m.admin_feedback_empty_title()}
       </p>
       <p className="max-w-xs text-sm text-fg-muted">
         {filtered
-          ? 'Aucun retour ne correspond à ce filtre.'
-          : 'Les retours envoyés par les utilisateurs apparaîtront ici.'}
+          ? m.admin_feedback_empty_filtered_desc()
+          : m.admin_feedback_empty_desc()}
       </p>
     </div>
   )

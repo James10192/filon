@@ -5,6 +5,7 @@ import { api } from '../../../convex/_generated/api'
 import { Button } from '~/components/ui/button'
 import { toast } from '~/components/ui/sonner'
 import { RunPanel, type RunPanelState, type RunResult } from './run-panel'
+import { m } from '~/lib/paraglide/messages'
 
 /**
  * Veille manuelle, disponible sur TOUS les paliers (le cron auto, lui, est réservé
@@ -37,19 +38,20 @@ export function RunNowButton() {
 
       if (result.throttled) {
         toast.info(
-          `Veille déjà lancée, réessayez dans ${result.retryInSec ?? 60}s.`,
+          m.veille_toast_throttled({ n: result.retryInSec ?? 60 }),
         )
       } else if (result.imported > 0) {
-        const plural = result.imported > 1 ? 's' : ''
         toast.success(
-          `${result.imported} nouvelle${plural} offre${plural} captée${plural}.`,
+          result.imported > 1
+            ? m.veille_toast_captured_plural({ n: result.imported })
+            : m.veille_toast_captured_singular({ n: result.imported }),
         )
       } else {
-        toast.info('Aucune nouvelle offre pour le moment.')
+        toast.info(m.veille_toast_no_offer())
       }
     } catch {
       setState({ phase: 'error' })
-      toast.error('Le lancement de la veille a échoué. Réessayez.')
+      toast.error(m.veille_toast_run_failed())
     } finally {
       setRunning(false)
     }
@@ -68,7 +70,7 @@ export function RunNowButton() {
         ) : (
           <Radar className="size-4" />
         )}
-        Lancer maintenant
+        {m.veille_run_now()}
       </Button>
       <RunPanel open={panelOpen} onOpenChange={setPanelOpen} state={state} />
     </>

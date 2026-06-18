@@ -5,6 +5,7 @@ import {
   Send,
   type LucideIcon,
 } from 'lucide-react'
+import { m } from '~/lib/paraglide/messages'
 
 /**
  * Métadonnées partagées du pipeline (stages + types d'opportunité).
@@ -37,8 +38,8 @@ export const STAGE_ORDER: Stage[] = [
 ]
 
 type StageMeta = {
-  label: string
-  shortLabel: string
+  readonly label: string
+  readonly shortLabel: string
   /** Classe de texte/point (couleur de stage, cf. tokens DESIGN). */
   dotClass: string
   /** Classe de la chip de stage (fond doux + texte teinté). */
@@ -47,49 +48,77 @@ type StageMeta = {
 
 export const STAGE_META: Record<Stage, StageMeta> = {
   lead: {
-    label: 'Piste',
-    shortLabel: 'Piste',
+    get label() {
+      return m.opp_stage_lead()
+    },
+    get shortLabel() {
+      return m.opp_stage_lead_short()
+    },
     dotClass: 'bg-[var(--color-stage-lead)]',
     chipClass:
       'bg-[var(--color-stage-lead-soft)] text-[var(--color-stage-lead)]',
   },
   contacted: {
-    label: 'Contacté',
-    shortLabel: 'Contacté',
+    get label() {
+      return m.opp_stage_contacted()
+    },
+    get shortLabel() {
+      return m.opp_stage_contacted_short()
+    },
     dotClass: 'bg-[var(--color-stage-contacted)]',
     chipClass:
       'bg-[var(--color-stage-contacted-soft)] text-[var(--color-stage-contacted)]',
   },
   applied: {
-    label: 'Candidature envoyée',
-    shortLabel: 'Envoyée',
+    get label() {
+      return m.opp_stage_applied()
+    },
+    get shortLabel() {
+      return m.opp_stage_applied_short()
+    },
     dotClass: 'bg-[var(--color-stage-applied)]',
     chipClass:
       'bg-[var(--color-stage-applied-soft)] text-[var(--color-stage-applied)]',
   },
   interview: {
-    label: 'Entretien',
-    shortLabel: 'Entretien',
+    get label() {
+      return m.opp_stage_interview()
+    },
+    get shortLabel() {
+      return m.opp_stage_interview_short()
+    },
     dotClass: 'bg-[var(--color-stage-interview)]',
     chipClass:
       'bg-[var(--color-stage-interview-soft)] text-[var(--color-stage-interview)]',
   },
   negotiation: {
-    label: 'Négociation',
-    shortLabel: 'Négociation',
+    get label() {
+      return m.opp_stage_negotiation()
+    },
+    get shortLabel() {
+      return m.opp_stage_negotiation()
+    },
     dotClass: 'bg-[var(--color-stage-negotiation)]',
     chipClass:
       'bg-[var(--color-stage-negotiation-soft)] text-[var(--color-stage-negotiation)]',
   },
   won: {
-    label: 'Gagné',
-    shortLabel: 'Gagné',
+    get label() {
+      return m.opp_stage_won()
+    },
+    get shortLabel() {
+      return m.opp_stage_won_short()
+    },
     dotClass: 'bg-[var(--color-stage-won)]',
     chipClass: 'bg-[var(--color-stage-won-soft)] text-[var(--color-stage-won)]',
   },
   lost: {
-    label: 'Perdu',
-    shortLabel: 'Perdu',
+    get label() {
+      return m.opp_stage_lost()
+    },
+    get shortLabel() {
+      return m.opp_stage_lost_short()
+    },
     dotClass: 'bg-[var(--color-stage-lost)]',
     chipClass:
       'bg-[var(--color-stage-lost-soft)] text-[var(--color-stage-lost)]',
@@ -97,7 +126,7 @@ export const STAGE_META: Record<Stage, StageMeta> = {
 }
 
 type PriorityMeta = {
-  label: string
+  readonly label: string
   /** Classe de point (couleur sémantique, tokens existants). */
   dotClass: string
 }
@@ -107,13 +136,28 @@ type PriorityMeta = {
  * point) : seules `high` (warning) et `low` (subtile) portent un indicateur.
  */
 export const PRIORITY_META: Record<Priority, PriorityMeta> = {
-  low: { label: 'Priorité basse', dotClass: 'bg-[var(--color-fg-subtle)]' },
-  medium: { label: 'Priorité moyenne', dotClass: 'bg-[var(--color-info)]' },
-  high: { label: 'Priorité haute', dotClass: 'bg-[var(--color-warning)]' },
+  low: {
+    get label() {
+      return m.opp_priority_low_full()
+    },
+    dotClass: 'bg-[var(--color-fg-subtle)]',
+  },
+  medium: {
+    get label() {
+      return m.opp_priority_medium_full()
+    },
+    dotClass: 'bg-[var(--color-info)]',
+  },
+  high: {
+    get label() {
+      return m.opp_priority_high_full()
+    },
+    dotClass: 'bg-[var(--color-warning)]',
+  },
 }
 
 type TypeMeta = {
-  label: string
+  readonly label: string
   icon: LucideIcon
   /** Classe de texte teinté du type (chip à contour). */
   fgClass: string
@@ -131,36 +175,80 @@ export type SourceChannel =
   | 'other'
 
 /** Libellés FR du canal d'origine (aligné sur opportunities/meta.ts). */
-export const SOURCE_META: Record<SourceChannel, { label: string }> = {
-  job_board: { label: 'En ligne / Job board' },
-  referral: { label: 'Recommandation' },
-  event: { label: 'Événement' },
-  networking: { label: 'Networking' },
-  salon: { label: 'Salon' },
-  social: { label: 'Réseaux sociaux' },
-  inbound: { label: 'Entrant' },
-  cold: { label: 'Démarchage à froid' },
-  other: { label: 'Autre' },
+export const SOURCE_META: Record<SourceChannel, { readonly label: string }> = {
+  job_board: {
+    get label() {
+      return m.opp_source_job_board()
+    },
+  },
+  referral: {
+    get label() {
+      return m.opp_source_referral()
+    },
+  },
+  event: {
+    get label() {
+      return m.opp_source_event()
+    },
+  },
+  networking: {
+    get label() {
+      return m.opp_source_networking()
+    },
+  },
+  salon: {
+    get label() {
+      return m.opp_source_salon()
+    },
+  },
+  social: {
+    get label() {
+      return m.opp_source_social()
+    },
+  },
+  inbound: {
+    get label() {
+      return m.opp_source_inbound()
+    },
+  },
+  cold: {
+    get label() {
+      return m.opp_source_cold()
+    },
+  },
+  other: {
+    get label() {
+      return m.opp_source_other()
+    },
+  },
 }
 
 export const TYPE_META: Record<OppType, TypeMeta> = {
   job_offer: {
-    label: 'Candidature',
+    get label() {
+      return m.opp_type_job_offer()
+    },
     icon: Briefcase,
     fgClass: 'text-[var(--color-type-application)]',
   },
   spontaneous: {
-    label: 'Proposition',
+    get label() {
+      return m.opp_type_spontaneous()
+    },
     icon: Send,
     fgClass: 'text-[var(--color-type-pitch)]',
   },
   prospect: {
-    label: 'Prospection',
+    get label() {
+      return m.opp_type_prospect()
+    },
     icon: Radar,
     fgClass: 'text-[var(--color-type-prospect)]',
   },
   mission: {
-    label: 'Mission',
+    get label() {
+      return m.opp_type_mission()
+    },
     icon: Rocket,
     fgClass: 'text-[var(--color-type-mission)]',
   },

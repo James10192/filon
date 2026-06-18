@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Doc } from '../../../convex/_generated/dataModel'
+import { m } from '~/lib/paraglide/messages'
 import { Button } from '~/components/ui/button'
 import {
   DropdownMenu,
@@ -65,9 +66,9 @@ export function ProposalRowActions({
     setBusy(true)
     try {
       await setStatus({ id: proposal._id, status: next })
-      toast.success(`Proposition marquée « ${STATUS_LABELS[next].toLowerCase()} ».`)
+      toast.success(m.prop_toast_status_changed({ label: STATUS_LABELS[next].toLowerCase() }))
     } catch {
-      toast.error("Le statut n'a pas pu être changé.")
+      toast.error(m.prop_toast_status_change_error())
     } finally {
       setBusy(false)
     }
@@ -78,9 +79,9 @@ export function ProposalRowActions({
     setBusy(true)
     try {
       await remove({ id: proposal._id })
-      toast.success('Proposition supprimée.')
+      toast.success(m.prop_toast_deleted())
     } catch {
-      toast.error('La suppression a échoué.')
+      toast.error(m.prop_toast_delete_error())
     } finally {
       setBusy(false)
       setConfirmDelete(false)
@@ -92,9 +93,9 @@ export function ProposalRowActions({
     setBusy(true)
     try {
       await convert({ id: proposal._id })
-      toast.success('Convertie en mission dans le pipeline.')
+      toast.success(m.prop_toast_converted())
     } catch {
-      toast.error('La conversion a échoué.')
+      toast.error(m.prop_toast_convert_error())
     } finally {
       setBusy(false)
       setConfirmConvert(false)
@@ -109,7 +110,7 @@ export function ProposalRowActions({
             variant="ghost"
             size="icon-sm"
             disabled={busy}
-            aria-label="Actions"
+            aria-label={m.prop_actions_aria()}
             className="text-fg-subtle opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100 data-[state=open]:opacity-100"
           >
             <MoreHorizontal className="size-4" />
@@ -118,28 +119,28 @@ export function ProposalRowActions({
         <DropdownMenuContent align="end" className="w-52">
           <DropdownMenuItem onSelect={onOpen}>
             <SquareArrowOutUpRight className="size-4" />
-            Ouvrir
+            {m.prop_action_open()}
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => onEdit(proposal)}>
             <Pencil className="size-4" />
-            Modifier
+            {m.prop_action_edit()}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           {status === 'draft' && (
             <DropdownMenuItem onSelect={() => changeStatus('sent')}>
               <Send className="size-4" />
-              Marquer envoyée
+              {m.prop_action_mark_sent()}
             </DropdownMenuItem>
           )}
           {status === 'sent' && (
             <>
               <DropdownMenuItem onSelect={() => changeStatus('accepted')}>
                 <CheckCircle2 className="size-4" />
-                Marquer acceptée
+                {m.prop_action_mark_accepted()}
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={() => changeStatus('refused')}>
                 <XCircle className="size-4" />
-                Marquer refusée
+                {m.prop_action_mark_refused()}
               </DropdownMenuItem>
             </>
           )}
@@ -151,13 +152,13 @@ export function ProposalRowActions({
               }}
             >
               <Rocket className="size-4" />
-              Convertir en mission
+              {m.prop_action_convert()}
             </DropdownMenuItem>
           )}
           {status !== 'draft' && (
             <DropdownMenuItem onSelect={() => changeStatus('draft')}>
               <Undo2 className="size-4" />
-              Repasser en brouillon
+              {m.prop_action_back_to_draft()}
             </DropdownMenuItem>
           )}
           <DropdownMenuSeparator />
@@ -169,7 +170,7 @@ export function ProposalRowActions({
             }}
           >
             <Trash2 className="size-4" />
-            Supprimer
+            {m.prop_action_delete()}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -177,14 +178,13 @@ export function ProposalRowActions({
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Supprimer cette proposition ?</AlertDialogTitle>
+            <AlertDialogTitle>{m.prop_delete_confirm_title()}</AlertDialogTitle>
             <AlertDialogDescription>
-              « {proposal.title} » sera définitivement supprimée. Cette action
-              est irréversible.
+              {m.prop_delete_confirm_description({ title: proposal.title })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={busy}>Annuler</AlertDialogCancel>
+            <AlertDialogCancel disabled={busy}>{m.prop_cancel()}</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault()
@@ -193,7 +193,7 @@ export function ProposalRowActions({
               disabled={busy}
               className="bg-danger text-[var(--color-accent-fg)] hover:bg-danger/90"
             >
-              Supprimer définitivement
+              {m.prop_delete_confirm_action()}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -202,15 +202,13 @@ export function ProposalRowActions({
       <AlertDialog open={confirmConvert} onOpenChange={setConfirmConvert}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Convertir en mission ?</AlertDialogTitle>
+            <AlertDialogTitle>{m.prop_convert_confirm_title()}</AlertDialogTitle>
             <AlertDialogDescription>
-              Une opportunité de type mission sera créée dans votre pipeline à
-              partir de cette proposition acceptée. La proposition reste
-              inchangée.
+              {m.prop_convert_confirm_description()}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={busy}>Annuler</AlertDialogCancel>
+            <AlertDialogCancel disabled={busy}>{m.prop_cancel()}</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault()
@@ -218,7 +216,7 @@ export function ProposalRowActions({
               }}
               disabled={busy}
             >
-              Convertir
+              {m.prop_convert_confirm_action()}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

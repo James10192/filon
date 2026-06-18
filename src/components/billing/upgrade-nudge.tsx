@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { Link } from '@tanstack/react-router'
 import { Sparkles, X } from 'lucide-react'
 import { NUDGES, type NudgeId } from '~/lib/billing/conversion'
+import { m } from '~/lib/paraglide/messages'
 import { useUpsell } from '~/lib/billing/use-upsell'
 import { cn } from '~/lib/utils'
 import { Button } from '~/components/ui/button'
@@ -90,7 +91,7 @@ export function UpgradeNudge({
       <Button
         variant="ghost"
         size="icon-sm"
-        aria-label="Ne plus afficher"
+        aria-label={m.app_dismiss()}
         className="-mr-1 -mt-1 shrink-0 text-fg-subtle"
         onClick={() => dismissNudge(id)}
       >

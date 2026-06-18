@@ -3,6 +3,7 @@ import { useQuery } from 'convex/react'
 import { Building2, Plus, Send, Users } from 'lucide-react'
 import { api } from '../../../../convex/_generated/api'
 import type { Doc, Id } from '../../../../convex/_generated/dataModel'
+import { m } from '~/lib/paraglide/messages'
 import { Button } from '~/components/ui/button'
 import { Skeleton } from '~/components/ui/skeleton'
 import {
@@ -90,7 +91,7 @@ export function BoardView({
               <div className="flex flex-col gap-2 px-2.5 pb-2.5">
                 {items.length === 0 ? (
                   <p className="px-1 py-6 text-center text-xs text-fg-subtle">
-                    Aucune proposition.
+                    {m.prop_board_column_empty()}
                   </p>
                 ) : (
                   items.map((p) => (
@@ -151,7 +152,7 @@ function BoardCard({
             <span className="truncate">{proposal.companyName}</span>
           </>
         ) : (
-          'Sans entreprise cible'
+          m.prop_no_target_company()
         )}
       </span>
       {amount && (
@@ -201,15 +202,14 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
         <Send className="size-7" />
       </span>
       <h2 className="mt-5 text-lg font-semibold tracking-[-0.01em] text-fg">
-        Aucune proposition pour l'instant
+        {m.prop_empty_title()}
       </h2>
       <p className="mt-1.5 max-w-sm text-sm text-fg-muted">
-        Créez votre première proposition spontanée pour la suivre du brouillon à
-        la signature.
+        {m.prop_board_empty_message()}
       </p>
       <Button className="mt-6 h-11" onClick={onCreate}>
         <Plus className="size-4" />
-        Nouvelle proposition
+        {m.prop_new()}
       </Button>
     </div>
   )

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useMutation } from 'convex/react'
 import { Plus } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
+import { m } from '~/lib/paraglide/messages'
 import { Button } from '~/components/ui/button'
 import { toast } from '~/components/ui/sonner'
 import { handlePlanLimit } from '~/lib/billing/upsell'
@@ -52,11 +53,11 @@ export function OpportunityFormDialog({
       if (values.description) args.description = values.description
 
       await create(args as Parameters<typeof create>[0])
-      toast.success('Opportunité ajoutée.')
+      toast.success(m.opp_added())
       setOpen(false)
     } catch (error) {
       if (!handlePlanLimit(error)) {
-        toast.error("Impossible d'ajouter l'opportunité.")
+        toast.error(m.opp_add_error())
       }
     } finally {
       setPending(false)
@@ -69,19 +70,19 @@ export function OpportunityFormDialog({
         {trigger ?? (
           <Button>
             <Plus className="size-4" />
-            Ajouter une opportunité
+            {m.opp_add_opportunity()}
           </Button>
         )}
       </DialogTrigger>
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Ajouter une opportunité</DialogTitle>
+          <DialogTitle>{m.opp_add_opportunity()}</DialogTitle>
           <DialogDescription>
-            Une nouvelle piste à suivre dans votre pipeline.
+            {m.opp_add_dialog_desc()}
           </DialogDescription>
         </DialogHeader>
         <OpportunityForm
-          submitLabel="Ajouter"
+          submitLabel={m.opp_add()}
           onSubmit={handleSubmit}
           onCancel={() => setOpen(false)}
           pending={pending}

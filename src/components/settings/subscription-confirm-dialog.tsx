@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Loader2 } from 'lucide-react'
+import { m } from '~/lib/paraglide/messages'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,7 +44,7 @@ export function SubscriptionConfirmDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={pending}>Annuler</AlertDialogCancel>
+          <AlertDialogCancel disabled={pending}>{m.app_cancel()}</AlertDialogCancel>
           <AlertDialogAction
             disabled={pending}
             onClick={(e) => {

@@ -2,6 +2,8 @@
  * Helpers de formatage de dates pour les relances. FR, sans tiret long.
  */
 
+import { m } from '~/lib/paraglide/messages'
+
 const dateFmt = new Intl.DateTimeFormat('fr-FR', {
   day: 'numeric',
   month: 'long',
@@ -44,10 +46,10 @@ export function formatDateShort(iso: string): string {
  */
 export function relativeLabel(iso: string): string {
   const delta = dayDelta(iso)
-  if (delta === 0) return "Aujourd'hui"
-  if (delta === 1) return 'Demain'
-  if (delta === -1) return 'Hier'
-  if (delta < 0) return `En retard de ${Math.abs(delta)} jours`
+  if (delta === 0) return m.dash_relative_today()
+  if (delta === 1) return m.dash_relative_tomorrow()
+  if (delta === -1) return m.dash_relative_yesterday()
+  if (delta < 0) return m.dash_relative_overdue({ n: Math.abs(delta) })
   if (delta < 7) {
     const wd = weekdayFmt.format(new Date(iso))
     return `${wd.charAt(0).toUpperCase()}${wd.slice(1)} ${formatDateShort(iso)}`

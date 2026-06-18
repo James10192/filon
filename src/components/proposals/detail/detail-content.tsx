@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { FunctionReturnType } from 'convex/server'
 import { Building2, CalendarClock, Coins, Users } from 'lucide-react'
 import { api } from '../../../../convex/_generated/api'
+import { m } from '~/lib/paraglide/messages'
 import { Badge } from '~/components/ui/badge'
 import { EntityDocuments } from '~/components/shared/entity-documents'
 import { ProposalFormDialog } from '../proposal-form-dialog'
@@ -90,7 +91,7 @@ export function ProposalDetailContent({
           ) : (
             <span className="inline-flex items-center gap-1.5 text-fg-subtle">
               <Building2 className="size-4" />
-              Sans entreprise cible
+              {m.prop_no_target_company()}
             </span>
           )}
           {amount && (
@@ -102,7 +103,7 @@ export function ProposalDetailContent({
           {sentAt && (
             <span className="inline-flex items-center gap-1.5">
               <CalendarClock className="size-4 text-fg-subtle" />
-              Envoyée le <span className="assay">{sentAt}</span>
+              {m.prop_sent_on_prefix()} <span className="assay">{sentAt}</span>
             </span>
           )}
         </div>
@@ -116,7 +117,7 @@ export function ProposalDetailContent({
         <section
           className={isPage ? 'flex flex-col gap-5 lg:col-span-2' : 'flex flex-col gap-5'}
         >
-          <DetailPanel title="Pitch">
+          <DetailPanel title={m.prop_panel_pitch()}>
             <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-fg">
               {proposal.pitch}
             </p>
@@ -127,7 +128,7 @@ export function ProposalDetailContent({
             currency={proposal.currency}
           />
 
-          <DetailPanel title="Documents">
+          <DetailPanel title={m.prop_panel_documents()}>
             <EntityDocuments
               entityType="proposal"
               entityId={String(proposal._id)}
@@ -152,10 +153,10 @@ export function ProposalDetailContent({
 
 function CompanyPanel({ company }: { company: LoadedProposal['company'] }) {
   return (
-    <DetailPanel title="Entreprise cible">
+    <DetailPanel title={m.prop_panel_target_company()}>
       {!company ? (
         <p className="text-sm text-fg-muted">
-          Aucune entreprise rattachée à cette proposition.
+          {m.prop_no_company_attached()}
         </p>
       ) : (
         <div className="flex items-start gap-2.5 text-sm">

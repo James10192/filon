@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useMutation } from 'convex/react'
 import type { FunctionReturnType } from 'convex/server'
 import { api } from '../../../../convex/_generated/api'
+import { m } from '~/lib/paraglide/messages'
 import { toast } from '~/components/ui/sonner'
 import {
   Dialog,
@@ -55,10 +56,10 @@ export function OpportunityDetailContent({
     if (next === opportunity.stage) return
     try {
       await setStage({ id: opportunity._id, stage: next })
-      toast.success(`Opportunité déplacée vers « ${STAGE_META[next].label} ».`)
+      toast.success(m.opp_moved_to({ stage: STAGE_META[next].label }))
       if (next === 'won') setJustWon(true)
     } catch {
-      toast.error('Le déplacement a échoué.')
+      toast.error(m.opp_move_error())
     }
   }
 
@@ -66,10 +67,10 @@ export function OpportunityDetailContent({
     setEditPending(true)
     try {
       await update(buildUpdateArgs(opportunity._id, values))
-      toast.success('Modifications enregistrées.')
+      toast.success(m.opp_changes_saved())
       setEditOpen(false)
     } catch {
-      toast.error("Les modifications n'ont pas pu être enregistrées.")
+      toast.error(m.opp_changes_save_error())
     } finally {
       setEditPending(false)
     }
@@ -79,10 +80,10 @@ export function OpportunityDetailContent({
     setRemoving(true)
     try {
       await remove({ id: opportunity._id })
-      toast.success('Opportunité supprimée.')
+      toast.success(m.opp_removed())
       onRemoved?.()
     } catch {
-      toast.error('La suppression a échoué.')
+      toast.error(m.opp_delete_error())
       setRemoving(false)
     }
   }
@@ -107,14 +108,14 @@ export function OpportunityDetailContent({
         }
       >
         <section className={isPage ? 'lg:col-span-2' : ''}>
-          <Panel title="Activité">
+          <Panel title={m.opp_panel_activity()}>
             <ActivityTimeline opportunityId={opportunity._id} />
           </Panel>
         </section>
 
         <aside className="flex flex-col gap-5">
           {opportunity.description && (
-            <Panel title="Notes">
+            <Panel title={m.opp_panel_notes()}>
               <p className="whitespace-pre-wrap break-words text-sm text-fg">
                 {opportunity.description}
               </p>
@@ -135,7 +136,7 @@ export function OpportunityDetailContent({
             nextActionAt={opportunity.nextActionAt}
           />
 
-          <Panel title="Documents">
+          <Panel title={m.opp_panel_documents()}>
             <EntityDocuments
               entityType="opportunity"
               entityId={String(opportunity._id)}
@@ -147,14 +148,14 @@ export function OpportunityDetailContent({
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Modifier l'opportunité</DialogTitle>
+            <DialogTitle>{m.opp_edit_title()}</DialogTitle>
             <DialogDescription>
-              L'étape se change depuis l'en-tête de l'opportunité.
+              {m.opp_edit_desc_header()}
             </DialogDescription>
           </DialogHeader>
           <OpportunityForm
             withStage={false}
-            submitLabel="Enregistrer"
+            submitLabel={m.opp_save()}
             pending={editPending}
             onCancel={() => setEditOpen(false)}
             onSubmit={handleEdit}

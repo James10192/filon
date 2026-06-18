@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { CircleUser, KanbanSquare, type LucideIcon } from 'lucide-react'
+import { m } from '~/lib/paraglide/messages'
 import { cn } from '~/lib/utils'
 import { ProfileSection } from './profile-section'
 import { ProfilePhotoSection } from './profile-photo-section'
@@ -13,8 +14,8 @@ type SectionKey = 'compte' | 'preferences'
 
 type Section = {
   key: SectionKey
-  label: string
-  description: string
+  label: () => string
+  description: () => string
   icon: LucideIcon
 }
 
@@ -22,14 +23,14 @@ type Section = {
 const SECTIONS: Section[] = [
   {
     key: 'compte',
-    label: 'Compte',
-    description: 'Profil et session',
+    label: m.app_section_account,
+    description: m.app_section_account_desc,
     icon: CircleUser,
   },
   {
     key: 'preferences',
-    label: 'Préférences',
-    description: 'Devise et pipeline',
+    label: m.app_section_preferences,
+    description: m.app_section_preferences_desc,
     icon: KanbanSquare,
   },
 ]
@@ -78,7 +79,7 @@ function SettingsNav({
 }) {
   return (
     <nav
-      aria-label="Sections des paramètres"
+      aria-label={m.app_settings_nav_label()}
       className={cn(
         'flex shrink-0 gap-1.5 overflow-x-auto pb-1 lg:w-56 lg:flex-col lg:overflow-visible lg:pb-0',
         '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
@@ -107,14 +108,14 @@ function SettingsNav({
               )}
             />
             <span className="flex min-w-0 flex-col">
-              <span className="truncate font-medium">{section.label}</span>
+              <span className="truncate font-medium">{section.label()}</span>
               <span
                 className={cn(
                   'hidden truncate text-xs lg:block',
                   isActive ? 'text-accent/70' : 'text-fg-subtle',
                 )}
               >
-                {section.description}
+                {section.description()}
               </span>
             </span>
           </button>

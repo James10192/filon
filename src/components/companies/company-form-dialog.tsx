@@ -17,6 +17,7 @@ import { Label } from '~/components/ui/label'
 import { Textarea } from '~/components/ui/textarea'
 import { ValueCombobox } from '~/components/ui/value-combobox'
 import { toast } from '~/components/ui/sonner'
+import { m } from '~/lib/paraglide/messages'
 
 type Company = Doc<'companies'>
 
@@ -79,7 +80,7 @@ export function CompanyFormDialog({
     e.preventDefault()
     const name = form.name.trim()
     if (!name) {
-      setError("Le nom de l'entreprise est requis.")
+      setError(m.carnet_company_name_required())
       return
     }
     setError(null)
@@ -95,7 +96,7 @@ export function CompanyFormDialog({
           source: form.source.trim(),
           notes: form.notes.trim(),
         })
-        toast.success('Modifications enregistrees.')
+        toast.success(m.carnet_changes_saved())
       } else {
         // Construit les args dynamiquement : jamais `undefined` en arg Convex.
         const args: {
@@ -112,14 +113,14 @@ export function CompanyFormDialog({
         if (form.source.trim()) args.source = form.source.trim()
         if (form.notes.trim()) args.notes = form.notes.trim()
         await createCompany(args)
-        toast.success('Entreprise ajoutee.')
+        toast.success(m.carnet_company_added())
       }
       onOpenChange(false)
     } catch {
       toast.error(
         isEdit
-          ? "Les modifications n'ont pas pu etre enregistrees."
-          : "Impossible d'ajouter l'entreprise.",
+          ? m.carnet_changes_save_failed()
+          : m.carnet_company_add_failed(),
       )
     } finally {
       setBusy(false)
@@ -131,23 +132,25 @@ export function CompanyFormDialog({
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>
-            {isEdit ? "Modifier l'entreprise" : 'Ajouter une entreprise'}
+            {isEdit
+              ? m.carnet_company_dialog_title_edit()
+              : m.carnet_company_dialog_title_create()}
           </DialogTitle>
           <DialogDescription>
             {isEdit
-              ? 'Mettez a jour les informations de cette entreprise.'
-              : 'Enregistrez une entreprise que vous ciblez ou avec qui vous echangez.'}
+              ? m.carnet_company_dialog_desc_edit()
+              : m.carnet_company_dialog_desc_create()}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={onSubmit} className="grid gap-4">
           <div className="grid gap-1.5">
-            <Label htmlFor="company-name">Nom</Label>
+            <Label htmlFor="company-name">{m.carnet_field_name()}</Label>
             <Input
               id="company-name"
               value={form.name}
               onChange={field('name')}
-              placeholder="Nom de l'entreprise"
+              placeholder={m.carnet_company_name_placeholder()}
               aria-invalid={Boolean(error)}
               autoFocus
             />
@@ -156,32 +159,34 @@ export function CompanyFormDialog({
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-1.5">
-              <Label htmlFor="company-sector">Secteur</Label>
+              <Label htmlFor="company-sector">{m.carnet_field_sector()}</Label>
               <ValueCombobox
                 id="company-sector"
                 value={form.sector}
                 onChange={(v) => setForm((f) => ({ ...f, sector: v }))}
                 suggestions={suggestions.sector}
-                placeholder="Ex. Fintech, agence web"
-                searchPlaceholder="Secteur..."
+                placeholder={m.carnet_sector_placeholder()}
+                searchPlaceholder={m.carnet_sector_search()}
               />
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="company-location">Localisation</Label>
+              <Label htmlFor="company-location">
+                {m.carnet_field_location()}
+              </Label>
               <ValueCombobox
                 id="company-location"
                 value={form.location}
                 onChange={(v) => setForm((f) => ({ ...f, location: v }))}
                 suggestions={suggestions.location}
-                placeholder="Ex. Abidjan, remote"
-                searchPlaceholder="Localisation..."
+                placeholder={m.carnet_location_placeholder()}
+                searchPlaceholder={m.carnet_location_search()}
               />
             </div>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-1.5">
-              <Label htmlFor="company-website">Site web</Label>
+              <Label htmlFor="company-website">{m.carnet_field_website()}</Label>
               <Input
                 id="company-website"
                 value={form.website}
@@ -191,25 +196,25 @@ export function CompanyFormDialog({
               />
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="company-source">Source</Label>
+              <Label htmlFor="company-source">{m.carnet_field_source()}</Label>
               <ValueCombobox
                 id="company-source"
                 value={form.source}
                 onChange={(v) => setForm((f) => ({ ...f, source: v }))}
                 suggestions={suggestions.source}
-                placeholder="LinkedIn, recommandation..."
-                searchPlaceholder="Source..."
+                placeholder={m.carnet_source_placeholder()}
+                searchPlaceholder={m.carnet_source_search()}
               />
             </div>
           </div>
 
           <div className="grid gap-1.5">
-            <Label htmlFor="company-notes">Notes</Label>
+            <Label htmlFor="company-notes">{m.carnet_field_notes()}</Label>
             <Textarea
               id="company-notes"
               value={form.notes}
               onChange={field('notes')}
-              placeholder="Details, contexte, points a suivre"
+              placeholder={m.carnet_notes_placeholder()}
             />
           </div>
 
@@ -220,11 +225,11 @@ export function CompanyFormDialog({
               onClick={() => onOpenChange(false)}
               disabled={busy}
             >
-              Annuler
+              {m.carnet_cancel()}
             </Button>
             <Button type="submit" disabled={busy}>
               {busy && <Loader2 className="size-4 animate-spin" />}
-              Enregistrer
+              {m.carnet_save()}
             </Button>
           </DialogFooter>
         </form>

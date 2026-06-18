@@ -17,6 +17,7 @@ import {
 } from './admin-kpi-cards'
 import { PlanDistributionChart, SignupsChart } from './admin-metrics-charts'
 import { AdminMetricsDrilldown } from './admin-metrics-drilldown'
+import { m } from '~/lib/paraglide/messages'
 
 /**
  * Section « Métriques » du back-office : cartes KPI cliquables (drill-down) plus
@@ -75,9 +76,11 @@ export function AdminMetricsPanel() {
           side="right"
           className="w-full max-w-full gap-0 p-0 [&>button:last-child]:hidden"
         >
-          <SheetTitle className="sr-only">Détail de la métrique</SheetTitle>
+          <SheetTitle className="sr-only">
+            {m.admin_metric_sheet_title()}
+          </SheetTitle>
           <SheetDescription className="sr-only">
-            Lecture détaillée de la métrique sélectionnée.
+            {m.admin_metric_sheet_desc()}
           </SheetDescription>
           {selectedKey && (
             <AdminMetricsDrilldown

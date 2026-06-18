@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
+import { m } from '~/lib/paraglide/messages'
 import { cn } from '~/lib/utils'
 import { Skeleton } from '~/components/ui/skeleton'
 import { StageChip } from '../chips'
@@ -83,10 +84,9 @@ export function CalendarView({
           <CalendarDays className="size-6" />
         </span>
         <div className="space-y-1">
-          <h2 className="text-lg font-semibold text-fg">Agenda vide</h2>
+          <h2 className="text-lg font-semibold text-fg">{m.opp_calendar_empty_title()}</h2>
           <p className="mx-auto max-w-md text-sm text-fg-muted">
-            Ajoutez une échéance ou planifiez une relance sur une opportunité
-            pour la voir apparaître ici.
+            {m.opp_calendar_empty_message()}
           </p>
         </div>
       </div>

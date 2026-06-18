@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Loader2 } from 'lucide-react'
+import { m } from '~/lib/paraglide/messages'
 import { authClient } from '~/lib/auth/auth-client'
 import { toast } from '~/components/ui/sonner'
 import { Button } from '~/components/ui/button'
@@ -92,12 +93,12 @@ export function LinkedAccountsSection() {
       })
       if (error) {
         setPending(null)
-        toast.error('La liaison a échoué. Réessayez.')
+        toast.error(m.app_link_error())
       }
       // En cas de succès, redirection vers le provider : on garde l'état.
     } catch {
       setPending(null)
-      toast.error('La liaison a échoué. Réessayez.')
+      toast.error(m.app_link_error())
     }
   }
 
@@ -108,14 +109,14 @@ export function LinkedAccountsSection() {
       const { error } = await authClient.unlinkAccount({ providerId: provider })
       if (error) {
         toast.error(
-          error.message ?? 'La déliaison a échoué. Réessayez.',
+          error.message ?? m.app_unlink_error(),
         )
         return
       }
-      toast.success('Compte délié.')
+      toast.success(m.app_unlink_success())
       await refresh()
     } catch {
-      toast.error('La déliaison a échoué. Réessayez.')
+      toast.error(m.app_unlink_error())
     } finally {
       setPending(null)
     }
@@ -124,28 +125,28 @@ export function LinkedAccountsSection() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Connexions</CardTitle>
+        <CardTitle>{m.app_connections_title()}</CardTitle>
         <CardDescription>
-          Liez vos comptes Google et GitHub pour vous connecter en un clic.
+          {m.app_connections_description()}
         </CardDescription>
       </CardHeader>
       <CardContent>
         {accounts === null && !loadError ? (
           <div className="flex items-center gap-2 rounded-[var(--radius)] border border-border bg-surface-2 p-4 text-sm text-fg-muted">
             <Loader2 className="size-4 animate-spin" />
-            Chargement des comptes liés…
+            {m.app_connections_loading()}
           </div>
         ) : loadError ? (
           <div className="flex flex-col gap-3 rounded-[var(--radius)] border border-border bg-surface-2 p-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-fg-muted">
-              Impossible de charger vos comptes liés.
+              {m.app_connections_load_error()}
             </p>
             <Button
               variant="outline"
               className="h-11 shrink-0"
               onClick={() => void refresh()}
             >
-              Réessayer
+              {m.app_retry()}
             </Button>
           </div>
         ) : (
@@ -169,9 +170,9 @@ export function LinkedAccountsSection() {
                       <p className="mt-0.5 text-sm text-fg-muted">
                         {isLinked
                           ? lastMethod
-                            ? 'Lié · seul moyen de connexion'
-                            : 'Compte lié'
-                          : 'Non lié'}
+                            ? m.app_connection_last_method()
+                            : m.app_connection_linked()
+                          : m.app_connection_not_linked()}
                       </p>
                     </div>
                   </div>
@@ -183,7 +184,7 @@ export function LinkedAccountsSection() {
                       disabled={isPending || lastMethod}
                       title={
                         lastMethod
-                          ? 'Définissez un mot de passe ou liez un autre compte avant de délier celui-ci.'
+                          ? m.app_unlink_blocked_hint()
                           : undefined
                       }
                       onClick={() => setConfirmUnlink(provider.id)}
@@ -191,7 +192,7 @@ export function LinkedAccountsSection() {
                       {isPending && (
                         <Loader2 className="size-4 animate-spin" />
                       )}
-                      Délier
+                      {m.app_unlink()}
                     </Button>
                   ) : (
                     <Button
@@ -203,7 +204,7 @@ export function LinkedAccountsSection() {
                       {isPending && (
                         <Loader2 className="size-4 animate-spin" />
                       )}
-                      Lier
+                      {m.app_link()}
                     </Button>
                   )}
                 </li>
@@ -221,15 +222,14 @@ export function LinkedAccountsSection() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Délier ce compte ?</AlertDialogTitle>
+            <AlertDialogTitle>{m.app_unlink_confirm_title()}</AlertDialogTitle>
             <AlertDialogDescription>
-              Vous ne pourrez plus vous connecter avec ce fournisseur. Vous
-              pourrez le relier à tout moment.
+              {m.app_unlink_confirm_desc()}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={pending !== null}>
-              Annuler
+              {m.app_cancel()}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
@@ -239,7 +239,7 @@ export function LinkedAccountsSection() {
               disabled={pending !== null}
             >
               {pending !== null && <Loader2 className="size-4 animate-spin" />}
-              Délier
+              {m.app_unlink()}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

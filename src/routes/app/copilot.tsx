@@ -5,7 +5,7 @@ import { CopilotPanel } from '~/components/copilot/copilot-panel'
 export const Route = createFileRoute('/app/copilot')({
   component: CopilotPage,
   head: () => ({
-    meta: [{ title: 'Filon · Copilote' }],
+    meta: [{ title: m.app_copilot_page_title() }],
   }),
 })
 

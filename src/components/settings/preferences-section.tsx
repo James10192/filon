@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery } from 'convex/react'
 import { Loader2, RotateCcw } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
+import { m } from '~/lib/paraglide/messages'
 import { toast } from '~/components/ui/sonner'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
@@ -26,6 +27,7 @@ import {
   CURRENCIES,
   DEFAULT_STAGE_LABELS,
   STAGE_COLOR_VAR,
+  STAGE_LABEL_MESSAGES, // libelles localises pour placeholder/aria
   STAGE_ORDER,
   type StageKey,
   isDefaultStageLabels,
@@ -101,9 +103,9 @@ export function PreferencesSection() {
 
     try {
       await upsert(args)
-      toast.success('Modifications enregistrées.')
+      toast.success(m.app_changes_saved())
     } catch {
-      toast.error("Les modifications n'ont pas pu être enregistrées.")
+      toast.error(m.app_changes_save_error())
     } finally {
       setSaving(false)
     }
@@ -113,24 +115,23 @@ export function PreferencesSection() {
     <Card>
       <form onSubmit={onSubmit}>
         <CardHeader>
-          <CardTitle>Préférences</CardTitle>
+          <CardTitle>{m.app_preferences_title()}</CardTitle>
           <CardDescription>
-            La devise sert à afficher les montants de votre pipeline. Vous
-            pouvez aussi renommer les étapes selon votre façon de travailler.
+            {m.app_preferences_description()}
           </CardDescription>
         </CardHeader>
 
         <CardContent className="flex flex-col gap-6">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="pref-currency">Devise par défaut</Label>
+            <Label htmlFor="pref-currency">{m.app_default_currency()}</Label>
             <Select value={currency} onValueChange={setCurrency}>
               <SelectTrigger id="pref-currency" className="sm:max-w-xs">
-                <SelectValue placeholder="Choisir une devise" />
+                <SelectValue placeholder={m.app_choose_currency()} />
               </SelectTrigger>
               <SelectContent>
                 {CURRENCIES.map((c) => (
                   <SelectItem key={c.value} value={c.value}>
-                    {c.label}
+                    {c.label()}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -141,11 +142,10 @@ export function PreferencesSection() {
             <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
               <div>
                 <Label className="text-sm font-medium text-fg">
-                  Libellés des étapes
+                  {m.app_stage_labels()}
                 </Label>
                 <p className="mt-0.5 text-xs text-fg-subtle">
-                  Personnalisez le nom de chaque colonne du pipeline. Laissé tel
-                  quel, Filon utilise les libellés par défaut.
+                  {m.app_stage_labels_hint()}
                 </p>
               </div>
               <Button
@@ -157,7 +157,7 @@ export function PreferencesSection() {
                 className="self-start shrink-0"
               >
                 <RotateCcw className="size-4" />
-                Réinitialiser
+                {m.app_reset()}
               </Button>
             </div>
 
@@ -173,11 +173,11 @@ export function PreferencesSection() {
                     style={{ background: STAGE_COLOR_VAR[key] }}
                   />
                   <Input
-                    aria-label={`Libellé de l’étape ${DEFAULT_STAGE_LABELS[key]}`}
+                    aria-label={m.app_stage_label_aria({ stage: STAGE_LABEL_MESSAGES[key]() })}
                     value={labels[key]}
                     maxLength={40}
                     onChange={(e) => setLabel(key, e.target.value)}
-                    placeholder={DEFAULT_STAGE_LABELS[key]}
+                    placeholder={STAGE_LABEL_MESSAGES[key]()}
                     className="h-9 border-transparent bg-transparent px-2 shadow-none focus-visible:border-border-strong"
                   />
                 </div>
@@ -189,7 +189,7 @@ export function PreferencesSection() {
         <CardFooter className="justify-end">
           <Button type="submit" disabled={saving || !dirty}>
             {saving && <Loader2 className="size-4 animate-spin" />}
-            Enregistrer
+            {m.app_save()}
           </Button>
         </CardFooter>
       </form>

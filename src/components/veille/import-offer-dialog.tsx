@@ -20,6 +20,7 @@ import { toast } from '~/components/ui/sonner'
 import { handlePlanLimit } from '~/lib/billing/upsell'
 import { ImportPreviewForm, type PreviewFields } from './import-preview-form'
 import { sourceFromHost } from './meta'
+import { m } from '~/lib/paraglide/messages'
 
 type Phase = 'idle' | 'parsing' | 'preview' | 'creating'
 
@@ -106,7 +107,7 @@ export function ImportOfferDialog({
       })
       setPhase('preview')
     } catch {
-      toast.error("L'analyse de l'offre a échoué. Réessayez ou collez le texte.")
+      toast.error(m.veille_import_toast_parse_failed())
       setPhase('idle')
     }
   }
@@ -114,7 +115,7 @@ export function ImportOfferDialog({
   async function confirm() {
     const title = fields.title.trim()
     if (!title) {
-      toast.error('Un intitulé est requis pour créer l’opportunité.')
+      toast.error(m.veille_import_toast_title_required())
       return
     }
     const importSource =
@@ -143,13 +144,13 @@ export function ImportOfferDialog({
     setPhase('creating')
     try {
       await create(args as Parameters<typeof create>[0])
-      toast.success('Offre importée dans votre pipeline.')
+      toast.success(m.veille_import_toast_success())
       reset()
       onOpenChange(false)
       onImported?.()
     } catch (error) {
       if (!handlePlanLimit(error)) {
-        toast.error("Impossible d'importer l'offre.")
+        toast.error(m.veille_import_toast_failed())
       }
       setPhase('preview')
     }
@@ -161,10 +162,9 @@ export function ImportOfferDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Importer une offre</DialogTitle>
+          <DialogTitle>{m.veille_import_title()}</DialogTitle>
           <DialogDescription>
-            Collez le lien d'une offre ou son texte. Filon analyse la page et
-            crée une piste dans votre pipeline.
+            {m.veille_import_desc()}
           </DialogDescription>
         </DialogHeader>
 
@@ -181,13 +181,13 @@ export function ImportOfferDialog({
                 onClick={() => setPhase('idle')}
                 disabled={busy}
               >
-                Retour
+                {m.veille_import_back()}
               </Button>
               <Button onClick={confirm} disabled={busy}>
                 {phase === 'creating' && (
                   <Loader2 className="size-4 animate-spin" />
                 )}
-                Créer l'opportunité
+                {m.veille_import_create_opportunity()}
               </Button>
             </DialogFooter>
           </>
@@ -197,15 +197,15 @@ export function ImportOfferDialog({
               <TabsList className="w-full">
                 <TabsTrigger value="url" className="flex-1">
                   <Link2 className="size-4" />
-                  Lien
+                  {m.veille_import_tab_url()}
                 </TabsTrigger>
                 <TabsTrigger value="text" className="flex-1">
                   <ClipboardType className="size-4" />
-                  Texte
+                  {m.veille_import_tab_text()}
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="url" className="space-y-1.5">
-                <Label htmlFor="veille-source-url">Lien de l'offre</Label>
+                <Label htmlFor="veille-source-url">{m.veille_import_url_label()}</Label>
                 <Input
                   id="veille-source-url"
                   value={url}
@@ -215,12 +215,12 @@ export function ImportOfferDialog({
                 />
               </TabsContent>
               <TabsContent value="text" className="space-y-1.5">
-                <Label htmlFor="veille-source-text">Texte de l'offre</Label>
+                <Label htmlFor="veille-source-text">{m.veille_import_text_label()}</Label>
                 <Textarea
                   id="veille-source-text"
                   value={text}
                   onChange={(e) => setText(e.target.value)}
-                  placeholder="Collez ici le contenu d'une offre LinkedIn ou autre..."
+                  placeholder={m.veille_import_text_placeholder()}
                   className="min-h-40"
                 />
               </TabsContent>
@@ -231,7 +231,7 @@ export function ImportOfferDialog({
                 onClick={() => handleOpenChange(false)}
                 disabled={busy}
               >
-                Annuler
+                {m.veille_import_cancel()}
               </Button>
               <Button
                 onClick={analyze}
@@ -240,7 +240,7 @@ export function ImportOfferDialog({
                 {phase === 'parsing' && (
                   <Loader2 className="size-4 animate-spin" />
                 )}
-                Analyser
+                {m.veille_import_analyze()}
               </Button>
             </DialogFooter>
           </>
