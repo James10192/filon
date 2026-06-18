@@ -48,6 +48,28 @@ monétisé per-user, sans rien casser. On ne paie le coût des fonctionnalités 
 - Auth : `@convex-dev/better-auth` (composant NPM), plugins : `convex` uniquement. Pas de plugin `organization`. **Auth sociale Google + GitHub + liaison de compte** (depuis les Réglages) livrée 2026-06-15.
 - Veille = **radar de prospection multi-source** : connecteurs pluggables (educarriere + Novojob, validés depuis l'IP Convex ; emploi.ci écarté car 403 anti-bot serveur), cron 6h + déclenchement manuel, santé des sources visible, import universel (URL/texte). Matching déterministe (mots-clés inclus/exclus), pas d'IA dans la détection. Reframe 2026-06-15.
 - Déployé : Convex prod `decisive-mongoose-364`, front `filon-xi.vercel.app` (Vercel, Nitro preset).
+- **Modèle (depuis 2026-06-18)** : opportunité = poursuite (cible **entreprise OU particulier** + **source/contexte**) ; proposition = **offre réutilisable multi-destinataires** (`proposalRecipients`, suivi par destinataire) ; **carnet de contacts autonome** (particuliers P2P) ; **étiquettes gérées** (`tags`, select + création) ; **onboarding adaptatif** par activité. Multi-segment de fait (freelances, consultants, ambassadeurs/parrainage type MWR Life, agents immo/assurance).
+- **Documents 360** : table `documentLinks` (un document lié à opportunité/proposition/contact/entreprise) + composant `<EntityDocuments>` embarqué dans chaque détail.
+- **i18n complet** : FR + EN sur **tout** `/app` (1312 clés ajoutées, libellés d'enum localisés via getters), en plus du site déjà bilingue.
+
+---
+
+## Livraisons — session 2026-06-16 → 18 (refonte commerciale)
+
+Orchestrée par workflows multi-agents (overhaul → fondation modèle → surface → i18n), vérifiée (tsc + build) et déployée prod à chaque phase.
+
+- [x] **Refonte responsive mobile** de toute l'app (shell, bottombar, dialogs/forms, tables→cartes, kanban scroll, graphes) — 2026-06-16
+- [x] **Durcissement ConvexError** : tous les `throw new Error` user-facing migrés en `ConvexError` typée (AUTH/NOT_FOUND/VALIDATION/BILLING) — fin du « Server Error » masqué en prod (cause de l'erreur `opportunities:move`) — 2026-06-16
+- [x] **Copilot generative-UI** : rendus bespoke par outil (cartes d'opportunité, stats, relances), libellés FR jamais bruts — 2026-06-16
+- [x] **Souscriptions Paystack natives** (Plans + Subscriptions API) : carte = abonnement récurrent piloté par Paystack (dunning inclus), mobile money = ponctuel + relance ; webhook réécrit (invoice/subscription events), cron maison exclut le mode natif ; gestion (annuler/réactiver/lien hébergé) — 2026-06-18
+- [x] **Modèle** cible/source/particuliers + propositions multi-destinataires + étiquettes gérées + onboarding (cf. État actuel) — 2026-06-18
+- [x] **Documents 360** + carnet particuliers — 2026-06-18
+- [x] **Admin premium** : split-panel master-detail sur tous les onglets (Utilisateurs/Feedbacks/Paiements/Métriques), **feedback métriques + détail**, drill-down KPI, widgets — 2026-06-18
+- [x] **Export CSV** (gated Pro+) sur opportunités/propositions/carnet/relances + bouton dans les toolbars — 2026-06-18
+- [x] **Copie Tarifs corrigée** (« Historique des conversations » n'est plus un faux exclusif Copilot ; comparatif aligné sur le gating réel) + **CTA landing auth-aware** (connecté → /app/tarifs) — 2026-06-18
+- [x] **Contact** : e-mail `djedjelipatrick@gmail.com` + WhatsApp `+2250141540178` (footer, créateur, « Nous contacter ») — 2026-06-18
+- [x] **i18n EN complet** de `/app` (1312 clés) — 2026-06-18
+- [x] **Filtre par étiquette** sur la page opportunités + fix forwarding des nouveaux champs à l'édition — 2026-06-18
 
 ---
 
@@ -87,7 +109,7 @@ Pendant la review Paystack (~7 j). Tout testable sans charge réelle, bascule li
 - [x] **Cron d'échéance quotidien** : applique le `pendingPlan` programmé à l'échéance, sinon rétrograde en `free` (paiement ponctuel = pas de récurrence réelle, cf. #21) ; relance les abonnements à terme sous 3 j (`flagRenewalReminders`, point d'accroche e-mail) (#18) — livré 2026-06-14
 - [x] **Upgrade / downgrade / annulation / réactivation** : upgrade via nouveau paiement (immédiat, efface tout pending) ; downgrade `scheduleDowngrade` (pro_ai→pro à l'échéance) ; `cancelAutoRenew` (accès maintenu jusqu'à l'échéance puis `free`) ; `reactivateAutoRenew` dans la période payée (#19) — livré 2026-06-14
 - [x] **Section « Gérer mon abonnement »** (réglages) : palier, échéance `.assay`, état du renouvellement, changement programmé, actions (changer de palier / programmer downgrade / annuler / réactiver) avec AlertDialog de confirmation (#20) — livré 2026-06-14
-- [ ] Bascule clés live à l'activation du compte (action Marcel : `npx convex env set PAYSTACK_SECRET_KEY …` + enregistrer le webhook ; issue #12)
+- [x] Bascule clés live + provisionnement des Plans (`paystackPlans:ensurePlans`) + webhook enregistré — fait par Marcel (2026-06-18)
 
 > Note récurrence : les vraies souscriptions Paystack (Plans + autorisation réutilisable) sont **carte uniquement**. Le mobile money (Wave / OM / MoMo) ne donne pas d'autorisation réutilisable : il est traité comme un **paiement ponctuel** couvrant la période choisie, avec relance de ré-abonnement à l'échéance. La copie de la page Tarifs le dit honnêtement.
 > Webhook à enregistrer (dashboard Paystack) : `https://decisive-mongoose-364.convex.site/paystack/webhook`.
@@ -126,7 +148,7 @@ Reframe de la « Veille educarriere » en **radar de prospection multi-source** 
 
 **Suivis ouverts (post-session) :**
 - [ ] Filtre **localisation** de la veille : champ collecté/stocké mais pas encore appliqué par le moniteur (le brancher sur le matching, ou le retirer).
-- [ ] **Migration ConvexError des chemins paiement** : `convex/billing.ts` + `convex/paystack.ts` lancent encore des `Error` brutes masquées en prod (messages d'annulation/checkout). À migrer vers un `userError` générique.
+- [x] **Migration ConvexError des chemins paiement** : fait (billing.ts + paystack.ts en `ConvexError`, 2026-06-16/18).
 - [ ] Connecteurs supplémentaires (jobivoire.ci = SPA non scrapable statiquement ; la plupart des boards CI modernes sont des SPA).
 
 ### Phase IA — Copilot in-app & IA agentique (nouveau 5e tier)
@@ -166,7 +188,7 @@ Coût lourd, ne se lance qu'au déclencheur réel.
 ### Durcissement prod (avant ouverture aux vrais users)
 Pas une nouvelle feature : fiabilité/qualité à régler AVANT d'ouvrir aux vrais utilisateurs. Surtout les chemins revenu.
 
-- [ ] **Migration ConvexError des chemins paiement** : `convex/billing.ts` + `convex/paystack.ts` lancent encore des `Error` brutes -> messages masqués en prod (« Server Error ») sur annulation/checkout/changement de palier. Migrer vers un `userError` générique (même mécanisme que `planLimitError`/`aiCreditError`, cf. `lib/plan` + `appErrorData`).
+- [x] **Migration ConvexError des chemins paiement** : `billing.ts` + `paystack.ts` (+ tout le backend) utilisent désormais `ConvexError` typée (kinds `BILLING`/`AUTH`/`NOT_FOUND`/`VALIDATION`) — plus de « Server Error » masqué. Fait 2026-06-16/18.
 - [ ] **Filtre localisation de la veille** : champ collecté/stocké mais pas appliqué par le moniteur. Le brancher sur le matching, ou le retirer (ne pas laisser un filtre no-op qui ment à l'utilisateur).
 - [ ] **Audit global des états d'erreur** : repérer les `throw new Error` user-facing restants (500 silencieux), vérifier loading/empty/error sur les surfaces clés.
 
@@ -174,8 +196,8 @@ Pas une nouvelle feature : fiabilité/qualité à régler AVANT d'ouvrir aux vra
 
 ## Actions Marcel (hors agents)
 
-- [ ] **Bascule clés live Paystack** à l'activation du compte : `npx convex env set PAYSTACK_SECRET_KEY sk_live_… --prod` + enregistrer le webhook live (`https://decisive-mongoose-364.convex.site/paystack/webhook`) — issue #12.
-- [ ] **Suivi : vraies souscriptions carte tokenisées** (Plans Paystack + autorisation réutilisable, auto-renouvellement) à l'activation prod — issue #21.
+- [x] **Bascule clés live Paystack** + Plans provisionnés + webhook live enregistré — fait 2026-06-18.
+- [x] **Vraies souscriptions carte (Plans + Subscriptions API, auto-renouvellement)** — livré 2026-06-18 (mode natif `billingMode`, dunning géré par Paystack).
 
 ## Suivi
 
