@@ -1,7 +1,7 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import type { Doc, Id } from './_generated/dataModel'
-import { requireUser } from './lib/withUser'
+import { optionalUser, requireUser } from './lib/withUser'
 import { forbiddenError, notFoundError, validationError } from './lib/plan'
 
 /**
@@ -27,7 +27,11 @@ async function requireOwnedCompany(
 export const list = query({
   args: { search: v.optional(v.string()) },
   handler: async (ctx, { search }) => {
-    const { userId } = await requireUser(ctx)
+    // Lecture montée dans la coquille : renvoie vide tant que le jeton Convex
+    // n'a pas propagé (évite « Uncaught ConvexError: AUTH » en prod).
+    const user = await optionalUser(ctx)
+    if (!user) return []
+    const { userId } = user
     const companies = await ctx.db
       .query('companies')
       .withIndex('by_user_name', (q) => q.eq('userId', userId))

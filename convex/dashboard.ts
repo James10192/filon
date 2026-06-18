@@ -1,7 +1,7 @@
 import { v } from 'convex/values'
 import { query } from './_generated/server'
 import type { Doc } from './_generated/dataModel'
-import { requireUser, type QueryCtx } from './lib/withUser'
+import { optionalUser, requireUser, type QueryCtx } from './lib/withUser'
 
 /**
  * Filon · agrégats de pilotage (lecture seule).
@@ -76,12 +76,44 @@ function parseCompensation(raw?: string): number {
 }
 
 /**
+ * Forme « vide » des KPIs : tout à zéro, même structure que le retour réel.
+ * Renvoyée tant que l'utilisateur n'est pas (encore) authentifié, pour éviter
+ * les « Uncaught ConvexError: AUTH » sur la query montée en permanence dans la
+ * sidebar. Se ré-exécute et renvoie les vraies valeurs dès propagation du jeton.
+ */
+function emptySummary() {
+  return {
+    totalOpportunities: 0,
+    byStage: Object.fromEntries(STAGES.map((s) => [s, 0])) as Record<
+      Stage,
+      number
+    >,
+    byType: Object.fromEntries(TYPES.map((t) => [t, 0])) as Record<
+      OppType,
+      number
+    >,
+    activeCount: 0,
+    wonCount: 0,
+    lostCount: 0,
+    winRate: 0,
+    followupsOverdue: 0,
+    followupsUpcoming: 0,
+    proposalsSent: 0,
+    companiesCount: 0,
+    contactsCount: 0,
+    documentsCount: 0,
+  }
+}
+
+/**
  * KPIs de pilotage. Forme figée par docs/API-CONTRACT.md.
  */
 export const summary = query({
   args: {},
   handler: async (ctx) => {
-    const { userId } = await requireUser(ctx)
+    const user = await optionalUser(ctx)
+    if (!user) return emptySummary()
+    const { userId } = user
 
     const opportunities = await loadOpportunities(ctx, userId)
 

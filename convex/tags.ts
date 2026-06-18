@@ -2,7 +2,7 @@ import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import type { Doc, Id } from './_generated/dataModel'
 import type { MutationCtx, QueryCtx } from './lib/withUser'
-import { requireUser } from './lib/withUser'
+import { optionalUser, requireUser } from './lib/withUser'
 import { forbiddenError, notFoundError, validationError } from './lib/plan'
 
 /**
@@ -48,7 +48,9 @@ async function findByName(
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    const { userId } = await requireUser(ctx)
+    const user = await optionalUser(ctx)
+    if (!user) return []
+    const { userId } = user
     const tags = await ctx.db
       .query('tags')
       .withIndex('by_user', (q) => q.eq('userId', userId))

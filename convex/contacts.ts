@@ -1,7 +1,7 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import type { Doc, Id } from './_generated/dataModel'
-import { requireUser } from './lib/withUser'
+import { optionalUser, requireUser } from './lib/withUser'
 import { forbiddenError, notFoundError, validationError } from './lib/plan'
 import { ensureTagsForUser } from './tags'
 
@@ -40,7 +40,9 @@ export const list = query({
     search: v.optional(v.string()),
   },
   handler: async (ctx, { companyId, search }) => {
-    const { userId } = await requireUser(ctx)
+    const user = await optionalUser(ctx)
+    if (!user) return []
+    const { userId } = user
 
     const contacts = companyId
       ? await ctx.db
@@ -258,7 +260,9 @@ export const remove = mutation({
 export const countOpportunitiesByCompany = query({
   args: {},
   handler: async (ctx) => {
-    const { userId } = await requireUser(ctx)
+    const user = await optionalUser(ctx)
+    if (!user) return {}
+    const { userId } = user
     const opportunities = await ctx.db
       .query('opportunities')
       .withIndex('by_user', (q) => q.eq('userId', userId))

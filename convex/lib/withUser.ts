@@ -60,6 +60,26 @@ export async function requireUser(ctx: AnyCtx): Promise<AuthedUser> {
 }
 
 /**
+ * Variante NON bloquante de {@link requireUser} : retourne l'identité du user
+ * courant, ou `null` s'il n'est pas (encore) authentifié. Ne throw JAMAIS.
+ *
+ * À utiliser dans les queries de lecture montées en permanence dans la coquille
+ * (`dashboard.summary` via la sidebar) ou sur les pages protégées, pour renvoyer
+ * un résultat vide pendant la fenêtre où la session Better Auth est prête mais le
+ * jeton Convex n'a pas encore propagé. Évite les « Uncaught ConvexError: AUTH »
+ * en prod ; la query se ré-exécute et renvoie les vraies données dès que le jeton
+ * arrive (réactivité Convex). Même esprit que `isAdmin` (jamais throw).
+ */
+export async function optionalUser(ctx: AnyCtx): Promise<AuthedUser | null> {
+  const authUser = await authComponent.safeGetAuthUser(ctx)
+  if (!authUser) return null
+  return {
+    userId: authUser._id,
+    email: (authUser as { email?: string }).email ?? '',
+  }
+}
+
+/**
  * Variante pour une ACTION (pas de `ctx.db`). `safeGetAuthUser` lit l'identité
  * via `ctx.auth`, disponible aussi dans les actions. Utilisée par les actions
  * Paystack (`startCheckout`, `verifyCheckout`).
