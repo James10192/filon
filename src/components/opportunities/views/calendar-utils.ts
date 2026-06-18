@@ -1,4 +1,5 @@
 import type { FunctionReturnType } from 'convex/server'
+import { m } from '~/lib/paraglide/messages'
 import type { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
 import type { OppType, Stage } from '../meta'
@@ -112,10 +113,18 @@ export function groupByDay(items: CalendarItem[]): CalendarGroup[] {
 }
 
 export const BUCKET_LABEL: Record<CalendarBucket, string> = {
-  overdue: 'En retard',
-  today: "Aujourd'hui",
-  thisWeek: 'Cette semaine',
-  later: 'Plus tard',
+  get overdue() {
+    return m.opp_cal_bucket_overdue()
+  },
+  get today() {
+    return m.opp_cal_bucket_today()
+  },
+  get thisWeek() {
+    return m.opp_cal_bucket_this_week()
+  },
+  get later() {
+    return m.opp_cal_bucket_later()
+  },
 }
 
 export const BUCKET_ORDER: CalendarBucket[] = [
@@ -126,7 +135,13 @@ export const BUCKET_ORDER: CalendarBucket[] = [
 ]
 
 export const KIND_LABEL: Record<CalendarKind, string> = {
-  deadline: 'Échéance',
-  nextAction: 'Prochaine action',
-  followup: 'Relance',
+  get deadline() {
+    return m.opp_cal_kind_deadline()
+  },
+  get nextAction() {
+    return m.opp_cal_kind_next_action()
+  },
+  get followup() {
+    return m.opp_cal_kind_followup()
+  },
 }
