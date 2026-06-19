@@ -189,6 +189,83 @@ export function stageLabel(
   return STAGE_LABEL_RESOLVERS[set][stage]()
 }
 
+/**
+ * Surcharges de libelle de TYPE par jeu d'etiquettes. On ne declare QUE les
+ * couples (set, type) dont le libelle DIFFERE du defaut 'emploi' (par gout :
+ * eviter de dupliquer les libelles identiques). Le fallback est le getter
+ * `TYPE_META[type].label`. Voir `typeLabel`.
+ */
+const TYPE_LABEL_OVERRIDES: Partial<
+  Record<StageLabelSet, Partial<Record<OppType, () => string>>>
+> = {
+  vente: {
+    job_offer: () => m.opp_type_job_offer_vente(),
+    spontaneous: () => m.opp_type_spontaneous_vente(),
+  },
+  recrutement: {
+    job_offer: () => m.opp_type_job_offer_recrutement(),
+    prospect: () => m.opp_type_prospect_recrutement(),
+  },
+}
+
+/**
+ * Libelle affiche d'un type d'opportunite selon le jeu d'etiquettes du persona.
+ * Defaut 'emploi' = libelle historique (`TYPE_META[type].label`). Les icones et
+ * couleurs (`icon`/`fg`) restent fournies par `TYPE_META`.
+ */
+export function typeLabel(type: OppType, set: StageLabelSet = 'emploi'): string {
+  return TYPE_LABEL_OVERRIDES[set]?.[type]?.() ?? TYPE_META[type].label
+}
+
+/** Champs de detail persona-aware (libelle adapte au jeu d'etiquettes). */
+export type LensField = 'compensation' | 'location' | 'deadline'
+
+/**
+ * Resolveurs de libelle de CHAMP par jeu d'etiquettes. 'emploi' reutilise les
+ * cles existantes (texte FR/EN inchange). Seuls 'vente'/'recrutement' ajoutent
+ * des variantes la ou le vocabulaire differe genuinement.
+ */
+const FIELD_LABEL_RESOLVERS: Record<
+  StageLabelSet,
+  Record<LensField, () => string>
+> = {
+  emploi: {
+    compensation: m.opp_form_compensation_label,
+    location: m.opp_form_location_label,
+    deadline: m.opp_form_deadline_label,
+  },
+  vente: {
+    compensation: m.opp_field_compensation_vente,
+    location: m.opp_field_location_vente,
+    deadline: m.opp_form_deadline_label,
+  },
+  recrutement: {
+    compensation: m.opp_field_compensation_recrutement,
+    location: m.opp_form_location_label,
+    deadline: m.opp_form_deadline_label,
+  },
+}
+
+/**
+ * Libelle affiche d'un champ de detail selon le persona. Defaut 'emploi' =
+ * libelles historiques. Ne touche QUE compensation/location/deadline.
+ */
+export function fieldLabel(
+  field: LensField,
+  set: StageLabelSet = 'emploi',
+): string {
+  return FIELD_LABEL_RESOLVERS[set][field]()
+}
+
+/**
+ * Libelle de l'entite « proposition » selon le persona. En vente, une
+ * proposition est un « devis / offre ». Defaut 'emploi'/'recrutement' =
+ * « Proposition ». Utilise par l'espace Propositions.
+ */
+export function propositionLabel(set: StageLabelSet = 'emploi'): string {
+  return set === 'vente' ? m.prop_entity_vente() : m.prop_entity_default()
+}
+
 export const TYPE_META: Record<
   OppType,
   { readonly label: string; readonly long: string; icon: LucideIcon; fg: string }

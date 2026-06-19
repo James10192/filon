@@ -17,6 +17,7 @@ export function KanbanColumn({
   isDragActive,
   onQuickAdd,
   onOpenCard,
+  labelOf,
 }: {
   stage: Stage
   items: Opportunity[]
@@ -25,8 +26,12 @@ export function KanbanColumn({
   isDragActive: boolean
   onQuickAdd: (stage: Stage) => void
   onOpenCard?: (id: Opportunity['_id']) => void
+  labelOf?: (stage: Stage) => string
 }) {
   const meta = STAGE_META[stage]
+  // Titre persona-aware : libelle resolu par le lens du user, defaut = STAGE_META.
+  // Les COULEURS (dot/chip) restent fournies par `meta` quel que soit le lens.
+  const title = labelOf?.(stage) ?? meta.label
   const total = items.reduce(
     (sum, o) => sum + parseCompensation(o.compensation),
     0,
@@ -40,7 +45,7 @@ export function KanbanColumn({
 
   return (
     <section
-      aria-label={m.opp_column_aria({ stage: meta.label })}
+      aria-label={m.opp_column_aria({ stage: title })}
       className={cn(
         // Mobile : colonne fluide qui laisse entrevoir la suivante (indice de
         // scroll horizontal). >= sm : largeur fixe 304px.
@@ -64,7 +69,7 @@ export function KanbanColumn({
           aria-hidden
         />
         <h2 className="truncate text-[13px] font-semibold tracking-[-0.01em] text-fg">
-          {meta.label}
+          {title}
         </h2>
         <span className="assay text-xs font-medium tabular-nums text-fg-subtle">
           {items.length}
@@ -73,7 +78,7 @@ export function KanbanColumn({
           {potential && (
             <span
               className="assay text-xs font-semibold text-fg-muted"
-              title={m.opp_column_potential_title({ stage: meta.label })}
+              title={m.opp_column_potential_title({ stage: title })}
             >
               {potential}
             </span>
@@ -82,7 +87,7 @@ export function KanbanColumn({
             variant="ghost"
             size="icon-sm"
             className="-mr-1 size-7 text-fg-subtle opacity-70 transition-opacity hover:text-fg hover:opacity-100 focus-visible:opacity-100 md:opacity-0 md:group-hover/head:opacity-100"
-            aria-label={m.opp_column_add_aria({ stage: meta.label })}
+            aria-label={m.opp_column_add_aria({ stage: title })}
             onClick={() => onQuickAdd(stage)}
           >
             <Plus className="size-4" />
@@ -104,7 +109,7 @@ export function KanbanColumn({
           strategy={verticalListSortingStrategy}
         >
           {items.length === 0 ? (
-            <EmptyColumn label={meta.label} isOver={isOver} />
+            <EmptyColumn label={title} isOver={isOver} />
           ) : (
             items.map((opportunity) => (
               <SortableKanbanCard

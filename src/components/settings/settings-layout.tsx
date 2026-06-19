@@ -5,6 +5,7 @@ import { cn } from '~/lib/utils'
 import { ProfileSection } from './profile-section'
 import { ProfilePhotoSection } from './profile-photo-section'
 import { PreferencesSection } from './preferences-section'
+import { MonEspaceSection } from './mon-espace-section'
 import { AppearanceSection } from './appearance-section'
 import { AccountSection } from './account-section'
 import { LinkedAccountsSection } from './linked-accounts-section'
@@ -61,6 +62,7 @@ export function SettingsLayout() {
           ) : (
             <>
               <AppearanceSection />
+              <MonEspaceSection />
               <PreferencesSection />
             </>
           )}

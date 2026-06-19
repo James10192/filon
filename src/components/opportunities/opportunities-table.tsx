@@ -4,6 +4,7 @@ import { m } from '~/lib/paraglide/messages'
 import { DataTable } from '~/components/data-table'
 import { OpportunityCard } from './opportunity-card'
 import { buildOpportunityColumns } from './opportunity-columns'
+import { useLensSet } from './use-stage-labels'
 import type { EnrichedOpportunity } from './types'
 
 type Opportunity = EnrichedOpportunity
@@ -27,9 +28,10 @@ export function OpportunitiesTable({
   /** Panneau de détail ouvert : tableau compact, sans min-width forcée. */
   narrow?: boolean
 }) {
+  const lensSet = useLensSet()
   const columns = useMemo(
-    () => buildOpportunityColumns({ onOpen: onSelect, narrow }),
-    [onSelect, narrow],
+    () => buildOpportunityColumns({ onOpen: onSelect, narrow, set: lensSet }),
+    [onSelect, narrow, lensSet],
   )
 
   return (

@@ -28,13 +28,15 @@ import {
   TARGET_TYPES,
   TARGET_TYPE_META,
   TYPE_META,
+  typeLabel,
+  fieldLabel,
   type OppType,
   type Priority,
   type SourceChannel,
   type Stage,
   type TargetType,
 } from './meta'
-import { useStageLabels } from './use-stage-labels'
+import { useStageLabels, useLensSet } from './use-stage-labels'
 
 export type OpportunityFormValues = {
   title: string
@@ -127,6 +129,7 @@ export function OpportunityForm({
   pending?: boolean
 }) {
   const { label: stageLabelOf } = useStageLabels()
+  const lensSet = useLensSet()
   const [title, setTitle] = useState(initial?.title ?? '')
   const [type, setType] = useState<OppType>(initial?.type ?? 'job_offer')
   const [stage, setStage] = useState<Stage>(initial?.stage ?? 'lead')
@@ -256,9 +259,9 @@ export function OpportunityForm({
                 <SelectValue placeholder={m.opp_form_type_placeholder()} />
               </SelectTrigger>
               <SelectContent>
-                {TYPE_OPTIONS.map(([key, meta]) => (
+                {TYPE_OPTIONS.map(([key]) => (
                   <SelectItem key={key} value={key}>
-                    {meta.label}
+                    {typeLabel(key, lensSet)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -455,7 +458,7 @@ export function OpportunityForm({
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="opp-compensation">{m.opp_form_compensation_label()}</Label>
+            <Label htmlFor="opp-compensation">{fieldLabel('compensation', lensSet)}</Label>
             <Input
               id="opp-compensation"
               value={compensation}
@@ -464,7 +467,7 @@ export function OpportunityForm({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="opp-location">{m.opp_form_location_label()}</Label>
+            <Label htmlFor="opp-location">{fieldLabel('location', lensSet)}</Label>
             <ValueCombobox
               id="opp-location"
               value={location}
@@ -487,7 +490,7 @@ export function OpportunityForm({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="opp-deadline">{m.opp_form_deadline_label()}</Label>
+            <Label htmlFor="opp-deadline">{fieldLabel('deadline', lensSet)}</Label>
             <Input
               id="opp-deadline"
               type="date"

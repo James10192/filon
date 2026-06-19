@@ -18,6 +18,7 @@ import { BoardView } from './views/board-view'
 import { ProposalDetailPane } from './detail/detail-pane'
 import { PaneErrorBoundary } from './detail/pane-error-boundary'
 import { ProposalFormDialog } from './proposal-form-dialog'
+import { useLensSet } from '~/components/opportunities/use-stage-labels'
 
 /**
  * Espace de travail Propositions unifié. Un sélecteur de vue (Liste / Tableau)
@@ -41,7 +42,14 @@ export function ProposalWorkspace({
   onClose: () => void
 }) {
   const isDesktop = useMediaQuery('(min-width: 1024px)')
+  const lensSet = useLensSet()
   const [filters, setFilters] = useState<ListFilters>(EMPTY_FILTERS)
+
+  // Titre + CTA persona-aware : en vente, une proposition est un « devis / offre ».
+  // Defaut (emploi/recrutement) : texte historique inchange.
+  const pageTitle =
+    lensSet === 'vente' ? m.prop_page_title_vente() : m.prop_page_title()
+  const newLabel = lensSet === 'vente' ? m.prop_new_vente() : m.prop_new()
 
   // Formulaire création / édition, partagé par les deux vues.
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -84,14 +92,14 @@ export function ProposalWorkspace({
   return (
     <div className="flex flex-col">
       <PageToolbar
-        title={m.prop_page_title()}
+        title={pageTitle}
         subtitle={m.prop_page_subtitle()}
         actions={
           <>
             <ViewSwitcher value={view} onChange={onViewChange} />
             <Button onClick={openCreate} className="shrink-0">
               <Plus className="size-4" />
-              <span className="hidden sm:inline">{m.prop_new()}</span>
+              <span className="hidden sm:inline">{newLabel}</span>
             </Button>
           </>
         }

@@ -73,6 +73,36 @@ Orchestrée par workflows multi-agents (overhaul → fondation modèle → surfa
 
 ---
 
+## Persona lens (vocabulaire adaptatif du pipeline)
+
+Le pipeline a **des clés internes fixes** (`lead`, `contacted`, ..., `lost`) ; seuls les
+**libellés affichés** s'adaptent au persona via un « jeu d'étiquettes »
+(`stageLabelSet` : `emploi` / `vente` / `recrutement`). Dérivé de l'activité
+déclarée à l'onboarding, puis éditable. Zéro migration de données, zéro
+divergence de structure entre utilisateurs.
+
+- [x] **Phase 1 — Libellés d'étapes** : `stageLabel(stage, set)` + résolveurs FR/EN
+  (vente/recrutement), hook `useStageLabels`, dérivation depuis `activityType` à
+  l'onboarding. Appliqué aux chips/selects d'étape.
+- [x] **Phase 1b — Titres de colonnes kanban** : `labelOf` threadé
+  `board-view → KanbanBoard → KanbanColumn` (titre, aria, empty, toast de
+  déplacement). Couleurs (`dot`/`chip`) inchangées.
+- [x] **Phase 2 — Types / champs / proposition** : `typeLabel`, `fieldLabel`
+  (rémunération / lieu / échéance), `propositionLabel` + `useLensSet()`. Surcharges
+  i18n **uniquement** là où le vocabulaire diffère vraiment (sinon fallback sur le
+  libellé `emploi` historique). Appliqué au formulaire, aux filtres/chips de la
+  liste, à l'en-tête échéance, à l'espace Propositions (titre + CTA en vente).
+- [x] **Phase 3 — Éditable dans « Mon espace »** (Réglages > Préférences) : Select
+  du jeu d'étiquettes + aperçu en direct des 7 étapes, mutation owner-scopée
+  `users.setStageLabelSet`.
+- [ ] **Phase 4 — Politique de promotion de champ** : on **ne promeut un champ en
+  vraie colonne** que lorsqu'un besoin manquant se révèle **universel** (prouvé par
+  l'usage, pas supposé). Tant que ce n'est pas le cas, on **réutilise l'existant**
+  (`tags`, `description`/notes, `followups`, `referredBy`, `sourceChannel`). **Pas
+  de moteur de champs personnalisés** : il complexifie le schéma, le gating et l'UI
+  pour un gain spéculatif. Le persona lens couvre le besoin de vocabulaire sans
+  fragmenter le modèle.
+
 ## Phases
 
 ### Phase 1 — Espace Opportunités unifié (UX) · LIVRÉ

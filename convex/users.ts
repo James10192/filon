@@ -191,6 +191,28 @@ export const setActivity = mutation({
 })
 
 /**
+ * `api.users.setStageLabelSet` : change le jeu d'etiquettes de pipeline affiche
+ * (persona lens), pilote depuis « Mon espace » (Parametres). N'altere PAS les
+ * cles internes du pipeline : seul l'affichage des libelles change. Owner-scope
+ * via `requireUser`/`ensureUserDoc`. Cree la ligne si absente.
+ */
+export const setStageLabelSet = mutation({
+  args: {
+    set: v.union(
+      v.literal('emploi'),
+      v.literal('vente'),
+      v.literal('recrutement'),
+    ),
+  },
+  handler: async (ctx, args): Promise<null> => {
+    const { userId, email } = await requireUser(ctx)
+    const doc = await ensureUserDoc(ctx, userId, email)
+    await ctx.db.patch(doc._id, { stageLabelSet: args.set })
+    return null
+  },
+})
+
+/**
  * `api.users.completeOnboarding` : marque l'onboarding comme termine
  * (`onboardedAt = maintenant`). Accepte optionnellement `activityType` pour le
  * poser dans le meme appel. Idempotent : ne re-ecrit pas `onboardedAt` s'il

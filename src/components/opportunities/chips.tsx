@@ -4,6 +4,7 @@ import { cn } from '~/lib/utils'
 import {
   STAGE_META,
   TYPE_META,
+  typeLabel,
   PRIORITY_META,
   SOURCE_META,
   formatDateShort,
@@ -14,7 +15,7 @@ import {
   type SourceChannel,
   type TargetType,
 } from './meta'
-import { useStageLabels } from './use-stage-labels'
+import { useStageLabels, useLensSet } from './use-stage-labels'
 
 /** Chip de stage : point coloré + libellé, fond soft. */
 export function StageChip({
@@ -52,6 +53,7 @@ export function TypeChip({
 }) {
   const meta = TYPE_META[type]
   const Icon = meta.icon
+  const lensSet = useLensSet()
   return (
     <span
       className={cn(
@@ -61,7 +63,7 @@ export function TypeChip({
       )}
     >
       <Icon className="size-3.5" />
-      {meta.label}
+      {typeLabel(type, lensSet)}
     </span>
   )
 }

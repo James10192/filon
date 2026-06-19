@@ -25,12 +25,13 @@ import { OpportunitiesTable } from '../opportunities-table'
 import {
   STAGES,
   TYPE_META,
+  typeLabel,
   PRIORITY_META,
   type OppType,
   type Priority,
   type Stage,
 } from '../meta'
-import { useStageLabels } from '../use-stage-labels'
+import { useStageLabels, useLensSet } from '../use-stage-labels'
 
 type StageFilter = Stage | 'all'
 type TypeFilter = OppType | 'all'
@@ -86,6 +87,7 @@ export function ListView({
 }) {
   const { stage, type, priority, tags, search } = filters
   const { label: stageLabelOf } = useStageLabels()
+  const lensSet = useLensSet()
 
   const queryArgs = useMemo(() => {
     const args: { stage?: Stage; type?: OppType; search?: string } = {}
@@ -122,7 +124,7 @@ export function ListView({
     if (type !== 'all') {
       out.push({
         key: 'type',
-        label: m.opp_chip_type({ value: TYPE_META[type].label }),
+        label: m.opp_chip_type({ value: typeLabel(type, lensSet) }),
         onRemove: () => onFiltersChange({ ...filters, type: 'all' }),
       })
     }
@@ -205,9 +207,9 @@ export function ListView({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{m.opp_filter_all_types()}</SelectItem>
-            {TYPE_OPTIONS.map(([key, meta]) => (
+            {TYPE_OPTIONS.map(([key]) => (
               <SelectItem key={key} value={key}>
-                {meta.label}
+                {typeLabel(key, lensSet)}
               </SelectItem>
             ))}
           </SelectContent>

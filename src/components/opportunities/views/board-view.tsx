@@ -10,6 +10,7 @@ import { KanbanBoard } from '~/components/pipeline/kanban-board'
 import { QuickAddDialog } from '~/components/pipeline/quick-add-dialog'
 import { STAGE_ORDER, type Stage } from '~/components/pipeline/pipeline-meta'
 import type { Board } from '~/components/pipeline/types'
+import { useStageLabels } from '~/components/opportunities/use-stage-labels'
 
 /**
  * Vue Tableau (kanban dnd-kit) intégrée au switcher. Le contrat de mutation
@@ -25,6 +26,7 @@ export function BoardView({
 }) {
   const board = useQuery(api.opportunities.board, {}) as Board | undefined
   const companies = useQuery(api.companies.list, {})
+  const { label } = useStageLabels()
   const [quickAddOpen, setQuickAddOpen] = useState(false)
   const [quickAddStage, setQuickAddStage] = useState<Stage>('lead')
 
@@ -58,6 +60,7 @@ export function BoardView({
           companyNames={companyNames}
           onQuickAdd={openQuickAdd}
           onOpenCard={onSelect}
+          labelOf={label}
         />
       )}
 

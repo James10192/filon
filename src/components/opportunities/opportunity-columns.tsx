@@ -13,7 +13,14 @@ import {
   sourceLabel,
 } from './chips'
 import { OpportunityRowActions } from './opportunity-row-actions'
-import { STAGES, formatDateShort, type Priority, type Stage } from './meta'
+import {
+  STAGES,
+  fieldLabel,
+  formatDateShort,
+  type Priority,
+  type Stage,
+  type StageLabelSet,
+} from './meta'
 import type { EnrichedOpportunity } from './types'
 
 type Opportunity = EnrichedOpportunity
@@ -32,10 +39,13 @@ const PRIORITY_RANK: Record<Priority, number> = { low: 0, medium: 1, high: 2 }
 export function buildOpportunityColumns({
   onOpen,
   narrow = false,
+  set = 'emploi',
 }: {
   onOpen: (id: Id<'opportunities'>) => void
   /** Panneau de détail ouvert : zone étroite, on allège les colonnes. */
   narrow?: boolean
+  /** Jeu d'etiquettes du persona (libelle de l'en-tete echeance). */
+  set?: StageLabelSet
 }): ColumnDef<Opportunity, unknown>[] {
   const columns: ColumnDef<Opportunity, unknown>[] = [
     {
@@ -100,7 +110,7 @@ export function buildOpportunityColumns({
     {
       id: 'deadline',
       accessorKey: 'deadline',
-      header: ({ column }) => <SortableHeader column={column} label={m.opp_col_deadline()} />,
+      header: ({ column }) => <SortableHeader column={column} label={fieldLabel('deadline', set)} />,
       sortingFn: (a, b) => {
         // Sans echeance -> rejete en fin de tri ascendant.
         const av = a.original.deadline

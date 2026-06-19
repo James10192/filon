@@ -29,11 +29,13 @@ export function KanbanBoard({
   companyNames,
   onQuickAdd,
   onOpenCard,
+  labelOf,
 }: {
   board: Board
   companyNames: Map<string, string>
   onQuickAdd: (stage: Stage) => void
   onOpenCard?: (id: Id<'opportunities'>) => void
+  labelOf?: (stage: Stage) => string
 }) {
   const move = useMutation(api.opportunities.move)
   const reorder = useMutation(api.opportunities.reorder)
@@ -104,7 +106,9 @@ export function KanbanBoard({
       await reorder({ stage: target.stage, orderedIds })
       if (origin.stage !== target.stage) {
         toast.success(
-          m.opp_moved_to({ stage: STAGE_META[target.stage].label }),
+          m.opp_moved_to({
+            stage: labelOf?.(target.stage) ?? STAGE_META[target.stage].label,
+          }),
         )
       }
     } catch {
@@ -134,6 +138,7 @@ export function KanbanBoard({
               isDragActive={activeId !== null}
               onQuickAdd={onQuickAdd}
               onOpenCard={onOpenCard}
+              labelOf={labelOf}
             />
           ))}
         </div>
