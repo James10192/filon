@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu'
 import { STAGES, STAGE_META, type Stage } from './meta'
+import { useStageLabels } from './use-stage-labels'
 
 /**
  * Chip d'etape cliquable : ouvre un menu pour changer l'etape via
@@ -39,6 +40,7 @@ export function StageChipSelect({
   const [optimistic, setOptimistic] = useState<Stage | null>(null)
   const [open, setOpen] = useState(false)
 
+  const { label } = useStageLabels()
   const current = optimistic ?? stage
   const meta = STAGE_META[current]
 
@@ -48,7 +50,7 @@ export function StageChipSelect({
     setOptimistic(next)
     try {
       await setStage({ id, stage: next })
-      toast.success(m.opp_stage_changed({ stage: STAGE_META[next].label }))
+      toast.success(m.opp_stage_changed({ stage: label(next) }))
     } catch {
       setOptimistic(previous === stage ? null : previous)
       toast.error(m.opp_stage_change_error())
@@ -67,10 +69,12 @@ export function StageChipSelect({
             meta.chip,
             className,
           )}
-          aria-label={m.opp_stage_select_aria({ stage: meta.label })}
+          aria-label={m.opp_stage_select_aria({ stage: label(current) })}
         >
           <span className={cn('size-1.5 shrink-0 rounded-full', meta.dot)} />
-          <span className="truncate">{compact ? meta.short : meta.label}</span>
+          <span className="truncate">
+            {compact ? meta.short : label(current)}
+          </span>
           <ChevronDown className="size-3 shrink-0 opacity-70" />
         </button>
       </DropdownMenuTrigger>
@@ -92,7 +96,7 @@ export function StageChipSelect({
             >
               <span className="inline-flex items-center gap-2">
                 <span className={cn('size-2 rounded-full', sMeta.dot)} />
-                {sMeta.label}
+                {label(s)}
               </span>
               {active && <Check className="size-4 text-accent" />}
             </DropdownMenuItem>

@@ -23,11 +23,11 @@ import { StageChip, TypeChip, TargetChip, sourceLabel } from '../chips'
 import {
   PRIORITY_META,
   STAGES,
-  STAGE_META,
   formatDate,
   type Priority,
   type Stage,
 } from '../meta'
+import { useStageLabels } from '../use-stage-labels'
 
 const PRIORITIES: Priority[] = ['high', 'medium', 'low']
 import { DeleteOpportunityDialog } from './panels'
@@ -50,6 +50,7 @@ export function DetailHeader({
   onStage: (next: Stage) => void
   onPriority: (next: Priority) => void
 }) {
+  const { label: stageLabelOf } = useStageLabels()
   const companyName = opportunity.company?.name
   const targetName = opportunity.companyName ?? opportunity.contactName
   const source = sourceLabel(
@@ -161,7 +162,7 @@ export function DetailHeader({
             <SelectContent>
               {STAGES.map((s) => (
                 <SelectItem key={s} value={s}>
-                  {STAGE_META[s].label}
+                  {stageLabelOf(s)}
                 </SelectItem>
               ))}
             </SelectContent>

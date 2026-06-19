@@ -119,6 +119,17 @@ export default defineSchema({
     // 'recruteur', 'autre'). Libre (string) pour rester flexible/generique :
     // pilote le pre-remplissage des etiquettes et libelles de source.
     activityType: v.optional(v.string()),
+    // Jeu d'etiquettes de pipeline a afficher (persona-aware). Derive de
+    // `activityType` au moment de l'onboarding. N'altere PAS les cles internes
+    // du pipeline (lead, contacted...) : seul l'affichage des libelles change.
+    // Absent = 'emploi' (libelles par defaut, orientes recherche d'emploi).
+    stageLabelSet: v.optional(
+      v.union(
+        v.literal('emploi'),
+        v.literal('vente'),
+        v.literal('recrutement'),
+      ),
+    ),
     // Horodatage de fin d'onboarding (epoch ms). Absent = onboarding non fait :
     // l'UI affiche l'ecran « quelle est ton activite ? » a la connexion.
     onboardedAt: v.optional(v.number()),

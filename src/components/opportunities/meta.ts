@@ -135,6 +135,60 @@ export const STAGE_META: Record<
   },
 }
 
+/**
+ * Jeu d'etiquettes de pipeline a afficher (persona-aware). Ne change PAS les
+ * cles internes du pipeline : seuls les libelles affiches varient.
+ *  - 'emploi'      : recherche d'emploi (defaut, etudiant)
+ *  - 'vente'       : prospection commerciale (freelance, consultant, agent...)
+ *  - 'recrutement' : sourcing candidats (recruteur)
+ */
+export type StageLabelSet = 'emploi' | 'vente' | 'recrutement'
+
+/** Resolveurs de libelle par jeu d'etiquettes, indexes par stage. */
+const STAGE_LABEL_RESOLVERS: Record<
+  StageLabelSet,
+  Record<Stage, () => string>
+> = {
+  emploi: {
+    lead: m.opp_stage_lead,
+    contacted: m.opp_stage_contacted,
+    applied: m.opp_stage_applied,
+    interview: m.opp_stage_interview,
+    negotiation: m.opp_stage_negotiation,
+    won: m.opp_stage_won,
+    lost: m.opp_stage_lost,
+  },
+  vente: {
+    lead: m.opp_stage_lead_vente,
+    contacted: m.opp_stage_contacted_vente,
+    applied: m.opp_stage_applied_vente,
+    interview: m.opp_stage_interview_vente,
+    negotiation: m.opp_stage_negotiation_vente,
+    won: m.opp_stage_won_vente,
+    lost: m.opp_stage_lost_vente,
+  },
+  recrutement: {
+    lead: m.opp_stage_lead_recrutement,
+    contacted: m.opp_stage_contacted_recrutement,
+    applied: m.opp_stage_applied_recrutement,
+    interview: m.opp_stage_interview_recrutement,
+    negotiation: m.opp_stage_negotiation_recrutement,
+    won: m.opp_stage_won_recrutement,
+    lost: m.opp_stage_lost_recrutement,
+  },
+}
+
+/**
+ * Libelle affiche d'un stage selon le jeu d'etiquettes du persona. Les couleurs
+ * et points (`dot`/`chip`) restent fournis par `STAGE_META`. Defaut 'emploi'.
+ */
+export function stageLabel(
+  stage: Stage,
+  set: StageLabelSet = 'emploi',
+): string {
+  return STAGE_LABEL_RESOLVERS[set][stage]()
+}
+
 export const TYPE_META: Record<
   OppType,
   { readonly label: string; readonly long: string; icon: LucideIcon; fg: string }

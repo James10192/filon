@@ -14,6 +14,7 @@ import {
   type SourceChannel,
   type TargetType,
 } from './meta'
+import { useStageLabels } from './use-stage-labels'
 
 /** Chip de stage : point coloré + libellé, fond soft. */
 export function StageChip({
@@ -26,6 +27,7 @@ export function StageChip({
   className?: string
 }) {
   const meta = STAGE_META[stage]
+  const { label } = useStageLabels()
   return (
     <span
       className={cn(
@@ -35,7 +37,7 @@ export function StageChip({
       )}
     >
       <span className={cn('size-1.5 rounded-full', meta.dot)} />
-      {compact ? meta.short : meta.label}
+      {compact ? meta.short : label(stage)}
     </span>
   )
 }

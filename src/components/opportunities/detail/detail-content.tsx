@@ -14,7 +14,8 @@ import {
 import { ActivityTimeline } from '../activity-timeline'
 import { OpportunityForm, type OpportunityFormSubmit } from '../opportunity-form'
 import { buildUpdateArgs } from '../update-args'
-import { PRIORITY_META, STAGE_META, type Priority, type Stage } from '../meta'
+import { PRIORITY_META, type Priority, type Stage } from '../meta'
+import { useStageLabels } from '../use-stage-labels'
 import { EntityDocuments } from '~/components/shared/entity-documents'
 import { Panel } from './panel'
 import { CompanyContactPanel, FollowupsPanel } from './panels'
@@ -46,6 +47,7 @@ export function OpportunityDetailContent({
   const setPriority = useMutation(api.opportunities.setPriority)
   const update = useMutation(api.opportunities.update)
   const remove = useMutation(api.opportunities.remove)
+  const { label: stageLabelOf } = useStageLabels()
 
   const [editOpen, setEditOpen] = useState(false)
   const [editPending, setEditPending] = useState(false)
@@ -57,7 +59,7 @@ export function OpportunityDetailContent({
     if (next === opportunity.stage) return
     try {
       await setStage({ id: opportunity._id, stage: next })
-      toast.success(m.opp_moved_to({ stage: STAGE_META[next].label }))
+      toast.success(m.opp_moved_to({ stage: stageLabelOf(next) }))
       if (next === 'won') setJustWon(true)
     } catch {
       toast.error(m.opp_move_error())

@@ -24,13 +24,13 @@ import { OPPORTUNITY_COLUMNS } from '~/lib/export'
 import { OpportunitiesTable } from '../opportunities-table'
 import {
   STAGES,
-  STAGE_META,
   TYPE_META,
   PRIORITY_META,
   type OppType,
   type Priority,
   type Stage,
 } from '../meta'
+import { useStageLabels } from '../use-stage-labels'
 
 type StageFilter = Stage | 'all'
 type TypeFilter = OppType | 'all'
@@ -85,6 +85,7 @@ export function ListView({
   narrow?: boolean
 }) {
   const { stage, type, priority, tags, search } = filters
+  const { label: stageLabelOf } = useStageLabels()
 
   const queryArgs = useMemo(() => {
     const args: { stage?: Stage; type?: OppType; search?: string } = {}
@@ -114,7 +115,7 @@ export function ListView({
     if (stage !== 'all') {
       out.push({
         key: 'stage',
-        label: m.opp_chip_stage({ value: STAGE_META[stage].label }),
+        label: m.opp_chip_stage({ value: stageLabelOf(stage as Stage) }),
         onRemove: () => onFiltersChange({ ...filters, stage: 'all' }),
       })
     }
@@ -152,7 +153,7 @@ export function ListView({
       })
     }
     return out
-  }, [stage, type, priority, tags, search, filters, onFiltersChange])
+  }, [stage, type, priority, tags, search, filters, onFiltersChange, stageLabelOf])
 
   const hasActiveFilters = chips.length > 0
   const reset = () => onFiltersChange(EMPTY_FILTERS)
@@ -187,7 +188,7 @@ export function ListView({
             <SelectItem value="all">{m.opp_filter_all_stages()}</SelectItem>
             {STAGES.map((s) => (
               <SelectItem key={s} value={s}>
-                {STAGE_META[s].label}
+                {stageLabelOf(s)}
               </SelectItem>
             ))}
           </SelectContent>

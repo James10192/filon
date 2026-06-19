@@ -25,7 +25,6 @@ import {
   SOURCE_CHANNELS,
   SOURCE_META,
   STAGES,
-  STAGE_META,
   TARGET_TYPES,
   TARGET_TYPE_META,
   TYPE_META,
@@ -35,6 +34,7 @@ import {
   type Stage,
   type TargetType,
 } from './meta'
+import { useStageLabels } from './use-stage-labels'
 
 export type OpportunityFormValues = {
   title: string
@@ -126,6 +126,7 @@ export function OpportunityForm({
   withStage?: boolean
   pending?: boolean
 }) {
+  const { label: stageLabelOf } = useStageLabels()
   const [title, setTitle] = useState(initial?.title ?? '')
   const [type, setType] = useState<OppType>(initial?.type ?? 'job_offer')
   const [stage, setStage] = useState<Stage>(initial?.stage ?? 'lead')
@@ -274,7 +275,7 @@ export function OpportunityForm({
                 <SelectContent>
                   {STAGES.map((key) => (
                     <SelectItem key={key} value={key}>
-                      {STAGE_META[key].label}
+                      {stageLabelOf(key)}
                     </SelectItem>
                   ))}
                 </SelectContent>

@@ -21,6 +21,32 @@ import { validationError } from './lib/plan'
  * `null` si le trigger `onCreate` n'a pas encore cree la ligne (cas limite juste
  * apres l'inscription) : l'appelant compose alors avec l'identite d'auth.
  */
+/**
+ * Mappe un profil d'activite (`activityType`) vers le jeu d'etiquettes de
+ * pipeline a afficher. Ne change jamais les cles internes du pipeline : pilote
+ * uniquement les libelles affiches cote front.
+ *  - 'recruteur'                                  -> 'recrutement'
+ *  - 'freelance_dev'/'consultant'/'ambassadeur'/
+ *    'agent_immo'/'agent_assurance'/'autre'       -> 'vente'
+ *  - 'etudiant' / absent / inconnu               -> 'emploi' (defaut)
+ */
+function stageLabelSetForActivity(
+  activityType: string,
+): 'emploi' | 'vente' | 'recrutement' {
+  if (activityType === 'recruteur') return 'recrutement'
+  if (
+    activityType === 'freelance_dev' ||
+    activityType === 'consultant' ||
+    activityType === 'ambassadeur' ||
+    activityType === 'agent_immo' ||
+    activityType === 'agent_assurance' ||
+    activityType === 'autre'
+  ) {
+    return 'vente'
+  }
+  return 'emploi'
+}
+
 async function currentUserDoc(
   ctx: QueryCtx | MutationCtx,
   userId: string,
@@ -62,6 +88,11 @@ export const me = query({
       image: undefined as string | undefined,
       customImage: undefined as boolean | undefined,
       activityType: undefined as string | undefined,
+      stageLabelSet: undefined as
+        | 'emploi'
+        | 'vente'
+        | 'recrutement'
+        | undefined,
       onboardedAt: undefined as number | undefined,
       createdAt: Date.now(),
     }
@@ -151,7 +182,10 @@ export const setActivity = mutation({
     if (!activityType) throw validationError('Le type d’activité est requis')
 
     const doc = await ensureUserDoc(ctx, userId, email)
-    await ctx.db.patch(doc._id, { activityType })
+    await ctx.db.patch(doc._id, {
+      activityType,
+      stageLabelSet: stageLabelSetForActivity(activityType),
+    })
     return null
   },
 })
@@ -168,11 +202,18 @@ export const completeOnboarding = mutation({
     const { userId, email } = await requireUser(ctx)
     const doc = await ensureUserDoc(ctx, userId, email)
 
-    const patch: { onboardedAt?: number; activityType?: string } = {}
+    const patch: {
+      onboardedAt?: number
+      activityType?: string
+      stageLabelSet?: 'emploi' | 'vente' | 'recrutement'
+    } = {}
     if (!doc.onboardedAt) patch.onboardedAt = Date.now()
     if (args.activityType !== undefined) {
       const activityType = args.activityType.trim()
-      if (activityType) patch.activityType = activityType
+      if (activityType) {
+        patch.activityType = activityType
+        patch.stageLabelSet = stageLabelSetForActivity(activityType)
+      }
     }
     if (Object.keys(patch).length > 0) {
       await ctx.db.patch(doc._id, patch)
