@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { m } from '~/lib/paraglide/messages'
+import { cn } from '~/lib/utils'
 import { DataTable } from '~/components/data-table'
 import { OpportunityCard } from './opportunity-card'
 import { buildOpportunityColumns } from './opportunity-columns'
@@ -36,8 +37,15 @@ export function OpportunitiesTable({
 
   return (
     <>
-      {/* Vue cartes : mobile (< md). */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:hidden">
+      {/* Cartes : toujours en mobile, et aussi en desktop quand le panneau
+          détail est ouvert (zone étroite). Évite un tableau dense écrasé qui
+          déborde horizontalement et décale la ligne sélectionnée. */}
+      <div
+        className={cn(
+          'grid grid-cols-1 gap-3',
+          narrow ? '' : 'sm:grid-cols-2 md:hidden',
+        )}
+      >
         {items.map((opportunity) => (
           <OpportunityCard
             key={opportunity._id}
@@ -47,19 +55,20 @@ export function OpportunitiesTable({
         ))}
       </div>
 
-      {/* Vue tableau dense : >= md. */}
-      <div className="hidden md:block">
-        <DataTable
-          data={items}
-          columns={columns}
-          defaultSorting={[{ id: 'title', desc: false }]}
-          onRowClick={(row) => onSelect(row._id)}
-          getRowId={(row) => row._id}
-          selectedRowId={selectedId ?? undefined}
-          minWidthClassName={narrow ? 'min-w-0' : 'min-w-[860px]'}
-          ariaLabel={m.opp_table_aria()}
-        />
-      </div>
+      {/* Tableau dense : desktop large uniquement (jamais en mode étroit). */}
+      {!narrow && (
+        <div className="hidden md:block">
+          <DataTable
+            data={items}
+            columns={columns}
+            defaultSorting={[{ id: 'title', desc: false }]}
+            onRowClick={(row) => onSelect(row._id)}
+            getRowId={(row) => row._id}
+            selectedRowId={selectedId ?? undefined}
+            ariaLabel={m.opp_table_aria()}
+          />
+        </div>
+      )}
     </>
   )
 }
