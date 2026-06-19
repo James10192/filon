@@ -91,7 +91,11 @@ export function DataTable<TData>({
       aria-label={ariaLabel}
       onKeyDown={handleKeyDown}
     >
-      <Table className={minWidthClassName}>
+      {/* table-fixed + w-full : la table épouse toujours la largeur du conteneur
+          (le contenu long s'enroule dans sa colonne au lieu de forcer une largeur
+          mini qui déborde). Évite le scroll-x et le décalage en panneau ouvert.
+          minWidthClassName conservé pour compat d'API mais non appliqué. */}
+      <Table className="w-full table-fixed">
         <TableHeader>
           {table.getHeaderGroups().map((group) => (
             <TableRow
