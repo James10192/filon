@@ -159,8 +159,11 @@ function DataRow<TData>({
         'group border-b border-border transition-colors last:border-0 hover:bg-surface-2',
         onClick && 'cursor-pointer',
         active && !selected && 'bg-surface-2',
+        // Accent gauche via box-shadow inset (PAS position:relative sur le <tr> :
+        // relative sur une ligne de tableau dans un conteneur overflow-x décale
+        // les cellules sous Chrome — cellule « vide » / contenu poussé à droite).
         selected &&
-          'relative bg-accent-soft/50 before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:bg-accent before:content-[""]',
+          'bg-accent-soft/50 shadow-[inset_2px_0_0_0_var(--color-accent)]',
       )}
     >
       {row.getVisibleCells().map((cell) => (
