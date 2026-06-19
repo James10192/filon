@@ -19,6 +19,7 @@ export function buildUpdateArgs(
   id: Id<'opportunities'>
   title: string
   type: OpportunityFormSubmit['type']
+  priority: OpportunityFormSubmit['priority']
   targetType: OpportunityFormSubmit['targetType']
   tags: string[]
   source: string
@@ -37,6 +38,7 @@ export function buildUpdateArgs(
     id,
     title: values.title,
     type: values.type,
+    priority: values.priority,
     targetType: values.targetType,
     tags: values.tags,
     // Chaînes vides => effacement explicite côté patch (jamais d'undefined).

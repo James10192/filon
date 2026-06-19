@@ -61,6 +61,7 @@ export function OpportunityWorkspace({
           onSelect={onSelect}
           selectedId={selectedId}
           onCreate={quickCapture.open}
+          narrow={showSidePane}
         />
       )}
       {view === 'tableau' && (

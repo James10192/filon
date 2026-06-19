@@ -605,6 +605,20 @@ export const setStage = mutation({
   },
 })
 
+/** Change uniquement la priorité (édition inline rapide depuis la liste/détail). */
+export const setPriority = mutation({
+  args: { id: v.id('opportunities'), priority: priorityValidator },
+  handler: async (ctx, args) => {
+    const { userId } = await requireUser(ctx)
+    await ownedOpportunity(ctx, userId, args.id)
+    await ctx.db.patch(args.id, {
+      priority: args.priority,
+      updatedAt: Date.now(),
+    })
+    return null
+  },
+})
+
 export const remove = mutation({
   args: { id: v.id('opportunities') },
   handler: async (ctx, args) => {

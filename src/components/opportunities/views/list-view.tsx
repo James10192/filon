@@ -74,12 +74,15 @@ export function ListView({
   onSelect,
   selectedId,
   onCreate,
+  narrow = false,
 }: {
   filters: ListFilters
   onFiltersChange: (next: ListFilters) => void
   onSelect: (id: Id<'opportunities'>) => void
   selectedId?: Id<'opportunities'> | null
   onCreate: () => void
+  /** Panneau de détail ouvert : zone liste étroite, tableau compact. */
+  narrow?: boolean
 }) {
   const { stage, type, priority, tags, search } = filters
 
@@ -266,6 +269,7 @@ export function ListView({
           items={visible}
           onSelect={onSelect}
           selectedId={selectedId}
+          narrow={narrow}
         />
       )}
     </div>

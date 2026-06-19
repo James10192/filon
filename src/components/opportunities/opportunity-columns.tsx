@@ -4,9 +4,9 @@ import type { Id } from '../../../convex/_generated/dataModel'
 import { m } from '~/lib/paraglide/messages'
 import { SortableHeader } from '~/components/data-table'
 import { StageChipSelect } from './stage-chip-select'
+import { PriorityChipSelect } from './priority-chip-select'
 import {
   TypeChip,
-  PriorityChip,
   DueBadge,
   TargetChip,
   TagChips,
@@ -31,10 +31,13 @@ const PRIORITY_RANK: Record<Priority, number> = { low: 0, medium: 1, high: 2 }
  */
 export function buildOpportunityColumns({
   onOpen,
+  narrow = false,
 }: {
   onOpen: (id: Id<'opportunities'>) => void
+  /** Panneau de détail ouvert : zone étroite, on allège les colonnes. */
+  narrow?: boolean
 }): ColumnDef<Opportunity, unknown>[] {
-  return [
+  const columns: ColumnDef<Opportunity, unknown>[] = [
     {
       id: 'title',
       accessorKey: 'title',
@@ -87,7 +90,12 @@ export function buildOpportunityColumns({
       sortingFn: (a, b) =>
         PRIORITY_RANK[a.original.priority] - PRIORITY_RANK[b.original.priority],
       meta: { headerClassName: 'hidden lg:table-cell', cellClassName: 'hidden lg:table-cell' },
-      cell: ({ row }) => <PriorityChip priority={row.original.priority} />,
+      cell: ({ row }) => (
+        <PriorityChipSelect
+          id={row.original._id}
+          priority={row.original.priority}
+        />
+      ),
     },
     {
       id: 'deadline',
@@ -161,4 +169,9 @@ export function buildOpportunityColumns({
       ),
     },
   ]
+
+  // Panneau de détail ouvert : la zone liste rétrécit. On retire la colonne
+  // « suivi » (la plus large) pour que le tableau tienne sans débordement
+  // horizontal (sinon décalage / scroll-x au clic d'une ligne).
+  return narrow ? columns.filter((c) => c.id !== 'tracking') : columns
 }

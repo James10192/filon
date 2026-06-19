@@ -19,14 +19,17 @@ export function OpportunitiesTable({
   items,
   onSelect,
   selectedId,
+  narrow = false,
 }: {
   items: Opportunity[]
   onSelect: (id: Id<'opportunities'>) => void
   selectedId?: Id<'opportunities'> | null
+  /** Panneau de détail ouvert : tableau compact, sans min-width forcée. */
+  narrow?: boolean
 }) {
   const columns = useMemo(
-    () => buildOpportunityColumns({ onOpen: onSelect }),
-    [onSelect],
+    () => buildOpportunityColumns({ onOpen: onSelect, narrow }),
+    [onSelect, narrow],
   )
 
   return (
@@ -51,6 +54,7 @@ export function OpportunitiesTable({
           onRowClick={(row) => onSelect(row._id)}
           getRowId={(row) => row._id}
           selectedRowId={selectedId ?? undefined}
+          minWidthClassName={narrow ? 'min-w-0' : 'min-w-[860px]'}
           ariaLabel={m.opp_table_aria()}
         />
       </div>

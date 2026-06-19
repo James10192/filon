@@ -14,7 +14,7 @@ import {
 import { ActivityTimeline } from '../activity-timeline'
 import { OpportunityForm, type OpportunityFormSubmit } from '../opportunity-form'
 import { buildUpdateArgs } from '../update-args'
-import { STAGE_META, type Stage } from '../meta'
+import { PRIORITY_META, STAGE_META, type Priority, type Stage } from '../meta'
 import { EntityDocuments } from '~/components/shared/entity-documents'
 import { Panel } from './panel'
 import { CompanyContactPanel, FollowupsPanel } from './panels'
@@ -43,6 +43,7 @@ export function OpportunityDetailContent({
   onRemoved?: () => void
 }) {
   const setStage = useMutation(api.opportunities.setStage)
+  const setPriority = useMutation(api.opportunities.setPriority)
   const update = useMutation(api.opportunities.update)
   const remove = useMutation(api.opportunities.remove)
 
@@ -60,6 +61,18 @@ export function OpportunityDetailContent({
       if (next === 'won') setJustWon(true)
     } catch {
       toast.error(m.opp_move_error())
+    }
+  }
+
+  async function handlePriority(next: Priority) {
+    if (next === opportunity.priority) return
+    try {
+      await setPriority({ id: opportunity._id, priority: next })
+      toast.success(
+        m.opp_priority_changed({ priority: PRIORITY_META[next].label }),
+      )
+    } catch {
+      toast.error(m.opp_priority_change_error())
     }
   }
 
@@ -98,6 +111,7 @@ export function OpportunityDetailContent({
         onEdit={() => setEditOpen(true)}
         onRemove={handleRemove}
         onStage={handleStage}
+        onPriority={handlePriority}
       />
 
       {justWon && <UpgradeNudge id="won_value" variant="value" />}
@@ -162,6 +176,7 @@ export function OpportunityDetailContent({
             initial={{
               title: opportunity.title,
               type: opportunity.type,
+              priority: opportunity.priority,
               targetType: opportunity.effectiveTargetType,
               companyId: opportunity.companyId,
               contactId: opportunity.contactId,

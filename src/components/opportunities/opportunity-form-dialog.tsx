@@ -37,6 +37,7 @@ export function OpportunityFormDialog({
         title: values.title,
         type: values.type,
         stage: values.stage,
+        priority: values.priority,
         targetType: values.targetType,
         tags: values.tags,
       }

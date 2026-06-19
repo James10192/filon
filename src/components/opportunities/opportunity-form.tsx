@@ -21,6 +21,7 @@ import { toast } from '~/components/ui/sonner'
 import { m } from '~/lib/paraglide/messages'
 import { cn } from '~/lib/utils'
 import {
+  PRIORITY_META,
   SOURCE_CHANNELS,
   SOURCE_META,
   STAGES,
@@ -29,6 +30,7 @@ import {
   TARGET_TYPE_META,
   TYPE_META,
   type OppType,
+  type Priority,
   type SourceChannel,
   type Stage,
   type TargetType,
@@ -38,6 +40,7 @@ export type OpportunityFormValues = {
   title: string
   type: OppType
   stage: Stage
+  priority?: Priority
   /** Cible suivie : entreprise / particulier / aucune. */
   targetType?: TargetType
   companyId?: Id<'companies'>
@@ -60,6 +63,7 @@ export type OpportunityFormSubmit = {
   title: string
   type: OppType
   stage: Stage
+  priority: Priority
   targetType: TargetType
   companyId?: Id<'companies'>
   contactId?: Id<'contacts'>
@@ -78,6 +82,11 @@ export type OpportunityFormSubmit = {
 const TYPE_OPTIONS = Object.entries(TYPE_META) as [
   OppType,
   (typeof TYPE_META)[OppType],
+][]
+
+const PRIORITY_OPTIONS = Object.entries(PRIORITY_META) as [
+  Priority,
+  (typeof PRIORITY_META)[Priority],
 ][]
 
 const NO_SOURCE = '__none__'
@@ -120,6 +129,9 @@ export function OpportunityForm({
   const [title, setTitle] = useState(initial?.title ?? '')
   const [type, setType] = useState<OppType>(initial?.type ?? 'job_offer')
   const [stage, setStage] = useState<Stage>(initial?.stage ?? 'lead')
+  const [priority, setPriority] = useState<Priority>(
+    initial?.priority ?? 'medium',
+  )
   const [targetType, setTargetType] = useState<TargetType>(
     initialTarget(initial),
   )
@@ -190,6 +202,7 @@ export function OpportunityForm({
       title: title.trim(),
       type,
       stage,
+      priority,
       targetType,
       source: clean(source),
       sourceChannel:
@@ -268,6 +281,27 @@ export function OpportunityForm({
               </Select>
             </div>
           )}
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="opp-priority">{m.opp_col_priority()}</Label>
+            <Select
+              value={priority}
+              onValueChange={(v) => setPriority(v as Priority)}
+            >
+              <SelectTrigger id="opp-priority">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PRIORITY_OPTIONS.map(([key, meta]) => (
+                  <SelectItem key={key} value={key}>
+                    {meta.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 

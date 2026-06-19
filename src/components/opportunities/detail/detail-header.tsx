@@ -20,7 +20,16 @@ import {
   SelectValue,
 } from '~/components/ui/select'
 import { StageChip, TypeChip, TargetChip, sourceLabel } from '../chips'
-import { STAGES, STAGE_META, formatDate, type Stage } from '../meta'
+import {
+  PRIORITY_META,
+  STAGES,
+  STAGE_META,
+  formatDate,
+  type Priority,
+  type Stage,
+} from '../meta'
+
+const PRIORITIES: Priority[] = ['high', 'medium', 'low']
 import { DeleteOpportunityDialog } from './panels'
 
 type LoadedOpportunity = FunctionReturnType<typeof api.opportunities.get>
@@ -32,12 +41,14 @@ export function DetailHeader({
   onEdit,
   onRemove,
   onStage,
+  onPriority,
 }: {
   opportunity: LoadedOpportunity
   removing: boolean
   onEdit: () => void
   onRemove: () => void
   onStage: (next: Stage) => void
+  onPriority: (next: Priority) => void
 }) {
   const companyName = opportunity.company?.name
   const targetName = opportunity.companyName ?? opportunity.contactName
@@ -135,25 +146,47 @@ export function DetailHeader({
         </div>
       )}
 
-      <div className="flex flex-col gap-1.5 border-t border-border pt-4 sm:flex-row sm:items-center sm:gap-3">
-        <Label className="text-xs uppercase tracking-wide text-fg-subtle">
-          {m.opp_col_stage()}
-        </Label>
-        <Select
-          value={opportunity.stage}
-          onValueChange={(v) => onStage(v as Stage)}
-        >
-          <SelectTrigger className="sm:w-56">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {STAGES.map((s) => (
-              <SelectItem key={s} value={s}>
-                {STAGE_META[s].label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="grid grid-cols-1 gap-3 border-t border-border pt-4 sm:grid-cols-2">
+        <div className="flex flex-col gap-1.5">
+          <Label className="text-xs uppercase tracking-wide text-fg-subtle">
+            {m.opp_col_stage()}
+          </Label>
+          <Select
+            value={opportunity.stage}
+            onValueChange={(v) => onStage(v as Stage)}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {STAGES.map((s) => (
+                <SelectItem key={s} value={s}>
+                  {STAGE_META[s].label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label className="text-xs uppercase tracking-wide text-fg-subtle">
+            {m.opp_col_priority()}
+          </Label>
+          <Select
+            value={opportunity.priority}
+            onValueChange={(v) => onPriority(v as Priority)}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PRIORITIES.map((p) => (
+                <SelectItem key={p} value={p}>
+                  {PRIORITY_META[p].label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
     </header>
   )
