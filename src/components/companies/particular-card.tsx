@@ -54,6 +54,11 @@ export function ParticularCard({
               <User className="size-3" />
               {m.carnet_particular_badge()}
             </Badge>
+            {contact.mlmStatus && (
+              <Badge variant="outline" className={mlmStatusClass(contact.mlmStatus)}>
+                {mlmStatusLabel(contact.mlmStatus)}
+              </Badge>
+            )}
             {contact.role && (
               <span className="truncate text-xs text-fg-subtle">
                 {contact.role}
@@ -178,6 +183,34 @@ export function ParticularCard({
       </div>
     </div>
   )
+}
+
+type MlmStatus = NonNullable<Contact['mlmStatus']>
+
+function mlmStatusLabel(status: MlmStatus): string {
+  switch (status) {
+    case 'active':
+      return m.mlm_status_active()
+    case 'at_risk':
+      return m.mlm_status_at_risk()
+    case 'inactive':
+      return m.mlm_status_inactive()
+    default:
+      return m.mlm_status_prospect()
+  }
+}
+
+function mlmStatusClass(status: MlmStatus): string {
+  switch (status) {
+    case 'active':
+      return 'border-success/40 text-success'
+    case 'at_risk':
+      return 'border-warning/40 text-warning'
+    case 'inactive':
+      return 'text-fg-subtle'
+    default:
+      return 'border-accent/40 text-accent'
+  }
 }
 
 function initials(name: string) {

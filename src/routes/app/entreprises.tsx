@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   Building2,
   ChevronDown,
+  HeartHandshake,
   Plus,
   Search,
   User,
@@ -97,6 +98,11 @@ function EntreprisesPage() {
     () => (allContacts ?? []).filter((c) => !c.companyId),
     [allContacts],
   )
+  // Filleuls = contacts ayant un statut reseau (wedge MLM), avec ou sans entreprise.
+  const filleuls = useMemo(
+    () => (allContacts ?? []).filter((c) => c.mlmStatus),
+    [allContacts],
+  )
 
   const countOf = useMemo(
     () => (id: Id<'companies'>) => opportunityCounts?.[id] ?? 0,
@@ -145,8 +151,9 @@ function EntreprisesPage() {
   const totalCount = companyCount + particularCount
   const hasSearch = searchTerm.length > 0
 
-  const showCompanies = segment !== 'people'
-  const showParticulars = segment !== 'companies'
+  const showCompanies = segment === 'all' || segment === 'companies'
+  const showParticulars = segment === 'all' || segment === 'people'
+  const showFilleuls = segment === 'filleuls'
 
   return (
     <div className="flex flex-col">
@@ -201,6 +208,7 @@ function EntreprisesPage() {
               all: totalCount,
               companies: companyCount,
               people: particularCount,
+              filleuls: filleuls.length,
             }}
           />
         </div>
@@ -258,6 +266,26 @@ function EntreprisesPage() {
               isEmpty={particularCount === 0}
             >
               {particuliers.map((contact) => (
+                <ParticularCard
+                  key={contact._id}
+                  contact={contact}
+                  onEdit={openEditContact}
+                  onDelete={setContactToDelete}
+                />
+              ))}
+            </SegmentBlock>
+          )}
+
+          {showFilleuls && (
+            <SegmentBlock
+              show={false}
+              icon={<HeartHandshake className="size-4 text-fg-subtle" />}
+              label={m.carnet_segment_filleuls()}
+              count={filleuls.length}
+              empty={m.carnet_no_filleul()}
+              isEmpty={filleuls.length === 0}
+            >
+              {filleuls.map((contact) => (
                 <ParticularCard
                   key={contact._id}
                   contact={contact}

@@ -22,6 +22,7 @@ import {
 } from '~/components/dashboard/recent-activity'
 import { DashboardNudge } from '~/components/dashboard/dashboard-nudge'
 import { DailySuggestions } from '~/components/dashboard/daily-suggestions'
+import { RankGoalCard } from '~/components/dashboard/rank-goal-card'
 import { AskCopilotButton } from '~/components/copilot/ask-copilot-button'
 
 export const Route = createFileRoute('/app/')({
@@ -93,6 +94,9 @@ function DashboardPage() {
 
         {/* Suggestions du jour déterministes : pistes d'action -> copilote */}
         <DailySuggestions />
+
+        {/* Objectif de palier (persona ambassadeur/vente) : game plan reseau */}
+        <RankGoalCard />
 
         {/* Hero : entonnoir de conversion du pipeline */}
         <PipelineFunnel />

@@ -12,6 +12,14 @@ import { ensureTagsForUser } from './tags'
  * scope via un index `by_user*`. Toute ecriture force `userId` cote serveur.
  */
 
+/** Statut reseau d'un filleul (wedge MLM). Partage create/update/setStatus. */
+const MLM_STATUS = v.union(
+  v.literal('prospect'),
+  v.literal('active'),
+  v.literal('at_risk'),
+  v.literal('inactive'),
+)
+
 /** Verifie qu'un contact existe et appartient au user courant. */
 async function requireOwnedContact(
   ctx: { db: { get: (id: Id<'contacts'>) => Promise<Doc<'contacts'> | null> } },
@@ -132,12 +140,18 @@ export const create = mutation({
     referredBy: v.optional(v.string()),
     // Etiquettes (noms). Catalogues au passage (idempotent) via `ensureTagsForUser`.
     tags: v.optional(v.array(v.string())),
+    // Reseau / wedge MLM : statut de filleul + parrain direct (downline).
+    mlmStatus: v.optional(MLM_STATUS),
+    parentContactId: v.optional(v.id('contacts')),
   },
   handler: async (ctx, args) => {
     const { userId } = await requireUser(ctx)
     const name = args.name.trim()
     if (!name) throw validationError('Le nom est requis')
     if (args.companyId) await assertOwnedCompany(ctx, args.companyId, userId)
+    if (args.parentContactId) {
+      await requireOwnedContact(ctx, args.parentContactId, userId)
+    }
 
     const doc: {
       userId: string
@@ -152,6 +166,9 @@ export const create = mutation({
       location?: string
       referredBy?: string
       tags?: string[]
+      mlmStatus?: 'prospect' | 'active' | 'at_risk' | 'inactive'
+      mlmStatusAt?: number
+      parentContactId?: Id<'contacts'>
       createdAt: number
     } = { userId, name, createdAt: Date.now() }
     if (args.companyId) doc.companyId = args.companyId
@@ -163,6 +180,11 @@ export const create = mutation({
     if (args.relationship?.trim()) doc.relationship = args.relationship.trim()
     if (args.location?.trim()) doc.location = args.location.trim()
     if (args.referredBy?.trim()) doc.referredBy = args.referredBy.trim()
+    if (args.mlmStatus) {
+      doc.mlmStatus = args.mlmStatus
+      doc.mlmStatusAt = Date.now()
+    }
+    if (args.parentContactId) doc.parentContactId = args.parentContactId
     if (args.tags && args.tags.length > 0) {
       const tags = await ensureTagsForUser(ctx, userId, args.tags)
       if (tags.length > 0) doc.tags = tags
@@ -186,14 +208,16 @@ export const update = mutation({
     location: v.optional(v.string()),
     referredBy: v.optional(v.string()),
     tags: v.optional(v.array(v.string())),
+    mlmStatus: v.optional(MLM_STATUS),
+    parentContactId: v.optional(v.id('contacts')),
   },
   handler: async (ctx, { id, ...fields }) => {
     const { userId } = await requireUser(ctx)
-    await requireOwnedContact(ctx, id, userId)
+    const existing = await requireOwnedContact(ctx, id, userId)
 
     const patch: Record<
       string,
-      string | string[] | Id<'companies'> | undefined
+      string | string[] | number | Id<'companies'> | Id<'contacts'> | undefined
     > = {}
     if (fields.name !== undefined) {
       const name = fields.name.trim()
@@ -223,6 +247,18 @@ export const update = mutation({
     if (fields.tags !== undefined) {
       const tags = await ensureTagsForUser(ctx, userId, fields.tags)
       patch.tags = tags.length > 0 ? tags : undefined
+    }
+    if (fields.mlmStatus !== undefined) {
+      patch.mlmStatus = fields.mlmStatus
+      // Ne re-date le churn que si le statut change reellement.
+      if (fields.mlmStatus !== existing.mlmStatus) patch.mlmStatusAt = Date.now()
+    }
+    if (fields.parentContactId !== undefined) {
+      if (fields.parentContactId === id) {
+        throw validationError('Un filleul ne peut pas etre son propre parrain')
+      }
+      await requireOwnedContact(ctx, fields.parentContactId, userId)
+      patch.parentContactId = fields.parentContactId
     }
 
     await ctx.db.patch(id, patch)

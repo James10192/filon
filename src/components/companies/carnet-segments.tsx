@@ -1,14 +1,21 @@
-import { Building2, User, Users, type LucideIcon } from 'lucide-react'
+import {
+  Building2,
+  HeartHandshake,
+  User,
+  Users,
+  type LucideIcon,
+} from 'lucide-react'
 import { cn } from '~/lib/utils'
 import { m } from '~/lib/paraglide/messages'
 
-export type CarnetSegment = 'all' | 'companies' | 'people'
+export type CarnetSegment = 'all' | 'companies' | 'people' | 'filleuls'
 
 const SEGMENTS: { value: CarnetSegment; label: () => string; icon: LucideIcon }[] =
   [
     { value: 'all', label: m.carnet_segment_all, icon: Users },
     { value: 'companies', label: m.carnet_segment_companies, icon: Building2 },
     { value: 'people', label: m.carnet_segment_people, icon: User },
+    { value: 'filleuls', label: m.carnet_segment_filleuls, icon: HeartHandshake },
   ]
 
 /**

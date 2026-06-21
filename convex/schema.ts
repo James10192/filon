@@ -237,11 +237,33 @@ export default defineSchema({
     // Etiquettes (NOMS, puises dans le catalogue `tags`). Ex « Prospect »,
     // « Leader », « Inactif ». Optionnel : les lignes existantes restent valides.
     tags: v.optional(v.array(v.string())),
+    // --- Reseau / marketing relationnel (wedge MLM, additif) ---
+    // Statut de relation d'un FILLEUL (membre du reseau, distinct du parrainage
+    // produit Filon). Absent = simple contact/prospect, pas un filleul suivi.
+    // 'active' = cotise/achete ; 'at_risk' = en train de decrocher ; 'inactive'
+    // = a arrete. Ce qui rend un contact visible dans le segment « Filleuls ».
+    mlmStatus: v.optional(
+      v.union(
+        v.literal('prospect'),
+        v.literal('active'),
+        v.literal('at_risk'),
+        v.literal('inactive'),
+      ),
+    ),
+    // Horodatage du dernier changement de `mlmStatus` (epoch ms) : date le churn.
+    mlmStatusAt: v.optional(v.number()),
+    // Parrain DIRECT dans le reseau (arbre downline). Reference un autre contact
+    // de l'utilisateur. Absent = filleul de niveau 1 (rattache a l'utilisateur).
+    parentContactId: v.optional(v.id('contacts')),
     createdAt: v.number(),
   })
     .index('by_user', ['userId'])
     .index('by_user_created', ['userId', 'createdAt'])
-    .index('by_user_company', ['userId', 'companyId']),
+    .index('by_user_company', ['userId', 'companyId'])
+    // Segment « Filleuls » du carnet (contacts ayant un statut reseau).
+    .index('by_user_mlmStatus', ['userId', 'mlmStatus'])
+    // Arbre downline : enfants d'un parrain donne.
+    .index('by_user_parent', ['userId', 'parentContactId']),
 
   // Coeur du produit : opportunités dans le pipeline kanban.
   opportunities: defineTable({
@@ -520,6 +542,13 @@ export default defineSchema({
     userId: v.string(),
     pipelineStages: v.optional(v.array(v.string())),
     currency: v.optional(v.string()),
+    // --- Objectif de palier (wedge MLM, additif) ---
+    // Le rang cible declare par l'ambassadeur (ex « Manager ») et son exigence en
+    // nombre de filleuls actifs. Filon NE recopie AUCUN chiffre de l'entreprise :
+    // la progression est DERIVEE du pipeline/reseau de l'utilisateur. Absent =
+    // pas d'objectif fixe (la carte propose d'en definir un).
+    rankGoalLabel: v.optional(v.string()),
+    rankGoalTargetActives: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index('by_user', ['userId']),

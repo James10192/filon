@@ -68,6 +68,7 @@ export function ContactFormDialog({
     location: '',
     referredBy: '',
     notes: '',
+    mlmStatus: '' as '' | 'prospect' | 'active' | 'at_risk' | 'inactive',
   })
   const [tags, setTags] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -87,6 +88,7 @@ export function ContactFormDialog({
       location: contact?.location ?? '',
       referredBy: contact?.referredBy ?? '',
       notes: contact?.notes ?? '',
+      mlmStatus: contact?.mlmStatus ?? '',
     })
     setTags(contact?.tags ?? [])
   }, [open, contact, defaultCompanyId])
@@ -128,6 +130,7 @@ export function ContactFormDialog({
           referredBy: string
           notes: string
           tags: string[]
+          mlmStatus?: 'prospect' | 'active' | 'at_risk' | 'inactive'
         } = {
           id: contact._id,
           name,
@@ -142,6 +145,7 @@ export function ContactFormDialog({
           tags,
         }
         if (companyId) args.companyId = companyId
+        if (form.mlmStatus) args.mlmStatus = form.mlmStatus
         await updateContact(args)
         toast.success(m.carnet_changes_saved())
       } else {
@@ -157,8 +161,10 @@ export function ContactFormDialog({
           referredBy?: string
           notes?: string
           tags?: string[]
+          mlmStatus?: 'prospect' | 'active' | 'at_risk' | 'inactive'
         } = { name }
         if (companyId) args.companyId = companyId
+        if (form.mlmStatus) args.mlmStatus = form.mlmStatus
         if (form.role.trim()) args.role = form.role.trim()
         if (form.email.trim()) args.email = form.email.trim()
         if (form.phone.trim()) args.phone = form.phone.trim()
@@ -314,6 +320,27 @@ export function ContactFormDialog({
               onChange={field('referredBy')}
               placeholder={m.carnet_referred_by_placeholder()}
             />
+          </div>
+
+          <div className="grid gap-1.5">
+            <Label htmlFor="contact-mlm-status">{m.mlm_status_label()}</Label>
+            <select
+              id="contact-mlm-status"
+              value={form.mlmStatus}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  mlmStatus: e.target.value as typeof f.mlmStatus,
+                }))
+              }
+              className="h-11 rounded-[var(--radius)] border border-border bg-surface px-3 text-sm text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-ring)]"
+            >
+              <option value="">{m.mlm_status_none()}</option>
+              <option value="prospect">{m.mlm_status_prospect()}</option>
+              <option value="active">{m.mlm_status_active()}</option>
+              <option value="at_risk">{m.mlm_status_at_risk()}</option>
+              <option value="inactive">{m.mlm_status_inactive()}</option>
+            </select>
           </div>
 
           <div className="grid gap-1.5">
