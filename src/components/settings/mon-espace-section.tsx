@@ -98,7 +98,15 @@ export function MonEspaceSection() {
               onValueChange={(v) => setSet(v as StageLabelSet)}
             >
               <SelectTrigger id="lens-set" className="sm:max-w-xs">
-                <SelectValue />
+                {/*
+                  Libelle resolu explicitement : Radix ne reporte le texte de
+                  l'item dans le trigger qu'apres ouverture du menu. Pour une
+                  valeur posee par l'etat (jamais cliquee), le trigger resterait
+                  vide. On rend donc le libelle courant nous-memes.
+                */}
+                <SelectValue placeholder={m.app_lens_label()}>
+                  {LENS_OPTIONS.find((o) => o.value === set)?.label()}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {LENS_OPTIONS.map((o) => (

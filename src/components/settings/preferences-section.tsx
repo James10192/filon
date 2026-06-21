@@ -126,7 +126,9 @@ export function PreferencesSection() {
             <Label htmlFor="pref-currency">{m.app_default_currency()}</Label>
             <Select value={currency} onValueChange={setCurrency}>
               <SelectTrigger id="pref-currency" className="sm:max-w-xs">
-                <SelectValue placeholder={m.app_choose_currency()} />
+                <SelectValue placeholder={m.app_choose_currency()}>
+                  {CURRENCIES.find((c) => c.value === currency)?.label()}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {CURRENCIES.map((c) => (
