@@ -236,33 +236,31 @@ Pas une nouvelle feature : fiabilité/qualité à régler AVANT d'ouvrir aux vra
 
 Trois vagues qui se financent et s'alimentent : **la porte** (landing), **le moteur** (affiliation), **l'amour** (wedge MLM). Ordre choisi : la landing débloque tout le go-to-market, l'affiliation compose sur un produit déjà bon, le wedge approfondit le segment prioritaire et rend les parrainages plus collants.
 
-> ⚠ **Dépendance d'exécution** : ces phases touchent les hotspots `convex/schema.ts` et `messages/*.json`, actuellement **modifiés non commités** par la Phase IA v2 (BYOK + Copilot Max). Ne PAS démarrer l'implémentation avant que ce travail soit commité/mergé, sinon collision sur ces fichiers.
+> **LIVRÉ & VÉRIFIÉ EN PROD le 2026-06-21** (Convex `decisive-mongoose-364` + `filon-xi.vercel.app`). La Phase IA v2 (BYOK + Copilot Max) a été commitée d'abord (`8989aac`) pour débloquer les hotspots, puis les 3 phases en séquentiel.
 
-### Phase 5 — Landing multi-métiers & conversion · milestone #5
+### Phase 5 — Landing multi-métiers & conversion · milestone #5 · LIVRÉ
 Porte d'entrée. Petit, sans risque, zéro schéma. Ne vend QUE le réel (no-MVP).
 
-- [ ] Hero + sous-titre + meta universels, copywriting multi-métiers (#25)
-- [ ] Section « Filon parle votre métier » — `landing-personas.tsx`, 8 personas, bloc wedge MLM (#26)
-- [ ] Quick win i18n : étape « Perdu » → « En veille » en mode vente/ambassadeur (#27)
+- [x] Hero + sous-titre + meta universels, copywriting multi-métiers (#25)
+- [x] Section « Filon parle votre métier » — `landing-personas.tsx`, 8 personas, bloc wedge MLM (#26)
+- [x] Quick win i18n : étape « Perdu » → « En veille » en mode vente/ambassadeur (#27)
 
-> La section affiliation arrive en Phase 6 (on ne teasera pas une feature qui n'existe pas).
+### Phase 6 — Affiliation Filon (parrainage produit) · milestone #6 · LIVRÉ
+Le moteur viral. Additif, scopé `userId`, 1 niveau (clean, non-pyramidal). Octroi idempotent dans `billing.applySubscription`, zéro régression du renouvellement.
 
-### Phase 6 — Affiliation Filon (parrainage produit) · milestone #6
-Le moteur viral. Additif, scopé `userId`, 1 niveau (clean, non-pyramidal). ⚠ Touche Paystack → zéro régression du renouvellement.
+- [x] Schéma affiliation (`users.referral*`, tables `referrals` + `referralRewards`) + config `convex/lib/referral.ts` (#28)
+- [x] Attribution à l'inscription `?ref=CODE` (mutation `claimReferral` + hooks `referral-attribution`) (#29)
+- [x] Octroi récompense sur conversion payante — v1 mois offerts double-sided (#30)
+- [x] Dashboard `/app/parrainage` (lien, partage WhatsApp, filleuls, gains) + entrée sidebar (#31)
+- [x] Section affiliation sur la landing (#32)
+- [ ] [v2] Commission cash via mobile money / payout (#33) — **bloqué : Paystack ne verse pas en XOF** (cf. mémoire `filon-paystack-no-xof-payout`). Rail futur = Wave/OM/manuel, pas Paystack.
 
-- [ ] Schéma affiliation (`users.referral*`, tables `referrals` + `referralRewards`) + config `convex/lib/referral.ts` (#28)
-- [ ] Attribution à l'inscription `?ref=CODE` (claimReferral / trigger onCreate) (#29)
-- [ ] Octroi récompense sur conversion payante — v1 mois offerts double-sided (#30)
-- [ ] Dashboard `/app/parrainage` (lien, partage WhatsApp, filleuls, gains) + entrée sidebar (#31)
-- [ ] Section affiliation sur la landing (#32)
-- [ ] [v2] Commission cash via mobile money / payout (#33)
-
-### Phase 7 — Marketing relationnel, wedge MLM · milestone #7
+### Phase 7 — Marketing relationnel, wedge MLM · milestone #7 · LIVRÉ
 Le produit qui fidélise le segment prioritaire. Additif, zéro migration. Aucun chiffre de commission d'entreprise.
 
-- [ ] Schéma contacts MLM (`parentContactId`, `mlmStatus`, `mlmStatusAt`) + segment « Filleuls » au carnet (#34)
-- [ ] Objectif de palier (game plan dérivé du pipeline) + carte dashboard (#35)
-- [ ] Pont « Gagné → promouvoir en filleul actif » (#36)
+- [x] Schéma contacts MLM (`parentContactId`, `mlmStatus`, `mlmStatusAt`) + segment « Filleuls/Network » au carnet (#34)
+- [x] Objectif de palier (game plan dérivé du pipeline) + carte dashboard, gaté persona vente/ambassadeur (#35)
+- [ ] Pont « Gagné → promouvoir en filleul actif » (#36) — backlog (le statut filleul se pose pour l'instant via le formulaire de contact).
 
 ---
 

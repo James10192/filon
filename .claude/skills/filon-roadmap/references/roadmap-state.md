@@ -11,8 +11,12 @@
 - Phase 4 partielle : /admin + feedback in-app livrés. Orgs/équipes + rôles + head-sell priority flagging livrés (commit `05cc2f3`).
 - i18n FR/EN complet (site + app).
 
-## En cours (⚠ non commité sur main — NE PAS CLOBBER)
-- **Phase IA v2 : BYOK + Copilot Max** — working tree principal a des modifs non commitées : `convex/{billing,pricing,paystack,paystackPlans,paystackRenewal,schema,admin,agent/*,aiChat,aiCredits,aiPermissions,lib/{aiGate,plan,paystackPlans}}`, `messages/{fr,en}.json`, `src/components/{billing,copilot,admin,settings,marketing/pricing-section}/*`, `src/lib/billing/*`, + fichiers neufs `convex/byok.ts`, `convex/lib/crypto.ts`, `src/components/settings/byok-section.tsx`, `public/.well-known/`. **Doit être commité/mergé avant de démarrer Phase 5/6/7** (collision sur `convex/schema.ts` + `messages/*.json`).
+## Livré 2026-06-21 (commité + déployé prod)
+- **Phase IA v2 : BYOK + Copilot Max** committée (`8989aac`) pour débloquer les hotspots.
+- **Phase 5** (`77f2e8c`) : landing multi-métiers (hero universel + section personas + Perdu→En veille). Vérifié prod.
+- **Phase 6** (`adc1840`) : affiliation (lien parrainage, mois offerts double face dans `billing.applySubscription`, page `/app/parrainage`, section landing, attribution `?ref`). Vérifié prod (lien généré + page rendue).
+- **Phase 7** (`437bb62`) : wedge MLM (Objectif de palier `convex/mlm.ts` + carte dashboard gatée vente, statut filleul sur contacts, segment Network du carnet, select de statut). Vérifié prod (filleul actif créé → segment Network = 1).
+- Issues fermées : #25-32, #34, #35. Restent backlog : #33 (cash v2, Paystack ne verse pas en XOF), #36 (pont Gagné→filleul).
 
 ## Prochain cadrage — Croissance & marketing relationnel (2026-06-21)
 3 piliers actés (cf. ROADMAP.md décisions 14-16 + mémoire projet `filon-mlm-positioning`) :
