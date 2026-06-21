@@ -29,6 +29,7 @@ import {
   AlertDialogTrigger,
 } from '~/components/ui/alert-dialog'
 import { Skeleton } from '~/components/ui/skeleton'
+import { AskCopilotButton } from '~/components/copilot/ask-copilot-button'
 import { MemberRoleSelect } from './member-role-select'
 import { MemberInviteDialog } from './member-invite-dialog'
 import type { OrgRole } from './roles'
@@ -71,7 +72,17 @@ export function MembersTable({
           {members.length}{' '}
           {members.length > 1 ? m.org_tab_members() : m.member_col_member()}
         </p>
-        {canManage && <MemberInviteDialog organizationId={organizationId} />}
+        {canManage && (
+          <div className="flex items-center gap-2">
+            <AskCopilotButton
+              seed={m.copilot_seed_team()}
+              label={m.copilot_seed_team_cta()}
+              size="sm"
+              buttonVariant="outline"
+            />
+            <MemberInviteDialog organizationId={organizationId} />
+          </div>
+        )}
       </div>
 
       {members.length === 0 ? (

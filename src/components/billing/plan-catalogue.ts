@@ -80,6 +80,7 @@ export const PLAN_CARDS: PlanCard[] = [
       m.app_plan_copilot_max_feat_2(),
       m.app_plan_copilot_max_feat_3(),
       m.app_plan_copilot_max_feat_4(),
+      m.app_plan_copilot_max_feat_5(),
     ],
   },
 ]
@@ -108,6 +109,11 @@ export const COMPARE_ROWS: CompareRow[] = [
   { label: m.app_compare_agentic, free: false, pro: false, pro_ai: false, copilot: true, copilot_max: true },
   { label: m.app_compare_action_log, free: false, pro: false, pro_ai: false, copilot: true, copilot_max: true },
   { label: m.app_compare_fair_use_byok, free: false, pro: false, pro_ai: false, copilot: true, copilot_max: true },
+  // --- Écart Copilot Max (flagship : ce qui justifie le palier supérieur) ---
+  { label: m.app_compare_brief, free: false, pro: false, pro_ai: false, copilot: false, copilot_max: true },
+  { label: m.app_compare_team_intel, free: false, pro: false, pro_ai: false, copilot: false, copilot_max: true },
+  { label: m.app_compare_deep_reasoning, free: false, pro: false, pro_ai: false, copilot: false, copilot_max: true },
+  { label: m.app_compare_priority_routing, free: false, pro: false, pro_ai: false, copilot: false, copilot_max: true },
   // --- Équipe (org ouverte à tous, limite de membres = levier free) ---
   { label: m.app_compare_org_team, free: m.app_members_3(), pro: m.app_unlimited(), pro_ai: m.app_unlimited(), copilot: m.app_unlimited(), copilot_max: m.app_unlimited() },
   { label: m.app_compare_priority_flag, free: true, pro: true, pro_ai: true, copilot: true, copilot_max: true },

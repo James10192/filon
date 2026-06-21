@@ -34,6 +34,7 @@ import {
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
 import { toast } from '~/components/ui/sonner'
+import { AskCopilotButton } from '~/components/copilot/ask-copilot-button'
 import { STATUS_LABELS, type ProposalStatus } from './proposal-status'
 
 /**
@@ -107,6 +108,10 @@ export function ProposalDetailActions({
 
   return (
     <div className="flex shrink-0 flex-wrap items-center gap-2">
+      <AskCopilotButton
+        seed={m.copilot_seed_proposal({ title: proposal.title })}
+        variant="icon"
+      />
       <StatusActions status={status} busy={busy} onChange={changeStatus} />
       {status === 'accepted' && (
         <Button

@@ -33,7 +33,7 @@ export function BriefWidget({
   if (data.gated) {
     return (
       <div className="p-3">
-        <CopilotUpsell variant="access" onNavigate={onNavigate} />
+        <CopilotUpsell variant="max" onNavigate={onNavigate} />
       </div>
     )
   }

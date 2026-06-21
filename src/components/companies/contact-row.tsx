@@ -2,6 +2,7 @@ import { Link2, Mail, Pencil, Phone, Trash2 } from 'lucide-react'
 import type { Doc } from '../../../convex/_generated/dataModel'
 import { Button } from '~/components/ui/button'
 import { m } from '~/lib/paraglide/messages'
+import { AskCopilotButton } from '~/components/copilot/ask-copilot-button'
 
 type Contact = Doc<'contacts'> & { companyName?: string }
 
@@ -75,6 +76,16 @@ export function ContactRow({
       </div>
 
       <div className="flex shrink-0 items-center gap-1">
+        <AskCopilotButton
+          seed={
+            contact.mlmStatus
+              ? m.copilot_seed_filleul({ name: contact.name })
+              : m.copilot_seed_contact({ name: contact.name })
+          }
+          variant="icon"
+          size="sm"
+          buttonVariant="ghost"
+        />
         <Button
           variant="ghost"
           size="icon-sm"
