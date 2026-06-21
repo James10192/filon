@@ -82,10 +82,10 @@ export function UpgradeNudge({
         <Sparkles className="size-4" />
       </span>
       <div className="min-w-0 flex-1 space-y-1.5">
-        <h3 className="text-sm font-semibold text-fg">{copy.title}</h3>
-        <p className="text-sm leading-relaxed text-fg-muted">{copy.body}</p>
+        <h3 className="text-sm font-semibold text-fg">{copy.title()}</h3>
+        <p className="text-sm leading-relaxed text-fg-muted">{copy.body()}</p>
         <Button size="sm" variant="outline" className="mt-1" asChild>
-          <Link to="/app/tarifs">{copy.cta}</Link>
+          <Link to="/app/tarifs">{copy.cta()}</Link>
         </Button>
       </div>
       <Button

@@ -83,7 +83,7 @@ export function LockedFeature({
         <span className="flex items-center gap-2 rounded-[var(--radius)] border border-border bg-surface px-3 py-1.5 shadow-[var(--shadow-card)]">
           <Lock className="size-3.5 text-fg-muted" />
           <span className="text-sm font-medium text-fg">
-            {label ?? copy.title}
+            {label ?? copy.title()}
           </span>
           <Badge variant="accent" className="gap-1">
             <Sparkles className="size-3" />

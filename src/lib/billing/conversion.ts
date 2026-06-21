@@ -3,12 +3,18 @@
  * intelligent. Une seule source pour : quelles fonctionnalités sont verrouillées
  * à quel palier, et quelle copie de valeur les vend.
  *
- * Principe anti-nag : on vend le RÉSULTAT au moment de la valeur ou de la
- * friction, jamais à froid. Chaque entrée porte le palier requis (`requires`)
- * et une copie orientée bénéfice. Aucune décision de limite ici (le serveur
- * reste l'autorité) : ce module ne sert qu'à l'affichage et au ciblage.
+ * Deux principes durs :
+ *  1. Anti-nag : on vend le RÉSULTAT au moment de la valeur ou de la friction,
+ *     jamais à froid. Aucune décision de limite ici (le serveur reste l'autorité).
+ *  2. VÉRITÉ : chaque promesse correspond à une capacité RÉELLE du palier. La
+ *     veille auto ne surveille que des sites d'offres d'emploi (educarriere,
+ *     Novojob) : on ne la vend donc pas comme un radar de prospection universel.
+ *     L'argument IA universel (tous métiers) est le Copilot, persona-aware.
+ *
+ * i18n : la copie est rendue via Paraglide (FR/EN), jamais en dur.
  */
 
+import { m } from '~/lib/paraglide/messages'
 import type { Plan } from './plan'
 import { PLAN_LABELS } from './plan'
 
@@ -34,9 +40,9 @@ export type FeatureCopy = {
   /** Palier qui débloque la fonctionnalité. */
   requires: RequiredPlan
   /** Titre court de la fonctionnalité (sur le badge / dialog). */
-  title: string
-  /** Promesse de valeur (1 phrase, orientée résultat). */
-  value: string
+  title: () => string
+  /** Promesse de valeur (1 phrase, orientée résultat, VRAIE). */
+  value: () => string
 }
 
 /**
@@ -46,33 +52,28 @@ export type FeatureCopy = {
 export const FEATURES: Record<FeatureId, FeatureCopy> = {
   veille_auto: {
     requires: 'pro',
-    title: 'Veille automatique',
-    value:
-      'Filon surveille educarriere toutes les 6 heures et ajoute les offres qui vous correspondent, pendant que vous dormez.',
+    title: m.conv_feat_veille_auto_title,
+    value: m.conv_feat_veille_auto_value,
   },
   saved_searches_multi: {
     requires: 'pro',
-    title: 'Recherches multiples',
-    value:
-      'Surveillez autant de combinaisons de mots-clés que vous voulez, chacune avec sa propre veille.',
+    title: m.conv_feat_searches_title,
+    value: m.conv_feat_searches_value,
   },
   unlimited_opportunities: {
     requires: 'pro',
-    title: 'Pipeline illimité',
-    value:
-      'Suivez autant d’opportunités que nécessaire, sans plafond, avec vues multiples et relances.',
+    title: m.conv_feat_pipeline_title,
+    value: m.conv_feat_pipeline_value,
   },
   ai_score: {
     requires: 'pro_ai',
-    title: 'Score de pertinence IA',
-    value:
-      'L’IA note chaque opportunité selon votre profil pour concentrer votre énergie là où ça compte.',
+    title: m.conv_feat_aiscore_title,
+    value: m.conv_feat_aiscore_value,
   },
   ai_draft: {
     requires: 'pro_ai',
-    title: 'Brouillon de candidature IA',
-    value:
-      'Générez un brouillon de lettre ou d’email ciblé en quelques secondes, pour candidater 3 fois plus vite.',
+    title: m.conv_feat_aidraft_title,
+    value: m.conv_feat_aidraft_value,
   },
 }
 
@@ -80,38 +81,38 @@ export type NudgeCopy = {
   /** Palier requis pour que ce nudge soit pertinent. */
   requires: RequiredPlan
   /** Titre du bandeau. */
-  title: string
-  /** Corps (orienté valeur, jamais alarmiste). */
-  body: string
+  title: () => string
+  /** Corps (orienté valeur, jamais alarmiste, VRAI). */
+  body: () => string
   /** Libellé du CTA unique. */
-  cta: string
+  cta: () => string
 }
 
 /** Copie des nudges contextuels (friction / valeur méritée). */
 export const NUDGES: Record<NudgeId, NudgeCopy> = {
   dashboard_near_limit: {
     requires: 'pro',
-    title: 'Votre pipeline se remplit',
-    body: 'Vous approchez du plafond du palier Découverte. Passez à Pro pour un pipeline illimité et la veille automatique.',
-    cta: 'Découvrir Pro',
+    title: m.conv_nudge_near_limit_title,
+    body: m.conv_nudge_near_limit_body,
+    cta: m.conv_nudge_near_limit_cta,
   },
   dashboard_active_usage: {
     requires: 'pro',
-    title: 'Vous prospectez activement',
-    body: 'La veille automatique trouverait des offres comme les vôtres chaque jour, sans effort. Pro automatise votre sourcing.',
-    cta: 'Activer la veille auto',
+    title: m.conv_nudge_active_title,
+    body: m.conv_nudge_active_body,
+    cta: m.conv_nudge_active_cta,
   },
   import_value: {
     requires: 'pro',
-    title: 'Et si Filon le faisait pour vous ?',
-    body: 'La veille automatique trouve des offres comme celle-ci toutes les 6 heures, pendant que vous dormez.',
-    cta: 'Activer la veille auto',
+    title: m.conv_nudge_import_title,
+    body: m.conv_nudge_import_body,
+    cta: m.conv_nudge_import_cta,
   },
   won_value: {
     requires: 'pro_ai',
-    title: 'Vous convertissez bien',
-    body: 'Pro+ IA rédige vos brouillons de candidature pour aller 3 fois plus vite sur les prochaines.',
-    cta: 'Découvrir Pro+ IA',
+    title: m.conv_nudge_won_title,
+    body: m.conv_nudge_won_body,
+    cta: m.conv_nudge_won_cta,
   },
 }
 

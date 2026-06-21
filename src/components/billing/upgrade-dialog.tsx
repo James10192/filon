@@ -44,9 +44,9 @@ export function UpgradeDialog({
             </span>
             {copy && <Badge variant="accent">{requiredPlanLabel(copy.requires)}</Badge>}
           </div>
-          <DialogTitle>{copy?.title ?? m.app_upgrade_generic_title()}</DialogTitle>
+          <DialogTitle>{copy?.title() ?? m.app_upgrade_generic_title()}</DialogTitle>
           <DialogDescription className="leading-relaxed">
-            {copy?.value ?? m.app_upgrade_generic_desc()}
+            {copy?.value() ?? m.app_upgrade_generic_desc()}
           </DialogDescription>
         </DialogHeader>
 
