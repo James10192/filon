@@ -6,6 +6,7 @@ import {
   Home,
   ShieldCheck,
   Sparkles,
+  Target,
   Users,
   type LucideIcon,
 } from 'lucide-react'
@@ -39,6 +40,13 @@ export const ACTIVITY_PROFILES: ActivityProfile[] = [
     hint: m.app_activity_consultant_hint,
     icon: Sparkles,
     defaultTags: ['Client', 'Prospect', 'Partenaire', 'À relancer'],
+  },
+  {
+    value: 'commercial',
+    label: m.app_activity_commercial_label,
+    hint: m.app_activity_commercial_hint,
+    icon: Target,
+    defaultTags: ['Prospect', 'Client', 'Devis', 'À relancer'],
   },
   {
     value: 'ambassadeur',

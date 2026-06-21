@@ -4,6 +4,7 @@ import {
   HeartHandshake,
   Home,
   ShieldCheck,
+  Target,
   Users,
   type LucideIcon,
 } from 'lucide-react'
@@ -31,6 +32,11 @@ const PERSONAS: Persona[] = [
     label: m.personas_relationnel_label,
     desc: m.personas_relationnel_desc,
     featured: true,
+  },
+  {
+    icon: Target,
+    label: m.personas_commercial_label,
+    desc: m.personas_commercial_desc,
   },
   {
     icon: Briefcase,

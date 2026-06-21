@@ -26,8 +26,9 @@ import { validationError } from './lib/plan'
  * pipeline a afficher. Ne change jamais les cles internes du pipeline : pilote
  * uniquement les libelles affiches cote front.
  *  - 'recruteur'                                  -> 'recrutement'
- *  - 'freelance_dev'/'consultant'/'ambassadeur'/
- *    'agent_immo'/'agent_assurance'/'autre'       -> 'vente'
+ *  - 'commercial'/'freelance_dev'/'consultant'/
+ *    'ambassadeur'/'agent_immo'/'agent_assurance'/
+ *    'autre'                                      -> 'vente'
  *  - 'etudiant' / absent / inconnu               -> 'emploi' (defaut)
  */
 function stageLabelSetForActivity(
@@ -35,6 +36,7 @@ function stageLabelSetForActivity(
 ): 'emploi' | 'vente' | 'recrutement' {
   if (activityType === 'recruteur') return 'recrutement'
   if (
+    activityType === 'commercial' ||
     activityType === 'freelance_dev' ||
     activityType === 'consultant' ||
     activityType === 'ambassadeur' ||
