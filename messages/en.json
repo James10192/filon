@@ -1215,7 +1215,7 @@
   "opp_ai_locked_desc": "A relevance score, the action to favor (apply or reach out) and a first message draft, generated for this opportunity.",
   "opp_ai_reanalyze": "Re-analyze",
   "opp_ai_recommended_action": "Recommended action",
-  "opp_ai_score_desc": "AI scores each opportunity against your profile.",
+  "opp_ai_score_desc": "The AI rates the relevance of your opportunities and surfaces the ones to handle first.",
   "opp_ai_score_label": "AI relevance score",
   "opp_ai_score_title": "Relevance score",
   "opp_ai_see_plans": "See plans",

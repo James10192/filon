@@ -1215,7 +1215,7 @@
   "opp_ai_locked_desc": "Un score de pertinence, l'action à privilégier (postuler ou démarcher) et un brouillon de premier message, générés pour cette opportunité.",
   "opp_ai_reanalyze": "Re-analyser",
   "opp_ai_recommended_action": "Action recommandée",
-  "opp_ai_score_desc": "L’IA note chaque opportunité selon votre profil.",
+  "opp_ai_score_desc": "L’IA évalue la pertinence de vos opportunités et met en avant celles à traiter en priorité.",
   "opp_ai_score_label": "Score de pertinence IA",
   "opp_ai_score_title": "Score de pertinence",
   "opp_ai_see_plans": "Voir les forfaits",
