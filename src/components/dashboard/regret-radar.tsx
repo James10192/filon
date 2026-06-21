@@ -1,20 +1,20 @@
 import { useQuery } from 'convex/react'
-import { Link } from '@tanstack/react-router'
-import { ArrowRight, Sparkles, Target } from 'lucide-react'
+import { Target } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import { m } from '~/lib/paraglide/messages'
-import { Button } from '~/components/ui/button'
+import { AskCopilotButton } from '~/components/copilot/ask-copilot-button'
 
 /**
  * Radar de regret (couche conversion) : surface, calmement, ce que l'utilisateur
  * est en train de laisser filer EN VRAI (ses relations froides, ses relances en
- * retard, ses filleuls qui décrochent), dans le vocabulaire de son lens, puis tend
- * le sauvetage. Aversion à la perte = l'âme du produit (« ne plus laisser filer »),
- * jamais une rareté fabriquée : on n'affiche RIEN s'il n'y a rien qui glisse.
+ * retard, ses filleuls qui décrochent), dans le vocabulaire de son lens. Aversion
+ * à la perte = l'âme du produit (« ne plus laisser filer »), jamais une rareté
+ * fabriquée : on n'affiche RIEN s'il n'y a rien qui glisse.
  *
- * Ton volontairement calme (pas de rouge, pas d'alarme) : on éclaire un angle mort
- * et on tend la main. Le palier décide du sauvetage : free -> automatiser (Pro),
- * payant -> aller rattraper tout de suite.
+ * Sauvetage HONNÊTE : on ne promet aucune action automatique que le produit ne
+ * fait pas. Le vrai levier sur une opportunité sans suite, c'est le Copilot qui
+ * RÉDIGE la relance et PLANIFIE la prochaine action (outils draft + schedule),
+ * goûtable gratuitement (crédits IA inclus). On y route, sans overclaim.
  */
 function leadFor(lens: 'emploi' | 'vente' | 'recrutement', count: number): string {
   if (lens === 'vente') return m.radar_lead_vente({ count })
@@ -28,8 +28,7 @@ export function RegretRadar() {
   // Pas de donnée, ou rien ne file : on ne montre rien (anti-clutter, anti-fabrication).
   if (!radar || !radar.visible) return null
 
-  const { lens, plan, total, counts } = radar
-  const isFree = plan === 'free'
+  const { lens, total, counts } = radar
 
   const parts: string[] = []
   if (counts.opps > 0) parts.push(m.radar_part_opps({ n: counts.opps }))
@@ -57,22 +56,14 @@ export function RegretRadar() {
       </div>
 
       <div className="flex flex-col gap-2.5 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm leading-relaxed text-fg-muted">
-          {isFree ? m.radar_roi_free() : m.radar_act_hint()}
-        </p>
-        <Button asChild className="shrink-0">
-          {isFree ? (
-            <Link to="/app/tarifs">
-              <Sparkles className="size-4" />
-              {m.radar_cta_upgrade()}
-            </Link>
-          ) : (
-            <Link to="/app/relances">
-              {m.radar_cta_act()}
-              <ArrowRight className="size-4" />
-            </Link>
-          )}
-        </Button>
+        <p className="text-sm leading-relaxed text-fg-muted">{m.radar_help()}</p>
+        <AskCopilotButton
+          seed={m.radar_seed()}
+          label={m.radar_cta()}
+          buttonVariant="default"
+          size="default"
+          className="shrink-0"
+        />
       </div>
     </div>
   )
