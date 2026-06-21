@@ -3,6 +3,7 @@ import { internalMutation, mutation, query } from './_generated/server'
 import type { Doc } from './_generated/dataModel'
 import { requireUser } from './lib/withUser'
 import { PLAN_LIMITS, planOf, type Plan } from './lib/plan'
+import { applyReferralReward } from './referrals'
 
 /** Erreur métier de facturation typée : en prod Convex masque le message des
  * `Error` brutes (« Server Error ») mais transmet `data`. Le client lit
@@ -309,6 +310,13 @@ export const applySubscription = internalMutation({
     }
 
     await ctx.db.patch(doc._id, patch)
+
+    // Affiliation : la 1re conversion payante d'un filleul declenche les mois
+    // offerts (parrain + filleul). Idempotent (filet `referrals.rewardGranted`),
+    // donc sans effet sur les renouvellements suivants. Meme transaction.
+    if (args.plan !== 'free') {
+      await applyReferralReward(ctx, doc.authId, args.plan)
+    }
     return true
   },
 })

@@ -7,6 +7,7 @@ import {
   Send,
   BellRing,
   FileText,
+  Gift,
   Settings,
   Sparkles,
   Users,
@@ -123,6 +124,13 @@ export const NAV_GROUPS: NavGroup[] = [
         exact: false,
         keywords:
           'organisation equipe team membres roles head sell commercial sdr metriques priorites',
+      },
+      {
+        to: '/app/parrainage',
+        label: m.nav_referral,
+        icon: Gift,
+        exact: false,
+        keywords: 'parrainage affiliation filleul lien recompense mois offert referral invite',
       },
       {
         to: '/app/tarifs',

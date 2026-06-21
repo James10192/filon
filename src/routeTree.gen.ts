@@ -19,6 +19,7 @@ import { Route as AppTarifsRouteImport } from './routes/app/tarifs'
 import { Route as AppRelancesRouteImport } from './routes/app/relances'
 import { Route as AppPropositionsRouteImport } from './routes/app/propositions'
 import { Route as AppPipelineRouteImport } from './routes/app/pipeline'
+import { Route as AppParrainageRouteImport } from './routes/app/parrainage'
 import { Route as AppParametresRouteImport } from './routes/app/parametres'
 import { Route as AppOrganisationRouteImport } from './routes/app/organisation'
 import { Route as AppOpportunitesRouteImport } from './routes/app/opportunites'
@@ -78,6 +79,11 @@ const AppPropositionsRoute = AppPropositionsRouteImport.update({
 const AppPipelineRoute = AppPipelineRouteImport.update({
   id: '/pipeline',
   path: '/pipeline',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppParrainageRoute = AppParrainageRouteImport.update({
+  id: '/parrainage',
+  path: '/parrainage',
   getParentRoute: () => AppRouteRoute,
 } as any)
 const AppParametresRoute = AppParametresRouteImport.update({
@@ -143,6 +149,7 @@ export interface FileRoutesByFullPath {
   '/app/opportunites': typeof AppOpportunitesRouteWithChildren
   '/app/organisation': typeof AppOrganisationRoute
   '/app/parametres': typeof AppParametresRoute
+  '/app/parrainage': typeof AppParrainageRoute
   '/app/pipeline': typeof AppPipelineRoute
   '/app/propositions': typeof AppPropositionsRouteWithChildren
   '/app/relances': typeof AppRelancesRoute
@@ -164,6 +171,7 @@ export interface FileRoutesByTo {
   '/app/opportunites': typeof AppOpportunitesRouteWithChildren
   '/app/organisation': typeof AppOrganisationRoute
   '/app/parametres': typeof AppParametresRoute
+  '/app/parrainage': typeof AppParrainageRoute
   '/app/pipeline': typeof AppPipelineRoute
   '/app/propositions': typeof AppPropositionsRouteWithChildren
   '/app/relances': typeof AppRelancesRoute
@@ -187,6 +195,7 @@ export interface FileRoutesById {
   '/app/opportunites': typeof AppOpportunitesRouteWithChildren
   '/app/organisation': typeof AppOrganisationRoute
   '/app/parametres': typeof AppParametresRoute
+  '/app/parrainage': typeof AppParrainageRoute
   '/app/pipeline': typeof AppPipelineRoute
   '/app/propositions': typeof AppPropositionsRouteWithChildren
   '/app/relances': typeof AppRelancesRoute
@@ -211,6 +220,7 @@ export interface FileRouteTypes {
     | '/app/opportunites'
     | '/app/organisation'
     | '/app/parametres'
+    | '/app/parrainage'
     | '/app/pipeline'
     | '/app/propositions'
     | '/app/relances'
@@ -232,6 +242,7 @@ export interface FileRouteTypes {
     | '/app/opportunites'
     | '/app/organisation'
     | '/app/parametres'
+    | '/app/parrainage'
     | '/app/pipeline'
     | '/app/propositions'
     | '/app/relances'
@@ -254,6 +265,7 @@ export interface FileRouteTypes {
     | '/app/opportunites'
     | '/app/organisation'
     | '/app/parametres'
+    | '/app/parrainage'
     | '/app/pipeline'
     | '/app/propositions'
     | '/app/relances'
@@ -343,6 +355,13 @@ declare module '@tanstack/react-router' {
       path: '/pipeline'
       fullPath: '/app/pipeline'
       preLoaderRoute: typeof AppPipelineRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/app/parrainage': {
+      id: '/app/parrainage'
+      path: '/parrainage'
+      fullPath: '/app/parrainage'
+      preLoaderRoute: typeof AppParrainageRouteImport
       parentRoute: typeof AppRouteRoute
     }
     '/app/parametres': {
@@ -450,6 +469,7 @@ interface AppRouteRouteChildren {
   AppOpportunitesRoute: typeof AppOpportunitesRouteWithChildren
   AppOrganisationRoute: typeof AppOrganisationRoute
   AppParametresRoute: typeof AppParametresRoute
+  AppParrainageRoute: typeof AppParrainageRoute
   AppPipelineRoute: typeof AppPipelineRoute
   AppPropositionsRoute: typeof AppPropositionsRouteWithChildren
   AppRelancesRoute: typeof AppRelancesRoute
@@ -466,6 +486,7 @@ const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppOpportunitesRoute: AppOpportunitesRouteWithChildren,
   AppOrganisationRoute: AppOrganisationRoute,
   AppParametresRoute: AppParametresRoute,
+  AppParrainageRoute: AppParrainageRoute,
   AppPipelineRoute: AppPipelineRoute,
   AppPropositionsRoute: AppPropositionsRouteWithChildren,
   AppRelancesRoute: AppRelancesRoute,

@@ -8,11 +8,13 @@ import { LandingPillars } from '~/components/marketing/landing-pillars'
 import { LandingPersonas } from '~/components/marketing/landing-personas'
 import { LandingShowcase } from '~/components/marketing/landing-showcase'
 import { PricingSection } from '~/components/marketing/pricing-section'
+import { LandingAffiliation } from '~/components/marketing/landing-affiliation'
 import { LandingProof } from '~/components/marketing/landing-proof'
 import { LandingCreator } from '~/components/marketing/landing-creator'
 import { LandingOrigin } from '~/components/marketing/landing-origin'
 import { LandingCta } from '~/components/marketing/landing-cta'
 import { useLandingMotion } from '~/components/marketing/use-landing-motion'
+import { useCaptureRef } from '~/lib/referral-attribution'
 import { m } from '~/lib/paraglide/messages'
 
 export const Route = createFileRoute('/')({
@@ -52,6 +54,7 @@ export const Route = createFileRoute('/')({
 function LandingPage() {
   const scopeRef = useRef<HTMLDivElement | null>(null)
   useLandingMotion(scopeRef)
+  useCaptureRef()
 
   return (
     <div ref={scopeRef} className="bg-bg text-fg">
@@ -69,6 +72,7 @@ function LandingPage() {
             <LandingPersonas />
             <LandingShowcase />
             <PricingSection />
+            <LandingAffiliation />
             <LandingProof />
             <LandingCreator />
             <LandingOrigin />

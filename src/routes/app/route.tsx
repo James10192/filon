@@ -10,6 +10,7 @@ import { ConvexBetterAuthProvider } from '@convex-dev/better-auth/react'
 import { Loader2 } from 'lucide-react'
 import { m } from '~/lib/paraglide/messages'
 import { authClient, useSession } from '~/lib/auth/auth-client'
+import { useClaimReferral } from '~/lib/referral-attribution'
 import { Skeleton } from '~/components/ui/skeleton'
 import {
   SidebarInset,
@@ -164,6 +165,7 @@ function ShellLayout({
   email: string
 }) {
   useGlobalShortcuts()
+  useClaimReferral()
   const { defaultOpen, ready } = useSidebarDefaultOpen()
 
   return (

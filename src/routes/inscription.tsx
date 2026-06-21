@@ -10,6 +10,7 @@ import { toast } from '~/components/ui/sonner'
 import { AuthShell } from '~/components/marketing/auth-shell'
 import { SocialAuthButtons } from '~/components/marketing/social-auth-buttons'
 import { cn } from '~/lib/utils'
+import { useCaptureRef } from '~/lib/referral-attribution'
 import { m } from '~/lib/paraglide/messages'
 
 export const Route = createFileRoute('/inscription')({
@@ -43,6 +44,7 @@ function InscriptionPage() {
   const [formError, setFormError] = useState<string | null>(null)
   const { data: session, isPending } = useSession()
   const navigate = useNavigate()
+  useCaptureRef()
 
   // Utilisateur déjà connecté : on l'envoie vers son espace.
   useEffect(() => {

@@ -146,9 +146,22 @@ export default defineSchema({
     byokKeyCiphertext: v.optional(v.string()),
     byokKeyLast4: v.optional(v.string()),
     byokKeyAddedAt: v.optional(v.number()),
+    // --- Parrainage / affiliation (additif) ---
+    // Code de parrainage UNIQUE de l'utilisateur (genere a la demande, ex 'AX7K2P').
+    // Partage dans un lien `?ref=CODE`. Absent tant que l'utilisateur n'a pas
+    // ouvert sa page Parrainage (genere paresseusement). Index `by_referralCode`.
+    referralCode: v.optional(v.string()),
+    // Code du parrain qui a amene cet utilisateur (pose UNE seule fois a
+    // l'inscription via `claimReferral`, immuable ensuite). Absent = arrivee directe.
+    referredByCode: v.optional(v.string()),
+    // authId du parrain, resolu depuis `referredByCode` a la liaison (denormalise
+    // pour scoper/crediter les recompenses sans relire le code a chaque fois).
+    referredByUserId: v.optional(v.string()),
   })
     .index('by_authId', ['authId'])
     .index('by_email', ['email'])
+    // Resolution d'un parrain depuis son code (`claimReferral`, lien `?ref=`).
+    .index('by_referralCode', ['referralCode'])
     // Résolution d'un user depuis un webhook par son code client Paystack.
     .index('by_paystackCustomer', ['paystackCustomerCode'])
     // Résolution d'un user depuis un webhook par sa référence d'abonnement
@@ -762,4 +775,63 @@ export default defineSchema({
     .index('by_org_role', ['organizationId', 'role'])
     .index('by_email', ['email'])
     .index('by_org_email', ['organizationId', 'email']),
+
+  // --- Parrainage / affiliation Filon (additif, scope strict par parrain) ---
+  // Une ligne par filleul amene via un lien de parrainage. Cree a l'inscription
+  // (`claimReferral`, statut 'signed_up'), passe a 'subscribed' a la 1re
+  // conversion payante du filleul (declenchee dans `billing.applySubscription`),
+  // 'churned' s'il repasse free. `rewardGranted` est le filet d'idempotence :
+  // la recompense (mois offerts double face) n'est versee QU'UNE fois.
+  referrals: defineTable({
+    // authId du parrain (proprietaire de la ligne, scope de lecture).
+    referrerUserId: v.string(),
+    // authId du filleul (unique : un compte n'a qu'un seul parrain).
+    refereeUserId: v.string(),
+    refereeEmail: v.optional(v.string()),
+    // Code de parrainage utilise (trace, denormalise).
+    code: v.string(),
+    status: v.union(
+      v.literal('signed_up'),
+      v.literal('subscribed'),
+      v.literal('churned'),
+    ),
+    // Palier du filleul a la conversion (trace).
+    refereePlan: v.optional(v.string()),
+    // Idempotence : recompense de conversion deja octroyee ?
+    rewardGranted: v.boolean(),
+    createdAt: v.number(),
+    subscribedAt: v.optional(v.number()),
+  })
+    .index('by_referrer', ['referrerUserId'])
+    .index('by_referee', ['refereeUserId'])
+    .index('by_referrer_status', ['referrerUserId', 'status']),
+
+  // Registre des recompenses de parrainage (donnee que Filon possede et calcule,
+  // contrairement aux commissions d'entreprise externes : ici, zero double saisie).
+  // v1 `kind: 'free_month'` = +30 j de periode payee (extension `planRenewsAt`),
+  // applique tout de suite si le beneficiaire est payant, sinon 'pending' jusqu'a
+  // son 1er abonnement. `kind: 'commission_cash'` est reserve a un futur versement
+  // (Wave/Orange Money/manuel : Paystack NE verse PAS en XOF) : non cable pour l'instant.
+  referralRewards: defineTable({
+    // authId du beneficiaire de la recompense (parrain OU filleul, double face).
+    userId: v.string(),
+    referralId: v.id('referrals'),
+    kind: v.union(
+      v.literal('free_month'),
+      v.literal('credit'),
+      v.literal('commission_cash'),
+    ),
+    // Montant : jours pour 'free_month' (30), credits pour 'credit', XOF pour cash.
+    amount: v.number(),
+    status: v.union(
+      v.literal('pending'),
+      v.literal('granted'),
+      v.literal('paid'),
+    ),
+    createdAt: v.number(),
+    grantedAt: v.optional(v.number()),
+  })
+    .index('by_user', ['userId'])
+    .index('by_user_status', ['userId', 'status'])
+    .index('by_referral', ['referralId']),
 })
