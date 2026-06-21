@@ -19,6 +19,8 @@ import type { PaginationResult } from 'convex/server'
 import type { MessageDoc } from '@convex-dev/agent'
 import { vStreamArgs } from '@convex-dev/agent/validators'
 import { copilot } from './agent/agent'
+import { tools } from './agent/tools'
+import { toolsFor, stopWhenFor } from './agent/gating'
 import { modelFor, MODELS, type AiMode } from './agent/models'
 
 /**
@@ -319,10 +321,19 @@ export const sendMessage = action({
     const today = new Date().toISOString().slice(0, 10)
     const contextualPrompt = `Contexte (ne pas répondre à ceci) : date du jour = ${today}.\n\n${args.prompt}`
 
+    // Gating : on calcule, par échange, l'exposition des outils et la condition
+    // d'arrêt selon le palier (et plus tard le rôle d'organisation). En P1 ces
+    // valeurs sont neutres (tous les outils, stepCountIs(5)) — le point
+    // d'extension existe sans changer le comportement.
+    const exposedTools = toolsFor(gate.plan, null, tools)
+    const stopWhen = stopWhenFor(gate.plan)
+
     const result = await thread.streamText(
       {
         prompt: contextualPrompt,
         model: modelFor(mode, gate.plan, byokKey ?? undefined),
+        tools: exposedTools,
+        stopWhen,
       },
       { saveStreamDeltas: true },
     )

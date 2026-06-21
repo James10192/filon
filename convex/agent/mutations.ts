@@ -4,7 +4,7 @@ import type { Doc, Id } from '../_generated/dataModel'
 
 /**
  * Écritures internes du copilote (scopées `userId`), appelées par les outils
- * d'écriture (`agent/tools/write.ts`). `internalMutation` = non exposé au
+ * d'écriture (`agent/tools/*` par domaine). `internalMutation` = non exposé au
  * client : seule l'action du copilote les déclenche, après contrôle d'accès et
  * de permission. La logique reprend celle des domaines existants (opportunités,
  * relances, activités) en forçant `userId` côté serveur.

@@ -4,7 +4,7 @@ import type { Doc } from '../_generated/dataModel'
 
 /**
  * Lectures internes du copilote (scopées `userId`), appelées par les outils de
- * lecture (`agent/tools/read.ts`). Toutes filtrent via un index `by_user*` ;
+ * lecture (`agent/tools/*` par domaine). Toutes filtrent via un index `by_user*` ;
  * jamais de scan global, jamais de fuite cross-tenant. `internalQuery` = non
  * exposé au client, invoqué uniquement depuis l'action du copilote via `ctx`.
  */

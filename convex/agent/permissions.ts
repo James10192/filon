@@ -5,7 +5,7 @@ import { effectivePermMode } from '../lib/plan'
 
 /**
  * Lecture interne des préférences de permission du copilote, utilisée par les
- * outils d'écriture (`agent/tools/write.ts`) pour décider de l'exécution auto vs
+ * outils d'écriture (`agent/tools/*` par domaine) pour décider de l'exécution auto vs
  * la demande d'approbation. Valeur par défaut sûre : mode `ask`, aucun outil
  * pré-autorisé. `internalQuery` = non exposé au client.
  */

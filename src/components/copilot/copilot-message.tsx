@@ -10,7 +10,7 @@ import {
   type ToolPart,
 } from '~/components/ai-elements/tool'
 import { CopilotApprovalCard } from './copilot-approval-card'
-import { renderToolResult } from './copilot-tool-result'
+import { renderToolResult } from './widgets'
 
 type ApprovalOutput = {
   approvalRequired?: true
