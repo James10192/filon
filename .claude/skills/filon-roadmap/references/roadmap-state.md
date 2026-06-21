@@ -1,41 +1,44 @@
 # Filon · état de la roadmap (manifeste persistant)
 
 > Mettre à jour après chaque batch. Source de traçabilité cross-session. Vérifier toujours contre `gh issue list` + `git log`.
-> Dernière mise à jour : 2026-06-14.
+> Dernière mise à jour : 2026-06-21.
 
 ## Fait (livré + déployé sur filon-xi.vercel.app)
-- Hotfixes : ScrollSmoother landing, boutons icône panneau détail.
-- Billing : Phase 1 (espace Opportunités unifié Liste/Tableau/Calendrier + split), Phase 2 (abonnements Paystack test mode), cycle de vie (cron expiration + upgrade/downgrade/annulation + "Gérer mon abonnement").
-- Couche de conversion intelligente (LockedFeature/UpgradeNudge/UsageMeter, tier-aware).
-- Landing v2 zed (clair, hero centré, titre dégradé, glow centré, showcase tab-switcher sans pin, spotlight, mobile sans overflow) + thème dark/light (système + toggle).
-- Polish global : cursor:pointer (Tailwind v4), dropdowns non-modaux + scrollbar-gutter, scrollbar custom.
+- Phase 1 (espace Opportunités unifié Liste/Tableau/Calendrier + split master-detail), Phase 2 (abonnements Paystack, live + souscriptions carte natives + cycle de vie), couche de conversion intelligente.
+- Phase 3 (IA à l'acte : scoring + brouillons + crédits métrés) + radar de prospection multi-source + auth sociale Google/GitHub + photo de profil.
+- Phase IA v1 (copilot in-app `convex/agent/*`, route /app/copilot + slide-over, crédits, gating, generative-UI).
+- Modèle cible/source/particuliers + propositions multi-destinataires + étiquettes + onboarding adaptatif + Documents 360 + carnet particuliers.
+- Phase 4 partielle : /admin + feedback in-app livrés. Orgs/équipes + rôles + head-sell priority flagging livrés (commit `05cc2f3`).
+- i18n FR/EN complet (site + app).
 
-## En cours
-- Espace **Propositions** unifié (vues + split master-detail) — issue #16-équivalent.
+## En cours (⚠ non commité sur main — NE PAS CLOBBER)
+- **Phase IA v2 : BYOK + Copilot Max** — working tree principal a des modifs non commitées : `convex/{billing,pricing,paystack,paystackPlans,paystackRenewal,schema,admin,agent/*,aiChat,aiCredits,aiPermissions,lib/{aiGate,plan,paystackPlans}}`, `messages/{fr,en}.json`, `src/components/{billing,copilot,admin,settings,marketing/pricing-section}/*`, `src/lib/billing/*`, + fichiers neufs `convex/byok.ts`, `convex/lib/crypto.ts`, `src/components/settings/byok-section.tsx`, `public/.well-known/`. **Doit être commité/mergé avant de démarrer Phase 5/6/7** (collision sur `convex/schema.ts` + `messages/*.json`).
 
-## Prochains batches (groupes de parallélisme)
+## Prochain cadrage — Croissance & marketing relationnel (2026-06-21)
+3 piliers actés (cf. ROADMAP.md décisions 14-16 + mémoire projet `filon-mlm-positioning`) :
+1. Multi-métiers sur la landing (ne vend qu'aux freelances aujourd'hui).
+2. Wedge MLM : complémenter l'app entreprise, JAMAIS dupliquer son dashboard de commissions. Objectif de palier dérivé du pipeline.
+3. Affiliation Filon = moteur viral (la cible fait la pub).
 
-### Batch parallèle A — worktrees isolés, fichiers disjoints
-- **Section créateur** sur la landing (style MailPulse) — `src/components/marketing/*` + `src/routes/index.tsx`. Infos : N'Guessan Marcel Jacques Patrick DJEDJE-LI · Head of Development @ African Digit Consulting · Abidjan · Portfolio https://marcel-djedjeli-portfolio.vercel.app · GitHub https://github.com/James10192 · Marcel-_12@outlook.fr.
-- **Mobile bottombar app + responsive** — `src/routes/app/*`, `src/components/app/*` (shell). Disjoint de la landing.
-- **Docs Starlight** — REPO SÉPARÉ `~/Downloads/dev/filon-docs` (Astro Starlight, i18n + dark/light + recherche natifs). Toujours parallèle-safe.
-- ⚠ Sérialiser si deux touchent `src/styles/app.css` (hotspot).
+### Milestones GitHub créés
+- **#5 Phase 5 — Landing multi-métiers & conversion** : issues #25, #26, #27.
+- **#6 Phase 6 — Affiliation Filon (parrainage produit)** : issues #28, #29, #30, #31, #32, #33 (#33 = v2 cash payout).
+- **#7 Phase 7 — Marketing relationnel (wedge MLM)** : issues #34, #35, #36.
 
-### Batch SOLO B — après A mergé
-- **i18n complet en/fr** (Paraglide, compile-time) — site + app, touche presque tout → JAMAIS en parallèle.
+### Groupes de parallélisme / non-collision
+> ⚠ Hotspots partagés par ces phases : `convex/schema.ts` (P6 + P7) et `messages/{fr,en}.json` (P5 + P6 + P7). Ces phases sont donc **largement séquentielles**, peu parallélisables sur le repo app.
 
-## Phase IA — EN COURS (reprise nécessaire)
-- **Backend LIVRÉ + committé** (`dc6ad2a feat(ai): copilot backend`) sur main : composant `@convex-dev/agent` + `convex/agent/*` (agent.ts, models.ts, instructions.ts, permissions.ts, queries.ts, mutations.ts, tools/{read,write,index}.ts), schéma additif aiCredits/aiUsage/aiPermissionPrefs/aiThreads, tier `copilot`, routage OpenRouter (slugs dans `convex/agent/models.ts`), gating + métrage. OPENROUTER_API_KEY en env prod.
-- **Frontend RESTE À FAIRE** (les agents se bloquent sur la limite de session — reprendre en session neuve). À faire : lire `convex/agent/*` pour les noms de fonctions, installer **ai-elements** (registry shadcn), construire route `/app/copilot` + slide-over ⌘K avec `useThreadMessages({stream:true})` + `toUIMessages` de `@convex-dev/agent/react`, cartes de confirmation d'action (Ask : une fois/toujours/refuser), sélecteur de mode (Ask/Accept/Auto/Bypass), toggle Rapide/Qualité, compteur crédits, upsell. Puis convex deploy + build + vercel + agent-browser. Blueprint complet : sortie workflow `wet2tp39w` (fichier tasks).
-- v1 = mode Ask. Décisions modèles/funnel/permission déjà actées (tâches #17/#20).
+- **BLOQUÉ tant que la Phase IA v2 (BYOK) n'est pas commitée** (elle tient schema.ts + messages/*.json).
+- **Batch 1 = Phase 5 SOLO** : un seul agent (touche `messages/*.json` + `src/components/marketing/landing-personas.tsx` + `src/routes/index.tsx`). Petit, sans schéma. Bonne reprise.
+- **Batch 2 = Phase 6** : séquentiel (schéma → attribution → reward webhook → dashboard → landing). Touche schema.ts + Paystack (prudence renouvellement) + messages. Ne pas paralléliser avec P7 (schema.ts commun).
+- **Batch 3 = Phase 7** : séquentiel après P6 (schema.ts commun).
+- Docs `filon-docs` (repo séparé) : toujours parallèle-safe si besoin.
 
-## Phases futures (roadmap, pas encore lancées)
-- **Phase IA** : copilot in-app + IA agentique partout, débloquée par un NOUVEAU tier au-dessus de Pro+ IA. v1 = chatbot. Claude via actions Convex scopées, métré.
-- **Phase 4** : orgs (Local Install Better Auth) + **/admin** (gérer users/orgs + métriques + feedbacks) + **système de feedback**. /admin et feedback décidés POUR la Phase 4.
+## Phases futures (backlog, déjà tracé ROADMAP.md)
+- Phase IA monétisation v2 (Copilot Max, fair-use soft, BYOK, modes Auto/Bypass) — partiellement en cours (BYOK uncommitted).
+- Phase 4 orgs (Local Install Better Auth, re-scoping orgId) — au déclencheur.
+- Durcissement prod : filtre localisation veille (no-op à brancher ou retirer), audit états d'erreur, matching sémantique veille.
 
 ## Actions Marcel (hors agents)
-- Bascule clés **live** Paystack à l'activation prod : `npx convex env set PAYSTACK_SECRET_KEY sk_live_... --prod` + webhook live.
-- Suivi : vraies souscriptions carte tokenisées (auto-renew) à l'activation.
-
-## Grille tarifaire (rappel, à étendre du 5e tier IA)
-Découverte 0 · Pro ~3 500 XOF/mois · Pro+ IA ~9 000 XOF/mois · [NOUVEAU tier IA agentique au-dessus] · Équipe sur devis.
+- Commit/merge la Phase IA v2 (BYOK + Copilot Max) en cours, pour débloquer Phase 5/6/7.
+- Décision Phase 6 : montant exact de la récompense d'affiliation (mois offerts v1) et règles (1 vs 2 niveaux plafonnés).

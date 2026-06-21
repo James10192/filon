@@ -30,6 +30,14 @@ monétisé per-user, sans rien casser. On ne paie le coût des fonctionnalités 
 12. **Tier IA dédié** : l'IA agentique (copilot in-app) est un **5e palier séparé AU-DESSUS de Pro+ IA** (ex. « Filon Copilot »), pas une option de Pro+ IA. Modèles à l'étude (cf. Phase IA) ; choix du modèle / possibilité de laisser l'utilisateur choisir **en cours d'arbitrage**.
 13. **/admin + feedback** : un back-office **/admin** (gérer users/orgs, métriques, feedbacks) et un **système de feedback in-app** sont actés **pour la Phase 4**.
 
+### Cadrage marketing relationnel & croissance (2026-06-21)
+
+> Issu d'un ultrathink avec Marcel : Filon vise sérieusement le **marketing relationnel / MLM** (ambassadeurs ARVEA, MWR Life, Forever...), sans casser le multi-métiers. Trois piliers : porte d'entrée (landing), moteur (affiliation), amour produit (wedge MLM).
+
+14. **Multi-métiers assumé sur la landing.** L'app gère déjà 8 personas (ambassadeur, freelance, consultant, agent immo/assurance, recruteur, étudiant, autre) avec un pipeline qui se renomme (`stageLabelSet`). La landing, elle, ne vend qu'aux freelances/devs : **fuite de conversion majeure** (on vend 1/8e du produit). Cap = une **promesse universelle** (« ne plus laisser filer une relation ») + un **bandeau métiers** où chacun se reconnaît (miroir du persona lens). Ne JAMAIS devenir « le CRM pour tout le monde » (parle à personne).
+15. **Positionnement MLM : complémenter l'app de l'entreprise, jamais la dupliquer.** Chaque société MLM fournit déjà son dashboard de revenus/commissions/rangs (officiel, automatique, détaillé). Recopier ces chiffres = double saisie = adoption nulle (**rejet explicite de Marcel**). **Aucun registre de commissions d'entreprise dans Filon.** La spécificité de Filon = ce que l'app entreprise ne peut PAS faire : le **avant** (pipeline de prospection des non-inscrits, invisible pour l'entreprise) et le **pendant** (mémoire relationnelle, relances, moteur d'action), portable et indépendant de l'entreprise. La seule fonction MLM vraiment neuve = l'**Objectif de palier** (insight MWR Life : le revenu vient du rang atteint ; game plan dérivé du pipeline, jamais un score recopié).
+16. **Affiliation Filon = moteur de croissance.** La cible de Filon EST une armée de professionnels de la recommandation (downlines de 30-200 personnes ayant le même besoin de suivi). Leur donner un **programme d'affiliation** (1 niveau pour rester clean/non-pyramidal, récompense sur conversion PAYANTE, v1 mois offerts double-sided sans infra payout, v2 cash mobile money) = ils font l'acquisition. Argument de vente ET de rétention (« le seul CRM qui te paie pour le partager »). Ce registre-là est **légitime** (donnée que Filon possède et calcule, contrairement au registre de commissions d'entreprise rejeté).
+
 ## Grille tarifaire (XOF, ancres de départ)
 
 | Palier | Mensuel | Annuel (2 mois offerts) | Débloque |
@@ -221,6 +229,40 @@ Pas une nouvelle feature : fiabilité/qualité à régler AVANT d'ouvrir aux vra
 - [x] **Migration ConvexError des chemins paiement** : `billing.ts` + `paystack.ts` (+ tout le backend) utilisent désormais `ConvexError` typée (kinds `BILLING`/`AUTH`/`NOT_FOUND`/`VALIDATION`) — plus de « Server Error » masqué. Fait 2026-06-16/18.
 - [ ] **Filtre localisation de la veille** : champ collecté/stocké mais pas appliqué par le moniteur. Le brancher sur le matching, ou le retirer (ne pas laisser un filtre no-op qui ment à l'utilisateur).
 - [ ] **Audit global des états d'erreur** : repérer les `throw new Error` user-facing restants (500 silencieux), vérifier loading/empty/error sur les surfaces clés.
+
+---
+
+## Croissance & marketing relationnel (cadrage 2026-06-21)
+
+Trois vagues qui se financent et s'alimentent : **la porte** (landing), **le moteur** (affiliation), **l'amour** (wedge MLM). Ordre choisi : la landing débloque tout le go-to-market, l'affiliation compose sur un produit déjà bon, le wedge approfondit le segment prioritaire et rend les parrainages plus collants.
+
+> ⚠ **Dépendance d'exécution** : ces phases touchent les hotspots `convex/schema.ts` et `messages/*.json`, actuellement **modifiés non commités** par la Phase IA v2 (BYOK + Copilot Max). Ne PAS démarrer l'implémentation avant que ce travail soit commité/mergé, sinon collision sur ces fichiers.
+
+### Phase 5 — Landing multi-métiers & conversion · milestone #5
+Porte d'entrée. Petit, sans risque, zéro schéma. Ne vend QUE le réel (no-MVP).
+
+- [ ] Hero + sous-titre + meta universels, copywriting multi-métiers (#25)
+- [ ] Section « Filon parle votre métier » — `landing-personas.tsx`, 8 personas, bloc wedge MLM (#26)
+- [ ] Quick win i18n : étape « Perdu » → « En veille » en mode vente/ambassadeur (#27)
+
+> La section affiliation arrive en Phase 6 (on ne teasera pas une feature qui n'existe pas).
+
+### Phase 6 — Affiliation Filon (parrainage produit) · milestone #6
+Le moteur viral. Additif, scopé `userId`, 1 niveau (clean, non-pyramidal). ⚠ Touche Paystack → zéro régression du renouvellement.
+
+- [ ] Schéma affiliation (`users.referral*`, tables `referrals` + `referralRewards`) + config `convex/lib/referral.ts` (#28)
+- [ ] Attribution à l'inscription `?ref=CODE` (claimReferral / trigger onCreate) (#29)
+- [ ] Octroi récompense sur conversion payante — v1 mois offerts double-sided (#30)
+- [ ] Dashboard `/app/parrainage` (lien, partage WhatsApp, filleuls, gains) + entrée sidebar (#31)
+- [ ] Section affiliation sur la landing (#32)
+- [ ] [v2] Commission cash via mobile money / payout (#33)
+
+### Phase 7 — Marketing relationnel, wedge MLM · milestone #7
+Le produit qui fidélise le segment prioritaire. Additif, zéro migration. Aucun chiffre de commission d'entreprise.
+
+- [ ] Schéma contacts MLM (`parentContactId`, `mlmStatus`, `mlmStatusAt`) + segment « Filleuls » au carnet (#34)
+- [ ] Objectif de palier (game plan dérivé du pipeline) + carte dashboard (#35)
+- [ ] Pont « Gagné → promouvoir en filleul actif » (#36)
 
 ---
 
