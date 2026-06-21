@@ -264,6 +264,12 @@ Le produit qui fidélise le segment prioritaire. Additif, zéro migration. Aucun
 
 ---
 
+## Backlog produit / dette
+
+- [ ] **Veille multi-métiers** (#37) — issu de l'audit honnêteté conversion (2026-06-21). La veille auto ne surveille que des job boards (educarriere + Novojob) et son IA de scoring/rédaction est codée en dur « développeur freelance » (`convex/veille/ai.ts`). Conséquence : « radar de prospection universel » et « score selon votre profil » sont faux pour les métiers non-emploi. La **copie** a déjà été corrigée (nudges veille persona-gated emploi, `ai_score` reformulé, conversion passée en i18n). Reste le **fond produit** : dé-hardcoder le prompt vers le lens/persona + élargir les sources non-emploi, OU repositionner honnêtement en « radar d'offres d'emploi + import universel ».
+
+---
+
 ## Actions Marcel (hors agents)
 
 - [x] **Bascule clés live Paystack** + Plans provisionnés + webhook live enregistré — fait 2026-06-18.

@@ -38,7 +38,13 @@
 - **Batch 3 = Phase 7** : séquentiel après P6 (schema.ts commun).
 - Docs `filon-docs` (repo séparé) : toujours parallèle-safe si besoin.
 
+## Livré 2026-06-21 — Copilot v2 + couche conversion honnête
+- **Copilot v2** (workflow 4 phases) : registry de widgets, brief flagship (copilot_max), outils composites gated équipe/réseau/affiliation/veille, polish. Déployé prod (Convex + Vercel).
+- **Couche conversion (thèse « ne plus laisser filer »)** : Radar de regret (`convex/conversion/radar.ts` + carte dashboard, lens-aware, loss-framing, route vers le Copilot réel — pas de fausse promesse). Reframe honnête de `conversion.ts` (i18n FR+EN, veille persona-gated emploi, `ai_score` reformulé, métriques inventées retirées). Déployé + vérifié prod.
+- **Reste de la thèse conversion (en cours)** : teaser de Brief pour les gratuits, activation non-vide-vite par lens (import carnet / veille instantanée).
+
 ## Phases futures (backlog, déjà tracé ROADMAP.md)
+- **Veille multi-métiers (#37)** : dé-hardcoder le scoring/rédaction IA freelance (`convex/veille/ai.ts`) vers le lens/persona + sources non-emploi, OU repositionner en radar emploi + import. Issu de l'audit honnêteté conversion 2026-06-21 (copie déjà corrigée, reste le fond produit).
 - Phase IA monétisation v2 (Copilot Max, fair-use soft, BYOK, modes Auto/Bypass) — partiellement en cours (BYOK uncommitted).
 - Phase 4 orgs (Local Install Better Auth, re-scoping orgId) — au déclencheur.
 - Durcissement prod : filtre localisation veille (no-op à brancher ou retirer), audit états d'erreur, matching sémantique veille.
