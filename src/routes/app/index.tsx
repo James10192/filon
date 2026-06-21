@@ -21,6 +21,7 @@ import {
   RecentActivitySkeleton,
 } from '~/components/dashboard/recent-activity'
 import { DashboardNudge } from '~/components/dashboard/dashboard-nudge'
+import { RegretRadar } from '~/components/dashboard/regret-radar'
 import { DailySuggestions } from '~/components/dashboard/daily-suggestions'
 import { BriefEntry } from '~/components/dashboard/brief-entry'
 import { RankGoalCard } from '~/components/dashboard/rank-goal-card'
@@ -90,6 +91,10 @@ function DashboardPage() {
       />
 
       <div className="flex flex-col gap-5">
+        {/* Radar de regret : ce qui est en train de filer (loss-framing + sauvetage).
+            Surface de conversion prioritaire, ne s'affiche que s'il y a du concret. */}
+        <RegretRadar />
+
         {/* Nudge de conversion contextuel (au plus un, dismissible). */}
         <DashboardNudge />
 
