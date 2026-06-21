@@ -179,14 +179,26 @@ const STAGE_LABEL_RESOLVERS: Record<
 }
 
 /**
+ * Coerce un jeu d'etiquettes vers une valeur connue. Le `set` provient in fine
+ * de donnees user/DB mutables (`users.stageLabelSet`) : une valeur hors-spec
+ * (ancienne, corrompue, ou un futur persona pas encore cable cote libelles) ne
+ * doit JAMAIS faire planter le rendu. Tout inconnu retombe sur 'emploi'.
+ */
+function normalizeSet(set: StageLabelSet | string | null | undefined): StageLabelSet {
+  return set === 'vente' || set === 'recrutement' ? set : 'emploi'
+}
+
+/**
  * Libelle affiche d'un stage selon le jeu d'etiquettes du persona. Les couleurs
  * et points (`dot`/`chip`) restent fournis par `STAGE_META`. Defaut 'emploi'.
+ * Resolveur total : `set` ou `stage` inconnu retombe sur un libelle valide.
  */
 export function stageLabel(
   stage: Stage,
   set: StageLabelSet = 'emploi',
 ): string {
-  return STAGE_LABEL_RESOLVERS[set][stage]()
+  const resolver = STAGE_LABEL_RESOLVERS[normalizeSet(set)]
+  return (resolver[stage] ?? resolver.lead)()
 }
 
 /**
@@ -214,7 +226,7 @@ const TYPE_LABEL_OVERRIDES: Partial<
  * couleurs (`icon`/`fg`) restent fournies par `TYPE_META`.
  */
 export function typeLabel(type: OppType, set: StageLabelSet = 'emploi'): string {
-  return TYPE_LABEL_OVERRIDES[set]?.[type]?.() ?? TYPE_META[type].label
+  return TYPE_LABEL_OVERRIDES[normalizeSet(set)]?.[type]?.() ?? TYPE_META[type].label
 }
 
 /** Champs de detail persona-aware (libelle adapte au jeu d'etiquettes). */
@@ -254,7 +266,8 @@ export function fieldLabel(
   field: LensField,
   set: StageLabelSet = 'emploi',
 ): string {
-  return FIELD_LABEL_RESOLVERS[set][field]()
+  const resolver = FIELD_LABEL_RESOLVERS[normalizeSet(set)]
+  return (resolver[field] ?? resolver.compensation)()
 }
 
 /**
@@ -263,7 +276,7 @@ export function fieldLabel(
  * « Proposition ». Utilise par l'espace Propositions.
  */
 export function propositionLabel(set: StageLabelSet = 'emploi'): string {
-  return set === 'vente' ? m.prop_entity_vente() : m.prop_entity_default()
+  return normalizeSet(set) === 'vente' ? m.prop_entity_vente() : m.prop_entity_default()
 }
 
 export const TYPE_META: Record<
