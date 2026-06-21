@@ -5,6 +5,7 @@ import {
   DueBadge,
   TargetChip,
   TagChips,
+  FlagBadge,
   sourceLabel,
 } from './chips'
 import type { EnrichedOpportunity } from './types'
@@ -37,6 +38,9 @@ export function OpportunityCard({
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
+        {opportunity.flaggedPriority && (
+          <FlagBadge byName={opportunity.flaggedByName} />
+        )}
         <TypeChip type={opportunity.type} />
         {targetName && (
           <TargetChip

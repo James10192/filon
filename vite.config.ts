@@ -21,6 +21,9 @@ export default defineConfig({
       '@convex-dev/react-query',
       'better-auth',
     ],
+    // Libs navigateur-only (export Excel/PDF), importées dynamiquement dans des
+    // handlers onClick : jamais dans le graphe SSR. Externalisées par sécurité.
+    external: ['xlsx', 'jspdf', 'jspdf-autotable'],
   },
   plugins: [
     viteTsConfigPaths({ projects: ['./tsconfig.json'] }),

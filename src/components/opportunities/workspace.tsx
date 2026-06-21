@@ -21,6 +21,7 @@ import { OpportunityDetailPane } from './detail/detail-pane'
 import { PaneErrorBoundary } from './detail/pane-error-boundary'
 import { OpportunitiesUsageMeter } from './opportunities-usage-meter'
 import { AiScoreTeaser } from './ai-score-teaser'
+import { FlaggedPrioritiesBanner } from './flagged-priorities-banner'
 
 /**
  * Espace de travail Opportunités unifié. Un sélecteur de vue
@@ -90,6 +91,7 @@ export function OpportunityWorkspace({
       <div className="flex gap-5">
         <div className={cn('min-w-0 flex-1', showSidePane && 'lg:max-w-[calc(100%-30rem)]')}>
           <OpportunitiesUsageMeter />
+          <FlaggedPrioritiesBanner onSelect={onSelect} />
           {content}
         </div>
 

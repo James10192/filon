@@ -24,6 +24,12 @@ export type PlanLimits = {
   savedSearches: number | null
   /** Le moniteur educarriere (cron) surveille les recherches de ce palier. */
   veilleAutoMonitor: boolean
+  /**
+   * Membres maximum dans une organisation possédée par ce palier (créateur
+   * inclus). `null` = illimité. L'org est ouverte à tous (free inclus) ; la
+   * limite de membres est le levier doux côté gratuit.
+   */
+  orgMembers: number | null
 }
 
 export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
@@ -31,22 +37,31 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
     activeOpportunities: 25,
     savedSearches: 1,
     veilleAutoMonitor: false,
+    orgMembers: 3,
   },
   pro: {
     activeOpportunities: null,
     savedSearches: null,
     veilleAutoMonitor: true,
+    orgMembers: null,
   },
   pro_ai: {
     activeOpportunities: null,
     savedSearches: null,
     veilleAutoMonitor: true,
+    orgMembers: null,
   },
   copilot: {
     activeOpportunities: null,
     savedSearches: null,
     veilleAutoMonitor: true,
+    orgMembers: null,
   },
+}
+
+/** Plafond de membres d'une org pour un palier (créateur inclus). `null` = illimité. */
+export function orgMemberLimit(plan: Plan | undefined | null): number | null {
+  return PLAN_LIMITS[planOf(plan)].orgMembers
 }
 
 /** Normalise un `plan` éventuellement absent en palier effectif. */

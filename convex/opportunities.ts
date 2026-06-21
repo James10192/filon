@@ -11,6 +11,8 @@ import {
   planLimitError,
 } from './lib/plan'
 import { ensureTagsForUser } from './tags'
+import { createNotification } from './notifications'
+import { MANAGER_ROLES, getActiveMembership } from './lib/withOrg'
 
 /**
  * Domaine opportunities · coeur du produit.
@@ -616,6 +618,151 @@ export const setPriority = mutation({
       updatedAt: Date.now(),
     })
     return null
+  },
+})
+
+/**
+ * Résout une org où `callerId` est MANAGER (admin/head_sell) ET `ownerId` est
+ * membre actif. Garde anti-fuite du pointage : un manager ne peut pointer que les
+ * opportunités d'un membre de SON équipe. Renvoie l'org ou null.
+ */
+async function managerOrgForOwner(
+  ctx: MutationCtx,
+  callerId: string,
+  ownerId: string,
+): Promise<Id<'organizations'> | null> {
+  const memberships = await ctx.db
+    .query('memberships')
+    .withIndex('by_user', (q) => q.eq('userId', callerId))
+    .collect()
+  for (const m of memberships) {
+    if (m.status !== 'active') continue
+    if (!MANAGER_ROLES.has(m.role)) continue
+    const ownerActive = await getActiveMembership(ctx, m.organizationId, ownerId)
+    if (ownerActive) return m.organizationId
+  }
+  return null
+}
+
+/** Nom d'affichage d'un user (nom, sinon e-mail, sinon libellé générique). */
+async function userDisplayName(
+  ctx: MutationCtx,
+  authId: string,
+): Promise<string> {
+  const u = await ctx.db
+    .query('users')
+    .withIndex('by_authId', (q) => q.eq('authId', authId))
+    .unique()
+  return u?.name?.trim() || u?.email || 'Votre head sell'
+}
+
+/**
+ * `api.opportunities.flagPriority` — un manager (head sell/admin) POINTE une
+ * opportunité d'un membre de son équipe comme prioritaire. Pose une étiquette
+ * structurée (champs `flagged*`), SANS toucher la `priority` du propriétaire ni
+ * le catalogue `tags`. Notifie le propriétaire et journalise dans sa timeline.
+ */
+export const flagPriority = mutation({
+  args: { id: v.id('opportunities'), note: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    const { userId } = await requireUser(ctx)
+    const doc = await ctx.db.get(args.id)
+    if (!doc) throw notFoundError('Introuvable')
+    const ownerId = doc.userId
+
+    const org = await managerOrgForOwner(ctx, userId, ownerId)
+    if (!org) {
+      throw forbiddenError(
+        'Vous ne pouvez pointer que les opportunités des membres de votre équipe.',
+      )
+    }
+
+    const flaggedByName = await userDisplayName(ctx, userId)
+    const now = Date.now()
+    const note = args.note?.trim()
+    const patch: Record<string, unknown> = {
+      flaggedPriority: true,
+      flaggedBy: userId,
+      flaggedByName,
+      flaggedAt: now,
+      // undefined dans un patch = on retire le champ (note effacée si re-pointage
+      // sans note). Légal pour `patch` (≠ insert).
+      flaggedNote: note && note.length > 0 ? note : undefined,
+      updatedAt: now,
+    }
+    await ctx.db.patch(args.id, patch as Partial<Doc<'opportunities'>>)
+
+    await ctx.db.insert('activities', {
+      userId: ownerId,
+      opportunityId: args.id,
+      kind: 'other',
+      content: note
+        ? `Priorité pointée par ${flaggedByName} : ${note}`
+        : `Priorité pointée par ${flaggedByName}`,
+      createdAt: now,
+    })
+
+    if (ownerId !== userId) {
+      await createNotification(ctx, {
+        userId: ownerId,
+        kind: 'priority_flagged',
+        title: `${flaggedByName} a pointé une priorité`,
+        body: note
+          ? `« ${doc.title} » : ${note}`
+          : `« ${doc.title} » est à traiter en priorité.`,
+        actionUrl: `/app/opportunites/${args.id}`,
+        meta: JSON.stringify({ opportunityId: args.id }),
+      })
+    }
+    return null
+  },
+})
+
+/**
+ * `api.opportunities.unflagPriority` — retire le pointage. Autorisé au manager de
+ * l'équipe OU au propriétaire (qui « solde » la priorité une fois traitée).
+ */
+export const unflagPriority = mutation({
+  args: { id: v.id('opportunities') },
+  handler: async (ctx, args) => {
+    const { userId } = await requireUser(ctx)
+    const doc = await ctx.db.get(args.id)
+    if (!doc) throw notFoundError('Introuvable')
+    const ownerId = doc.userId
+    const isOwner = ownerId === userId
+    if (!isOwner) {
+      const org = await managerOrgForOwner(ctx, userId, ownerId)
+      if (!org) throw forbiddenError('Action non autorisée.')
+    }
+    await ctx.db.patch(args.id, {
+      flaggedPriority: undefined,
+      flaggedBy: undefined,
+      flaggedByName: undefined,
+      flaggedAt: undefined,
+      flaggedNote: undefined,
+      updatedAt: Date.now(),
+    } as Partial<Doc<'opportunities'>>)
+    return null
+  },
+})
+
+/**
+ * `api.opportunities.myFlagged` — vue focalisée du commercial : ses opportunités
+ * pointées prioritaires par son head sell, plus récentes d'abord. Alimente le
+ * bandeau « Priorités pointées » en tête de la page Opportunités.
+ */
+export const myFlagged = query({
+  args: {},
+  handler: async (ctx) => {
+    const { userId } = await requireUser(ctx)
+    const rows = await ctx.db
+      .query('opportunities')
+      .withIndex('by_user_flagged', (q) =>
+        q.eq('userId', userId).eq('flaggedPriority', true),
+      )
+      .collect()
+    const enriched = await enrichTargets(ctx, userId, rows)
+    return enriched.sort((a, b) => (b.flaggedAt ?? 0) - (a.flaggedAt ?? 0))
   },
 })
 

@@ -20,6 +20,7 @@ import { Route as AppRelancesRouteImport } from './routes/app/relances'
 import { Route as AppPropositionsRouteImport } from './routes/app/propositions'
 import { Route as AppPipelineRouteImport } from './routes/app/pipeline'
 import { Route as AppParametresRouteImport } from './routes/app/parametres'
+import { Route as AppOrganisationRouteImport } from './routes/app/organisation'
 import { Route as AppOpportunitesRouteImport } from './routes/app/opportunites'
 import { Route as AppEntreprisesRouteImport } from './routes/app/entreprises'
 import { Route as AppDocumentsRouteImport } from './routes/app/documents'
@@ -84,6 +85,11 @@ const AppParametresRoute = AppParametresRouteImport.update({
   path: '/parametres',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AppOrganisationRoute = AppOrganisationRouteImport.update({
+  id: '/organisation',
+  path: '/organisation',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 const AppOpportunitesRoute = AppOpportunitesRouteImport.update({
   id: '/opportunites',
   path: '/opportunites',
@@ -135,6 +141,7 @@ export interface FileRoutesByFullPath {
   '/app/documents': typeof AppDocumentsRoute
   '/app/entreprises': typeof AppEntreprisesRoute
   '/app/opportunites': typeof AppOpportunitesRouteWithChildren
+  '/app/organisation': typeof AppOrganisationRoute
   '/app/parametres': typeof AppParametresRoute
   '/app/pipeline': typeof AppPipelineRoute
   '/app/propositions': typeof AppPropositionsRouteWithChildren
@@ -155,6 +162,7 @@ export interface FileRoutesByTo {
   '/app/documents': typeof AppDocumentsRoute
   '/app/entreprises': typeof AppEntreprisesRoute
   '/app/opportunites': typeof AppOpportunitesRouteWithChildren
+  '/app/organisation': typeof AppOrganisationRoute
   '/app/parametres': typeof AppParametresRoute
   '/app/pipeline': typeof AppPipelineRoute
   '/app/propositions': typeof AppPropositionsRouteWithChildren
@@ -177,6 +185,7 @@ export interface FileRoutesById {
   '/app/documents': typeof AppDocumentsRoute
   '/app/entreprises': typeof AppEntreprisesRoute
   '/app/opportunites': typeof AppOpportunitesRouteWithChildren
+  '/app/organisation': typeof AppOrganisationRoute
   '/app/parametres': typeof AppParametresRoute
   '/app/pipeline': typeof AppPipelineRoute
   '/app/propositions': typeof AppPropositionsRouteWithChildren
@@ -200,6 +209,7 @@ export interface FileRouteTypes {
     | '/app/documents'
     | '/app/entreprises'
     | '/app/opportunites'
+    | '/app/organisation'
     | '/app/parametres'
     | '/app/pipeline'
     | '/app/propositions'
@@ -220,6 +230,7 @@ export interface FileRouteTypes {
     | '/app/documents'
     | '/app/entreprises'
     | '/app/opportunites'
+    | '/app/organisation'
     | '/app/parametres'
     | '/app/pipeline'
     | '/app/propositions'
@@ -241,6 +252,7 @@ export interface FileRouteTypes {
     | '/app/documents'
     | '/app/entreprises'
     | '/app/opportunites'
+    | '/app/organisation'
     | '/app/parametres'
     | '/app/pipeline'
     | '/app/propositions'
@@ -340,6 +352,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppParametresRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/app/organisation': {
+      id: '/app/organisation'
+      path: '/organisation'
+      fullPath: '/app/organisation'
+      preLoaderRoute: typeof AppOrganisationRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
     '/app/opportunites': {
       id: '/app/opportunites'
       path: '/opportunites'
@@ -429,6 +448,7 @@ interface AppRouteRouteChildren {
   AppDocumentsRoute: typeof AppDocumentsRoute
   AppEntreprisesRoute: typeof AppEntreprisesRoute
   AppOpportunitesRoute: typeof AppOpportunitesRouteWithChildren
+  AppOrganisationRoute: typeof AppOrganisationRoute
   AppParametresRoute: typeof AppParametresRoute
   AppPipelineRoute: typeof AppPipelineRoute
   AppPropositionsRoute: typeof AppPropositionsRouteWithChildren
@@ -444,6 +464,7 @@ const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppDocumentsRoute: AppDocumentsRoute,
   AppEntreprisesRoute: AppEntreprisesRoute,
   AppOpportunitesRoute: AppOpportunitesRouteWithChildren,
+  AppOrganisationRoute: AppOrganisationRoute,
   AppParametresRoute: AppParametresRoute,
   AppPipelineRoute: AppPipelineRoute,
   AppPropositionsRoute: AppPropositionsRouteWithChildren,

@@ -94,7 +94,7 @@ export function PricingSection() {
 
         <div
           ref={gridRef}
-          className="mt-10 grid items-stretch gap-4 sm:auto-rows-fr sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
+          className="mt-10 grid items-stretch gap-4 sm:auto-rows-fr sm:grid-cols-2 lg:grid-cols-4"
         >
           {PLAN_CARDS.map((card) => (
             <div key={card.key} data-pricing-card className="h-full">
@@ -123,11 +123,14 @@ export function PricingSection() {
 
 /**
  * CTA public, auth-aware.
- *  - Equipe : toujours « Nous contacter » (mailto, sur devis).
  *  - Visiteur connecte : pas d'inscription. On l'invite a gerer / choisir son
  *    palier dans l'app (« Tarifs & abonnement » -> /app/tarifs), ou la logique
  *    Paystack + palier courant vit deja.
  *  - Visiteur anonyme : inscription (gratuit ou creation de compte).
+ *
+ * Le travail d'equipe (organisation, membres, pointage de priorites) est inclus
+ * dans tous les paliers (limite de membres sur le palier gratuit) : il n'y a
+ * donc plus de tier « Equipe sur devis ».
  */
 function PublicCta({
   planKey,
@@ -138,16 +141,6 @@ function PublicCta({
   featured?: boolean
   authed: boolean
 }) {
-  if (planKey === 'team') {
-    return (
-      <Button variant="outline" className="w-full" asChild>
-        <a href="mailto:djedjelipatrick@gmail.com?subject=Filon%20%C3%89quipe">
-          {m.pricing_cta_contact()}
-        </a>
-      </Button>
-    )
-  }
-
   if (authed) {
     // Connecte : renvoie vers la page Tarifs in-app (gestion d'abonnement).
     return (

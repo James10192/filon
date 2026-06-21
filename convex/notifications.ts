@@ -1,7 +1,7 @@
 import { v } from 'convex/values'
 import { internalMutation, mutation, query } from './_generated/server'
 import type { Doc } from './_generated/dataModel'
-import { requireUser } from './lib/withUser'
+import { requireUser, type MutationCtx } from './lib/withUser'
 import { notFoundError } from './lib/plan'
 
 /**
@@ -23,6 +23,12 @@ const kindValidator = v.union(
   v.literal('renewal_charged'),
   v.literal('renewal_failed'),
   v.literal('downgraded'),
+  v.literal('veille_import'),
+  // --- Équipe ---
+  v.literal('priority_flagged'),
+  v.literal('org_invite'),
+  v.literal('invite_accepted'),
+  v.literal('member_removed'),
 )
 
 /** Garde-fou anti-flood sur la liste renvoyée au client. */
@@ -110,10 +116,55 @@ export const markAllRead = mutation({
   },
 })
 
+/** Type des `kind` de notification (dérivé du document). */
+export type NotificationKind = Doc<'notifications'>['kind']
+
+/**
+ * Helper transactionnel partagé : insère une notification dans la MÊME
+ * transaction que l'appelant. À utiliser depuis une mutation métier (création
+ * d'org, pointage de priorité) pour notifier un user sans passer par
+ * `ctx.runMutation` (qui ouvrirait une sous-transaction). Patch dynamique :
+ * jamais `undefined` injecté.
+ */
+export async function createNotification(
+  ctx: MutationCtx,
+  args: {
+    userId: string
+    kind: NotificationKind
+    title: string
+    body: string
+    actionUrl?: string
+    meta?: string
+  },
+): Promise<void> {
+  const doc: {
+    userId: string
+    kind: NotificationKind
+    title: string
+    body: string
+    actionUrl?: string
+    meta?: string
+    read: boolean
+    emailSent: boolean
+    createdAt: number
+  } = {
+    userId: args.userId,
+    kind: args.kind,
+    title: args.title,
+    body: args.body,
+    read: false,
+    emailSent: false,
+    createdAt: Date.now(),
+  }
+  if (args.actionUrl !== undefined) doc.actionUrl = args.actionUrl
+  if (args.meta !== undefined) doc.meta = args.meta
+  await ctx.db.insert('notifications', doc)
+}
+
 /**
  * `internal.notifications.create` : crée une notification in-app. Appelée par le
- * cron de renouvellement et le webhook. Patch dynamique : jamais `undefined`
- * injecté (actionUrl/meta omis si absents). `read`/`emailSent` à false par défaut.
+ * cron de renouvellement et le webhook (depuis une action, via `ctx.runMutation`).
+ * Délègue au helper transactionnel `createNotification`.
  */
 export const create = internalMutation({
   args: {
@@ -125,28 +176,7 @@ export const create = internalMutation({
     meta: v.optional(v.string()),
   },
   handler: async (ctx, args): Promise<null> => {
-    const doc: {
-      userId: string
-      kind: typeof args.kind
-      title: string
-      body: string
-      actionUrl?: string
-      meta?: string
-      read: boolean
-      emailSent: boolean
-      createdAt: number
-    } = {
-      userId: args.userId,
-      kind: args.kind,
-      title: args.title,
-      body: args.body,
-      read: false,
-      emailSent: false,
-      createdAt: Date.now(),
-    }
-    if (args.actionUrl !== undefined) doc.actionUrl = args.actionUrl
-    if (args.meta !== undefined) doc.meta = args.meta
-    await ctx.db.insert('notifications', doc)
+    await createNotification(ctx, args)
     return null
   },
 })

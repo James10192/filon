@@ -33,7 +33,6 @@ export function PlanCardShell({
   cta: ReactNode
 }) {
   const isPaid = data.key === 'pro' || data.key === 'pro_ai' || data.key === 'copilot'
-  const isTeam = data.key === 'team'
   const price = isPaid ? PRICING[data.key as PaidPlan][interval] : null
 
   return (
@@ -56,11 +55,7 @@ export function PlanCardShell({
       <p className="mt-1 min-h-10 text-sm text-fg-muted">{data.tagline()}</p>
 
       <div className="mt-4 flex min-h-9 items-baseline gap-1.5">
-        {isTeam ? (
-          <span className="text-2xl font-semibold leading-9 text-fg">
-            {m.app_on_quote()}
-          </span>
-        ) : price === null ? (
+        {price === null ? (
           <span className="assay text-3xl font-semibold text-fg">0 XOF</span>
         ) : (
           <>
@@ -90,7 +85,7 @@ export function PlanCardShell({
 
 /**
  * Carte d'un palier (page Tarifs in-app). CTA adapté : palier courant (désactivé),
- * gratuit (informatif), payant (lance Paystack), équipe (mailto sur devis).
+ * gratuit (informatif), payant (lance Paystack).
  */
 export function PlanCard({
   data,
@@ -106,7 +101,6 @@ export function PlanCard({
   onUpgrade: (plan: PaidPlan) => void
 }) {
   const isPaid = data.key === 'pro' || data.key === 'pro_ai' || data.key === 'copilot'
-  const isTeam = data.key === 'team'
 
   return (
     <PlanCardShell
@@ -118,7 +112,6 @@ export function PlanCard({
           planKey={data.key}
           isCurrent={isCurrent}
           isPaid={isPaid}
-          isTeam={isTeam}
           featured={data.featured ?? false}
           pendingPlan={pendingPlan}
           onUpgrade={onUpgrade}
@@ -132,7 +125,6 @@ function PlanCta({
   planKey,
   isCurrent,
   isPaid,
-  isTeam,
   featured,
   pendingPlan,
   onUpgrade,
@@ -140,7 +132,6 @@ function PlanCta({
   planKey: PlanCardData['key']
   isCurrent: boolean
   isPaid: boolean
-  isTeam: boolean
   featured: boolean
   pendingPlan: PaidPlan | null
   onUpgrade: (plan: PaidPlan) => void
@@ -149,15 +140,6 @@ function PlanCta({
     return (
       <Button variant="outline" className="w-full" disabled>
         {m.app_current_plan()}
-      </Button>
-    )
-  }
-  if (isTeam) {
-    return (
-      <Button variant="outline" className="w-full" asChild>
-        <a href="mailto:djedjelipatrick@gmail.com?subject=Filon%20%C3%89quipe">
-          {m.app_contact_us()}
-        </a>
       </Button>
     )
   }

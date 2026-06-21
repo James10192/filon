@@ -297,6 +297,17 @@ export default defineSchema({
     // `url`, qui reste librement éditable par le user).
     sourceUrl: v.optional(v.string()),
     importedAt: v.optional(v.number()),
+    // --- Pointage de priorité par le head sell (équipe, additif) ---
+    // Un manager (head sell/admin d'une org dont le propriétaire est membre actif)
+    // « pointe » l'opportunité comme prioritaire. C'est une ÉTIQUETTE structurée,
+    // ORTHOGONALE à `priority` (le jugement du propriétaire reste intact) et SANS
+    // pollution du catalogue `tags`. `flaggedByName` est dénormalisé pour
+    // l'affichage/la notification (évite une lecture du profil au rendu).
+    flaggedPriority: v.optional(v.boolean()),
+    flaggedBy: v.optional(v.string()),
+    flaggedByName: v.optional(v.string()),
+    flaggedAt: v.optional(v.number()),
+    flaggedNote: v.optional(v.string()),
     // Position dans la colonne kanban (tri intra-stage).
     order: v.number(),
     createdAt: v.number(),
@@ -313,6 +324,9 @@ export default defineSchema({
     .index('by_company', ['companyId'])
     .index('by_contact', ['contactId'])
     .index('by_user_contact', ['userId', 'contactId'])
+    // Vue focalisée du commercial : ses opportunités pointées prioritaires par
+    // son head sell (scopée user, bornée sur le flag).
+    .index('by_user_flagged', ['userId', 'flaggedPriority'])
     // Recherche plein texte de la palette de commandes (scopee par user).
     .searchIndex('search_title', {
       searchField: 'title',
@@ -566,6 +580,15 @@ export default defineSchema({
       v.literal('downgraded'),
       // Le radar a importé de nouvelles offres pour une veille.
       v.literal('veille_import'),
+      // --- Équipe (additif) ---
+      // Le head sell a pointé une opportunité comme prioritaire pour le membre.
+      v.literal('priority_flagged'),
+      // Invitation reçue à rejoindre une organisation.
+      v.literal('org_invite'),
+      // Une invitation envoyée a été acceptée (notifie l'admin).
+      v.literal('invite_accepted'),
+      // Le membre a été retiré d'une organisation.
+      v.literal('member_removed'),
     ),
     title: v.string(),
     body: v.string(),
@@ -682,4 +705,47 @@ export default defineSchema({
     .index('by_status', ['status'])
     .index('by_created', ['createdAt'])
     .index('by_status_created', ['status', 'createdAt']),
+
+  // --- Équipe : organisations & membres (surcouche visibilité, additif) ---
+  // Le mono-utilisateur reste intact : chaque membre garde SON pipeline scopé
+  // `userId`. Une organisation relie des `userId` via `memberships(role)` et
+  // accorde aux managers (admin/head_sell) une LECTURE TRANSVERSALE des
+  // opportunités de l'équipe + le droit de pointer une priorité. Aucune donnée
+  // métier ne porte d'`organizationId` : la visibilité se calcule en itérant les
+  // `userId` des membres actifs. Zéro migration.
+  organizations: defineTable({
+    name: v.string(),
+    // authId du créateur (toujours membre 'admin' actif).
+    ownerId: v.string(),
+    createdAt: v.number(),
+  }).index('by_owner', ['ownerId']),
+
+  // Appartenance d'un utilisateur à une organisation, avec son rôle. Une ligne
+  // par (org × personne). `userId` est absent tant qu'une invitation par e-mail
+  // n'est pas réclamée (statut 'pending') ; il est renseigné soit à l'invitation
+  // si l'e-mail correspond déjà à un compte, soit à l'acceptation, soit au
+  // signup (trigger `onCreate`). Seuls les membres `status: 'active'` comptent
+  // pour la visibilité et les métriques.
+  memberships: defineTable({
+    organizationId: v.id('organizations'),
+    userId: v.optional(v.string()),
+    // E-mail cible (lowercased) : clé d'invitation + affichage avant liaison.
+    email: v.string(),
+    role: v.union(
+      v.literal('admin'),
+      v.literal('head_sell'),
+      v.literal('commercial'),
+      v.literal('sdr'),
+    ),
+    status: v.union(v.literal('pending'), v.literal('active')),
+    invitedBy: v.string(),
+    invitedAt: v.number(),
+    joinedAt: v.optional(v.number()),
+  })
+    .index('by_org', ['organizationId'])
+    .index('by_user', ['userId'])
+    .index('by_org_user', ['organizationId', 'userId'])
+    .index('by_org_role', ['organizationId', 'role'])
+    .index('by_email', ['email'])
+    .index('by_org_email', ['organizationId', 'email']),
 })

@@ -10,7 +10,7 @@ import type { PaidPlan } from '~/lib/billing/plan'
  * accesseurs (`() => …`) résolus au rendu pour suivre la langue active.
  */
 
-export type PlanKey = 'free' | PaidPlan | 'team'
+export type PlanKey = 'free' | PaidPlan
 
 export type PlanCard = {
   key: PlanKey
@@ -32,6 +32,7 @@ export const PLAN_CARDS: PlanCard[] = [
       m.app_plan_free_feat_2(),
       m.app_plan_free_feat_3(),
       m.app_plan_free_feat_4(),
+      m.app_plan_free_feat_team(),
     ],
   },
   {
@@ -44,6 +45,7 @@ export const PLAN_CARDS: PlanCard[] = [
       m.app_plan_pro_feat_2(),
       m.app_plan_pro_feat_3(),
       m.app_plan_pro_feat_4(),
+      m.app_plan_pro_feat_team(),
     ],
   },
   {
@@ -67,17 +69,6 @@ export const PLAN_CARDS: PlanCard[] = [
       m.app_plan_copilot_feat_3(),
       m.app_plan_copilot_feat_4(),
       m.app_plan_copilot_feat_5(),
-    ],
-  },
-  {
-    key: 'team',
-    name: m.app_plan_team_name,
-    tagline: m.app_plan_team_tagline,
-    features: () => [
-      m.app_plan_team_feat_1(),
-      m.app_plan_team_feat_2(),
-      m.app_plan_team_feat_3(),
-      m.app_plan_team_feat_4(),
     ],
   },
 ]
@@ -105,4 +96,8 @@ export const COMPARE_ROWS: CompareRow[] = [
   { label: m.app_compare_agentic, free: false, pro: false, pro_ai: false, copilot: true },
   { label: m.app_compare_action_log, free: false, pro: false, pro_ai: false, copilot: true },
   { label: m.app_compare_fair_use_byok, free: false, pro: false, pro_ai: false, copilot: true },
+  // --- Équipe (org ouverte à tous, limite de membres = levier free) ---
+  { label: m.app_compare_org_team, free: m.app_members_3(), pro: m.app_unlimited(), pro_ai: m.app_unlimited(), copilot: m.app_unlimited() },
+  { label: m.app_compare_priority_flag, free: true, pro: true, pro_ai: true, copilot: true },
+  { label: m.app_compare_member_reports, free: false, pro: true, pro_ai: true, copilot: true },
 ]

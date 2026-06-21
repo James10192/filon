@@ -88,6 +88,20 @@ export const authComponent = createClient<DataModel>(components.betterAuth, {
         if (image) row.image = image
 
         await ctx.db.insert('users', row)
+
+        // Équipe : relie les invitations en attente adressées à cet e-mail en
+        // renseignant le `userId` (la lecture transversale pourra résoudre le
+        // membre). Le statut reste 'pending' : l'acceptation demeure explicite.
+        const email = row.email.toLowerCase()
+        if (email) {
+          const pending = await ctx.db
+            .query('memberships')
+            .withIndex('by_email', (q) => q.eq('email', email))
+            .collect()
+          for (const m of pending) {
+            if (!m.userId) await ctx.db.patch(m._id, { userId: authUser._id })
+          }
+        }
       },
       // Propage les changements Better Auth (nom, photo) vers la ligne metier.
       // C'est ce trigger qui realise le RAFRAICHISSEMENT social : a chaque

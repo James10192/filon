@@ -1,4 +1,4 @@
-import { Building2, User } from 'lucide-react'
+import { Building2, Star, User } from 'lucide-react'
 import { m } from '~/lib/paraglide/messages'
 import { cn } from '~/lib/utils'
 import {
@@ -94,6 +94,31 @@ export function PriorityChip({
  * Chip de cible : icône (entreprise / particulier) + nom. Discrète, fond soft.
  * Ne s'affiche que si une cible nommée existe (sinon renvoie null).
  */
+/**
+ * Badge « Priorite » pose par un head sell (pilote par `flaggedPriority`, jamais
+ * par le catalogue de tags). Tooltip natif avec la provenance si fournie.
+ */
+export function FlagBadge({
+  byName,
+  className,
+}: {
+  byName?: string | null
+  className?: string
+}) {
+  return (
+    <span
+      title={byName ? m.flag_badge_by({ name: byName }) : undefined}
+      className={cn(
+        'inline-flex h-6 items-center gap-1 whitespace-nowrap rounded-md bg-accent-soft px-2 text-xs font-medium text-accent',
+        className,
+      )}
+    >
+      <Star className="size-3 fill-current" />
+      {m.flag_badge()}
+    </span>
+  )
+}
+
 export function TargetChip({
   targetType,
   name,

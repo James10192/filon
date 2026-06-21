@@ -10,6 +10,7 @@ import {
   DueBadge,
   TargetChip,
   TagChips,
+  FlagBadge,
   sourceLabel,
 } from './chips'
 import { OpportunityRowActions } from './opportunity-row-actions'
@@ -64,6 +65,12 @@ export function buildOpportunityColumns({
           <div className="flex flex-col gap-1">
             <span className="flex items-center gap-2">
               <span className="truncate font-medium text-fg">{o.title}</span>
+              {o.flaggedPriority && (
+                <FlagBadge
+                  byName={o.flaggedByName}
+                  className="shrink-0"
+                />
+              )}
               <TypeChip
                 type={o.type}
                 className="hidden shrink-0 xl:inline-flex"

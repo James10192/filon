@@ -9,6 +9,7 @@ import {
   FileText,
   Settings,
   Sparkles,
+  Users,
   type LucideIcon,
 } from 'lucide-react'
 import { m } from '~/lib/paraglide/messages'
@@ -115,6 +116,14 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     title: m.nav_group_reglages,
     items: [
+      {
+        to: '/app/organisation',
+        label: m.nav_organisation,
+        icon: Users,
+        exact: false,
+        keywords:
+          'organisation equipe team membres roles head sell commercial sdr metriques priorites',
+      },
       {
         to: '/app/tarifs',
         label: m.nav_pricing_plan,
