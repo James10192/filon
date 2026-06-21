@@ -23,6 +23,8 @@ type CopilotLauncher = {
    * l'envoi : zéro consommation surprise de crédits).
    */
   open: (seedPrompt?: string) => void
+  /** Ouvre le tiroir directement sur l'onglet « Brief du jour » (copilot_max). */
+  openBrief: () => void
   close: () => void
   toggle: () => void
   isOpen: boolean
@@ -46,6 +48,9 @@ export function CopilotProvider({ children }: { children: React.ReactNode }) {
   const [seed, setSeed] = useState<{ prompt: string; nonce: number } | null>(
     null,
   )
+  // Onglet d'ouverture demandé (« brief » pour l'entrée Brief du jour). Remis à
+  // null à la fermeture pour que la réouverture standard reparte en conversation.
+  const [initialTab, setInitialTab] = useState<'brief' | null>(null)
   const open = useCallback((seedPrompt?: string) => {
     if (seedPrompt && seedPrompt.trim()) {
       setSeed((prev) => ({
@@ -53,13 +58,19 @@ export function CopilotProvider({ children }: { children: React.ReactNode }) {
         nonce: (prev?.nonce ?? 0) + 1,
       }))
     }
+    setInitialTab(null)
+    setIsOpen(true)
+  }, [])
+  const openBrief = useCallback(() => {
+    setSeed(null)
+    setInitialTab('brief')
     setIsOpen(true)
   }, [])
   const close = useCallback(() => setIsOpen(false), [])
   const toggle = useCallback(() => setIsOpen((v) => !v), [])
   const value = useMemo(
-    () => ({ open, close, toggle, isOpen }),
-    [open, close, toggle, isOpen],
+    () => ({ open, openBrief, close, toggle, isOpen }),
+    [open, openBrief, close, toggle, isOpen],
   )
 
   // À la fermeture, on oublie le seed : le panneau se démonte (Sheet Radix), et
@@ -67,7 +78,10 @@ export function CopilotProvider({ children }: { children: React.ReactNode }) {
   // dernier prompt contextuel.
   const onOpenChange = useCallback((next: boolean) => {
     setIsOpen(next)
-    if (!next) setSeed(null)
+    if (!next) {
+      setSeed(null)
+      setInitialTab(null)
+    }
   }, [])
 
   return (
@@ -90,7 +104,11 @@ export function CopilotProvider({ children }: { children: React.ReactNode }) {
             </SheetDescription>
           </SheetHeader>
           <div className="min-h-0 flex-1">
-            <CopilotPanel onNavigate={close} seed={seed} />
+            <CopilotPanel
+              onNavigate={close}
+              seed={seed}
+              initialTab={initialTab ?? undefined}
+            />
           </div>
         </SheetContent>
       </Sheet>

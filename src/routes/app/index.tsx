@@ -22,6 +22,7 @@ import {
 } from '~/components/dashboard/recent-activity'
 import { DashboardNudge } from '~/components/dashboard/dashboard-nudge'
 import { DailySuggestions } from '~/components/dashboard/daily-suggestions'
+import { BriefEntry } from '~/components/dashboard/brief-entry'
 import { RankGoalCard } from '~/components/dashboard/rank-goal-card'
 import { AskCopilotButton } from '~/components/copilot/ask-copilot-button'
 
@@ -91,6 +92,9 @@ function DashboardPage() {
       <div className="flex flex-col gap-5">
         {/* Nudge de conversion contextuel (au plus un, dismissible). */}
         <DashboardNudge />
+
+        {/* Brief du jour (flagship copilot_max) : ouvre le copilote sur le brief */}
+        <BriefEntry />
 
         {/* Suggestions du jour déterministes : pistes d'action -> copilote */}
         <DailySuggestions />

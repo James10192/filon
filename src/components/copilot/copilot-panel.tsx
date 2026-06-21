@@ -7,6 +7,7 @@ import {
   MessagesSquare,
   ListChecks,
   Sparkles,
+  Sun,
 } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import { m } from '~/lib/paraglide/messages'
@@ -20,8 +21,9 @@ import { CopilotPrompt } from './copilot-prompt'
 import { CopilotUpsell } from './copilot-upsell'
 import { CopilotThreadsRail } from './copilot-threads-rail'
 import { CopilotActivity } from './copilot-activity'
+import { BriefWidget } from './brief/brief-widget'
 
-type Tab = 'conversation' | 'activity'
+type Tab = 'conversation' | 'activity' | 'brief'
 
 /** Seed contextuel injecté par un bouton « Demander au copilote ». */
 export type CopilotSeed = { prompt: string; nonce: number }
@@ -38,9 +40,12 @@ export type CopilotSeed = { prompt: string; nonce: number }
 export function CopilotPanel({
   onNavigate,
   seed = null,
+  initialTab,
 }: {
   onNavigate?: () => void
   seed?: CopilotSeed | null
+  /** Onglet d'ouverture (« brief » pour l'entrée « Brief du jour »). */
+  initialTab?: Tab
 }) {
   const credits = useQuery(api.aiCredits.myCredits, {})
   const [exhausted, setExhausted] = useState(false)
@@ -51,7 +56,7 @@ export function CopilotPanel({
       typeof window === 'undefined' ||
       window.matchMedia('(min-width: 768px)').matches,
   )
-  const [tab, setTab] = useState<Tab>('conversation')
+  const [tab, setTab] = useState<Tab>(initialTab ?? 'conversation')
   const [draft, setDraft] = useState('')
   const copilot = useCopilot(() => setExhausted(true))
 
@@ -64,10 +69,20 @@ export function CopilotPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seed?.nonce])
 
+  // Narration « Priorise ma journée » : seed la saisie de la conversation
+  // (l'utilisateur valide l'envoi : aucune consommation surprise de crédits).
+  const narrate = (prompt: string) => {
+    copilot.newThread()
+    setDraft(prompt)
+    setTab('conversation')
+  }
+
   if (credits === undefined) return <PanelSkeleton />
   if (!credits || !credits.aiAccess) {
     return <CopilotUpsell variant="access" onNavigate={onNavigate} />
   }
+
+  const showBrief = credits.plan === 'copilot_max'
 
   return (
     <div className="flex h-full min-h-0">
@@ -103,6 +118,14 @@ export function CopilotPanel({
             <PanelLeft className="size-4" />
           </button>
           <div className="inline-flex rounded-[var(--radius-sm)] border border-border bg-bg p-0.5">
+            {showBrief && (
+              <TabButton
+                active={tab === 'brief'}
+                onClick={() => setTab('brief')}
+                icon={<Sun className="size-3.5" />}
+                label={m.brief_tab()}
+              />
+            )}
             <TabButton
               active={tab === 'conversation'}
               onClick={() => setTab('conversation')}
@@ -118,7 +141,11 @@ export function CopilotPanel({
           </div>
         </div>
 
-        {tab === 'activity' ? (
+        {tab === 'brief' && showBrief ? (
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <BriefWidget onNarrate={narrate} onNavigate={onNavigate} />
+          </div>
+        ) : tab === 'activity' ? (
           <div className="min-h-0 flex-1 overflow-y-auto">
             <CopilotActivity onNavigate={onNavigate} />
           </div>
