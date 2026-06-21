@@ -6,6 +6,7 @@ import { LandingHero } from '~/components/marketing/landing-hero'
 import { LandingProblem } from '~/components/marketing/landing-problem'
 import { LandingPillars } from '~/components/marketing/landing-pillars'
 import { LandingPersonas } from '~/components/marketing/landing-personas'
+import { LandingTeams } from '~/components/marketing/landing-teams'
 import { LandingShowcase } from '~/components/marketing/landing-showcase'
 import { PricingSection } from '~/components/marketing/pricing-section'
 import { LandingAffiliation } from '~/components/marketing/landing-affiliation'
@@ -70,6 +71,7 @@ function LandingPage() {
             <LandingProblem />
             <LandingPillars />
             <LandingPersonas />
+            <LandingTeams />
             <LandingShowcase />
             <PricingSection />
             <LandingAffiliation />
