@@ -1,6 +1,11 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
-import { requireUser } from './lib/withUser'
+import { currentPlan, requireUser } from './lib/withUser'
+import {
+  effectivePermMode,
+  forbiddenError,
+  permModeAllowed,
+} from './lib/plan'
 
 /**
  * Domaine aiPermissions · préférences d'autonomie du copilote (1 ligne / user).
@@ -30,12 +35,17 @@ export const get = query({
     alwaysAllow: string[]
   }> => {
     const { userId } = await requireUser(ctx)
-    const doc = await ctx.db
-      .query('aiPermissionPrefs')
-      .withIndex('by_user', (q) => q.eq('userId', userId))
-      .unique()
+    const [doc, plan] = await Promise.all([
+      ctx.db
+        .query('aiPermissionPrefs')
+        .withIndex('by_user', (q) => q.eq('userId', userId))
+        .unique(),
+      currentPlan(ctx, userId),
+    ])
+    // Reflète le mode EFFECTIF (un mode autonome stocké mais non autorisé par le
+    // palier courant est ramené à « ask ») : le déclencheur UI ne ment jamais.
     return {
-      mode: doc?.mode ?? 'ask',
+      mode: effectivePermMode(plan, doc?.mode ?? 'ask'),
       alwaysAllow: doc?.alwaysAllow ?? [],
     }
   },
@@ -48,6 +58,19 @@ export const set = mutation({
   },
   handler: async (ctx, args): Promise<null> => {
     const { userId } = await requireUser(ctx)
+
+    // Gate serveur : les modes autonomes (Auto / Bypass) sont réservés au palier
+    // Copilot Max. Verrouiller ici empêche un appel direct à la mutation de
+    // contourner le verrou de l'UI.
+    if (args.mode !== undefined) {
+      const plan = await currentPlan(ctx, userId)
+      if (!permModeAllowed(plan, args.mode)) {
+        throw forbiddenError(
+          'Les modes Auto et Bypass nécessitent le palier Copilot Max.',
+        )
+      }
+    }
+
     const doc = await ctx.db
       .query('aiPermissionPrefs')
       .withIndex('by_user', (q) => q.eq('userId', userId))

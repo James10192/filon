@@ -32,6 +32,7 @@ const paidPlanValidator = v.union(
   v.literal('pro'),
   v.literal('pro_ai'),
   v.literal('copilot'),
+  v.literal('copilot_max'),
 )
 const intervalValidator = v.union(v.literal('monthly'), v.literal('annual'))
 

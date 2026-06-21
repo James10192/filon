@@ -6,6 +6,7 @@ import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import {
   PRICING,
+  PLAN_LABELS,
   formatXof,
   type Interval,
   type PaidPlan,
@@ -32,7 +33,7 @@ export function PlanCardShell({
   isCurrent?: boolean
   cta: ReactNode
 }) {
-  const isPaid = data.key === 'pro' || data.key === 'pro_ai' || data.key === 'copilot'
+  const isPaid = data.key !== 'free'
   const price = isPaid ? PRICING[data.key as PaidPlan][interval] : null
 
   return (
@@ -100,7 +101,7 @@ export function PlanCard({
   pendingPlan: PaidPlan | null
   onUpgrade: (plan: PaidPlan) => void
 }) {
-  const isPaid = data.key === 'pro' || data.key === 'pro_ai' || data.key === 'copilot'
+  const isPaid = data.key !== 'free'
 
   return (
     <PlanCardShell
@@ -160,7 +161,7 @@ function PlanCta({
       onClick={() => onUpgrade(plan)}
     >
       {isPending && <Loader2 className="size-4 animate-spin" />}
-      {m.app_upgrade_to({ plan: planKey === 'pro' ? 'Pro' : planKey === 'pro_ai' ? 'Pro+ IA' : 'Copilot' })}
+      {m.app_upgrade_to({ plan: PLAN_LABELS[plan] })}
     </Button>
   )
 }

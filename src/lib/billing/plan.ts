@@ -19,7 +19,11 @@ export {
 export {
   PLAN_LIMITS,
   PLAN_LIMIT_PREFIX,
+  allowsAutonomousMode,
+  allowsQualityModel,
+  permModeAllowed,
   type Plan,
+  type PermMode,
   type AppErrorData,
 } from '../../../convex/lib/plan'
 

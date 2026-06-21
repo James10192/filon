@@ -25,7 +25,7 @@ const statusValidator = v.union(
   v.literal('done'),
 )
 
-const PAID_PLANS: PaidPlan[] = ['pro', 'pro_ai', 'copilot']
+const PAID_PLANS: PaidPlan[] = ['pro', 'pro_ai', 'copilot', 'copilot_max']
 
 /** Lecture cross-tenant de tous les users (réservée admin). */
 async function allUsers(ctx: QueryCtx): Promise<Doc<'users'>[]> {
@@ -129,6 +129,7 @@ export const metrics = query({
       pro: 0,
       pro_ai: 0,
       copilot: 0,
+      copilot_max: 0,
     }
     let estimatedMrrXof = 0
     const now = Date.now()
@@ -379,6 +380,7 @@ const planValidator = v.union(
   v.literal('pro'),
   v.literal('pro_ai'),
   v.literal('copilot'),
+  v.literal('copilot_max'),
 )
 
 /** MRR mensuel équivalent d'un user (0 si free/expiré ; annuel ramené au mois). */

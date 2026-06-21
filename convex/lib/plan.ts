@@ -14,7 +14,7 @@
 
 import { ConvexError } from 'convex/values'
 
-export type Plan = 'free' | 'pro' | 'pro_ai' | 'copilot'
+export type Plan = 'free' | 'pro' | 'pro_ai' | 'copilot' | 'copilot_max'
 
 /** Limites par palier. `null` = illimité. */
 export type PlanLimits = {
@@ -52,6 +52,12 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
     orgMembers: null,
   },
   copilot: {
+    activeOpportunities: null,
+    savedSearches: null,
+    veilleAutoMonitor: true,
+    orgMembers: null,
+  },
+  copilot_max: {
     activeOpportunities: null,
     savedSearches: null,
     veilleAutoMonitor: true,
@@ -136,6 +142,7 @@ export const AI_MONTHLY_CREDITS: Record<Plan, number> = {
   pro: 100,
   pro_ai: 300,
   copilot: 6000,
+  copilot_max: 20000,
 }
 
 /**
@@ -152,10 +159,84 @@ export function aiAccess(plan: Plan | undefined | null): boolean {
  * marge ×8 nous couvre), on continue jusqu'au plafond anti-abus. Les paliers en
  * dégustation (free/pro/pro_ai) butent sur un mur dur = déclencheur d'upgrade.
  */
-export const FAIR_USE_PLANS: ReadonlySet<Plan> = new Set<Plan>(['copilot'])
+export const FAIR_USE_PLANS: ReadonlySet<Plan> = new Set<Plan>([
+  'copilot',
+  'copilot_max',
+])
 
 /** Plafond anti-abus en fair-use : multiple de l'allocation mensuelle. */
 export const FAIR_USE_CEILING = 3
+
+// --- Modes de permission du copilote (autonomie des écritures) ---
+
+/** Mode d'autonomie des outils d'écriture du copilote. */
+export type PermMode = 'ask' | 'accept' | 'auto' | 'bypass'
+
+/**
+ * Modes AUTONOMES (exécution sans confirmation préalable) réservés au palier
+ * Copilot Max. `auto`/`bypass` laissent l'agent agir seul ; ils ne doivent
+ * jamais être accordés à un palier inférieur.
+ */
+const AUTONOMOUS_MODES: ReadonlySet<PermMode> = new Set<PermMode>([
+  'auto',
+  'bypass',
+])
+
+/** Repli sûr quand un mode autonome n'est pas (ou plus) autorisé : « ask ». */
+export const SAFE_PERM_MODE: PermMode = 'ask'
+
+/** Le palier autorise-t-il les modes autonomes Auto / Bypass ? */
+export function allowsAutonomousMode(plan: Plan | undefined | null): boolean {
+  return planOf(plan) === 'copilot_max'
+}
+
+/** Le palier peut-il sélectionner ce mode de permission ? */
+export function permModeAllowed(
+  plan: Plan | undefined | null,
+  mode: PermMode,
+): boolean {
+  if (AUTONOMOUS_MODES.has(mode)) return allowsAutonomousMode(plan)
+  return true // ask / accept : tous les paliers
+}
+
+/**
+ * Mode effectif réellement applicable au palier : un mode autonome stocké par un
+ * user qui n'y a plus droit (rétrogradation) est ramené au repli sûr (`ask`).
+ * C'est LE garde-fou consommé côté exécution (write tools) et reflété à l'UI.
+ */
+export function effectivePermMode(
+  plan: Plan | undefined | null,
+  mode: PermMode,
+): PermMode {
+  return permModeAllowed(plan, mode) ? mode : SAFE_PERM_MODE
+}
+
+/**
+ * Le palier peut-il router vers le modèle « Qualité » (meilleur modèle) ?
+ * Réservé aux paliers Copilot (dégustation IA généreuse). Les paliers inférieurs
+ * sont clampés sur « Rapide » côté serveur.
+ */
+export function allowsQualityModel(plan: Plan | undefined | null): boolean {
+  const p = planOf(plan)
+  return p === 'copilot' || p === 'copilot_max'
+}
+
+/** Le palier bénéficie-t-il du routage prioritaire (débit OpenRouter) ? */
+export function allowsPriorityRouting(plan: Plan | undefined | null): boolean {
+  return planOf(plan) === 'copilot_max'
+}
+
+/**
+ * Le palier peut-il utiliser BYOK (« apportez votre propre clé » OpenRouter) ?
+ * Réservé aux paliers Copilot : l'utilisateur branche sa propre clé, ses appels
+ * passent par SON compte (il paie son fournisseur) et NE consomment PAS nos
+ * crédits. Garde-fou serveur consommé par `byok.resolve` / `sendMessage` pour
+ * décider de contourner le solde et de ne rien débiter — jamais côté client.
+ */
+export function allowsByok(plan: Plan | undefined | null): boolean {
+  const p = planOf(plan)
+  return p === 'copilot' || p === 'copilot_max'
+}
 
 /** Préfixe historique (compat dev/logs) ; le mécanisme réel est `data.kind`. */
 export const AI_CREDIT_PREFIX = 'AI_CREDIT:'

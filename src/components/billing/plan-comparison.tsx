@@ -19,7 +19,7 @@ export function PlanComparison() {
         </p>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[34rem] border-collapse text-sm">
+        <table className="w-full min-w-[42rem] border-collapse text-sm">
           <thead>
             <tr className="border-b border-border text-left">
               <th className="px-5 py-3 font-medium text-fg-muted">
@@ -37,6 +37,9 @@ export function PlanComparison() {
               <th className="px-4 py-3 text-center font-medium text-fg-muted">
                 Copilot
               </th>
+              <th className="px-4 py-3 text-center font-medium text-fg-muted">
+                Copilot Max
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -50,6 +53,7 @@ export function PlanComparison() {
                 <Cell value={row.pro} />
                 <Cell value={row.pro_ai} />
                 <Cell value={row.copilot} />
+                <Cell value={row.copilot_max} />
               </tr>
             ))}
           </tbody>

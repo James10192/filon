@@ -94,7 +94,7 @@ export function PricingSection() {
 
         <div
           ref={gridRef}
-          className="mt-10 grid items-stretch gap-4 sm:auto-rows-fr sm:grid-cols-2 lg:grid-cols-4"
+          className="mt-10 grid items-stretch gap-4 sm:auto-rows-fr sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
         >
           {PLAN_CARDS.map((card) => (
             <div key={card.key} data-pricing-card className="h-full">

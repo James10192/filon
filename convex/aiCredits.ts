@@ -5,9 +5,12 @@ import { requireUser } from './lib/withUser'
 import {
   AI_MONTHLY_CREDITS,
   aiAccess,
+  FAIR_USE_CEILING,
+  FAIR_USE_PLANS,
   planOf,
   type Plan,
 } from './lib/plan'
+import { aiBudgetStatus, type AiBudgetStatus } from './lib/aiGate'
 
 /**
  * Domaine aiCredits · solde et consommation des crédits IA du copilote.
@@ -206,6 +209,9 @@ export const myCredits = query({
     packBalance: number
     monthlyAllowance: number
     monthCreditsUsed: number
+    fairUse: boolean
+    ceiling: number
+    status: AiBudgetStatus
   } | null> => {
     const authUser = await (async () => {
       try {
@@ -233,13 +239,27 @@ export const myCredits = query({
       0,
     )
 
+    const balance = (row?.balance ?? 0) + (row?.packBalance ?? 0)
+    const allowance = row?.monthlyAllowance ?? AI_MONTHLY_CREDITS[plan]
+    // État de service dérivé (même décision que le gate serveur, sans throw) :
+    // pilote le nudge « usage loyal » et la jauge en dépassement côté UI.
+    const status = aiBudgetStatus({
+      plan,
+      balance,
+      monthUsed: monthCreditsUsed,
+      allowance,
+    })
+
     return {
       plan,
       aiAccess: aiAccess(plan),
       balance: row?.balance ?? 0,
       packBalance: row?.packBalance ?? 0,
-      monthlyAllowance: row?.monthlyAllowance ?? AI_MONTHLY_CREDITS[plan],
+      monthlyAllowance: allowance,
       monthCreditsUsed,
+      fairUse: FAIR_USE_PLANS.has(plan),
+      ceiling: allowance * FAIR_USE_CEILING,
+      status,
     }
   },
 })

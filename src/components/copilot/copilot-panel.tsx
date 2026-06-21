@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useQuery } from 'convex/react'
 import { Link } from '@tanstack/react-router'
-import { Coins, PanelLeft, MessagesSquare, ListChecks } from 'lucide-react'
+import {
+  Coins,
+  PanelLeft,
+  MessagesSquare,
+  ListChecks,
+  Sparkles,
+} from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import { m } from '~/lib/paraglide/messages'
 import { cn } from '~/lib/utils'
@@ -135,7 +141,7 @@ export function CopilotPanel({
               />
             </div>
             <div className="shrink-0 space-y-2.5 border-t border-border p-3">
-              {exhausted && (
+              {exhausted ? (
                 <div className="flex items-center gap-2.5 rounded-[var(--radius)] border border-accent/30 bg-accent/5 px-3 py-2">
                   <Coins className="size-4 shrink-0 text-accent" />
                   <p className="min-w-0 flex-1 text-xs text-fg-muted">
@@ -147,6 +153,30 @@ export function CopilotPanel({
                     </Link>
                   </Button>
                 </div>
+              ) : (
+                credits.status === 'fair_use' && (
+                  <div className="flex items-center gap-2.5 rounded-[var(--radius)] border border-warning/30 bg-warning-soft px-3 py-2">
+                    <Sparkles className="size-4 shrink-0 text-warning" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-medium text-fg">
+                        {m.copilot_fair_use_title()}
+                      </p>
+                      <p className="text-[11px] text-fg-muted">
+                        {m.copilot_fair_use_desc()}
+                      </p>
+                    </div>
+                    <Button
+                      asChild
+                      size="sm"
+                      variant="outline"
+                      className="shrink-0"
+                    >
+                      <Link to="/app/tarifs" onClick={onNavigate}>
+                        {m.copilot_recharge()}
+                      </Link>
+                    </Button>
+                  </div>
+                )
               )}
               <CopilotPrompt
                 mode={copilot.mode}

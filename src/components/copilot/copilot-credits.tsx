@@ -16,8 +16,16 @@ export function CopilotCredits() {
 
   const total = credits.balance + credits.packBalance
   const allowance = credits.monthlyAllowance || 1
-  const used = Math.min(credits.monthCreditsUsed, allowance)
-  const pct = Math.max(0, Math.min(100, (used / allowance) * 100))
+  // En usage loyal (solde épuisé mais on sert encore), la jauge bascule sur le
+  // plafond anti-abus : on montre la consommation au-delà de l'allocation et la
+  // marge restante avant le mur dur, sans écrêter à 100 %.
+  const overage = credits.status === 'fair_use'
+  const ceiling = credits.ceiling || allowance
+  const reference = overage ? ceiling : allowance
+  const pct = Math.max(
+    0,
+    Math.min(100, (credits.monthCreditsUsed / reference) * 100),
+  )
 
   return (
     <div className="rounded-[var(--radius)] border border-border bg-gradient-to-b from-surface to-bg px-3 py-2.5 shadow-[var(--shadow-sm)]">
@@ -40,13 +48,19 @@ export function CopilotCredits() {
         </span>
       </div>
 
-      <ProgressBar percent={pct} className="mt-2" />
+      <ProgressBar
+        percent={pct}
+        className="mt-2"
+        barClassName={overage ? 'bg-warning' : undefined}
+      />
 
       <div className="mt-1.5 flex items-center justify-between">
         <p className="text-[11px] text-fg-subtle">
           <span className="assay">{credits.monthCreditsUsed}</span>
           {' / '}
-          <span className="assay">{credits.monthlyAllowance}</span>{' '}
+          <span className="assay">
+            {overage ? credits.ceiling : credits.monthlyAllowance}
+          </span>{' '}
           {m.copilot_credits_used()}
         </p>
         <Link
@@ -56,6 +70,12 @@ export function CopilotCredits() {
           {m.copilot_recharge()}
         </Link>
       </div>
+
+      {overage && (
+        <p className="mt-1 text-[11px] font-medium text-warning">
+          {m.copilot_credits_overage()}
+        </p>
+      )}
     </div>
   )
 }

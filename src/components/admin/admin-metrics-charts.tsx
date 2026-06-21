@@ -113,6 +113,7 @@ export function PlanDistributionChart({
     { key: 'pro', label: planLabel('pro'), count: distribution.pro, paid: true },
     { key: 'pro_ai', label: planLabel('pro_ai'), count: distribution.pro_ai, paid: true },
     { key: 'copilot', label: planLabel('copilot'), count: distribution.copilot, paid: true },
+    { key: 'copilot_max', label: planLabel('copilot_max'), count: distribution.copilot_max, paid: true },
   ]
   const paidTotal = rows.filter((r) => r.paid).reduce((s, r) => s + r.count, 0)
   const plansConfig = {

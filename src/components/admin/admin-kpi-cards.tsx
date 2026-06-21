@@ -18,6 +18,7 @@ export type AdminMetrics = {
     pro: number
     pro_ai: number
     copilot: number
+    copilot_max: number
   }
   signupsByDay: Array<{ day: string; count: number }>
   estimatedMrrXof: number

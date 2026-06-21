@@ -43,6 +43,7 @@ export default defineSchema({
         v.literal('pro'),
         v.literal('pro_ai'),
         v.literal('copilot'),
+        v.literal('copilot_max'),
       ),
     ),
     planInterval: v.optional(
@@ -90,6 +91,7 @@ export default defineSchema({
         v.literal('pro'),
         v.literal('pro_ai'),
         v.literal('copilot'),
+        v.literal('copilot_max'),
       ),
     ),
     // Horodatage de la dernière relance d'échéance envoyée/flaggée (epoch ms),
@@ -133,6 +135,17 @@ export default defineSchema({
     // Horodatage de fin d'onboarding (epoch ms). Absent = onboarding non fait :
     // l'UI affiche l'ecran « quelle est ton activite ? » a la connexion.
     onboardedAt: v.optional(v.number()),
+    // --- BYOK : « apportez votre propre clé » (perk Copilot / Copilot Max) ---
+    // Un utilisateur d'un palier Copilot peut fournir sa propre clé API
+    // OpenRouter. Ses appels au copilote passent alors par SA clé (il paie son
+    // fournisseur directement) : on ne pré-contrôle pas son solde de crédits et
+    // on ne débite RIEN. La clé est chiffrée au repos (AES-256-GCM, cf.
+    // `lib/crypto.ts`) ; on ne stocke JAMAIS la clé en clair et on ne la renvoie
+    // JAMAIS au client (seul `byokKeyLast4`, non sensible, sert à l'affichage).
+    byokProvider: v.optional(v.literal('openrouter')),
+    byokKeyCiphertext: v.optional(v.string()),
+    byokKeyLast4: v.optional(v.string()),
+    byokKeyAddedAt: v.optional(v.number()),
   })
     .index('by_authId', ['authId'])
     .index('by_email', ['email'])
@@ -148,8 +161,8 @@ export default defineSchema({
     .index('by_planRenewsAt', ['planRenewsAt']),
 
   // Cache des Plans Paystack provisionnés (catalogue côté PSP). Une ligne par
-  // couple (palier × intervalle) : 6 au total (pro/pro_ai/copilot × mensuel/
-  // annuel). Alimenté UNE FOIS par `paystackPlans.ensurePlans` (idempotent) ;
+  // couple (palier × intervalle) : 8 au total (pro/pro_ai/copilot/copilot_max ×
+  // mensuel/annuel). Alimenté UNE FOIS par `paystackPlans.ensurePlans` (idempotent) ;
   // tant que cette table est vide, `planCodeFor` renvoie null et le checkout
   // retombe automatiquement sur le paiement ponctuel (sécurité test-mode).
   billingPlans: defineTable({
@@ -159,6 +172,7 @@ export default defineSchema({
       v.literal('pro'),
       v.literal('pro_ai'),
       v.literal('copilot'),
+      v.literal('copilot_max'),
     ),
     interval: v.union(v.literal('monthly'), v.literal('annual')),
     // plan_code Paystack (ex 'PLN_xxx'), résolu au runtime par planCodeFor.

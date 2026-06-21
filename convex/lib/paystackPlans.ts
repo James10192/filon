@@ -1,16 +1,16 @@
 /**
  * Souscriptions Paystack natives · helpers PURS (aucun import Convex runtime).
  *
- * Un Plan Paystack porte UN couple (montant + intervalle). Il faut donc 6 Plans
- * pour Filon : 3 paliers (pro / pro_ai / copilot) × 2 intervalles (mensuel /
- * annuel). Ce module ne fait QUE du calcul de clés/intervalles/noms ; la
+ * Un Plan Paystack porte UN couple (montant + intervalle). Il faut donc 8 Plans
+ * pour Filon : 4 paliers (pro / pro_ai / copilot / copilot_max) × 2 intervalles
+ * (mensuel / annuel). Ce module ne fait QUE du calcul de clés/intervalles/noms ; la
  * résolution runtime des `plan_code` (lecture de la table `billingPlans`) et la
  * création des Plans côté PSP vivent dans `convex/paystackPlans.ts`.
  */
 
 import type { Interval, PaidPlan } from './pricing'
 
-/** Tous les couples (palier × intervalle) à provisionner. 3 × 2 = 6. */
+/** Tous les couples (palier × intervalle) à provisionner. 4 × 2 = 8. */
 export const PLAN_COMBOS: ReadonlyArray<{ plan: PaidPlan; interval: Interval }> = [
   { plan: 'pro', interval: 'monthly' },
   { plan: 'pro', interval: 'annual' },
@@ -18,6 +18,8 @@ export const PLAN_COMBOS: ReadonlyArray<{ plan: PaidPlan; interval: Interval }> 
   { plan: 'pro_ai', interval: 'annual' },
   { plan: 'copilot', interval: 'monthly' },
   { plan: 'copilot', interval: 'annual' },
+  { plan: 'copilot_max', interval: 'monthly' },
+  { plan: 'copilot_max', interval: 'annual' },
 ]
 
 /** Clé logique stable d'un couple, partagée DB (`planKey`) et runtime. */

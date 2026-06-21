@@ -8,7 +8,7 @@
  * l'API — voir le commentaire dans `convex/paystack.ts`.
  */
 
-export type PaidPlan = 'pro' | 'pro_ai' | 'copilot'
+export type PaidPlan = 'pro' | 'pro_ai' | 'copilot' | 'copilot_max'
 export type Interval = 'monthly' | 'annual'
 
 export type PriceEntry = {
@@ -24,6 +24,8 @@ export const PRICING: Record<PaidPlan, PriceEntry> = {
   pro_ai: { monthly: 9000, annual: 90000 },
   // Copilot : palier IA agentique, au-dessus de Pro+ IA.
   copilot: { monthly: 19000, annual: 190000 },
+  // Copilot Max : puissance maximale du copilote, quota XXL, au-dessus de Copilot.
+  copilot_max: { monthly: 35000, annual: 350000 },
 }
 
 /** Montant XOF (entiers) pour un palier payant et un intervalle donnés. */
@@ -49,6 +51,7 @@ export const PLAN_LABELS: Record<'free' | PaidPlan, string> = {
   pro: 'Pro',
   pro_ai: 'Pro+ IA',
   copilot: 'Copilot',
+  copilot_max: 'Copilot Max',
 }
 
 /**

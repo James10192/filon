@@ -13,7 +13,7 @@ import {
 /**
  * Souscriptions Paystack natives · provisionnement des Plans (catalogue PSP).
  *
- * `ensurePlans` (internalAction) crée/récupère les 6 Plans Paystack (3 paliers ×
+ * `ensurePlans` (internalAction) crée/récupère les 8 Plans Paystack (4 paliers ×
  * 2 intervalles) de façon IDEMPOTENTE et cache leur `plan_code` dans la table
  * `billingPlans`. À lancer une fois après avoir posé la clé :
  *   npx convex run paystackPlans:ensurePlans
@@ -46,7 +46,12 @@ type CreatePlanResponse = {
 export const upsertPlanCode = internalMutation({
   args: {
     planKey: v.string(),
-    plan: v.union(v.literal('pro'), v.literal('pro_ai'), v.literal('copilot')),
+    plan: v.union(
+      v.literal('pro'),
+      v.literal('pro_ai'),
+      v.literal('copilot'),
+      v.literal('copilot_max'),
+    ),
     interval: v.union(v.literal('monthly'), v.literal('annual')),
     planCode: v.string(),
     amountXof: v.number(),
@@ -97,7 +102,7 @@ async function findPlanCode(
   key: string,
   name: string,
 ): Promise<string | null> {
-  // perPage large : le catalogue Filon tient en une page (6 plans).
+  // perPage large : le catalogue Filon tient en une page (8 plans).
   const res = await fetch(`${PAYSTACK_BASE}/plan?perPage=100`, {
     headers: { Authorization: `Bearer ${key}` },
   })
@@ -137,7 +142,7 @@ async function createPlan(
 }
 
 /**
- * `internal.paystackPlans.ensurePlans` : provisionne les 6 Plans Paystack de
+ * `internal.paystackPlans.ensurePlans` : provisionne les 8 Plans Paystack de
  * façon IDEMPOTENTE (cherche par `name` avant de créer) et cache les `plan_code`
  * dans `billingPlans`. Sans clé configurée : no-op (renvoie `created: 0`), pour
  * rester sans effet tant que la clé n'est pas posée.

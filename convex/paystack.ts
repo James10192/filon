@@ -46,6 +46,7 @@ const paidPlanValidator = v.union(
   v.literal('pro'),
   v.literal('pro_ai'),
   v.literal('copilot'),
+  v.literal('copilot_max'),
 )
 const intervalValidator = v.union(
   v.literal('monthly'),
@@ -157,13 +158,18 @@ export const startCheckout = action({
       : null
 
     if (planCode) {
-      // Mode NATIF : on passe `plan` (Paystack prend le montant du plan, on
-      // n'envoie donc PAS `amount`) et on force `channels: ['card']` (le mobile
-      // money ne peut pas porter un mandat récurrent). Le webhook
+      // Mode NATIF : `plan` (souscription récurrente) + `channels: ['card']` (le
+      // mobile money ne peut pas porter un mandat récurrent). Le webhook
       // `subscription.create` posera billingMode='native' + subscription_code.
+      //
+      // IMPORTANT (vérifié en live sur le compte CI) : Paystack EXIGE `amount`
+      // ET `currency` même avec `plan`, sinon l'init échoue avec « Invalid Amount
+      // Sent ». Le montant doit égaler celui du Plan (XOF × 100, cf. createPlan).
       const body = {
         email,
         plan: planCode,
+        amount: toPaystackSubunit(amountXof),
+        currency: 'XOF',
         channels: ['card'],
         callback_url: `${appBaseUrl()}/app/tarifs?paystack=return`,
         metadata: {

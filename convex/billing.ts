@@ -31,6 +31,7 @@ const planValidator = v.union(
   v.literal('pro'),
   v.literal('pro_ai'),
   v.literal('copilot'),
+  v.literal('copilot_max'),
 )
 
 const intervalValidator = v.union(
@@ -125,6 +126,7 @@ const PLAN_RANK: Record<Plan, number> = {
   pro: 1,
   pro_ai: 2,
   copilot: 3,
+  copilot_max: 4,
 }
 
 /**

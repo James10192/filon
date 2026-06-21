@@ -71,6 +71,17 @@ export const PLAN_CARDS: PlanCard[] = [
       m.app_plan_copilot_feat_5(),
     ],
   },
+  {
+    key: 'copilot_max',
+    name: m.app_plan_copilot_max_name,
+    tagline: m.app_plan_copilot_max_tagline,
+    features: () => [
+      m.app_plan_copilot_max_feat_1(),
+      m.app_plan_copilot_max_feat_2(),
+      m.app_plan_copilot_max_feat_3(),
+      m.app_plan_copilot_max_feat_4(),
+    ],
+  },
 ]
 
 /** Tableau comparatif : lignes de fonctionnalités × paliers. */
@@ -80,24 +91,25 @@ export type CompareRow = {
   pro: string | boolean
   pro_ai: string | boolean
   copilot: string | boolean
+  copilot_max: string | boolean
 }
 
 export const COMPARE_ROWS: CompareRow[] = [
-  { label: m.app_compare_active_opps, free: '25', pro: m.app_unlimited(), pro_ai: m.app_unlimited(), copilot: m.app_unlimited() },
-  { label: m.app_compare_watch_searches, free: '1', pro: m.app_unlimited(), pro_ai: m.app_unlimited(), copilot: m.app_unlimited() },
-  { label: m.app_compare_auto_watch, free: false, pro: true, pro_ai: true, copilot: true },
-  { label: m.app_compare_views, free: true, pro: true, pro_ai: true, copilot: true },
-  { label: m.app_compare_followups_analytics, free: false, pro: true, pro_ai: true, copilot: true },
-  { label: m.app_compare_export, free: false, pro: true, pro_ai: true, copilot: true },
-  { label: m.app_compare_ai_credits, free: '25', pro: '100', pro_ai: '300', copilot: '6000' },
-  { label: m.app_compare_ai_assistant, free: true, pro: true, pro_ai: true, copilot: true },
-  { label: m.app_compare_scoring, free: false, pro: false, pro_ai: true, copilot: true },
-  { label: m.app_compare_drafts, free: false, pro: false, pro_ai: true, copilot: true },
-  { label: m.app_compare_agentic, free: false, pro: false, pro_ai: false, copilot: true },
-  { label: m.app_compare_action_log, free: false, pro: false, pro_ai: false, copilot: true },
-  { label: m.app_compare_fair_use_byok, free: false, pro: false, pro_ai: false, copilot: true },
+  { label: m.app_compare_active_opps, free: '25', pro: m.app_unlimited(), pro_ai: m.app_unlimited(), copilot: m.app_unlimited(), copilot_max: m.app_unlimited() },
+  { label: m.app_compare_watch_searches, free: '1', pro: m.app_unlimited(), pro_ai: m.app_unlimited(), copilot: m.app_unlimited(), copilot_max: m.app_unlimited() },
+  { label: m.app_compare_auto_watch, free: false, pro: true, pro_ai: true, copilot: true, copilot_max: true },
+  { label: m.app_compare_views, free: true, pro: true, pro_ai: true, copilot: true, copilot_max: true },
+  { label: m.app_compare_followups_analytics, free: false, pro: true, pro_ai: true, copilot: true, copilot_max: true },
+  { label: m.app_compare_export, free: false, pro: true, pro_ai: true, copilot: true, copilot_max: true },
+  { label: m.app_compare_ai_credits, free: '25', pro: '100', pro_ai: '300', copilot: '6000', copilot_max: '20000' },
+  { label: m.app_compare_ai_assistant, free: true, pro: true, pro_ai: true, copilot: true, copilot_max: true },
+  { label: m.app_compare_scoring, free: false, pro: false, pro_ai: true, copilot: true, copilot_max: true },
+  { label: m.app_compare_drafts, free: false, pro: false, pro_ai: true, copilot: true, copilot_max: true },
+  { label: m.app_compare_agentic, free: false, pro: false, pro_ai: false, copilot: true, copilot_max: true },
+  { label: m.app_compare_action_log, free: false, pro: false, pro_ai: false, copilot: true, copilot_max: true },
+  { label: m.app_compare_fair_use_byok, free: false, pro: false, pro_ai: false, copilot: true, copilot_max: true },
   // --- Équipe (org ouverte à tous, limite de membres = levier free) ---
-  { label: m.app_compare_org_team, free: m.app_members_3(), pro: m.app_unlimited(), pro_ai: m.app_unlimited(), copilot: m.app_unlimited() },
-  { label: m.app_compare_priority_flag, free: true, pro: true, pro_ai: true, copilot: true },
-  { label: m.app_compare_member_reports, free: false, pro: true, pro_ai: true, copilot: true },
+  { label: m.app_compare_org_team, free: m.app_members_3(), pro: m.app_unlimited(), pro_ai: m.app_unlimited(), copilot: m.app_unlimited(), copilot_max: m.app_unlimited() },
+  { label: m.app_compare_priority_flag, free: true, pro: true, pro_ai: true, copilot: true, copilot_max: true },
+  { label: m.app_compare_member_reports, free: false, pro: true, pro_ai: true, copilot: true, copilot_max: true },
 ]

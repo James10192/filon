@@ -121,11 +121,19 @@ export function requiredPlanLabel(requires: RequiredPlan): string {
 }
 
 /**
- * Le palier `current` débloque-t-il `requires` ? Ordre : free < pro < pro_ai.
- * `pro_ai` débloque tout ; `pro` débloque `pro` mais pas `pro_ai`.
+ * Le palier `current` débloque-t-il `requires` ?
+ * Ordre : free < pro < pro_ai < copilot < copilot_max. Tout palier >= pro_ai
+ * (donc copilot / copilot_max inclus) débloque tout ce qui requiert pro/pro_ai ;
+ * `pro` débloque `pro` mais pas `pro_ai`.
  */
+const UPSELL_RANK: Record<Plan, number> = {
+  free: 0,
+  pro: 1,
+  pro_ai: 2,
+  copilot: 3,
+  copilot_max: 4,
+}
+
 export function planUnlocks(current: Plan, requires: RequiredPlan): boolean {
-  if (current === 'pro_ai') return true
-  if (current === 'pro') return requires === 'pro'
-  return false
+  return UPSELL_RANK[current] >= UPSELL_RANK[requires]
 }

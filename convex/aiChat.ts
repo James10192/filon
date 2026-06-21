@@ -10,10 +10,11 @@ import {
 import { internal } from './_generated/api'
 import type { Doc } from './_generated/dataModel'
 import { requireUser, requireUserFromAction, requireCopilot } from './lib/withUser'
-import { forbiddenError, notFoundError } from './lib/plan'
+import { forbiddenError, notFoundError, allowsQualityModel } from './lib/plan'
 import { type Plan } from './lib/plan'
 import { creditsForUsage } from './lib/credits'
 import { readCreditState, ensureAiBudget, type AiBudget } from './lib/aiGate'
+import { decryptSecret } from './lib/crypto'
 import type { PaginationResult } from 'convex/server'
 import type { MessageDoc } from '@convex-dev/agent'
 import { vStreamArgs } from '@convex-dev/agent/validators'
@@ -274,14 +275,39 @@ export const sendMessage = action({
   },
   handler: async (ctx, args): Promise<{ ok: true }> => {
     const { userId } = await requireUserFromAction(ctx)
-    const mode: AiMode = args.mode ?? 'fast'
+    const requested: AiMode = args.mode ?? 'fast'
 
     // Gate accès + solde (pré-contrôle avant l'appel LLM). Stratégie fair-use :
     // les paliers Copilot ne sont pas bloqués net à zéro (la marge ×8 nous
     // couvre), on continue jusqu'à un plafond anti-abus ; les paliers en
     // dégustation (free/pro/pro_ai) butent sur un mur dur = déclencheur d'upgrade.
     const gate = await ctx.runQuery(internal.aiChat.aiGate, { userId })
-    ensureAiBudget(gate)
+
+    // BYOK : un utilisateur Copilot/Copilot Max ayant fourni sa propre clé
+    // OpenRouter valide passe par SA clé. On ne pré-contrôle alors PAS son solde
+    // (il paie son fournisseur) et on ne débitera AUCUN crédit. Si le chiffré est
+    // illisible (rotation de BYOK_ENCRYPTION_KEY), on retombe sans bruit sur
+    // notre clé + régime de crédits normal — jamais d'échec de chat pour ça.
+    let byokKey: string | null = null
+    const byok = await ctx.runQuery(internal.byok.resolve, { userId })
+    if (byok.eligible && byok.ciphertext && byok.provider) {
+      try {
+        byokKey = await decryptSecret(byok.ciphertext, userId, byok.provider)
+      } catch {
+        byokKey = null
+      }
+    }
+
+    // Le pré-contrôle de solde ne s'applique qu'au régime « nos crédits ».
+    if (!byokKey) ensureAiBudget(gate)
+
+    // Clamp serveur : le modèle « Qualité » est réservé aux paliers Copilot. On
+    // ne fait JAMAIS confiance au `mode` reçu du client : si le palier n'y a pas
+    // droit, on rabat sur « Rapide ».
+    const mode: AiMode =
+      requested === 'quality' && !allowsQualityModel(gate.plan)
+        ? 'fast'
+        : requested
 
     const { thread } = await copilot.continueThread(ctx, {
       threadId: args.threadId,
@@ -294,7 +320,10 @@ export const sendMessage = action({
     const contextualPrompt = `Contexte (ne pas répondre à ceci) : date du jour = ${today}.\n\n${args.prompt}`
 
     const result = await thread.streamText(
-      { prompt: contextualPrompt, model: modelFor(mode) },
+      {
+        prompt: contextualPrompt,
+        model: modelFor(mode, gate.plan, byokKey ?? undefined),
+      },
       { saveStreamDeltas: true },
     )
 
@@ -310,25 +339,32 @@ export const sendMessage = action({
     )
     const credits = creditsForUsage(inputTokens, outputTokens, mode)
 
-    // Débit + horodatage du fil : indépendants, exécutés en parallèle.
-    await Promise.all([
-      ctx.runMutation(internal.aiCredits.debit, {
-        userId,
-        threadId: args.threadId,
-        model: MODELS[mode],
-        mode,
-        inputTokens,
-        outputTokens,
-        credits,
-        toolsUsed,
-      }),
+    // Horodatage du fil : toujours. Débit de crédits : UNIQUEMENT hors BYOK (en
+    // BYOK l'appel a consommé la clé de l'utilisateur, pas nos crédits). Les deux
+    // mutations sont indépendantes → en parallèle.
+    const tasks: Promise<unknown>[] = [
       ctx.runMutation(internal.aiChat.bumpThread, {
         userId,
         threadId: args.threadId,
         toolsUsed,
         prompt: args.prompt,
       }),
-    ])
+    ]
+    if (!byokKey) {
+      tasks.push(
+        ctx.runMutation(internal.aiCredits.debit, {
+          userId,
+          threadId: args.threadId,
+          model: MODELS[mode],
+          mode,
+          inputTokens,
+          outputTokens,
+          credits,
+          toolsUsed,
+        }),
+      )
+    }
+    await Promise.all(tasks)
     return { ok: true }
   },
 })

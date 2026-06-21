@@ -115,6 +115,12 @@ function PlansBreakdown({ metrics }: { metrics: AdminMetrics }) {
         count: d.copilot,
         paid: true,
       },
+      {
+        key: 'copilot_max',
+        label: planLabel('copilot_max'),
+        count: d.copilot_max,
+        paid: true,
+      },
     ]
   const max = Math.max(1, ...rows.map((r) => r.count))
   const paid = rows.filter((r) => r.paid).reduce((s, r) => s + r.count, 0)
