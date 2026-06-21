@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { KanbanSquare, Menu, LayoutDashboard, Settings, LogOut } from 'lucide-react'
 import { authClient, useSession } from '~/lib/auth/auth-client'
@@ -22,6 +22,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '~/components/ui/sheet'
+import { useScrollState } from './use-scroll-state'
 
 const DOCS_URL = 'https://filon-docs.vercel.app'
 
@@ -64,44 +65,16 @@ function handleAnchorClick(
 }
 
 /**
- * En-tête public, sticky, raffiné (zed-style). Reste HORS du conteneur
- * ScrollSmoother (cf. index.tsx) pour rester fixe. Auth-aware : menu profil si
- * connecté, sinon CTA connexion/inscription.
+ * En-tête public flottant, raffiné (zed-style). Reste HORS du conteneur
+ * ScrollSmoother (cf. index.tsx) et `position: fixed` (le `sticky` ne tient pas
+ * sous le scroll virtualisé de ScrollSmoother). Façon navbar flottante : se
+ * masque en défilant vers le bas, se révèle au moindre défilement vers le haut
+ * (état `hidden` via useScrollState). Auth-aware : menu profil si connecté,
+ * sinon CTA connexion/inscription.
  */
-/**
- * Etat « scrollé » du header. Le scroll est détourné par ScrollSmoother sur
- * desktop : on écoute l'event `filon:header-scrolled` diffusé par
- * useLandingMotion. Sur mobile (ScrollSmoother désactivé), c'est le scroll
- * natif qui fait foi : on écoute aussi `window scroll`. De-dup via le state.
- */
-function useScrolled() {
-  const [scrolled, setScrolled] = useState(false)
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-
-    const onCustom = (e: Event) => {
-      const detail = (e as CustomEvent<{ scrolled: boolean }>).detail
-      setScrolled(Boolean(detail?.scrolled))
-    }
-    const onNative = () => setScrolled(window.scrollY > 20)
-
-    window.addEventListener('filon:header-scrolled', onCustom)
-    window.addEventListener('scroll', onNative, { passive: true })
-    onNative()
-
-    return () => {
-      window.removeEventListener('filon:header-scrolled', onCustom)
-      window.removeEventListener('scroll', onNative)
-    }
-  }, [])
-
-  return scrolled
-}
-
 export function MarketingHeader() {
   const [open, setOpen] = useState(false)
-  const scrolled = useScrolled()
+  const { scrolled, hidden } = useScrollState()
   const NAV = useNav()
   const { data: session, isPending } = useSession()
   // Tant que la session n'est pas résolue, on montre l'état déconnecté
@@ -112,7 +85,9 @@ export function MarketingHeader() {
     <header
       data-scrolled={scrolled || undefined}
       className={[
-        'sticky top-0 z-50 border-b backdrop-blur-xl transition-[background-color,border-color,box-shadow] duration-200 ease-out',
+        'fixed inset-x-0 top-0 z-50 border-b backdrop-blur-xl transition-[transform,background-color,border-color,box-shadow] duration-300 ease-out',
+        // On ne masque jamais le header quand le menu mobile est ouvert.
+        hidden && !open ? '-translate-y-full' : 'translate-y-0',
         scrolled
           ? 'border-border bg-bg/85 shadow-[0_1px_0_0_var(--color-border),0_8px_24px_-16px_rgba(0,0,0,0.25)]'
           : 'border-transparent bg-bg/50',

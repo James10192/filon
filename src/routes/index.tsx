@@ -14,6 +14,7 @@ import { LandingProof } from '~/components/marketing/landing-proof'
 import { LandingCreator } from '~/components/marketing/landing-creator'
 import { LandingOrigin } from '~/components/marketing/landing-origin'
 import { LandingCta } from '~/components/marketing/landing-cta'
+import { LandingScrollTop } from '~/components/marketing/landing-scroll-top'
 import { useLandingMotion } from '~/components/marketing/use-landing-motion'
 import { useCaptureRef } from '~/lib/referral-attribution'
 import { m } from '~/lib/paraglide/messages'
@@ -83,6 +84,13 @@ function LandingPage() {
           <MarketingFooter />
         </div>
       </div>
+
+      {/*
+        Hors de #smooth-content : un élément `fixed` à l'intérieur du conteneur
+        transformé par ScrollSmoother serait positionné par rapport à ce
+        conteneur (le transform crée un bloc englobant), pas au viewport.
+      */}
+      <LandingScrollTop />
     </div>
   )
 }

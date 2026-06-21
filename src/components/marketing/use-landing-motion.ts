@@ -101,23 +101,35 @@ export function useLandingMotion(scopeRef: React.RefObject<HTMLElement | null>) 
             normalizeScroll: false,
           }) as typeof smoother
 
-          // ── Navbar compacte au scroll ────────────────────────────────────
+          // ── Etat de défilement (header flottant + bouton « haut de page ») ─
           // Le scroll natif est détourné par ScrollSmoother : un listener
-          // `window scroll` ne se déclenche pas. On lit la position via un
-          // ScrollTrigger (qui suit le scroll virtuel du smoother) et on
-          // diffuse l'état « scrollé » au header (hors scope GSAP) par event,
-          // uniquement quand la valeur change (anti-thrash).
+          // `window scroll` ne se déclenche pas. On lit la position ET la
+          // direction via un ScrollTrigger (qui suit le scroll virtuel du
+          // smoother) et on diffuse l'état aux consommateurs hors scope GSAP
+          // (header, bouton remontée) par event, uniquement au changement
+          // (anti-thrash). Seuils alignés sur useScrollState (20 / 140 / 0.6).
           let lastScrolled = false
+          let lastHidden = false
+          let lastShowTop = false
           ScrollTrigger.create({
             start: 0,
             end: 'max',
-            onUpdate: (self: { scroll: () => number }) => {
-              const isScrolled = self.scroll() > 20
-              if (isScrolled !== lastScrolled) {
+            onUpdate: (self: { scroll: () => number; direction: number }) => {
+              const y = self.scroll()
+              const isScrolled = y > 20
+              const isHidden = self.direction === 1 && y > 140
+              const showTop = y > window.innerHeight * 0.6
+              if (
+                isScrolled !== lastScrolled ||
+                isHidden !== lastHidden ||
+                showTop !== lastShowTop
+              ) {
                 lastScrolled = isScrolled
+                lastHidden = isHidden
+                lastShowTop = showTop
                 window.dispatchEvent(
-                  new CustomEvent('filon:header-scrolled', {
-                    detail: { scrolled: isScrolled },
+                  new CustomEvent('filon:scroll', {
+                    detail: { scrolled: isScrolled, hidden: isHidden, showTop },
                   }),
                 )
               }

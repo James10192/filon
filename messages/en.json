@@ -1687,6 +1687,7 @@
   "role_head_sell_desc": "Sees the whole team and flags priorities.",
   "role_sdr": "SDR",
   "role_sdr_desc": "Prospecting and qualification.",
+  "scroll_top_aria": "Back to top",
   "settings_language": "Language",
   "settings_language_description": "Choose the language of your workspace. The setting is remembered on this device.",
   "shell_account_fallback": "My account",

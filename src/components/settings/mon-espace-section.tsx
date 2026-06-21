@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useMutation, useQuery } from 'convex/react'
 import { Loader2 } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
@@ -49,31 +49,29 @@ export function MonEspaceSection() {
   const me = useQuery(api.users.me) as Me
   const save = useMutation(api.users.setStageLabelSet)
 
-  const [set, setSet] = useState<StageLabelSet>('emploi')
-  const [hydrated, setHydrated] = useState(false)
+  // Choix en cours non encore enregistre (null = aligne sur la valeur sauvegardee).
+  const [pending, setPending] = useState<StageLabelSet | null>(null)
   const [saving, setSaving] = useState(false)
-
-  useEffect(() => {
-    if (me !== undefined && !hydrated) {
-      const raw = me?.stageLabelSet
-      setSet(raw === 'vente' || raw === 'recrutement' ? raw : 'emploi')
-      setHydrated(true)
-    }
-  }, [me, hydrated])
 
   if (me === undefined) return <MonEspaceSkeleton />
 
-  const current =
+  // Source UNIQUE de verite pour l'affichage : le lens enregistre, normalise vers
+  // une valeur connue. On ne le recopie PAS dans un etat hydrate a part : l'ancien
+  // schema (useState + useEffect + flag) laissait une fenetre de rendu ou le
+  // trigger restait vide / sur le placeholder. `set` est donc TOUJOURS valide.
+  const saved: StageLabelSet =
     me?.stageLabelSet === 'vente' || me?.stageLabelSet === 'recrutement'
       ? me.stageLabelSet
       : 'emploi'
-  const dirty = set !== current
+  const set: StageLabelSet = pending ?? saved
+  const dirty = pending !== null && pending !== saved
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
     try {
       await save({ set })
+      setPending(null)
       toast.success(m.app_changes_saved())
     } catch {
       toast.error(m.app_changes_save_error())
@@ -95,7 +93,7 @@ export function MonEspaceSection() {
             <Label htmlFor="lens-set">{m.app_lens_label()}</Label>
             <Select
               value={set}
-              onValueChange={(v) => setSet(v as StageLabelSet)}
+              onValueChange={(v) => setPending(v as StageLabelSet)}
             >
               <SelectTrigger id="lens-set" className="sm:max-w-xs">
                 {/*
@@ -105,7 +103,8 @@ export function MonEspaceSection() {
                   vide. On rend donc le libelle courant nous-memes.
                 */}
                 <SelectValue placeholder={m.app_lens_label()}>
-                  {LENS_OPTIONS.find((o) => o.value === set)?.label()}
+                  {LENS_OPTIONS.find((o) => o.value === set)?.label() ??
+                    m.app_lens_emploi()}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
