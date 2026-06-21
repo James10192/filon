@@ -5,6 +5,7 @@ import { MarketingFooter } from '~/components/marketing/marketing-footer'
 import { LandingHero } from '~/components/marketing/landing-hero'
 import { LandingProblem } from '~/components/marketing/landing-problem'
 import { LandingPillars } from '~/components/marketing/landing-pillars'
+import { LandingPersonas } from '~/components/marketing/landing-personas'
 import { LandingShowcase } from '~/components/marketing/landing-showcase'
 import { PricingSection } from '~/components/marketing/pricing-section'
 import { LandingProof } from '~/components/marketing/landing-proof'
@@ -18,13 +19,13 @@ export const Route = createFileRoute('/')({
   component: LandingPage,
   head: () => ({
     meta: [
-      // <= 60 c : 53 caracteres
-      { title: 'Filon · Transformez votre prospection en pipeline' },
+      // <= 60 c
+      { title: 'Filon · Ne laissez plus filer une relation' },
       {
-        // meta description <= 155 c : 152 caracteres
+        // meta description <= 155 c
         name: 'description',
         content:
-          'Réunissez candidatures, propositions spontanées et prospection freelance dans un pipeline unique. Veille automatique, relances datées et assistance IA.',
+          'Freelances, ambassadeurs, agents, recruteurs : un seul pipeline pour vos prospects, clients et filleuls. Relances, veille et assistance IA.',
       },
     ],
   }),
@@ -65,6 +66,7 @@ function LandingPage() {
             <LandingHero />
             <LandingProblem />
             <LandingPillars />
+            <LandingPersonas />
             <LandingShowcase />
             <PricingSection />
             <LandingProof />
