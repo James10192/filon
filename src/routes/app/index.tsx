@@ -1,6 +1,7 @@
+import { useState } from 'react'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
-import { AlertTriangle, Compass, Plus, RotateCcw } from 'lucide-react'
+import { AlertTriangle, Compass, Plus, RotateCcw, Upload } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import { m } from '~/lib/paraglide/messages'
 import { Button } from '~/components/ui/button'
@@ -26,6 +27,8 @@ import { DailySuggestions } from '~/components/dashboard/daily-suggestions'
 import { BriefEntry } from '~/components/dashboard/brief-entry'
 import { RankGoalCard } from '~/components/dashboard/rank-goal-card'
 import { AskCopilotButton } from '~/components/copilot/ask-copilot-button'
+import { useLensSet } from '~/components/opportunities/use-stage-labels'
+import { ImportContactsDialog } from '~/components/companies/import-contacts-dialog'
 
 export const Route = createFileRoute('/app/')({
   component: DashboardPage,
@@ -127,6 +130,12 @@ function DashboardPage() {
 }
 
 function OnboardingState({ onCreate }: { onCreate: () => void }) {
+  const lens = useLensSet()
+  const [importOpen, setImportOpen] = useState(false)
+  // Personas relationnels (vente/recrutement) : le chemin d'activation le plus
+  // rapide est d'importer le carnet (réseau déjà existant), avant le pipeline.
+  const isNetwork = lens === 'vente' || lens === 'recrutement'
+
   return (
     <div className="flex flex-col">
       <PageToolbar
@@ -156,7 +165,17 @@ function OnboardingState({ onCreate }: { onCreate: () => void }) {
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-2">
-          <Button size="lg" onClick={onCreate}>
+          {isNetwork && (
+            <Button size="lg" onClick={() => setImportOpen(true)}>
+              <Upload className="size-4" />
+              {m.import_carnet_title()}
+            </Button>
+          )}
+          <Button
+            size="lg"
+            variant={isNetwork ? 'outline' : 'default'}
+            onClick={onCreate}
+          >
             <Plus className="size-4" />
             {m.dashboard_new_opportunity()}
           </Button>
@@ -167,6 +186,10 @@ function OnboardingState({ onCreate }: { onCreate: () => void }) {
           </Button>
         </div>
       </div>
+
+      {isNetwork && (
+        <ImportContactsDialog open={importOpen} onOpenChange={setImportOpen} />
+      )}
     </div>
   )
 }
