@@ -322,10 +322,14 @@ export const sendMessage = action({
     const contextualPrompt = `Contexte (ne pas répondre à ceci) : date du jour = ${today}.\n\n${args.prompt}`
 
     // Gating : on calcule, par échange, l'exposition des outils et la condition
-    // d'arrêt selon le palier (et plus tard le rôle d'organisation). En P1 ces
-    // valeurs sont neutres (tous les outils, stepCountIs(5)) — le point
-    // d'extension existe sans changer le comportement.
-    const exposedTools = toolsFor(gate.plan, null, tools)
+    // d'arrêt selon le palier ET le rôle d'organisation. On résout l'org active
+    // + le rôle du user (null hors org) ; le manifeste filtre alors les outils
+    // équipe pour les non-managers (un user voit <= ~14 outils). Le copilot_max
+    // peut enchaîner plus d'étapes (workflows composites).
+    const orgRole = await ctx.runQuery(internal.agent.orgReads.orgRole, {
+      userId,
+    })
+    const exposedTools = toolsFor(gate.plan, orgRole?.role ?? null, tools)
     const stopWhen = stopWhenFor(gate.plan)
 
     const result = await thread.streamText(

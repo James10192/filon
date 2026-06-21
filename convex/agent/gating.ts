@@ -1,33 +1,44 @@
 import { stepCountIs } from '@convex-dev/agent'
 import type { Plan } from '../lib/plan'
+import type { OrgRole } from '../lib/withOrg'
+import { isToolExposed } from './tools/manifest'
 
 /**
- * Gating de l'exposition des outils du copilote (point d'extension de la Phase
- * P3). Pour l'instant ces fonctions sont PURES et NEUTRES : elles reproduisent
- * exactement le comportement actuel (tous les outils, `stepCountIs(5)` partout).
- * Le câblage existe dès maintenant dans `aiChat.sendMessage` ; en P3 on y
- * branchera la vraie matrice plan + rôle d'organisation sans toucher au câblage.
+ * Gating de l'exposition des outils du copilote (Phase P3). L'exposition réelle
+ * par échange est calculée à partir d'une UNIQUE source de vérité, le manifeste
+ * (`tools/manifest`) : palier + rôle d'org → sous-ensemble d'outils. Garantit
+ * qu'un utilisateur ne voit jamais plus de ~14 outils, et que les outils équipe
+ * (`team_overview`, `flag_priority`, `unflag_priority`) restent réservés aux
+ * managers (admin / head_sell). Câblé dans `aiChat.sendMessage`.
  */
 
 /** Rôle de l'utilisateur dans son organisation active (ou `null` hors org). */
-export type OrgRole = 'owner' | 'admin' | 'manager' | 'member' | null
+export type GatingOrgRole = OrgRole | null
 
 /**
- * Sous-ensemble d'outils exposé à un échange, selon le palier et le rôle org.
- * P1 : renvoie l'intégralité des outils (comportement identique à aujourd'hui).
+ * Sous-ensemble d'outils exposé à un échange, selon le palier et le rôle d'org.
+ * Filtre `allTools` via le manifeste : un outil absent du manifeste ou non
+ * autorisé est retiré (fail closed). Le type de retour reste `T` (sous-ensemble
+ * runtime des MÊMES définitions d'outils) : l'agent ne peut appeler que les
+ * outils réellement présents, sans dégrader le typage de la boîte à outils.
  */
 export function toolsFor<T extends Record<string, unknown>>(
-  _plan: Plan,
-  _orgRole: OrgRole,
+  plan: Plan,
+  orgRole: GatingOrgRole,
   allTools: T,
 ): T {
-  return allTools
+  const out: Record<string, unknown> = {}
+  for (const name of Object.keys(allTools)) {
+    if (isToolExposed(name, plan, orgRole)) out[name] = allTools[name]
+  }
+  return out as T
 }
 
 /**
- * Condition d'arrêt (nombre d'étapes/outils chaînés) selon le palier.
- * P1 : `stepCountIs(5)` pour tous (identique à la valeur par défaut de l'agent).
+ * Condition d'arrêt (nombre d'étapes/outils chaînés) selon le palier. Copilot Max
+ * peut enchaîner davantage d'étapes (8) pour les workflows composites ; les
+ * autres paliers sont limités à 5.
  */
-export function stopWhenFor(_plan: Plan) {
-  return stepCountIs(5)
+export function stopWhenFor(plan: Plan) {
+  return stepCountIs(plan === 'copilot_max' ? 8 : 5)
 }

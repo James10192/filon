@@ -10,6 +10,10 @@ import {
   type CompanyItem,
   type ContactItem,
 } from './carnet'
+import { TeamOverview, type TeamOverviewData } from './team-overview'
+import { NetworkStatus, type NetworkStatusData } from './network-status'
+import { ReferralOverview, type ReferralOverviewData } from './referral-overview'
+import { VeilleDigest, type VeilleDigestData } from './veille-digest'
 
 /**
  * Registre des widgets « generative UI » du copilote : à chaque nom d'outil
@@ -52,6 +56,15 @@ export const WIDGETS: Record<string, Widget> = {
     createElement(FindCompany, { items: (output ?? []) as CompanyItem[] }),
   find_contact: (output) =>
     createElement(FindContact, { items: (output ?? []) as ContactItem[] }),
+
+  team_overview: (output) =>
+    createElement(TeamOverview, { data: output as TeamOverviewData }),
+  network_status: (output) =>
+    createElement(NetworkStatus, { data: output as NetworkStatusData }),
+  referral_overview: (output) =>
+    createElement(ReferralOverview, { data: output as ReferralOverviewData }),
+  veille_digest: (output) =>
+    createElement(VeilleDigest, { data: output as VeilleDigestData }),
 }
 
 /**
