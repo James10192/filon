@@ -8,6 +8,7 @@ import { betterAuth } from 'better-auth/minimal'
 import { components, internal } from './_generated/api'
 import type { DataModel, Id } from './_generated/dataModel'
 import authConfig from './auth.config'
+import { trackServer, SERVER_EVENTS } from './lib/track'
 
 const siteUrl = process.env.SITE_URL ?? 'http://localhost:3000'
 
@@ -88,6 +89,13 @@ export const authComponent = createClient<DataModel>(components.betterAuth, {
         if (image) row.image = image
 
         await ctx.db.insert('users', row)
+
+        // Funnel · étape signup confirmée (source de vérité serveur). `image`
+        // présent = compte créé via un provider social, sinon e-mail/mot de passe.
+        trackServer(ctx, authUser._id, SERVER_EVENTS.signup_completed, {
+          signup_channel: image ? 'social' : 'email',
+          has_name: Boolean(name),
+        })
 
         // Équipe : relie les invitations en attente adressées à cet e-mail en
         // renseignant le `userId` (la lecture transversale pourra résoudre le

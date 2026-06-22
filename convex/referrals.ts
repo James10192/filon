@@ -7,6 +7,7 @@ import {
   makeReferralCode,
   normalizeCode,
 } from './lib/referral'
+import { trackServer, SERVER_EVENTS } from './lib/track'
 
 /**
  * Affiliation Filon (parrainage produit). Scope strict par parrain (`by_referrer`).
@@ -142,6 +143,13 @@ export const claimReferral = mutation({
       rewardGranted: false,
       createdAt: Date.now(),
     })
+    // Funnel parrainage · le filleul a rattaché un code à l'inscription. On
+    // l'attribue au PARRAIN (sa filière MLM grandit) et au filleul (dimension
+    // referral_source pour mesurer le levier viral).
+    trackServer(ctx, referrer.authId, SERVER_EVENTS.referral_claimed, {
+      code: norm,
+      referee_id: userId,
+    })
     return { ok: true as const }
   },
 })
@@ -231,5 +239,15 @@ export async function applyReferralReward(
     status: paid ? 'granted' : 'pending',
     createdAt: now,
     grantedAt: paid ? now : undefined,
+  })
+
+  // Funnel parrainage · récompense déclenchée par la conversion payante du
+  // filleul. Attribuée au parrain (le bénéficiaire de la filière). `applied_now`
+  // distingue le mois offert immédiat (parrain déjà payant) du mois en attente.
+  trackServer(ctx, ref.referrerUserId, SERVER_EVENTS.referral_reward_granted, {
+    referee_id: refereeUserId,
+    referee_plan: plan,
+    kind: 'free_month',
+    applied_now: paid,
   })
 }

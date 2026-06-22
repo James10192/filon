@@ -3,6 +3,7 @@ import { mutation, query } from './_generated/server'
 import type { Doc } from './_generated/dataModel'
 import { requireUser, type MutationCtx, type QueryCtx } from './lib/withUser'
 import { validationError } from './lib/plan'
+import { trackServer, SERVER_EVENTS } from './lib/track'
 
 /**
  * Domaine : profil applicatif (`api.users.*`).
@@ -242,6 +243,14 @@ export const completeOnboarding = mutation({
     if (Object.keys(patch).length > 0) {
       await ctx.db.patch(doc._id, patch)
     }
+
+    // Funnel · étape onboarding terminé. `activity_type` = profil déclaré (ou
+    // null si l'utilisateur a passé l'étape). On lit la valeur posée OU
+    // l'existante pour rester juste même quand l'appel ne repose pas le champ.
+    trackServer(ctx, userId, SERVER_EVENTS.onboarding_completed, {
+      activity_type: patch.activityType ?? doc.activityType ?? null,
+      skipped: args.activityType === undefined,
+    })
     return null
   },
 })

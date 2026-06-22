@@ -10,6 +10,7 @@ import {
   notFoundError,
   planLimitError,
 } from './lib/plan'
+import { trackServer, SERVER_EVENTS } from './lib/track'
 import { ensureTagsForUser } from './tags'
 import { flagPriorityFor, unflagPriorityFor } from './lib/flagPriority'
 
@@ -486,6 +487,16 @@ export const create = mutation({
       kind: 'other',
       content: `Opportunité créée : ${args.title}`,
       createdAt: now,
+    })
+
+    // Funnel · étape activation (première action de valeur). Le funnel PostHog
+    // retient la première occurrence par personne : pas besoin de calculer
+    // « is_first » ici. On joint le type et le canal pour l'analyse d'acquisition.
+    trackServer(ctx, userId, SERVER_EVENTS.activation_first_action, {
+      opportunity_type: args.type,
+      stage,
+      ...(args.sourceChannel ? { source_channel: args.sourceChannel } : {}),
+      ...(args.importSource ? { import_source: args.importSource } : {}),
     })
 
     return opportunityId

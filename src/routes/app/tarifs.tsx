@@ -3,6 +3,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useAction } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 import { m } from '~/lib/paraglide/messages'
+import { track, EVENTS } from '~/lib/analytics'
 import { toast } from '~/components/ui/sonner'
 import { PageToolbar } from '~/components/app/page-toolbar'
 import { PricingPlans } from '~/components/billing/pricing-plans'
@@ -41,12 +42,17 @@ function TarifsPage() {
       if (ref) {
         try {
           const res = await verify({ reference: ref })
+          // Funnel revenu · retour depuis Paystack. NB : l'événement de revenu
+          // FAISANT FOI reste « subscription_activated » émis par le webhook
+          // serveur ; ce signal client mesure seulement le taux de retour/abandon.
+          track(EVENTS.payment_returned, { status: res.ok ? 'confirmed' : 'unconfirmed' })
           if (res.ok) {
             toast.success(m.app_tarifs_payment_confirmed())
           } else {
             toast.error(m.app_tarifs_payment_unconfirmed())
           }
         } catch {
+          track(EVENTS.payment_returned, { status: 'verify_error' })
           toast.error(m.app_tarifs_payment_verify_error())
         }
       }

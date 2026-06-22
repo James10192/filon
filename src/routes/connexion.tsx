@@ -10,6 +10,7 @@ import { toast } from '~/components/ui/sonner'
 import { AuthShell } from '~/components/marketing/auth-shell'
 import { SocialAuthButtons } from '~/components/marketing/social-auth-buttons'
 import { cn } from '~/lib/utils'
+import { track, EVENTS } from '~/lib/analytics'
 import { m } from '~/lib/paraglide/messages'
 
 export const Route = createFileRoute('/connexion')({
@@ -71,6 +72,7 @@ function ConnexionPage() {
     }
 
     setSubmitting(true)
+    track(EVENTS.login_submitted)
     const { error } = await authClient.signIn.email({
       email: parsed.data.email,
       password: parsed.data.password,
@@ -79,6 +81,9 @@ function ConnexionPage() {
 
     if (error) {
       setSubmitting(false)
+      track(EVENTS.login_failed, {
+        reason: error.code || (error.status ? `http_${error.status}` : 'invalid'),
+      })
       const message = m.login_error_invalid()
       setFormError(message)
       toast.error(message)

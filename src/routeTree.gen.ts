@@ -29,6 +29,7 @@ import { Route as AppCopilotRouteImport } from './routes/app/copilot'
 import { Route as AppAdminRouteImport } from './routes/app/admin'
 import { Route as AppPropositionsIdRouteImport } from './routes/app/propositions.$id'
 import { Route as AppOpportunitesIdRouteImport } from './routes/app/opportunites.$id'
+import { Route as ApiPhSplatRouteImport } from './routes/api/ph.$'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth.$'
 
 const InscriptionRoute = InscriptionRouteImport.update({
@@ -131,6 +132,11 @@ const AppOpportunitesIdRoute = AppOpportunitesIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AppOpportunitesRoute,
 } as any)
+const ApiPhSplatRoute = ApiPhSplatRouteImport.update({
+  id: '/api/ph/$',
+  path: '/api/ph/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -157,6 +163,7 @@ export interface FileRoutesByFullPath {
   '/app/veille': typeof AppVeilleRoute
   '/app/': typeof AppIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/ph/$': typeof ApiPhSplatRoute
   '/app/opportunites/$id': typeof AppOpportunitesIdRoute
   '/app/propositions/$id': typeof AppPropositionsIdRoute
 }
@@ -179,6 +186,7 @@ export interface FileRoutesByTo {
   '/app/veille': typeof AppVeilleRoute
   '/app': typeof AppIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/ph/$': typeof ApiPhSplatRoute
   '/app/opportunites/$id': typeof AppOpportunitesIdRoute
   '/app/propositions/$id': typeof AppPropositionsIdRoute
 }
@@ -203,6 +211,7 @@ export interface FileRoutesById {
   '/app/veille': typeof AppVeilleRoute
   '/app/': typeof AppIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/ph/$': typeof ApiPhSplatRoute
   '/app/opportunites/$id': typeof AppOpportunitesIdRoute
   '/app/propositions/$id': typeof AppPropositionsIdRoute
 }
@@ -228,6 +237,7 @@ export interface FileRouteTypes {
     | '/app/veille'
     | '/app/'
     | '/api/auth/$'
+    | '/api/ph/$'
     | '/app/opportunites/$id'
     | '/app/propositions/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -250,6 +260,7 @@ export interface FileRouteTypes {
     | '/app/veille'
     | '/app'
     | '/api/auth/$'
+    | '/api/ph/$'
     | '/app/opportunites/$id'
     | '/app/propositions/$id'
   id:
@@ -273,6 +284,7 @@ export interface FileRouteTypes {
     | '/app/veille'
     | '/app/'
     | '/api/auth/$'
+    | '/api/ph/$'
     | '/app/opportunites/$id'
     | '/app/propositions/$id'
   fileRoutesById: FileRoutesById
@@ -283,6 +295,7 @@ export interface RootRouteChildren {
   ConnexionRoute: typeof ConnexionRoute
   InscriptionRoute: typeof InscriptionRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiPhSplatRoute: typeof ApiPhSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -427,6 +440,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppOpportunitesIdRouteImport
       parentRoute: typeof AppOpportunitesRoute
     }
+    '/api/ph/$': {
+      id: '/api/ph/$'
+      path: '/api/ph/$'
+      fullPath: '/api/ph/$'
+      preLoaderRoute: typeof ApiPhSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -505,6 +525,7 @@ const rootRouteChildren: RootRouteChildren = {
   ConnexionRoute: ConnexionRoute,
   InscriptionRoute: InscriptionRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiPhSplatRoute: ApiPhSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

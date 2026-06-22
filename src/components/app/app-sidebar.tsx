@@ -12,6 +12,7 @@ import {
 import { api } from '../../../convex/_generated/api'
 import { m } from '~/lib/paraglide/messages'
 import { authClient } from '~/lib/auth/auth-client'
+import { resetAnalytics } from '~/lib/analytics'
 import { useUpsell } from '~/lib/billing/use-upsell'
 import { cn } from '~/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
@@ -275,6 +276,9 @@ function AccountMenu({
     await authClient.signOut({
       fetchOptions: {
         onSuccess: () => {
+          // Dissocie l'identité PostHog avant le reload (sinon la session
+          // suivante hériterait de l'utilisateur précédent).
+          resetAnalytics()
           window.location.href = '/'
         },
       },

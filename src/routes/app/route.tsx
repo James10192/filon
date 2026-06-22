@@ -30,6 +30,7 @@ import {
   useCopilotLauncher,
 } from '~/components/copilot/copilot-provider'
 import { AppSidebar } from '~/components/app/app-sidebar'
+import { AnalyticsIdentify } from '~/components/analytics/analytics-identify'
 import { Topbar } from '~/components/app/topbar'
 import { MobileBottombar } from '~/components/app/mobile-bottombar'
 import { FeedbackWidget } from '~/components/app/feedback-widget'
@@ -104,7 +105,13 @@ function AuthGate() {
   const displayName = user?.name?.trim() || user?.email || m.shell_account_fallback()
   const email = user?.email ?? ''
 
-  return <AppShell displayName={displayName} email={email} />
+  return (
+    <>
+      {/* Identité PostHog (rend null). Hors de la chaîne providers SSR fragile. */}
+      <AnalyticsIdentify userId={user?.id ?? ''} email={email} name={user?.name} />
+      <AppShell displayName={displayName} email={email} />
+    </>
+  )
 }
 
 // ===========================================================================

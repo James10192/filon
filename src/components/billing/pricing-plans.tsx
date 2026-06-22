@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAction, useQuery } from 'convex/react'
 import { CreditCard, Smartphone } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import { m } from '~/lib/paraglide/messages'
+import { track, EVENTS } from '~/lib/analytics'
 import { errorMessage } from '~/lib/billing/plan'
 import { toast } from '~/components/ui/sonner'
 import { Skeleton } from '~/components/ui/skeleton'
@@ -47,10 +48,20 @@ export function PricingPlans() {
 
   const currentPlan: Plan = myPlan?.plan ?? 'free'
 
+  // Funnel revenu · consultation de la grille tarifaire.
+  useEffect(() => {
+    track(EVENTS.pricing_viewed)
+  }, [])
+
   /** Lance Paystack pour le palier choisi, selon le canal (carte vs mobile). */
   async function launch(plan: PaidPlan, recurring: boolean) {
     setChoicePlan(null)
     setPendingPlan(plan)
+    // Funnel revenu · canal choisi + checkout lancé (intention ; la confirmation
+    // payante est serveur, via le webhook Paystack).
+    const channel = recurring ? 'card' : 'mobile_money'
+    track(EVENTS.payment_channel_selected, { plan, interval, channel })
+    track(EVENTS.checkout_started, { plan, interval, channel, recurring })
     try {
       const { authorizationUrl } = await startCheckout({
         plan,
@@ -60,6 +71,7 @@ export function PricingPlans() {
       // Redirection vers la page de paiement hébergée Paystack.
       window.location.href = authorizationUrl
     } catch (error) {
+      track(EVENTS.checkout_failed, { plan, interval, channel })
       toast.error(
         errorMessage(error, m.app_checkout_error()),
       )
@@ -85,7 +97,14 @@ export function PricingPlans() {
               interval={interval}
               isCurrent={card.key === currentPlan}
               pendingPlan={pendingPlan}
-              onUpgrade={(plan) => setChoicePlan(plan)}
+              onUpgrade={(plan) => {
+                track(EVENTS.upgrade_cta_clicked, {
+                  plan,
+                  current_plan: currentPlan,
+                  interval,
+                })
+                setChoicePlan(plan)
+              }}
             />
           </div>
         ))}

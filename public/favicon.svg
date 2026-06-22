@@ -1,0 +1,9 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Filon">
+  <!-- Marque Filon : carré arrondi accent (indigo --accent oklch(0.511 0.214 277))
+       + glyphe kanban blanc (3 colonnes), reproduction du KanbanSquare de la
+       sidebar. Hex de repli pour les moteurs sans support oklch. -->
+  <rect x="2" y="2" width="28" height="28" rx="8" fill="#4b3fcf" style="fill:oklch(0.511 0.214 277)" />
+  <rect x="8.5" y="9" width="4.4" height="13" rx="2.2" fill="#ffffff" />
+  <rect x="14.8" y="9" width="4.4" height="8" rx="2.2" fill="#ffffff" />
+  <rect x="21.1" y="9" width="4.4" height="11" rx="2.2" fill="#ffffff" />
+</svg>

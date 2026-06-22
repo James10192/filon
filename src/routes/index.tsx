@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { MarketingHeader } from '~/components/marketing/marketing-header'
 import { MarketingFooter } from '~/components/marketing/marketing-footer'
@@ -17,6 +17,7 @@ import { LandingCta } from '~/components/marketing/landing-cta'
 import { LandingScrollTop } from '~/components/marketing/landing-scroll-top'
 import { useLandingMotion } from '~/components/marketing/use-landing-motion'
 import { useCaptureRef } from '~/lib/referral-attribution'
+import { track, EVENTS } from '~/lib/analytics'
 import { m } from '~/lib/paraglide/messages'
 
 export const Route = createFileRoute('/')({
@@ -57,6 +58,12 @@ function LandingPage() {
   const scopeRef = useRef<HTMLDivElement | null>(null)
   useLandingMotion(scopeRef)
   useCaptureRef()
+
+  // Funnel · 1re étape. Le $pageview est auto-capturé ; cet événement nommé sert
+  // de point d'entrée explicite et stable au funnel d'acquisition.
+  useEffect(() => {
+    track(EVENTS.landing_viewed)
+  }, [])
 
   return (
     <div ref={scopeRef} className="bg-bg text-fg">

@@ -20,6 +20,7 @@ import type { ConvexQueryClient } from '@convex-dev/react-query'
 import { Toaster } from '~/components/ui/sonner'
 import { ThemeProvider } from '~/components/app/theme'
 import { LocaleProvider } from '~/components/i18n/locale-provider'
+import { AnalyticsBootstrap } from '~/components/analytics/analytics-bootstrap'
 import appCss from '../styles/app.css?url'
 
 /**
@@ -140,6 +141,11 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     ],
     links: [
       { rel: 'stylesheet', href: appCss },
+      // Favicon = la marque Filon (carré accent + glyphe kanban). SVG net à
+      // toute taille ; mask-icon pour Safari épinglé (couleur accent indigo).
+      { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
+      { rel: 'apple-touch-icon', href: '/favicon.svg' },
+      { rel: 'mask-icon', href: '/favicon.svg', color: '#4b3fcf' },
       { rel: 'canonical', href: SITE.url },
       { rel: 'alternate', hrefLang: 'fr', href: SITE.url },
       { rel: 'alternate', hrefLang: 'en', href: SITE.url },
@@ -178,6 +184,7 @@ function RootDocument() {
           </LocaleProvider>
         </ThemeProvider>
         <Toaster />
+        <AnalyticsBootstrap />
         <Scripts />
       </body>
     </html>

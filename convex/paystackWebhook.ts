@@ -3,6 +3,7 @@ import { httpAction } from './_generated/server'
 import { internal } from './_generated/api'
 import type { DataModel } from './_generated/dataModel'
 import type { Interval, PaidPlan } from './lib/pricing'
+import { trackServer, SERVER_EVENTS } from './lib/track'
 
 /**
  * Webhook Paystack signé · http action montée sur `/paystack/webhook`.
@@ -164,6 +165,40 @@ function renewsAtFrom(
   return Date.now() + days * 24 * 60 * 60 * 1000
 }
 
+/** Montant en XOF (Paystack renvoie ×100, cf. toPaystackSubunit). */
+function amountXof(data: PaystackEvent['data']): Record<string, number> {
+  return data?.amount ? { amount_xof: Math.round(data.amount / 100) } : {}
+}
+
+/**
+ * `distinctId` PostHog = `authId` Better Auth, pour coller à
+ * `posthog.identify(userId)` côté client. metadata.userId direct si présent
+ * (posé au checkout), sinon résolution par subscription_code / e-mail (idem que
+ * `notify`). Les events d'abonnement (disable/not_renew) ne portent souvent que
+ * le subscription_code : la résolution garantit qu'on ne perde pas l'attribution.
+ */
+async function distinctIdFor(
+  ctx: GenericActionCtx<DataModel>,
+  data: PaystackEvent['data'],
+): Promise<string | null> {
+  const direct = data?.metadata?.userId
+  if (direct) return direct
+  return await ctx.runMutation(internal.billing.resolveAuthId, {
+    ...billingRefs(data),
+  })
+}
+
+/** Funnel revenu · capture serveur best-effort (résout l'identité d'abord). */
+async function trackBilling(
+  ctx: GenericActionCtx<DataModel>,
+  data: PaystackEvent['data'],
+  event: string,
+  properties: Record<string, unknown>,
+): Promise<void> {
+  const distinctId = await distinctIdFor(ctx, data)
+  if (distinctId) trackServer(ctx, distinctId, event, properties)
+}
+
 export const handlePaystackWebhook = httpAction(async (ctx, request) => {
   const secret = process.env.PAYSTACK_SECRET_KEY
   // Sans clé configurée, le webhook ne peut rien vérifier : on no-op en 200
@@ -220,6 +255,14 @@ export const handlePaystackWebhook = httpAction(async (ctx, request) => {
       // détient le mandat (l'auto-débit cron n'est PAS utilisé), mais on garde
       // ces métadonnées pour l'UI.
       await maybeSaveCard(ctx, data)
+      // Funnel revenu · conversion payante confirmée (carte récurrente).
+      await trackBilling(ctx, data, SERVER_EVENTS.subscription_activated, {
+        plan,
+        interval,
+        billing_mode: 'native',
+        recurring: true,
+        ...amountXof(data),
+      })
       break
     }
 
@@ -258,6 +301,13 @@ export const handlePaystackWebhook = httpAction(async (ctx, request) => {
             kind: 'renewal_charged',
             title: 'Abonnement renouvelé',
             body: 'Votre abonnement par carte a été renouvelé automatiquement.',
+          })
+          // Funnel revenu · renouvellement encaissé (revenu récurrent).
+          await trackBilling(ctx, data, SERVER_EVENTS.renewal_charged, {
+            ...(plan ? { plan } : {}),
+            interval,
+            billing_mode: 'native',
+            ...amountXof(data),
           })
         }
         break
@@ -298,6 +348,14 @@ export const handlePaystackWebhook = httpAction(async (ctx, request) => {
             ...(auth.brand ? { brand: auth.brand } : {}),
           })
         }
+        // Funnel revenu · conversion payante confirmée (mobile money / ponctuel).
+        await trackBilling(ctx, data, SERVER_EVENTS.subscription_activated, {
+          plan,
+          interval,
+          billing_mode: 'manual',
+          recurring: false,
+          ...amountXof(data),
+        })
       }
       break
     }
@@ -338,6 +396,11 @@ export const handlePaystackWebhook = httpAction(async (ctx, request) => {
           title: 'Échec du renouvellement par carte',
           body: 'Le débit de votre abonnement a échoué. Paystack va réessayer. Vérifiez votre carte pour ne pas perdre l’accès.',
         })
+        // Funnel churn · signal d'échec de renouvellement (dunning en cours).
+        await trackBilling(ctx, data, SERVER_EVENTS.renewal_failed, {
+          billing_mode: 'native',
+          ...amountXof(data),
+        })
       }
       break
     }
@@ -349,6 +412,8 @@ export const handlePaystackWebhook = httpAction(async (ctx, request) => {
       await ctx.runMutation(internal.billing.markNotRenew, {
         ...billingRefs(data),
       })
+      // Funnel churn · ne se renouvellera pas au prochain cycle.
+      await trackBilling(ctx, data, SERVER_EVENTS.subscription_not_renewing, {})
       break
     }
 
@@ -358,6 +423,8 @@ export const handlePaystackWebhook = httpAction(async (ctx, request) => {
       await ctx.runMutation(internal.billing.cancelSubscription, {
         ...billingRefs(data),
       })
+      // Funnel churn · résiliation effective (retour au palier gratuit).
+      await trackBilling(ctx, data, SERVER_EVENTS.subscription_cancelled, {})
       break
     }
 

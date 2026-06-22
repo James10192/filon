@@ -11,6 +11,7 @@ import { AuthShell } from '~/components/marketing/auth-shell'
 import { SocialAuthButtons } from '~/components/marketing/social-auth-buttons'
 import { cn } from '~/lib/utils'
 import { useCaptureRef } from '~/lib/referral-attribution'
+import { track, EVENTS } from '~/lib/analytics'
 import { m } from '~/lib/paraglide/messages'
 
 export const Route = createFileRoute('/inscription')({
@@ -46,6 +47,11 @@ function InscriptionPage() {
   const navigate = useNavigate()
   useCaptureRef()
 
+  // Funnel · arrivée sur le formulaire d'inscription (étape « signup_started »).
+  useEffect(() => {
+    track(EVENTS.signup_started)
+  }, [])
+
   // Utilisateur déjà connecté : on l'envoie vers son espace.
   useEffect(() => {
     if (!isPending && session) {
@@ -78,6 +84,7 @@ function InscriptionPage() {
     }
 
     setSubmitting(true)
+    track(EVENTS.signup_submitted)
     const { error } = await authClient.signUp.email({
       name: parsed.data.name,
       email: parsed.data.email,
@@ -87,6 +94,9 @@ function InscriptionPage() {
     if (error) {
       setSubmitting(false)
       const code = error.code ?? ''
+      track(EVENTS.signup_failed, {
+        reason: code || (error.status ? `http_${error.status}` : 'unknown'),
+      })
       const message =
         code === 'USER_ALREADY_EXISTS' ||
         error.status === 422 ||
