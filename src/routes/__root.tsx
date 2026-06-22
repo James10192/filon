@@ -142,10 +142,13 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     links: [
       { rel: 'stylesheet', href: appCss },
       // Favicon = la marque Filon (carré accent + glyphe kanban). SVG net à
-      // toute taille ; mask-icon pour Safari épinglé (couleur accent indigo).
-      { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
-      { rel: 'apple-touch-icon', href: '/favicon.svg' },
-      { rel: 'mask-icon', href: '/favicon.svg', color: '#4b3fcf' },
+      // toute taille pour les navigateurs modernes ; .ico de repli pour la
+      // requête automatique /favicon.ico et les vieux navigateurs ; mask-icon
+      // pour Safari épinglé. `?v=2` casse le cache agressif des favicons.
+      { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg?v=2' },
+      { rel: 'icon', href: '/favicon.ico?v=2', sizes: 'any' },
+      { rel: 'apple-touch-icon', href: '/favicon.svg?v=2' },
+      { rel: 'mask-icon', href: '/favicon.svg?v=2', color: '#4b3fcf' },
       { rel: 'canonical', href: SITE.url },
       { rel: 'alternate', hrefLang: 'fr', href: SITE.url },
       { rel: 'alternate', hrefLang: 'en', href: SITE.url },
