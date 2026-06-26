@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQuery } from 'convex/react'
-import { Loader2, Trash2 } from 'lucide-react'
+import { BookOpen, EyeOff, Loader2, Trash2 } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { m } from '~/lib/paraglide/messages'
@@ -44,16 +44,25 @@ function initials(name: string | null, email: string): string {
 /**
  * Tableau des membres d'une organisation. `canManage` (admin) débloque le
  * sélecteur de rôle, le retrait et le bouton d'invitation ; sinon lecture seule.
- * Le propriétaire n'est jamais modifiable (badge dédié).
+ * Le propriétaire n'est jamais modifiable (badge dédié). `canViewCarnet`
+ * (manager) ajoute l'action « Voir le carnet » par membre actif partageant son
+ * carnet (drapeau `sharesCarnet` dérivé serveur, jamais recalculé ici).
  */
 export function MembersTable({
   organizationId,
   canManage,
+  canViewCarnet = false,
+  onViewCarnet,
 }: {
   organizationId: Id<'organizations'>
   canManage: boolean
+  canViewCarnet?: boolean
+  onViewCarnet?: (userId: string, name: string, image: string | null) => void
 }) {
   const members = useQuery(api.members.list, { organizationId })
+  const me = useQuery(api.users.me)
+  const myAuthId = me?.authId ?? null
+  const showActions = canManage || canViewCarnet
 
   if (members === undefined) {
     return (
@@ -97,8 +106,8 @@ export function MembersTable({
                 <TableHead className="px-3">{m.member_col_member()}</TableHead>
                 <TableHead className="px-3">{m.member_col_role()}</TableHead>
                 <TableHead className="px-3">{m.member_col_status()}</TableHead>
-                {canManage && (
-                  <TableHead className="w-12 px-3">
+                {showActions && (
+                  <TableHead className="px-3 text-right">
                     <span className="sr-only">{m.member_col_actions()}</span>
                   </TableHead>
                 )}
@@ -154,11 +163,28 @@ export function MembersTable({
                         : m.member_status_pending()}
                     </span>
                   </TableCell>
-                  {canManage && (
-                    <TableCell className="w-12 px-3 py-2.5">
-                      {!mem.isOwner && (
-                        <RemoveMemberButton membershipId={mem.membershipId} />
-                      )}
+                  {showActions && (
+                    <TableCell className="px-3 py-2.5 text-right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        {canViewCarnet &&
+                          mem.status === 'active' &&
+                          mem.userId && (
+                            <CarnetAction
+                              isSelf={mem.userId === myAuthId}
+                              sharesCarnet={mem.sharesCarnet}
+                              onView={() =>
+                                onViewCarnet?.(
+                                  mem.userId!,
+                                  mem.name ?? mem.email,
+                                  mem.image,
+                                )
+                              }
+                            />
+                          )}
+                        {canManage && !mem.isOwner && (
+                          <RemoveMemberButton membershipId={mem.membershipId} />
+                        )}
+                      </div>
                     </TableCell>
                   )}
                 </TableRow>
@@ -168,6 +194,49 @@ export function MembersTable({
         </div>
       )}
     </div>
+  )
+}
+
+/**
+ * Action « Voir le carnet » d'une ligne membre (manager). Si le membre partage
+ * son carnet : bouton qui ouvre la vue lecture seule. Sinon : libellé désactivé
+ * « Partage désactivé ». Pour soi-même : libellé « Mon carnet » sans action (le
+ * manager consulte son propre carnet via le carnet personnel).
+ */
+function CarnetAction({
+  isSelf,
+  sharesCarnet,
+  onView,
+}: {
+  isSelf: boolean
+  sharesCarnet: boolean
+  onView: () => void
+}) {
+  if (isSelf) {
+    return (
+      <span className="text-xs font-medium text-fg-subtle">
+        {m.org_carnet_view_self()}
+      </span>
+    )
+  }
+  if (!sharesCarnet) {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-fg-subtle">
+        <EyeOff className="size-3.5" />
+        {m.org_carnet_view_unshared()}
+      </span>
+    )
+  }
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={onView}
+      className="h-8 text-fg-muted hover:text-accent"
+    >
+      <BookOpen className="size-4" />
+      <span className="hidden sm:inline">{m.org_carnet_view()}</span>
+    </Button>
   )
 }
 

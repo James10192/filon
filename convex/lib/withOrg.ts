@@ -138,3 +138,47 @@ export async function activeMemberUserIds(
   }
   return ids
 }
+
+/**
+ * SOURCE DE VÉRITÉ UNIQUE du consentement carnet (défaut ON / opt-out).
+ * `undefined` ou `true` => partagé ; seul `false` bloque. Ne JAMAIS tester
+ * `=== true` ailleurs (cela masquerait les lignes legacy `undefined`). Consommé
+ * par la garde backend ET exposé en dérivé `sharesCarnet` côté `members.list`.
+ */
+export function carnetSharingEnabled(m: Doc<'memberships'>): boolean {
+  return m.shareCarnetWithManager !== false
+}
+
+/**
+ * Garde « un manager peut lire le carnet (contacts/entreprises/relances) de
+ * `targetUserId` ». SEULE source de vérité d'accès au carnet d'autrui ; aucun
+ * gating de palier à l'intérieur (la sécurité ne dépend jamais du plan).
+ *
+ * ORDRE IMPÉRATIF (anti-fuite cross-org) :
+ *  1. `requireOrgManager` — le viewer est admin/head_sell de CETTE org.
+ *  2. self : un manager lit toujours son propre carnet (jamais bloqué par son flag).
+ *  3. `getActiveMembership(orgId, target)` via `by_org_user` (scopé à l'org).
+ *  4. cible introuvable/inactive => THROW **avant** de lire le flag. Crucial :
+ *     `targetUserId: v.string()` ne valide que le type ; sans ce throw, une cible
+ *     d'une AUTRE org (membership null) passerait (`null?.x === false` est faux).
+ *  5. flag lu UNIQUEMENT sur le Doc retourné (jamais via `by_user`).
+ *
+ * Retourne l'`OrgContext` du VIEWER (manager) — `octx.userId` = viewer pour le
+ * journal d'accès.
+ */
+export async function requireOrgManagerCanReadCarnet(
+  ctx: AnyCtx,
+  organizationId: Id<'organizations'>,
+  targetUserId: string,
+): Promise<OrgContext> {
+  const octx = await requireOrgManager(ctx, organizationId)
+  if (targetUserId === octx.userId) return octx
+  const target = await getActiveMembership(ctx, organizationId, targetUserId)
+  if (!target) {
+    throw forbiddenError('Ce membre ne fait pas partie de votre organisation.')
+  }
+  if (!carnetSharingEnabled(target)) {
+    throw forbiddenError('Ce membre a désactivé le partage de son carnet.')
+  }
+  return octx
+}

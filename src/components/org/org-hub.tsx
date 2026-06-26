@@ -20,10 +20,19 @@ import {
 import { OrgCreateCard } from './org-create-card'
 import { OrgInvitesCard } from './org-invites-card'
 import { MembersTable } from './members-table'
+import { MemberCarnetView } from './member-carnet-view'
+import { CarnetSharingCard } from './carnet-sharing-card'
 import { TeamBoard } from './team-board'
 import { MetricsDashboard } from './metrics-dashboard'
 import { OrgSettingsCard } from './org-settings-card'
 import { ROLE_META, isManagerRole, roleLabel, type OrgRole } from './roles'
+
+/** Membre sélectionné dont le manager consulte le carnet (lecture seule). */
+type ViewingMember = {
+  userId: string
+  name: string
+  image: string | null
+}
 
 /**
  * Hub d'équipe adaptatif. Sans organisation : invitations + création. Avec :
@@ -33,6 +42,7 @@ import { ROLE_META, isManagerRole, roleLabel, type OrgRole } from './roles'
 export function OrgHub() {
   const mine = useQuery(api.organizations.mine)
   const [selectedId, setSelectedId] = useState<Id<'organizations'> | null>(null)
+  const [viewingMember, setViewingMember] = useState<ViewingMember | null>(null)
 
   if (mine === undefined) {
     return (
@@ -69,7 +79,10 @@ export function OrgHub() {
           {mine.length > 1 ? (
             <Select
               value={current.organizationId}
-              onValueChange={(v) => setSelectedId(v as Id<'organizations'>)}
+              onValueChange={(v) => {
+                setSelectedId(v as Id<'organizations'>)
+                setViewingMember(null)
+              }}
             >
               <SelectTrigger
                 className="w-[220px]"
@@ -113,6 +126,7 @@ export function OrgHub() {
           {manager && (
             <TabsTrigger value="metrics">{m.org_tab_metrics()}</TabsTrigger>
           )}
+          <TabsTrigger value="privacy">{m.org_carnet_tab()}</TabsTrigger>
           {isAdmin && (
             <TabsTrigger value="settings">{m.org_tab_settings()}</TabsTrigger>
           )}
@@ -124,16 +138,33 @@ export function OrgHub() {
           </TabsContent>
         )}
         <TabsContent value="members" className="mt-5">
-          <MembersTable
-            organizationId={current.organizationId}
-            canManage={isAdmin}
-          />
+          {viewingMember ? (
+            <MemberCarnetView
+              organizationId={current.organizationId}
+              targetUserId={viewingMember.userId}
+              memberName={viewingMember.name}
+              memberImage={viewingMember.image}
+              onBack={() => setViewingMember(null)}
+            />
+          ) : (
+            <MembersTable
+              organizationId={current.organizationId}
+              canManage={isAdmin}
+              canViewCarnet={manager}
+              onViewCarnet={(userId, name, image) =>
+                setViewingMember({ userId, name, image })
+              }
+            />
+          )}
         </TabsContent>
         {manager && (
           <TabsContent value="metrics" className="mt-5">
             <MetricsDashboard organizationId={current.organizationId} />
           </TabsContent>
         )}
+        <TabsContent value="privacy" className="mt-5">
+          <CarnetSharingCard organizationId={current.organizationId} />
+        </TabsContent>
         {isAdmin && (
           <TabsContent value="settings" className="mt-5">
             <OrgSettingsCard

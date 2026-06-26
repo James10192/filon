@@ -16,3 +16,6 @@ HANDOFF.md
 
 # i18n Paraglide (genere par paraglide-js compile / plugin Vite)
 src/lib/paraglide
+
+# Données locales / cookies de session (jamais committées)
+data/

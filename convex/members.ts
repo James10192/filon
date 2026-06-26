@@ -9,7 +9,12 @@ import {
   planLimitError,
   validationError,
 } from './lib/plan'
-import { requireOrgAdmin, requireOrgMember, type OrgRole } from './lib/withOrg'
+import {
+  carnetSharingEnabled,
+  requireOrgAdmin,
+  requireOrgMember,
+  type OrgRole,
+} from './lib/withOrg'
 import { createNotification } from './notifications'
 
 /**
@@ -113,6 +118,9 @@ export const list = query({
         invitedAt: m.invitedAt,
         joinedAt: m.joinedAt ?? null,
         isOwner: !!m.userId && org?.ownerId === m.userId,
+        // Dérivé serveur (défaut ON) : le FE ne réimplémente jamais la règle
+        // `undefined`/`false`. Pilote l'action « Voir le carnet » côté managers.
+        sharesCarnet: carnetSharingEnabled(m),
       })
     }
     // Actifs d'abord, propriétaire en tête, puis par nom/e-mail.
@@ -344,6 +352,26 @@ export const declineInvite = mutation({
       m.email.toLowerCase() === email.toLowerCase() || m.userId === userId
     if (!mine) throw forbiddenError("Cette invitation ne vous est pas adressée.")
     if (m.status === 'pending') await ctx.db.delete(args.membershipId)
+    return null
+  },
+})
+
+/**
+ * `api.members.setMyCarnetSharing` : le membre courant active/désactive le
+ * partage de SON carnet (contacts, entreprises, relances) avec les managers de
+ * CETTE organisation. Défaut ON (opt-out). Ouvert à TOUS les membres actifs (pas
+ * réservé aux managers). Patche EXACTEMENT la membership lue par la garde, donc
+ * la même ligne que celle consultée par `requireOrgManagerCanReadCarnet`.
+ *
+ * Ne change RIEN à la visibilité pipeline (team.pipeline / team.metrics).
+ */
+export const setMyCarnetSharing = mutation({
+  args: { organizationId: v.id('organizations'), enabled: v.boolean() },
+  handler: async (ctx, args) => {
+    const octx = await requireOrgMember(ctx, args.organizationId)
+    await ctx.db.patch(octx.membership._id, {
+      shareCarnetWithManager: args.enabled,
+    })
     return null
   },
 })

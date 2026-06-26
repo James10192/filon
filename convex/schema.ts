@@ -797,6 +797,12 @@ export default defineSchema({
     invitedBy: v.string(),
     invitedAt: v.number(),
     joinedAt: v.optional(v.number()),
+    // Consentement carnet (défaut ON / opt-out) : un membre actif partage son
+    // carnet (contacts, entreprises, relances) avec ses managers, sauf s'il pose
+    // `false`. Sémantique unique : `undefined` ou `true` = partagé ; seul `false`
+    // bloque (cf. `carnetSharingEnabled` dans lib/withOrg). N'affecte PAS la
+    // visibilité pipeline (team.pipeline / team.metrics restent inchangés).
+    shareCarnetWithManager: v.optional(v.boolean()),
   })
     .index('by_org', ['organizationId'])
     .index('by_user', ['userId'])
@@ -863,4 +869,23 @@ export default defineSchema({
     .index('by_user', ['userId'])
     .index('by_user_status', ['userId', 'status'])
     .index('by_referral', ['referralId']),
+
+  // --- Journal d'accès carnet (audit org, additif) ---
+  // Trace quel manager a consulté le carnet de quel membre. Donnée d'AUDIT
+  // d'organisation : `organizationId` est porté ICI (n'enfreint pas l'invariant
+  // « pas d'organizationId sur les tables de pipeline »). Dédupliqué par jour :
+  // une ligne par (viewer × cible × jour UTC), `viewCount` incrémenté. Le membre
+  // consulte son propre journal (« consulté par X le Y, k fois »), borné 90 j.
+  carnetAccessLog: defineTable({
+    viewerUserId: v.string(),
+    targetUserId: v.string(),
+    organizationId: v.id('organizations'),
+    // 'YYYY-MM-DD' (UTC), calculé côté serveur. Clé de déduplication journalière.
+    dayKey: v.string(),
+    firstViewedAt: v.number(),
+    lastViewedAt: v.number(),
+    viewCount: v.number(),
+  })
+    .index('by_target_day', ['targetUserId', 'dayKey'])
+    .index('by_viewer_target_day', ['viewerUserId', 'targetUserId', 'dayKey']),
 })

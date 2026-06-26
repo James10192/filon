@@ -21,7 +21,7 @@ type FollowupWithOpportunity = Doc<'followups'> & {
  * Résout le titre de l'opportunité liée à chaque relance, en une passe.
  * Vérifie la propriété de l'opportunité (ne fuit jamais un titre cross-tenant).
  */
-async function attachOpportunityTitles(
+export async function attachOpportunityTitles(
   ctx: QueryCtx,
   userId: string,
   followups: Doc<'followups'>[],
