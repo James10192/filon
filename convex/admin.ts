@@ -1,5 +1,5 @@
 import { v } from 'convex/values'
-import { action, mutation, query } from './_generated/server'
+import { action, internalMutation, mutation, query } from './_generated/server'
 import { api } from './_generated/api'
 import type { Doc, Id } from './_generated/dataModel'
 import { isAdmin, requireAdmin, type QueryCtx } from './lib/withUser'
@@ -273,6 +273,30 @@ export const updateFeedbackStatus = mutation({
     if (!existing) {
       throw notFoundError('Feedback introuvable.')
     }
+    const patch: { status: Doc<'feedback'>['status']; adminNote?: string } = {
+      status: args.status,
+    }
+    const note = args.adminNote?.trim()
+    if (note) patch.adminNote = note
+    await ctx.db.patch(args.id, patch)
+    return { ok: true as const }
+  },
+})
+
+/**
+ * Triage feedback en ligne de commande (ops). `internalMutation` : non exposé au
+ * client, donc pas de gate `requireAdmin` (l'accès CLI = accès déploiement, déjà
+ * privilégié). Appelé via `npx convex run admin:opsSetFeedbackStatus`.
+ */
+export const opsSetFeedbackStatus = internalMutation({
+  args: {
+    id: v.id('feedback'),
+    status: statusValidator,
+    adminNote: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db.get(args.id)
+    if (!existing) throw notFoundError('Feedback introuvable.')
     const patch: { status: Doc<'feedback'>['status']; adminNote?: string } = {
       status: args.status,
     }
