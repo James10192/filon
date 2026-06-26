@@ -22,10 +22,8 @@ import {
   RecentActivitySkeleton,
 } from '~/components/dashboard/recent-activity'
 import { DashboardNudge } from '~/components/dashboard/dashboard-nudge'
-import { RegretRadar } from '~/components/dashboard/regret-radar'
-import { DailySuggestions } from '~/components/dashboard/daily-suggestions'
+import { DashboardBanner } from '~/components/dashboard/dashboard-banner'
 import { BriefEntry } from '~/components/dashboard/brief-entry'
-import { RankGoalCard } from '~/components/dashboard/rank-goal-card'
 import { AskCopilotButton } from '~/components/copilot/ask-copilot-button'
 import { useLensSet } from '~/components/opportunities/use-stage-labels'
 import { ImportContactsDialog } from '~/components/companies/import-contacts-dialog'
@@ -94,21 +92,17 @@ function DashboardPage() {
       />
 
       <div className="flex flex-col gap-5">
-        {/* Radar de regret : ce qui est en train de filer (loss-framing + sauvetage).
-            Surface de conversion prioritaire, ne s'affiche que s'il y a du concret. */}
-        <RegretRadar />
+        {/* Bandeau de pilotage compact : radar de regret + suggestions du jour +
+            objectif de palier consolidés sur une seule bande, pour que les KPI
+            restent au-dessus de la ligne de flottaison. Ne s'affiche que s'il y a
+            au moins un signal concret. */}
+        <DashboardBanner />
 
         {/* Nudge de conversion contextuel (au plus un, dismissible). */}
         <DashboardNudge />
 
         {/* Brief du jour (flagship copilot_max) : ouvre le copilote sur le brief */}
         <BriefEntry />
-
-        {/* Suggestions du jour déterministes : pistes d'action -> copilote */}
-        <DailySuggestions />
-
-        {/* Objectif de palier (persona ambassadeur/vente) : game plan reseau */}
-        <RankGoalCard />
 
         {/* Hero : entonnoir de conversion du pipeline */}
         <PipelineFunnel />
