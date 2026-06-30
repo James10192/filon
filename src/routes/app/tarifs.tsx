@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useAction } from 'convex/react'
+import { useAction, useMutation } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 import { m } from '~/lib/paraglide/messages'
 import { track, EVENTS } from '~/lib/analytics'
@@ -33,6 +33,7 @@ function TarifsPage() {
   const { paystack, reference, trxref } = Route.useSearch()
   const navigate = useNavigate()
   const verify = useAction(api.paystack.verifyCheckout)
+  const reportError = useMutation(api.observability.reportClientError)
 
   // Retour Paystack : Paystack renvoie `reference` (et/ou `trxref`).
   useEffect(() => {
@@ -49,10 +50,25 @@ function TarifsPage() {
           if (res.ok) {
             toast.success(m.app_tarifs_payment_confirmed())
           } else {
+            void reportError({
+              feature: 'billing',
+              action: 'verify_checkout_unconfirmed',
+              message: 'Paiement retourné non confirmé',
+              route: '/app/tarifs',
+              metadata: JSON.stringify({ reference: ref }),
+            })
             toast.error(m.app_tarifs_payment_unconfirmed())
           }
-        } catch {
+        } catch (error) {
           track(EVENTS.payment_returned, { status: 'verify_error' })
+          void reportError({
+            feature: 'billing',
+            action: 'verify_checkout',
+            message:
+              error instanceof Error ? error.message : 'Erreur vérification paiement',
+            route: '/app/tarifs',
+            metadata: JSON.stringify({ reference: ref }),
+          })
           toast.error(m.app_tarifs_payment_verify_error())
         }
       }

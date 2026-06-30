@@ -167,7 +167,7 @@ function NotificationItem({
               onClick={(e) => e.stopPropagation()}
               className="text-xs font-medium text-accent hover:underline"
             >
-              {m.notifications_action_renew()}
+              {item.actionLabel ?? m.notifications_action_renew()}
             </a>
           )}
         </div>

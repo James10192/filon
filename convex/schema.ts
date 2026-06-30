@@ -645,11 +645,16 @@ export default defineSchema({
       v.literal('invite_accepted'),
       // Le membre a été retiré d'une organisation.
       v.literal('member_removed'),
+      // Un feedback de l'utilisateur a été traité.
+      v.literal('feedback_resolved'),
+      // Une mise à jour produit publiée par l'équipe.
+      v.literal('product_update'),
     ),
     title: v.string(),
     body: v.string(),
     // CTA optionnel (lien de renouvellement pré-rempli, page Tarifs, etc.).
     actionUrl: v.optional(v.string()),
+    actionLabel: v.optional(v.string()),
     // Métadonnées sérialisées (JSON string) : plan, intervalle, échéance...
     meta: v.optional(v.string()),
     read: v.boolean(),
@@ -740,6 +745,53 @@ export default defineSchema({
     .index('by_user_created', ['userId', 'createdAt'])
     .index('by_thread', ['threadId']),
 
+  // Journal d'exécution et de diagnostic du copilote. Complète `aiActions`
+  // avec les étapes NON métier : message lancé, message échoué, tool en erreur,
+  // approbation refusée, etc. Sert à l'observabilité et au back-office.
+  aiEvents: defineTable({
+    userId: v.string(),
+    threadId: v.optional(v.string()),
+    type: v.string(),
+    level: v.union(
+      v.literal('info'),
+      v.literal('warning'),
+      v.literal('error'),
+    ),
+    message: v.string(),
+    tool: v.optional(v.string()),
+    model: v.optional(v.string()),
+    mode: v.optional(v.union(v.literal('fast'), v.literal('quality'))),
+    metadata: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index('by_user_created', ['userId', 'createdAt'])
+    .index('by_level_created', ['level', 'createdAt'])
+    .index('by_thread', ['threadId']),
+
+  // Journal d'erreurs applicatives persistantes. Capte les erreurs client
+  // importantes (toast + contexte) et les erreurs serveur métier / intégrations
+  // pour reconstruire un incident sans dépendre uniquement des logs volatils.
+  appErrors: defineTable({
+    userId: v.optional(v.string()),
+    source: v.union(v.literal('client'), v.literal('server')),
+    feature: v.string(),
+    action: v.string(),
+    message: v.string(),
+    level: v.union(
+      v.literal('info'),
+      v.literal('warning'),
+      v.literal('error'),
+    ),
+    route: v.optional(v.string()),
+    metadata: v.optional(v.string()),
+    createdAt: v.number(),
+    resolvedAt: v.optional(v.number()),
+  })
+    .index('by_created', ['createdAt'])
+    .index('by_level_created', ['level', 'createdAt'])
+    .index('by_feature_created', ['feature', 'createdAt'])
+    .index('by_user_created', ['userId', 'createdAt']),
+
   // Feedback in-app (widget). Scope `userId` cote soumission (requireUser) ;
   // lecture cross-tenant reservee au back-office /admin (requireAdmin).
   // `context` = chemin de la page d'ou le feedback a ete envoye (debug). Le cycle
@@ -749,6 +801,18 @@ export default defineSchema({
     type: v.union(v.literal('bug'), v.literal('idea'), v.literal('other')),
     message: v.string(),
     context: v.optional(v.string()),
+    pageTitle: v.optional(v.string()),
+    browser: v.optional(v.string()),
+    viewport: v.optional(v.string()),
+    userPlan: v.optional(v.string()),
+    organizationId: v.optional(v.string()),
+    entityType: v.optional(v.string()),
+    entityId: v.optional(v.string()),
+    priority: v.optional(
+      v.union(v.literal('low'), v.literal('medium'), v.literal('high')),
+    ),
+    screenshotUrl: v.optional(v.string()),
+    canContactBack: v.optional(v.boolean()),
     status: v.union(
       v.literal('new'),
       v.literal('in_progress'),

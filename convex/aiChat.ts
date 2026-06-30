@@ -1,5 +1,5 @@
 import { v } from 'convex/values'
-import { paginationOptsValidator } from 'convex/server'
+import { paginationOptsValidator, type PaginationResult } from 'convex/server'
 import {
   action,
   internalMutation,
@@ -9,13 +9,15 @@ import {
 } from './_generated/server'
 import { internal } from './_generated/api'
 import type { Doc } from './_generated/dataModel'
-import { requireUser, requireUserFromAction, requireCopilot } from './lib/withUser'
+import {
+  requireUser,
+  requireUserFromAction,
+  requireCopilot,
+} from './lib/withUser'
 import { forbiddenError, notFoundError, allowsQualityModel } from './lib/plan'
-import { type Plan } from './lib/plan'
 import { creditsForUsage } from './lib/credits'
 import { readCreditState, ensureAiBudget, type AiBudget } from './lib/aiGate'
 import { decryptSecret } from './lib/crypto'
-import type { PaginationResult } from 'convex/server'
 import type { MessageDoc } from '@convex-dev/agent'
 import { vStreamArgs } from '@convex-dev/agent/validators'
 import { copilot } from './agent/agent'
@@ -23,26 +25,8 @@ import { tools } from './agent/tools'
 import { toolsFor, stopWhenFor } from './agent/gating'
 import { modelFor, MODELS, type AiMode } from './agent/models'
 
-/**
- * Domaine aiChat · point d'entrée du copilote (threads, messages, envoi).
- *
- * - `createThread` (mutation) : crée un fil Agent + son miroir `aiThreads`,
- *   gaté `requireCopilot`.
- * - `listThreads` / `listMessages` (queries) : historique scopé `userId`.
- * - `sendMessage` (action) : gate copilot + pré-contrôle crédits, streame la
- *   réponse (deltas persistés), puis débite les crédits et journalise l'usage.
- * - `respondApproval` (mutation) : arbitre une demande d'approbation d'outil et,
- *   si « toujours », mémorise l'outil dans `alwaysAllow`.
- */
-
 const modeValidator = v.union(v.literal('fast'), v.literal('quality'))
 
-/** Gate copilot depuis une query (pour l'action via runQuery). */
-/**
- * Pré-contrôle d'accès + crédits depuis une query (pour l'action via runQuery).
- * Retourne le palier, le solde (mensuel + pack), la consommation du mois et
- * l'allocation, de quoi appliquer la stratégie fair-use côté `sendMessage`.
- */
 export const aiGate = internalQuery({
   args: { userId: v.string() },
   handler: async (ctx, { userId }): Promise<AiBudget> => {
@@ -51,10 +35,12 @@ export const aiGate = internalQuery({
   },
 })
 
-
-/** Enregistre le miroir `aiThreads` à la création d'un fil. */
 export const recordThread = internalMutation({
-  args: { userId: v.string(), threadId: v.string(), title: v.optional(v.string()) },
+  args: {
+    userId: v.string(),
+    threadId: v.string(),
+    title: v.optional(v.string()),
+  },
   handler: async (ctx, args): Promise<null> => {
     const now = Date.now()
     const doc: Record<string, unknown> = {
@@ -72,11 +58,6 @@ export const recordThread = internalMutation({
   },
 })
 
-/** Met à jour `lastMessageAt` du miroir de fil (après un échange). */
-/**
- * Titre déterministe d'un fil, dérivé de l'outil principal utilisé (gratuit,
- * domain-specific). À défaut d'outil, on retombe sur le premier message tronqué.
- */
 const TOOL_TITLE: Record<string, string> = {
   summarize_pipeline: 'Analyse du pipeline',
   pipeline_stats: 'Analyse du pipeline',
@@ -121,7 +102,6 @@ export const bumpThread = internalMutation({
       const patch: { lastMessageAt: number; title?: string } = {
         lastMessageAt: Date.now(),
       }
-      // Auto-titre au premier échange (tant que le fil n'a pas de titre).
       if (!doc.title && prompt !== undefined) {
         patch.title = deriveTitle(toolsUsed ?? [], prompt)
       }
@@ -131,10 +111,6 @@ export const bumpThread = internalMutation({
   },
 })
 
-/**
- * `internal.aiChat.logAction` : journalise une écriture de l'agent (audit +
- * lien entité). Appelée par les outils d'écriture après exécution réussie.
- */
 export const logAction = internalMutation({
   args: {
     userId: v.string(),
@@ -162,7 +138,39 @@ export const logAction = internalMutation({
   },
 })
 
-/** `api.aiChat.listActions` : journal des actions de l'agent (récent d'abord). */
+export const logEvent = internalMutation({
+  args: {
+    userId: v.string(),
+    threadId: v.optional(v.string()),
+    type: v.string(),
+    level: v.union(v.literal('info'), v.literal('warning'), v.literal('error')),
+    message: v.string(),
+    tool: v.optional(v.string()),
+    model: v.optional(v.string()),
+    mode: v.optional(modeValidator),
+    metadata: v.optional(v.string()),
+  },
+  handler: async (ctx, args): Promise<null> => {
+    const doc: Record<string, unknown> = {
+      userId: args.userId,
+      type: args.type,
+      level: args.level,
+      message: args.message,
+      createdAt: Date.now(),
+    }
+    if (args.threadId !== undefined) doc.threadId = args.threadId
+    if (args.tool !== undefined) doc.tool = args.tool
+    if (args.model !== undefined) doc.model = args.model
+    if (args.mode !== undefined) doc.mode = args.mode
+    if (args.metadata !== undefined) doc.metadata = args.metadata
+    await ctx.db.insert(
+      'aiEvents',
+      doc as Omit<Doc<'aiEvents'>, '_id' | '_creationTime'>,
+    )
+    return null
+  },
+})
+
 export const listActions = query({
   args: { limit: v.optional(v.number()) },
   handler: async (ctx, { limit }): Promise<Doc<'aiActions'>[]> => {
@@ -175,7 +183,18 @@ export const listActions = query({
   },
 })
 
-/** `api.aiChat.renameThread` : renomme un fil (titre personnalisé). */
+export const listEvents = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async (ctx, { limit }): Promise<Doc<'aiEvents'>[]> => {
+    const { userId } = await requireUser(ctx)
+    return ctx.db
+      .query('aiEvents')
+      .withIndex('by_user_created', (q) => q.eq('userId', userId))
+      .order('desc')
+      .take(limit ?? 100)
+  },
+})
+
 export const renameThread = mutation({
   args: { threadId: v.string(), title: v.string() },
   handler: async (ctx, { threadId, title }): Promise<null> => {
@@ -191,16 +210,11 @@ export const renameThread = mutation({
   },
 })
 
-/**
- * `api.aiChat.createThread` : ouvre un nouveau fil de conversation. Gaté au
- * palier Copilot. Crée le fil côté composant Agent et son miroir applicatif.
- */
 export const createThread = mutation({
   args: { title: v.optional(v.string()) },
   handler: async (ctx, args): Promise<{ threadId: string }> => {
     const { userId } = await requireUser(ctx)
     await requireCopilot(ctx, userId)
-    // Initialise la ligne de crédits si absente (idempotent).
     await ctx.runMutation(internal.aiCredits.ensureCredits, { userId })
 
     const { threadId } = await copilot.createThread(ctx, {
@@ -216,7 +230,6 @@ export const createThread = mutation({
   },
 })
 
-/** `api.aiChat.listThreads` : fils du user, du plus récent au plus ancien. */
 export const listThreads = query({
   args: {},
   handler: async (ctx): Promise<Doc<'aiThreads'>[]> => {
@@ -229,10 +242,6 @@ export const listThreads = query({
   },
 })
 
-/**
- * `api.aiChat.listMessages` : messages d'un fil (paginé), après vérification que
- * le fil appartient au user courant.
- */
 export const listMessages = query({
   args: {
     threadId: v.string(),
@@ -254,7 +263,6 @@ export const listMessages = query({
         paginationOpts: args.paginationOpts,
       },
     )
-    // Deltas de streaming (lus par le hook `useThreadMessages({ stream: true })`).
     const streams = await copilot.syncStreams(ctx, {
       threadId: args.threadId,
       streamArgs: args.streamArgs,
@@ -263,12 +271,15 @@ export const listMessages = query({
   },
 })
 
-/**
- * `api.aiChat.sendMessage` : envoie un message dans un fil et streame la réponse
- * du copilote (deltas persistés en base, lus côté client par les hooks Agent).
- * Gate copilot + pré-contrôle de crédits (throw `AI_CREDIT:` si solde épuisé).
- * À la fin, débite les crédits consommés et journalise l'usage.
- */
+function stringifyMetadata(value: Record<string, unknown>): string {
+  return JSON.stringify(value)
+}
+
+function errorText(error: unknown): string {
+  if (error instanceof Error && error.message) return error.message
+  return 'Erreur IA inconnue'
+}
+
 export const sendMessage = action({
   args: {
     threadId: v.string(),
@@ -279,17 +290,8 @@ export const sendMessage = action({
     const { userId } = await requireUserFromAction(ctx)
     const requested: AiMode = args.mode ?? 'fast'
 
-    // Gate accès + solde (pré-contrôle avant l'appel LLM). Stratégie fair-use :
-    // les paliers Copilot ne sont pas bloqués net à zéro (la marge ×8 nous
-    // couvre), on continue jusqu'à un plafond anti-abus ; les paliers en
-    // dégustation (free/pro/pro_ai) butent sur un mur dur = déclencheur d'upgrade.
     const gate = await ctx.runQuery(internal.aiChat.aiGate, { userId })
 
-    // BYOK : un utilisateur Copilot/Copilot Max ayant fourni sa propre clé
-    // OpenRouter valide passe par SA clé. On ne pré-contrôle alors PAS son solde
-    // (il paie son fournisseur) et on ne débitera AUCUN crédit. Si le chiffré est
-    // illisible (rotation de BYOK_ENCRYPTION_KEY), on retombe sans bruit sur
-    // notre clé + régime de crédits normal — jamais d'échec de chat pour ça.
     let byokKey: string | null = null
     const byok = await ctx.runQuery(internal.byok.resolve, { userId })
     if (byok.eligible && byok.ciphertext && byok.provider) {
@@ -300,98 +302,137 @@ export const sendMessage = action({
       }
     }
 
-    // Le pré-contrôle de solde ne s'applique qu'au régime « nos crédits ».
     if (!byokKey) ensureAiBudget(gate)
 
-    // Clamp serveur : le modèle « Qualité » est réservé aux paliers Copilot. On
-    // ne fait JAMAIS confiance au `mode` reçu du client : si le palier n'y a pas
-    // droit, on rabat sur « Rapide ».
     const mode: AiMode =
       requested === 'quality' && !allowsQualityModel(gate.plan)
         ? 'fast'
         : requested
 
-    const { thread } = await copilot.continueThread(ctx, {
+    await ctx.runMutation(internal.aiChat.logEvent, {
+      userId,
       threadId: args.threadId,
-      userId,
-    })
-
-    // Injecte la date du jour en contexte : l'agent en a besoin pour proposer
-    // des dates de relance concrètes (sinon il ne connaît pas « aujourd'hui »).
-    const today = new Date().toISOString().slice(0, 10)
-    const contextualPrompt = `Contexte (ne pas répondre à ceci) : date du jour = ${today}.\n\n${args.prompt}`
-
-    // Gating : on calcule, par échange, l'exposition des outils et la condition
-    // d'arrêt selon le palier ET le rôle d'organisation. On résout l'org active
-    // + le rôle du user (null hors org) ; le manifeste filtre alors les outils
-    // équipe pour les non-managers (un user voit <= ~14 outils). Le copilot_max
-    // peut enchaîner plus d'étapes (workflows composites).
-    const orgRole = await ctx.runQuery(internal.agent.orgReads.orgRole, {
-      userId,
-    })
-    const exposedTools = toolsFor(gate.plan, orgRole?.role ?? null, tools)
-    const stopWhen = stopWhenFor(gate.plan)
-
-    const result = await thread.streamText(
-      {
-        prompt: contextualPrompt,
-        model: modelFor(mode, gate.plan, byokKey ?? undefined),
-        tools: exposedTools,
-        stopWhen,
-      },
-      { saveStreamDeltas: true },
-    )
-
-    // Draine le flux pour garantir l'exécution complète (outils + génération).
-    await result.consumeStream()
-
-    const usage = await result.usage
-    const toolCalls = await result.toolCalls
-    const inputTokens = usage.inputTokens ?? 0
-    const outputTokens = usage.outputTokens ?? 0
-    const toolsUsed = Array.from(
-      new Set(toolCalls.map((c) => c.toolName)),
-    )
-    const credits = creditsForUsage(inputTokens, outputTokens, mode)
-
-    // Horodatage du fil : toujours. Débit de crédits : UNIQUEMENT hors BYOK (en
-    // BYOK l'appel a consommé la clé de l'utilisateur, pas nos crédits). Les deux
-    // mutations sont indépendantes → en parallèle.
-    const tasks: Promise<unknown>[] = [
-      ctx.runMutation(internal.aiChat.bumpThread, {
-        userId,
-        threadId: args.threadId,
-        toolsUsed,
-        prompt: args.prompt,
+      type: 'message_started',
+      level: 'info',
+      message: 'Message envoyé au copilote',
+      mode,
+      metadata: stringifyMetadata({
+        promptPreview: args.prompt.slice(0, 180),
+        byok: Boolean(byokKey),
       }),
-    ]
-    if (!byokKey) {
-      tasks.push(
-        ctx.runMutation(internal.aiCredits.debit, {
+    })
+
+    try {
+      const { thread } = await copilot.continueThread(ctx, {
+        threadId: args.threadId,
+        userId,
+      })
+
+      const today = new Date().toISOString().slice(0, 10)
+      const contextualPrompt =
+        `Contexte (ne pas répondre à ceci) : date du jour = ${today}.\n\n${args.prompt}`
+
+      const orgRole = await ctx.runQuery(internal.agent.orgReads.orgRole, {
+        userId,
+      })
+      const exposedTools = toolsFor(gate.plan, orgRole?.role ?? null, tools)
+      const stopWhen = stopWhenFor(gate.plan)
+
+      const model = MODELS[mode]
+      const result = await thread.streamText(
+        {
+          prompt: contextualPrompt,
+          model: modelFor(mode, gate.plan, byokKey ?? undefined),
+          tools: exposedTools,
+          stopWhen,
+        },
+        { saveStreamDeltas: true },
+      )
+
+      await result.consumeStream()
+
+      const usage = await result.usage
+      const toolCalls = await result.toolCalls
+      const inputTokens = usage.inputTokens ?? 0
+      const outputTokens = usage.outputTokens ?? 0
+      const toolsUsed = Array.from(new Set(toolCalls.map((c) => c.toolName)))
+      const credits = creditsForUsage(inputTokens, outputTokens, mode)
+
+      const tasks: Promise<unknown>[] = [
+        ctx.runMutation(internal.aiChat.bumpThread, {
           userId,
           threadId: args.threadId,
-          model: MODELS[mode],
-          mode,
-          inputTokens,
-          outputTokens,
-          credits,
           toolsUsed,
+          prompt: args.prompt,
         }),
-      )
+        ctx.runMutation(internal.aiChat.logEvent, {
+          userId,
+          threadId: args.threadId,
+          type: 'message_completed',
+          level: 'info',
+          message: 'Réponse copilote générée',
+          model,
+          mode,
+          metadata: stringifyMetadata({
+            inputTokens,
+            outputTokens,
+            toolsUsed,
+            credits,
+            byok: Boolean(byokKey),
+          }),
+        }),
+      ]
+
+      if (!byokKey) {
+        tasks.push(
+          ctx.runMutation(internal.aiCredits.debit, {
+            userId,
+            threadId: args.threadId,
+            model,
+            mode,
+            inputTokens,
+            outputTokens,
+            credits,
+            toolsUsed,
+          }),
+        )
+      }
+
+      await Promise.all(tasks)
+      return { ok: true }
+    } catch (error) {
+      const message = errorText(error)
+      await Promise.all([
+        ctx.runMutation(internal.aiChat.logEvent, {
+          userId,
+          threadId: args.threadId,
+          type: 'message_failed',
+          level: 'error',
+          message,
+          mode,
+          metadata: stringifyMetadata({
+            promptPreview: args.prompt.slice(0, 180),
+            byok: Boolean(byokKey),
+          }),
+        }),
+        ctx.runMutation(internal.observability.logServerError, {
+          userId,
+          feature: 'copilot',
+          action: 'send_message',
+          message,
+          level: 'error',
+          route: '/app/copilot',
+          metadata: stringifyMetadata({
+            threadId: args.threadId,
+            mode,
+          }),
+        }),
+      ])
+      throw error
     }
-    await Promise.all(tasks)
-    return { ok: true }
   },
 })
 
-/**
- * `api.aiChat.respondApproval` : arbitre une demande d'approbation d'outil
- * d'écriture émise par le copilote. `decision` :
- *  - `once`    : autorise cette fois (le client relance l'action).
- *  - `always`  : autorise et mémorise l'outil dans `alwaysAllow`.
- *  - `deny`    : refuse.
- * Met à jour les préférences de permission si « toujours ».
- */
 export const respondApproval = mutation({
   args: {
     tool: v.string(),
@@ -403,7 +444,16 @@ export const respondApproval = mutation({
   },
   handler: async (ctx, args): Promise<{ approved: boolean }> => {
     const { userId } = await requireUser(ctx)
-    if (args.decision === 'deny') return { approved: false }
+    if (args.decision === 'deny') {
+      await ctx.runMutation(internal.aiChat.logEvent, {
+        userId,
+        type: 'approval_denied',
+        level: 'warning',
+        message: "Action IA refusée par l'utilisateur",
+        tool: args.tool,
+      })
+      return { approved: false }
+    }
 
     if (args.decision === 'always') {
       const doc = await ctx.db
@@ -424,6 +474,20 @@ export const respondApproval = mutation({
         })
       }
     }
+
+    await ctx.runMutation(internal.aiChat.logEvent, {
+      userId,
+      type: 'approval_granted',
+      level: 'info',
+      message:
+        args.decision === 'always'
+          ? 'Action IA autorisée de façon persistante'
+          : 'Action IA autorisée une fois',
+      tool: args.tool,
+      metadata: stringifyMetadata({ decision: args.decision }),
+    })
+
     return { approved: true }
   },
 })
+

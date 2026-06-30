@@ -9,9 +9,19 @@ import { AdminUsersPanel } from '~/components/admin/admin-users-panel'
 import { AdminMetricsPanel } from '~/components/admin/admin-metrics-panel'
 import { AdminFeedbackPanel } from '~/components/admin/admin-feedback-panel'
 import { AdminPaymentsPanel } from '~/components/admin/admin-payments-panel'
+import { AdminIncidentsPanel } from '~/components/admin/admin-incidents-panel'
+import { AdminAiPanel } from '~/components/admin/admin-ai-panel'
+import { AdminUpdatesPanel } from '~/components/admin/admin-updates-panel'
 import { m } from '~/lib/paraglide/messages'
 
-type AdminTab = 'utilisateurs' | 'metriques' | 'feedbacks' | 'paiements'
+type AdminTab =
+  | 'utilisateurs'
+  | 'metriques'
+  | 'feedbacks'
+  | 'paiements'
+  | 'incidents'
+  | 'ia'
+  | 'updates'
 
 export const Route = createFileRoute('/app/admin')({
   component: AdminPage,
@@ -30,6 +40,9 @@ export const Route = createFileRoute('/app/admin')({
       tab === 'metriques' ||
       tab === 'feedbacks' ||
       tab === 'paiements' ||
+      tab === 'incidents' ||
+      tab === 'ia' ||
+      tab === 'updates' ||
       tab === 'utilisateurs'
     ) {
       out.tab = tab
@@ -108,6 +121,9 @@ function AdminContent() {
             <TabsTrigger value="metriques">{m.admin_tab_metrics()}</TabsTrigger>
             <TabsTrigger value="feedbacks">{m.admin_tab_feedbacks()}</TabsTrigger>
             <TabsTrigger value="paiements">{m.admin_tab_payments()}</TabsTrigger>
+            <TabsTrigger value="incidents">Incidents</TabsTrigger>
+            <TabsTrigger value="ia">IA</TabsTrigger>
+            <TabsTrigger value="updates">Updates</TabsTrigger>
           </TabsList>
         </div>
 
@@ -125,6 +141,15 @@ function AdminContent() {
         </TabsContent>
         <TabsContent value="paiements">
           <AdminPaymentsPanel />
+        </TabsContent>
+        <TabsContent value="incidents">
+          <AdminIncidentsPanel />
+        </TabsContent>
+        <TabsContent value="ia">
+          <AdminAiPanel />
+        </TabsContent>
+        <TabsContent value="updates">
+          <AdminUpdatesPanel />
         </TabsContent>
       </Tabs>
     </div>

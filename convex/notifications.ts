@@ -29,6 +29,8 @@ const kindValidator = v.union(
   v.literal('org_invite'),
   v.literal('invite_accepted'),
   v.literal('member_removed'),
+  v.literal('feedback_resolved'),
+  v.literal('product_update'),
 )
 
 /** Garde-fou anti-flood sur la liste renvoyée au client. */
@@ -134,6 +136,7 @@ export async function createNotification(
     title: string
     body: string
     actionUrl?: string
+    actionLabel?: string
     meta?: string
   },
 ): Promise<void> {
@@ -143,6 +146,7 @@ export async function createNotification(
     title: string
     body: string
     actionUrl?: string
+    actionLabel?: string
     meta?: string
     read: boolean
     emailSent: boolean
@@ -157,6 +161,7 @@ export async function createNotification(
     createdAt: Date.now(),
   }
   if (args.actionUrl !== undefined) doc.actionUrl = args.actionUrl
+  if (args.actionLabel !== undefined) doc.actionLabel = args.actionLabel
   if (args.meta !== undefined) doc.meta = args.meta
   await ctx.db.insert('notifications', doc)
 }
@@ -173,6 +178,7 @@ export const create = internalMutation({
     title: v.string(),
     body: v.string(),
     actionUrl: v.optional(v.string()),
+    actionLabel: v.optional(v.string()),
     meta: v.optional(v.string()),
   },
   handler: async (ctx, args): Promise<null> => {

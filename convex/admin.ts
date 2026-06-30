@@ -4,12 +4,15 @@ import { api } from './_generated/api'
 import type { Doc, Id } from './_generated/dataModel'
 import { isAdmin, requireAdmin, type QueryCtx } from './lib/withUser'
 import { PRICING, type PaidPlan } from './lib/pricing'
+import { createNotification } from './notifications'
 import {
   forbiddenError,
   notFoundError,
   validationError,
   type Plan,
 } from './lib/plan'
+import { copilot } from './agent/agent'
+import type { MessageDoc } from '@convex-dev/agent'
 
 /**
  * Back-office /admin · gestion utilisateurs, métriques, feedbacks.
@@ -238,6 +241,7 @@ export const listFeedback = query({
           type: Doc<'feedback'>['type']
           message: string
           context?: string
+          priority?: 'low' | 'medium' | 'high'
           status: Doc<'feedback'>['status']
           adminNote?: string
           createdAt: number
@@ -251,6 +255,7 @@ export const listFeedback = query({
           createdAt: f.createdAt,
         }
         if (f.context) row.context = f.context
+        if (f.priority) row.priority = f.priority
         if (f.adminNote) row.adminNote = f.adminNote
         if (author?.email) row.authorEmail = author.email
         if (author?.name) row.authorName = author.name
@@ -279,7 +284,62 @@ export const updateFeedbackStatus = mutation({
     const note = args.adminNote?.trim()
     if (note) patch.adminNote = note
     await ctx.db.patch(args.id, patch)
+
+    const resolvedNow = existing.status !== 'done' && args.status === 'done'
+    if (resolvedNow) {
+      const body = note
+        ? `Votre retour a été traité. Note de l'équipe : ${note}`
+        : 'Votre retour a été traité par l’équipe produit.'
+      const actionUrl =
+        existing.context && existing.context.startsWith('/app')
+          ? existing.context
+          : undefined
+      await createNotification(ctx, {
+        userId: existing.userId,
+        kind: 'feedback_resolved',
+        title: 'Feedback traité',
+        body,
+        ...(actionUrl ? { actionUrl, actionLabel: 'Ouvrir' } : {}),
+        meta: JSON.stringify({
+          feedbackId: existing._id,
+          type: existing.type,
+          status: args.status,
+        }),
+      })
+    }
     return { ok: true as const }
+  },
+})
+
+export const publishProductUpdate = mutation({
+  args: {
+    title: v.string(),
+    body: v.string(),
+    actionUrl: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx)
+    const title = args.title.trim()
+    const body = args.body.trim()
+    const actionUrl = args.actionUrl?.trim()
+
+    if (!title) throw validationError('Le titre est requis.')
+    if (!body) throw validationError('Le contenu est requis.')
+
+    const users = await allUsers(ctx)
+    let sent = 0
+    for (const user of users) {
+      await createNotification(ctx, {
+        userId: user.authId,
+        kind: 'product_update',
+        title,
+        body,
+        ...(actionUrl ? { actionUrl, actionLabel: 'Voir la mise à jour' } : {}),
+      })
+      sent += 1
+    }
+
+    return { sent }
   },
 })
 
@@ -369,6 +429,16 @@ export const feedbackDetail = query({
       message: string
       status: Doc<'feedback'>['status']
       context?: string
+      pageTitle?: string
+      browser?: string
+      viewport?: string
+      userPlan?: string
+      organizationId?: string
+      entityType?: string
+      entityId?: string
+      priority?: 'low' | 'medium' | 'high'
+      screenshotUrl?: string
+      canContactBack?: boolean
       adminNote?: string
       createdAt: number
     } = {
@@ -379,6 +449,18 @@ export const feedbackDetail = query({
       createdAt: feedback.createdAt,
     }
     if (feedback.context) feedbackOut.context = feedback.context
+    if (feedback.pageTitle) feedbackOut.pageTitle = feedback.pageTitle
+    if (feedback.browser) feedbackOut.browser = feedback.browser
+    if (feedback.viewport) feedbackOut.viewport = feedback.viewport
+    if (feedback.userPlan) feedbackOut.userPlan = feedback.userPlan
+    if (feedback.organizationId) feedbackOut.organizationId = feedback.organizationId
+    if (feedback.entityType) feedbackOut.entityType = feedback.entityType
+    if (feedback.entityId) feedbackOut.entityId = feedback.entityId
+    if (feedback.priority) feedbackOut.priority = feedback.priority
+    if (feedback.screenshotUrl) feedbackOut.screenshotUrl = feedback.screenshotUrl
+    if (feedback.canContactBack !== undefined) {
+      feedbackOut.canContactBack = feedback.canContactBack
+    }
     if (feedback.adminNote) feedbackOut.adminNote = feedback.adminNote
 
     const authorOut: {
@@ -396,6 +478,267 @@ export const feedbackDetail = query({
     if (author?.email && authorOut) authorOut.email = author.email
 
     return { feedback: feedbackOut, author: authorOut }
+  },
+})
+
+function parseJsonObject(raw: string | undefined): Record<string, unknown> | null {
+  if (!raw) return null
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>
+    return parsed && typeof parsed === 'object' ? parsed : null
+  } catch {
+    return null
+  }
+}
+
+function previewFromMessage(message: MessageDoc): string {
+  const parts = (message as any).parts
+  if (!Array.isArray(parts)) return ''
+  const texts = parts
+    .map((part) => {
+      if (!part || typeof part !== 'object') return ''
+      if (part.type === 'text' && typeof part.text === 'string') return part.text
+      return ''
+    })
+    .filter(Boolean)
+  return texts.join('\n').trim()
+}
+
+export const incidentsMetrics = query({
+  args: {},
+  handler: async (ctx) => {
+    await requireAdmin(ctx)
+    const rows = await ctx.db.query('appErrors').collect()
+    const byLevel = { info: 0, warning: 0, error: 0 }
+    const byFeature = new Map<string, number>()
+    let open = 0
+    for (const row of rows) {
+      byLevel[row.level] += 1
+      byFeature.set(row.feature, (byFeature.get(row.feature) ?? 0) + 1)
+      if (row.resolvedAt === undefined) open += 1
+    }
+    return {
+      total: rows.length,
+      open,
+      byLevel,
+      byFeature: Array.from(byFeature.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 6)
+        .map(([feature, count]) => ({ feature, count })),
+    }
+  },
+})
+
+export const listIncidents = query({
+  args: { level: v.optional(v.union(v.literal('all'), v.literal('info'), v.literal('warning'), v.literal('error'))) },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx)
+    const level = args.level
+    const rows =
+      level && level !== 'all'
+        ? await ctx.db
+            .query('appErrors')
+            .withIndex('by_level_created', (q) => q.eq('level', level))
+            .order('desc')
+            .take(100)
+        : await ctx.db
+            .query('appErrors')
+            .withIndex('by_created')
+            .order('desc')
+            .take(100)
+
+    return Promise.all(
+      rows.map(async (row) => {
+        const user =
+          row.userId !== undefined
+            ? await ctx.db
+                .query('users')
+                .withIndex('by_authId', (q) => q.eq('authId', row.userId as string))
+                .unique()
+            : null
+        return {
+          _id: row._id,
+          source: row.source,
+          feature: row.feature,
+          action: row.action,
+          message: row.message,
+          level: row.level,
+          route: row.route,
+          metadata: parseJsonObject(row.metadata),
+          createdAt: row.createdAt,
+          resolvedAt: row.resolvedAt,
+          userName: user?.name,
+          userEmail: user?.email,
+        }
+      }),
+    )
+  },
+})
+
+export const resolveIncident = mutation({
+  args: { id: v.id('appErrors'), resolved: v.boolean() },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx)
+    const row = await ctx.db.get(args.id)
+    if (!row) throw notFoundError('Incident introuvable.')
+    await ctx.db.patch(args.id, {
+      resolvedAt: args.resolved ? Date.now() : undefined,
+    })
+    return { ok: true as const }
+  },
+})
+
+export const aiOverview = query({
+  args: {},
+  handler: async (ctx) => {
+    await requireAdmin(ctx)
+    const [threads, actions, usage, allEvents] = await Promise.all([
+      ctx.db.query('aiThreads').collect(),
+      ctx.db.query('aiActions').collect(),
+      ctx.db.query('aiUsage').withIndex('by_created', (q) => q.gte('createdAt', startOfMonth())).collect(),
+      ctx.db.query('aiEvents').collect(),
+    ])
+    const byType = new Map<string, number>()
+    let failures = 0
+    for (const event of allEvents) {
+      byType.set(event.type, (byType.get(event.type) ?? 0) + 1)
+      if (event.level === 'error') failures += 1
+    }
+
+    const recentThreads = await Promise.all(
+      threads
+        .sort((a, b) => b.lastMessageAt - a.lastMessageAt)
+        .slice(0, 20)
+        .map(async (thread) => {
+          const user = await ctx.db
+            .query('users')
+            .withIndex('by_authId', (q) => q.eq('authId', thread.userId))
+            .unique()
+          return {
+            threadId: thread.threadId,
+            title: thread.title ?? 'Conversation',
+            lastMessageAt: thread.lastMessageAt,
+            createdAt: thread.createdAt,
+            userName: user?.name,
+            userEmail: user?.email ?? thread.userId,
+          }
+        }),
+    )
+
+    const recentEvents = await Promise.all(
+      allEvents
+        .sort((a, b) => b.createdAt - a.createdAt)
+        .slice(0, 50)
+        .map(async (event) => {
+          const user = await ctx.db
+            .query('users')
+            .withIndex('by_authId', (q) => q.eq('authId', event.userId))
+            .unique()
+          return {
+            _id: event._id,
+            userId: event.userId,
+            userName: user?.name,
+            userEmail: user?.email ?? event.userId,
+            threadId: event.threadId,
+            type: event.type,
+            level: event.level,
+            message: event.message,
+            tool: event.tool,
+            model: event.model,
+            mode: event.mode,
+            metadata: parseJsonObject(event.metadata),
+            createdAt: event.createdAt,
+          }
+        }),
+    )
+
+    let credits = 0
+    for (const row of usage) credits += row.creditsDebited
+
+    return {
+      totals: {
+        threads: threads.length,
+        actions: actions.length,
+        failures,
+        credits,
+      },
+      byType: Array.from(byType.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8)
+        .map(([type, count]) => ({ type, count })),
+      recentThreads,
+      recentEvents,
+    }
+  },
+})
+
+export const aiThreadDetail = query({
+  args: { threadId: v.string() },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx)
+    const thread = await ctx.db
+      .query('aiThreads')
+      .withIndex('by_threadId', (q) => q.eq('threadId', args.threadId))
+      .unique()
+    if (!thread) throw notFoundError('Conversation IA introuvable.')
+
+    const user = await ctx.db
+      .query('users')
+      .withIndex('by_authId', (q) => q.eq('authId', thread.userId))
+      .unique()
+
+    const [events, actions] = await Promise.all([
+      ctx.db
+        .query('aiEvents')
+        .withIndex('by_thread', (q) => q.eq('threadId', args.threadId))
+        .collect(),
+      ctx.db
+        .query('aiActions')
+        .withIndex('by_thread', (q) => q.eq('threadId', args.threadId))
+        .collect(),
+    ])
+
+    const paginated = await copilot.listMessages(ctx, {
+      threadId: args.threadId,
+      paginationOpts: { cursor: null, numItems: 40 },
+    })
+
+    return {
+      thread: {
+        threadId: thread.threadId,
+        title: thread.title ?? 'Conversation',
+        lastMessageAt: thread.lastMessageAt,
+        createdAt: thread.createdAt,
+        userName: user?.name,
+        userEmail: user?.email ?? thread.userId,
+      },
+      messages: paginated.page.map((message, index) => ({
+        key: (message as any)._id ?? (message as any).key ?? `${index}`,
+        role: (message as any).role ?? 'assistant',
+        preview: previewFromMessage(message),
+      })),
+      events: events
+        .sort((a, b) => b.createdAt - a.createdAt)
+        .map((event) => ({
+          _id: event._id,
+          type: event.type,
+          level: event.level,
+          message: event.message,
+          tool: event.tool,
+          createdAt: event.createdAt,
+          metadata: parseJsonObject(event.metadata),
+        })),
+      actions: actions
+        .sort((a, b) => b.createdAt - a.createdAt)
+        .map((action) => ({
+          _id: action._id,
+          tool: action.tool,
+          summary: action.summary,
+          entityType: action.entityType,
+          entityId: action.entityId,
+          createdAt: action.createdAt,
+        })),
+    }
   },
 })
 

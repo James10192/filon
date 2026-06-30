@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useAction, useQuery } from 'convex/react'
+import { useAction, useMutation, useQuery } from 'convex/react'
 import { CreditCard, Smartphone } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import { m } from '~/lib/paraglide/messages'
@@ -45,6 +45,7 @@ export function PricingPlans() {
   const [choicePlan, setChoicePlan] = useState<PaidPlan | null>(null)
   const myPlan = useQuery(api.billing.myPlan, {})
   const startCheckout = useAction(api.paystack.startCheckout)
+  const reportError = useMutation(api.observability.reportClientError)
 
   const currentPlan: Plan = myPlan?.plan ?? 'free'
 
@@ -72,6 +73,14 @@ export function PricingPlans() {
       window.location.href = authorizationUrl
     } catch (error) {
       track(EVENTS.checkout_failed, { plan, interval, channel })
+      void reportError({
+        feature: 'billing',
+        action: 'start_checkout',
+        message:
+          error instanceof Error ? error.message : 'Échec initialisation Paystack',
+        route: '/app/tarifs',
+        metadata: JSON.stringify({ plan, interval, channel, recurring }),
+      })
       toast.error(
         errorMessage(error, m.app_checkout_error()),
       )

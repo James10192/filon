@@ -26,6 +26,7 @@ export function useCopilot(onCreditExhausted?: () => void) {
   const renameThread = useMutation(api.aiChat.renameThread)
   const sendMessage = useAction(api.aiChat.sendMessage)
   const respondApproval = useMutation(api.aiChat.respondApproval)
+  const reportError = useMutation(api.observability.reportClientError)
 
   // Reprise du dernier fil au premier chargement (decision 7). Une seule fois :
   // ensuite « Nouveau » / sélection priment.
@@ -60,10 +61,18 @@ export function useCopilot(onCreditExhausted?: () => void) {
           onCreditExhausted?.()
           return
         }
+        void reportError({
+          feature: 'copilot',
+          action: 'send_message',
+          message:
+            error instanceof Error ? error.message : 'Erreur copilote inconnue',
+          route: '/app/copilot',
+          metadata: JSON.stringify({ threadId: id, mode }),
+        })
         toast.error(m.copilot_error())
       }
     },
-    [sendMessage, mode, onCreditExhausted],
+    [sendMessage, mode, onCreditExhausted, reportError],
   )
 
   const send = useCallback(

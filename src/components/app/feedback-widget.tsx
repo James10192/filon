@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useMutation } from 'convex/react'
+import { useMutation, useQuery } from 'convex/react'
 import { useLocation } from '@tanstack/react-router'
 import { MessageSquarePlus } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
@@ -7,7 +7,9 @@ import { m } from '~/lib/paraglide/messages'
 import { cn } from '~/lib/utils'
 import { toast } from '~/components/ui/sonner'
 import { Button } from '~/components/ui/button'
+import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
+import { Switch } from '~/components/ui/switch'
 import { Textarea } from '~/components/ui/textarea'
 import {
   Select,
@@ -37,6 +39,7 @@ import {
  */
 
 type FeedbackType = 'bug' | 'idea' | 'other'
+type FeedbackPriority = 'low' | 'medium' | 'high'
 
 export function FeedbackWidget() {
   const [open, setOpen] = useState(false)
@@ -75,16 +78,24 @@ function FeedbackDialog({
 }) {
   const location = useLocation()
   const submit = useMutation(api.feedback.submit)
+  const reportError = useMutation(api.observability.reportClientError)
+  const myPlan = useQuery(api.billing.myPlan, {})
 
   const [type, setType] = useState<FeedbackType>('bug')
+  const [priority, setPriority] = useState<FeedbackPriority>('medium')
   const [message, setMessage] = useState('')
+  const [screenshotUrl, setScreenshotUrl] = useState('')
+  const [canContactBack, setCanContactBack] = useState(true)
   const [pending, setPending] = useState(false)
 
   // Reset a chaque ouverture pour repartir d'un etat vierge.
   useEffect(() => {
     if (open) {
       setType('bug')
+      setPriority('medium')
       setMessage('')
+      setScreenshotUrl('')
+      setCanContactBack(true)
       setPending(false)
     }
   }, [open])
@@ -102,17 +113,51 @@ function FeedbackDialog({
 
     setPending(true)
     try {
-      // Construction dynamique : aucun champ undefined transmis a Convex.
-      const args: { type: FeedbackType; message: string; context?: string } = {
+      const viewport =
+        typeof window === 'undefined'
+          ? undefined
+          : `${window.innerWidth}x${window.innerHeight}`
+      const browser =
+        typeof navigator === 'undefined' ? undefined : navigator.userAgent
+      const pageTitle =
+        typeof document === 'undefined' ? undefined : document.title
+
+      const args: {
+        type: FeedbackType
+        message: string
+        context?: string
+        pageTitle?: string
+        browser?: string
+        viewport?: string
+        userPlan?: string
+        priority?: FeedbackPriority
+        screenshotUrl?: string
+        canContactBack?: boolean
+      } = {
         type,
         message: trimmed,
+        priority,
+        canContactBack,
       }
       if (context) args.context = context
+      if (pageTitle) args.pageTitle = pageTitle
+      if (browser) args.browser = browser
+      if (viewport) args.viewport = viewport
+      if (myPlan?.plan) args.userPlan = myPlan.plan
+      if (screenshotUrl.trim()) args.screenshotUrl = screenshotUrl.trim()
 
       await submit(args)
       toast.success(m.feedback_success())
       onOpenChange(false)
-    } catch {
+    } catch (error) {
+      void reportError({
+        feature: 'feedback',
+        action: 'submit_feedback',
+        message:
+          error instanceof Error ? error.message : 'Échec envoi feedback',
+        route: context,
+        metadata: JSON.stringify({ type, priority }),
+      })
       toast.error(m.feedback_error())
     } finally {
       setPending(false)
@@ -163,6 +208,49 @@ function FeedbackDialog({
               rows={5}
               required
               autoFocus
+            />
+          </div>
+
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div className="grid gap-2">
+              <Label htmlFor="feedback-priority">Priorité</Label>
+              <Select
+                value={priority}
+                onValueChange={(value) => setPriority(value as FeedbackPriority)}
+              >
+                <SelectTrigger id="feedback-priority" aria-label="Priorité du feedback">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Faible</SelectItem>
+                  <SelectItem value="medium">Normale</SelectItem>
+                  <SelectItem value="high">Haute</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="feedback-screenshot">Capture ou lien</Label>
+              <Input
+                id="feedback-screenshot"
+                value={screenshotUrl}
+                onChange={(event) => setScreenshotUrl(event.target.value)}
+                placeholder="https://..."
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between gap-3 rounded-[var(--radius)] border border-border bg-surface-2 px-3 py-3">
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-fg">Vous pouvez me recontacter</p>
+              <p className="text-xs text-fg-subtle">
+                Autorise le suivi si le retour nécessite une clarification.
+              </p>
+            </div>
+            <Switch
+              checked={canContactBack}
+              onCheckedChange={setCanContactBack}
+              aria-label="Autoriser le recontact"
             />
           </div>
 

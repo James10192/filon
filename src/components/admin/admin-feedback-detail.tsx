@@ -3,11 +3,16 @@ import { useMutation, useQuery } from 'convex/react'
 import {
   Bug,
   CalendarClock,
+  CheckSquare,
+  CircleAlert,
+  Globe,
   Lightbulb,
   Link2,
   Loader2,
   Mail,
   MessageSquare,
+  Monitor,
+  ScanSearch,
   User,
   X,
 } from 'lucide-react'
@@ -36,7 +41,6 @@ import {
   feedbackStatusVariant,
   feedbackTypeVariant,
   formatDate,
-  formatRelative,
   initials,
   planBadgeVariant,
   planLabel,
@@ -118,6 +122,7 @@ export function AdminFeedbackDetail({
         <AuthorCard author={author} />
 
         {feedback.context && <ContextCard context={feedback.context} />}
+        <MetadataCard feedback={feedback} />
 
         <ManageCard
           feedbackId={feedbackId}
@@ -126,6 +131,139 @@ export function AdminFeedbackDetail({
         />
       </div>
     </div>
+  )
+}
+
+function MetadataCard({
+  feedback,
+}: {
+  feedback: {
+    pageTitle?: string
+    browser?: string
+    viewport?: string
+    userPlan?: string
+    organizationId?: string
+    entityType?: string
+    entityId?: string
+    priority?: 'low' | 'medium' | 'high'
+    screenshotUrl?: string
+    canContactBack?: boolean
+  }
+}) {
+  const rows = [
+    feedback.pageTitle
+      ? {
+          key: 'pageTitle',
+          label: 'Page',
+          value: feedback.pageTitle,
+          icon: Monitor,
+        }
+      : null,
+    feedback.browser
+      ? {
+          key: 'browser',
+          label: 'Navigateur',
+          value: feedback.browser,
+          icon: Globe,
+        }
+      : null,
+    feedback.viewport
+      ? {
+          key: 'viewport',
+          label: 'Viewport',
+          value: feedback.viewport,
+          icon: ScanSearch,
+        }
+      : null,
+    feedback.userPlan
+      ? {
+          key: 'userPlan',
+          label: 'Palier',
+          value: feedback.userPlan,
+          icon: CheckSquare,
+        }
+      : null,
+    feedback.organizationId
+      ? {
+          key: 'organizationId',
+          label: 'Organisation',
+          value: feedback.organizationId,
+          icon: Link2,
+        }
+      : null,
+    feedback.entityType || feedback.entityId
+      ? {
+          key: 'entity',
+          label: 'Entité',
+          value: [feedback.entityType, feedback.entityId].filter(Boolean).join(' · '),
+          icon: CircleAlert,
+        }
+      : null,
+  ].filter(Boolean) as Array<{
+    key: string
+    label: string
+    value: string
+    icon: typeof Globe
+  }>
+
+  if (
+    rows.length === 0 &&
+    !feedback.priority &&
+    !feedback.screenshotUrl &&
+    feedback.canContactBack === undefined
+  ) {
+    return null
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-sm">Contexte technique</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {rows.length > 0 && (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {rows.map((row) => {
+              const Icon = row.icon
+              return (
+                <div
+                  key={row.key}
+                  className="rounded-[var(--radius)] border border-border bg-surface-2 px-3 py-3"
+                >
+                  <div className="mb-1 flex items-center gap-2 text-xs text-fg-subtle">
+                    <Icon className="size-3.5" />
+                    <span>{row.label}</span>
+                  </div>
+                  <p className="break-all text-sm text-fg">{row.value}</p>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        <div className="flex flex-wrap gap-2">
+          {feedback.priority && (
+            <Badge variant="outline">Priorité : {feedback.priority}</Badge>
+          )}
+          {feedback.canContactBack !== undefined && (
+            <Badge variant={feedback.canContactBack ? 'success' : 'outline'}>
+              {feedback.canContactBack ? 'Contact autorisé' : 'Contact non souhaité'}
+            </Badge>
+          )}
+          {feedback.screenshotUrl && (
+            <a
+              href={feedback.screenshotUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 text-sm text-accent hover:underline"
+            >
+              <Link2 className="size-3.5" />
+              Capture jointe
+            </a>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   )
 }
 
