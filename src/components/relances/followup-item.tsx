@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useMutation } from 'convex/react'
-import { Check, Loader2, Target, Trash2 } from 'lucide-react'
+import { Link } from '@tanstack/react-router'
+import { Check, Loader2, Pencil, Target, Trash2 } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
 import { m } from '~/lib/paraglide/messages'
@@ -20,6 +21,7 @@ import {
   AlertDialogTrigger,
 } from '~/components/ui/alert-dialog'
 import { dayDelta, relativeLabel } from './format'
+import { FollowupEditDialog } from './followup-edit-dialog'
 
 type Followup = Doc<'followups'> & { opportunityTitle?: string }
 
@@ -100,46 +102,74 @@ export function FollowupItem({ followup }: { followup: Followup }) {
           {followup.opportunityTitle && (
             <span className="inline-flex min-w-0 items-center gap-1 text-xs text-fg-muted">
               <Target className="size-3.5 shrink-0 text-fg-subtle" />
-              <span className="truncate">{followup.opportunityTitle}</span>
+              {followup.opportunityId ? (
+                <Link
+                  to="/app/opportunites"
+                  search={{ view: 'liste', id: followup.opportunityId }}
+                  className="truncate hover:text-fg hover:underline"
+                >
+                  {followup.opportunityTitle}
+                </Link>
+              ) : (
+                <span className="truncate">{followup.opportunityTitle}</span>
+              )}
             </span>
           )}
         </div>
       </div>
 
-      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label={m.dash_followup_remove_aria()}
-            className="shrink-0 text-fg-subtle opacity-0 transition-opacity hover:text-danger focus-visible:opacity-100 group-hover:opacity-100"
-          >
-            <Trash2 className="size-4" />
-          </Button>
-        </AlertDialogTrigger>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{m.dash_followup_remove_confirm_title()}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {m.dash_followup_remove_confirm_desc({ label: followup.label })}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={removing}>{m.dash_followup_cancel()}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={(e) => {
-                e.preventDefault()
-                void onRemove()
-              }}
-              disabled={removing}
-              className="bg-danger text-white hover:bg-danger/90"
+      <div className="flex shrink-0 items-start gap-1 opacity-100 transition-opacity md:opacity-0 md:focus-within:opacity-100 md:group-hover:opacity-100">
+        <FollowupEditDialog
+          followupId={followup._id}
+          initialLabel={followup.label}
+          initialDueDate={followup.dueDate}
+          trigger={
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Modifier la relance"
+              className="text-fg-subtle hover:text-fg"
             >
-              {removing && <Loader2 className="size-4 animate-spin" />}
-              {m.dash_followup_remove_confirm_cta()}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              <Pencil className="size-4" />
+            </Button>
+          }
+        />
+
+        <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+          <AlertDialogTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label={m.dash_followup_remove_aria()}
+              className="text-fg-subtle hover:text-danger"
+            >
+              <Trash2 className="size-4" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{m.dash_followup_remove_confirm_title()}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {m.dash_followup_remove_confirm_desc({ label: followup.label })}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={removing}>{m.dash_followup_cancel()}</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => {
+                  e.preventDefault()
+                  void onRemove()
+                }}
+                disabled={removing}
+                className="bg-danger text-white hover:bg-danger/90"
+              >
+                {removing && <Loader2 className="size-4 animate-spin" />}
+                {m.dash_followup_remove_confirm_cta()}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
     </div>
   )
 }

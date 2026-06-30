@@ -819,6 +819,7 @@ export default defineSchema({
       v.literal('done'),
     ),
     adminNote: v.optional(v.string()),
+    customerNote: v.optional(v.string()),
     createdAt: v.number(),
   })
     .index('by_user', ['userId'])

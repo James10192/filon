@@ -128,6 +128,7 @@ export function AdminFeedbackDetail({
           feedbackId={feedbackId}
           status={feedback.status}
           adminNote={feedback.adminNote}
+          customerNote={feedback.customerNote}
         />
       </div>
     </div>
@@ -355,31 +356,44 @@ function ManageCard({
   feedbackId,
   status,
   adminNote,
+  customerNote,
 }: {
   feedbackId: Id<'feedback'>
   status: FeedbackStatus
   adminNote?: string
+  customerNote?: string
 }) {
   const update = useMutation(api.admin.updateFeedbackStatus)
   const [note, setNote] = useState(adminNote ?? '')
+  const [customerMessage, setCustomerMessage] = useState(customerNote ?? '')
   const [saving, setSaving] = useState(false)
 
   // Resync quand on bascule d'un feedback à l'autre (le composant est remonté
   // via `key`, mais on garde ce filet en cas de mise à jour optimiste).
   useEffect(() => {
     setNote(adminNote ?? '')
-  }, [adminNote])
+    setCustomerMessage(customerNote ?? '')
+  }, [adminNote, customerNote])
 
   const noteDirty = note.trim() !== (adminNote ?? '').trim()
+  const customerDirty = customerMessage.trim() !== (customerNote ?? '').trim()
 
-  async function persist(nextStatus: FeedbackStatus, nextNote: string) {
+  async function persist(
+    nextStatus: FeedbackStatus,
+    nextNote: string,
+    nextCustomerNote: string,
+  ) {
     setSaving(true)
     try {
       const trimmed = nextNote.trim()
+      const trimmedCustomer = nextCustomerNote.trim()
       await update(
-        trimmed
-          ? { id: feedbackId, status: nextStatus, adminNote: trimmed }
-          : { id: feedbackId, status: nextStatus },
+        {
+          id: feedbackId,
+          status: nextStatus,
+          ...(trimmed ? { adminNote: trimmed } : {}),
+          ...(trimmedCustomer ? { customerNote: trimmedCustomer } : {}),
+        },
       )
       toast.success(m.admin_toast_feedback_updated())
     } catch (error) {
@@ -403,7 +417,9 @@ function ManageCard({
           <div className="flex items-center gap-2">
             <Select
               value={status}
-              onValueChange={(value) => persist(value as FeedbackStatus, note)}
+              onValueChange={(value) =>
+                persist(value as FeedbackStatus, note, customerMessage)
+              }
               disabled={saving}
             >
               <SelectTrigger className="h-11" aria-label={m.admin_manage_status_aria()}>
@@ -424,6 +440,21 @@ function ManageCard({
         </div>
 
         <div className="flex flex-col gap-1.5">
+          <span className="text-xs text-fg-subtle">Message client</span>
+          <Textarea
+            value={customerMessage}
+            onChange={(e) => setCustomerMessage(e.target.value)}
+            placeholder="Expliquez ce que l'équipe a compris, ce qui est prévu ou ce qui vient d'être corrigé."
+            rows={4}
+            className="resize-none text-sm"
+            aria-label="Message client"
+          />
+          <p className="text-xs text-fg-subtle">
+            Ce message sera repris dans la notification envoyée à l'utilisateur quand vous passez le retour en cours ou traité.
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
           <span className="text-xs text-fg-subtle">{m.admin_internal_note()}</span>
           <Textarea
             value={note}
@@ -433,19 +464,28 @@ function ManageCard({
             className="resize-none text-sm"
             aria-label={m.admin_internal_note()}
           />
-          {noteDirty && (
+          {(noteDirty || customerDirty) && (
             <div className="flex justify-end">
               <Button
                 size="sm"
                 variant="outline"
                 disabled={saving}
-                onClick={() => persist(status, note)}
+                onClick={() => persist(status, note, customerMessage)}
               >
                 {m.admin_save_note()}
               </Button>
             </div>
           )}
         </div>
+
+        {customerMessage.trim() && (
+          <div className="rounded-[var(--radius)] border border-border bg-surface-2 px-3 py-3">
+            <p className="text-xs font-medium text-fg">Aperçu de la réponse client</p>
+            <p className="mt-1 text-sm text-fg-muted">
+              {customerMessage.trim()}
+            </p>
+          </div>
+        )}
       </CardContent>
     </Card>
   )

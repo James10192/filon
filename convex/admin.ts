@@ -271,6 +271,7 @@ export const updateFeedbackStatus = mutation({
     id: v.id('feedback'),
     status: statusValidator,
     adminNote: v.optional(v.string()),
+    customerNote: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     await requireAdmin(ctx)
@@ -321,6 +322,7 @@ export const opsSetFeedbackStatus = internalMutation({
     id: v.id('feedback'),
     status: statusValidator,
     adminNote: v.optional(v.string()),
+    customerNote: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     await applyFeedbackStatusChange(ctx, args)
@@ -334,6 +336,7 @@ async function applyFeedbackStatusChange(
     id: Id<'feedback'>
     status: Doc<'feedback'>['status']
     adminNote?: string
+    customerNote?: string
   },
 ): Promise<void> {
   const existing = await ctx.db.get(args.id)
@@ -341,11 +344,18 @@ async function applyFeedbackStatusChange(
     throw notFoundError('Feedback introuvable.')
   }
 
-  const patch: { status: Doc<'feedback'>['status']; adminNote?: string } = {
+  const patch: {
+    status: Doc<'feedback'>['status']
+    adminNote?: string
+    customerNote?: string
+  } = {
     status: args.status,
   }
-  const note = args.adminNote?.trim()
-  if (note) patch.adminNote = note
+  const internalNote = args.adminNote?.trim()
+  if (internalNote) patch.adminNote = internalNote
+  const customerNote = args.customerNote?.trim()
+  if (customerNote) patch.customerNote = customerNote
+  const note = customerNote ?? internalNote
   await ctx.db.patch(args.id, patch)
 
   const statusChanged = existing.status !== args.status
@@ -462,6 +472,7 @@ export const feedbackDetail = query({
       screenshotUrl?: string
       canContactBack?: boolean
       adminNote?: string
+      customerNote?: string
       createdAt: number
     } = {
       _id: feedback._id,
@@ -484,6 +495,7 @@ export const feedbackDetail = query({
       feedbackOut.canContactBack = feedback.canContactBack
     }
     if (feedback.adminNote) feedbackOut.adminNote = feedback.adminNote
+    if (feedback.customerNote) feedbackOut.customerNote = feedback.customerNote
 
     const authorOut: {
       userId: string

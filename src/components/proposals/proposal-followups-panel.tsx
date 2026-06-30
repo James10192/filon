@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQuery } from 'convex/react'
-import { Check, Loader2, Plus, Trash2 } from 'lucide-react'
+import { Check, Loader2, Pencil, Plus } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { m } from '~/lib/paraglide/messages'
@@ -12,6 +12,7 @@ import { toast } from '~/components/ui/sonner'
 import { DueBadge } from '~/components/opportunities/chips'
 import { formatDate } from '~/components/opportunities/meta'
 import { DetailPanel } from './detail-panel'
+import { FollowupEditDialog } from '~/components/relances/followup-edit-dialog'
 
 /**
  * Panneau de relances rattachées à une proposition. Reprend l'UX du panneau
@@ -155,6 +156,22 @@ export function ProposalFollowupsPanel({
                   {followup.label}
                 </p>
               </div>
+              <FollowupEditDialog
+                followupId={followup._id}
+                initialLabel={followup.label}
+                initialDueDate={followup.dueDate}
+                trigger={
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="Modifier la relance"
+                    className="shrink-0 text-fg-subtle hover:text-fg"
+                  >
+                    <Pencil className="size-4" />
+                  </Button>
+                }
+              />
               {!followup.done && <DueBadge date={followup.dueDate} />}
             </li>
           ))}
