@@ -43,6 +43,11 @@ import {
   type ProposalStatus,
 } from './proposal-status'
 import {
+  normalizeProposalKind,
+  proposalKindBadge,
+  proposalKindLabel,
+} from './proposal-kind'
+import {
   recipientSummaryLabel,
   type RecipientSummary,
 } from './recipient-status'
@@ -69,6 +74,7 @@ export function ProposalCard({
   const [confirmConvert, setConfirmConvert] = useState(false)
 
   const status = proposal.status as ProposalStatus
+  const kind = normalizeProposalKind(proposal.kind)
   const amount = formatAmount(proposal.amount, proposal.currency)
   const sentAt = formatDate(proposal.sentAt)
   const recipientLabel = recipientSummary
@@ -148,6 +154,10 @@ export function ProposalCard({
         <Badge variant={STATUS_BADGE[status]} className="shrink-0">
           {STATUS_LABELS[status]}
         </Badge>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Badge variant={proposalKindBadge(kind)}>{proposalKindLabel(kind)}</Badge>
       </div>
 
       <p className="line-clamp-3 text-sm leading-relaxed text-fg-muted">

@@ -18,6 +18,11 @@ import {
   STATUS_LABELS,
   type ProposalStatus,
 } from '../proposal-status'
+import {
+  normalizeProposalKind,
+  proposalKindBadge,
+  proposalKindLabel,
+} from '../proposal-kind'
 import { recipientSummaryLabel, summarizeRecipients } from '../recipient-status'
 
 type LoadedProposal = FunctionReturnType<typeof api.proposals.withRecipients>
@@ -40,6 +45,7 @@ export function ProposalDetailContent({
   const [editOpen, setEditOpen] = useState(false)
 
   const status = proposal.status as ProposalStatus
+  const kind = normalizeProposalKind(proposal.kind)
   const amount = formatAmount(proposal.amount, proposal.currency)
   const sentAt = formatDate(proposal.sentAt)
   const { company, recipients } = proposal
@@ -66,6 +72,9 @@ export function ProposalDetailContent({
             <Badge variant={STATUS_BADGE[status]} className="shrink-0">
               {STATUS_LABELS[status]}
             </Badge>
+            <Badge variant={proposalKindBadge(kind)} className="ml-2 shrink-0">
+              {proposalKindLabel(kind)}
+            </Badge>
             <h1 className="break-words text-xl font-semibold tracking-[-0.02em] text-fg sm:text-2xl">
               {proposal.title}
             </h1>
@@ -73,6 +82,7 @@ export function ProposalDetailContent({
           </div>
           <ProposalDetailActions
             proposal={proposalDoc}
+            proposalDetail={proposal}
             onEdit={() => setEditOpen(true)}
           />
         </div>

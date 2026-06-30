@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useMutation } from 'convex/react'
+import type { FunctionReturnType } from 'convex/server'
 import {
   CheckCircle2,
+  Download,
   Loader2,
   MoreHorizontal,
   Pencil,
@@ -36,6 +38,8 @@ import {
 import { toast } from '~/components/ui/sonner'
 import { AskCopilotButton } from '~/components/copilot/ask-copilot-button'
 import { STATUS_LABELS, type ProposalStatus } from './proposal-status'
+import { downloadProposalPdf } from '~/lib/export/proforma-pdf'
+import { normalizeProposalKind } from './proposal-kind'
 
 /**
  * Barre d'actions de la page détail : actions de statut contextuelles,
@@ -43,9 +47,11 @@ import { STATUS_LABELS, type ProposalStatus } from './proposal-status'
  */
 export function ProposalDetailActions({
   proposal,
+  proposalDetail,
   onEdit,
 }: {
   proposal: Doc<'proposals'>
+  proposalDetail: FunctionReturnType<typeof api.proposals.withRecipients>
   onEdit: () => void
 }) {
   const navigate = useNavigate()
@@ -58,6 +64,7 @@ export function ProposalDetailActions({
   const [confirmConvert, setConfirmConvert] = useState(false)
 
   const status = proposal.status as ProposalStatus
+  const kind = normalizeProposalKind(proposal.kind)
 
   async function changeStatus(next: ProposalStatus) {
     if (busy) return
@@ -124,6 +131,16 @@ export function ProposalDetailActions({
           {m.prop_action_convert()}
         </Button>
       )}
+
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={busy}
+        onClick={() => void downloadProposalPdf(proposalDetail)}
+      >
+        <Download className="size-4" />
+        {kind === 'proforma' ? 'Télécharger PDF' : 'Exporter PDF'}
+      </Button>
 
       <Button variant="outline" size="sm" disabled={busy} onClick={onEdit}>
         <Pencil className="size-4" />

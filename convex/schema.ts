@@ -424,6 +424,7 @@ export default defineSchema({
   proposals: defineTable({
     userId: v.string(),
     companyId: v.optional(v.id('companies')),
+    kind: v.optional(v.union(v.literal('proposal'), v.literal('proforma'))),
     title: v.string(),
     pitch: v.string(),
     amount: v.optional(v.number()),

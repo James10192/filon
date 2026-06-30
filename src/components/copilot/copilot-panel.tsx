@@ -3,6 +3,7 @@ import { useQuery } from 'convex/react'
 import { Link } from '@tanstack/react-router'
 import {
   Coins,
+  BookOpen,
   PanelLeft,
   MessagesSquare,
   ListChecks,
@@ -22,8 +23,9 @@ import { CopilotUpsell } from './copilot-upsell'
 import { CopilotThreadsRail } from './copilot-threads-rail'
 import { CopilotActivity } from './copilot-activity'
 import { BriefWidget } from './brief/brief-widget'
+import { CopilotHelp } from './copilot-help'
 
-type Tab = 'conversation' | 'activity' | 'brief'
+type Tab = 'conversation' | 'activity' | 'brief' | 'help'
 
 /** Seed contextuel injecté par un bouton « Demander au copilote ». */
 export type CopilotSeed = { prompt: string; nonce: number }
@@ -138,6 +140,12 @@ export function CopilotPanel({
               icon={<ListChecks className="size-3.5" />}
               label={m.copilot_activity()}
             />
+            <TabButton
+              active={tab === 'help'}
+              onClick={() => setTab('help')}
+              icon={<BookOpen className="size-3.5" />}
+              label="Aide Filon"
+            />
           </div>
         </div>
 
@@ -145,6 +153,8 @@ export function CopilotPanel({
           <div className="min-h-0 flex-1 overflow-y-auto">
             <BriefWidget onNarrate={narrate} onNavigate={onNavigate} />
           </div>
+        ) : tab === 'help' ? (
+          <CopilotHelp onPick={narrate} />
         ) : tab === 'activity' ? (
           <div className="min-h-0 flex-1 overflow-y-auto">
             <CopilotActivity onNavigate={onNavigate} />

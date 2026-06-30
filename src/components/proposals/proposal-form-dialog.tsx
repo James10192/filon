@@ -28,6 +28,12 @@ import { EntityCombobox } from '~/components/ui/entity-combobox'
 import { toast } from '~/components/ui/sonner'
 import { cn } from '~/lib/utils'
 import { STATUS_BADGE } from './proposal-status'
+import {
+  normalizeProposalKind,
+  proposalKindDescription,
+  proposalKindLabel,
+  type ProposalKind,
+} from './proposal-kind'
 
 type ProposalDoc = Doc<'proposals'>
 
@@ -98,6 +104,7 @@ export function ProposalFormDialog({
   const [pitch, setPitch] = useState('')
   const [amount, setAmount] = useState('')
   const [currency, setCurrency] = useState<string>('XOF')
+  const [kind, setKind] = useState<ProposalKind>('proposal')
   const [submitting, setSubmitting] = useState(false)
   const [errors, setErrors] = useState<{ title?: string; pitch?: string }>({})
 
@@ -120,11 +127,13 @@ export function ProposalFormDialog({
     setRecipientCompanyId('__none__')
     setRecipientContactId('__none__')
     if (proposal) {
+      setKind(normalizeProposalKind(proposal.kind))
       setTitle(proposal.title)
       setPitch(proposal.pitch)
       setAmount(proposal.amount !== undefined ? String(proposal.amount) : '')
       setCurrency(proposal.currency ?? 'XOF')
     } else {
+      setKind('proposal')
       setTitle('')
       setPitch('')
       setAmount('')
@@ -185,12 +194,14 @@ export function ProposalFormDialog({
           title: string
           pitch: string
           currency: string
+          kind: ProposalKind
           amount?: number
         } = {
           id: proposal._id,
           title: title.trim(),
           pitch: pitch.trim(),
           currency,
+          kind,
         }
         if (parsedAmount !== undefined) args.amount = parsedAmount
         await update(args)
@@ -201,12 +212,14 @@ export function ProposalFormDialog({
           title: string
           pitch: string
           currency: string
+          kind: ProposalKind
           amount?: number
         } = {
           id: workingId,
           title: title.trim(),
           pitch: pitch.trim(),
           currency,
+          kind,
         }
         if (parsedAmount !== undefined) args.amount = parsedAmount
         await update(args)
@@ -216,11 +229,13 @@ export function ProposalFormDialog({
           title: string
           pitch: string
           currency: string
+          kind: ProposalKind
           amount?: number
         } = {
           title: title.trim(),
           pitch: pitch.trim(),
           currency,
+          kind,
         }
         if (parsedAmount !== undefined) args.amount = parsedAmount
         const id = await create(args)
@@ -312,6 +327,36 @@ export function ProposalFormDialog({
         {/* Section : l'offre */}
         {/* ---------------------------------------------------------------- */}
         <form onSubmit={handleSaveOffer} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <Label>Type de document</Label>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {(['proposal', 'proforma'] as ProposalKind[]).map((value) => {
+                const active = kind === value
+                return (
+                  <Button
+                    key={value}
+                    type="button"
+                    variant="outline"
+                    onClick={() => setKind(value)}
+                    className={cn(
+                      'h-auto min-h-11 flex-col items-start gap-1 px-3 py-3 text-left whitespace-normal transition-colors',
+                      active
+                        ? 'border-accent bg-accent-soft text-fg'
+                        : 'border-border bg-surface text-fg-muted hover:bg-surface-2',
+                    )}
+                  >
+                    <span className="text-sm font-medium text-fg">
+                      {proposalKindLabel(value)}
+                    </span>
+                    <span className="text-xs leading-relaxed text-fg-muted">
+                      {proposalKindDescription(value)}
+                    </span>
+                  </Button>
+                )
+              })}
+            </div>
+          </div>
+
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="proposal-title">{m.prop_field_title()}</Label>
             <Input
@@ -476,14 +521,15 @@ export function ProposalFormDialog({
                         : m.prop_target_person()
                     const active = recipientTarget === key
                     return (
-                      <button
+                      <Button
                         key={key}
                         type="button"
+                        variant="outline"
                         role="radio"
                         aria-checked={active}
                         onClick={() => setRecipientTarget(key)}
                         className={cn(
-                          'flex h-11 items-center justify-center gap-1.5 rounded-[var(--radius)] border px-2 text-sm font-medium transition-colors',
+                          'h-11 items-center justify-center gap-1.5 px-2 text-sm font-medium transition-colors',
                           active
                             ? 'border-accent bg-accent-soft text-accent'
                             : 'border-border bg-surface text-fg-muted hover:bg-surface-2',
@@ -491,7 +537,7 @@ export function ProposalFormDialog({
                       >
                         <Icon className="size-4 shrink-0" />
                         {label}
-                      </button>
+                      </Button>
                     )
                   })}
                 </div>

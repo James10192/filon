@@ -19,6 +19,7 @@ import { ProposalDetailPane } from './detail/detail-pane'
 import { PaneErrorBoundary } from './detail/pane-error-boundary'
 import { ProposalFormDialog } from './proposal-form-dialog'
 import { useLensSet } from '~/components/opportunities/use-stage-labels'
+import { proposalKindActionLabel } from './proposal-kind'
 
 /**
  * Espace de travail Propositions unifié. Un sélecteur de vue (Liste / Tableau)
@@ -49,7 +50,10 @@ export function ProposalWorkspace({
   // Defaut (emploi/recrutement) : texte historique inchange.
   const pageTitle =
     lensSet === 'vente' ? m.prop_page_title_vente() : m.prop_page_title()
-  const newLabel = lensSet === 'vente' ? m.prop_new_vente() : m.prop_new()
+  const newLabel =
+    lensSet === 'vente'
+      ? proposalKindActionLabel('proposal')
+      : m.prop_new()
 
   // Formulaire création / édition, partagé par les deux vues.
   const [dialogOpen, setDialogOpen] = useState(false)

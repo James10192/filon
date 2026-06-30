@@ -13,6 +13,11 @@ import {
   type ProposalStatus,
 } from './proposal-status'
 import {
+  normalizeProposalKind,
+  proposalKindBadge,
+  proposalKindLabel,
+} from './proposal-kind'
+import {
   recipientSummaryLabel,
   type RecipientSummary,
 } from './recipient-status'
@@ -53,9 +58,13 @@ export function buildProposalColumns({
         const p = row.original
         const summary = recipientSummaries?.get(p._id)
         const recipientLabel = summary ? recipientSummaryLabel(summary) : null
+        const kind = normalizeProposalKind(p.kind)
         return (
           <div className="flex flex-col gap-0.5">
-            <span className="truncate font-medium text-fg">{p.title}</span>
+            <div className="flex items-center gap-2">
+              <span className="truncate font-medium text-fg">{p.title}</span>
+              <Badge variant={proposalKindBadge(kind)}>{proposalKindLabel(kind)}</Badge>
+            </div>
             <span className="flex items-center gap-1.5 truncate text-xs text-fg-subtle">
               {recipientLabel ? (
                 <>

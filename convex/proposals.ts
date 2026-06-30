@@ -20,6 +20,11 @@ const proposalStatus = v.union(
   v.literal('refused'),
 )
 
+const proposalKind = v.union(
+  v.literal('proposal'),
+  v.literal('proforma'),
+)
+
 /** Charge une proposition en verifiant qu'elle appartient au user courant. */
 async function getOwnedProposal(
   ctx: QueryCtx | MutationCtx,
@@ -170,6 +175,7 @@ export const create = mutation({
     companyId: v.optional(v.id('companies')),
     amount: v.optional(v.number()),
     currency: v.optional(v.string()),
+    kind: v.optional(proposalKind),
     status: v.optional(proposalStatus),
   },
   handler: async (ctx, args): Promise<Id<'proposals'>> => {
@@ -188,6 +194,7 @@ export const create = mutation({
     // On construit l'objet dynamiquement : jamais `undefined` dans un insert.
     const doc: {
       userId: string
+      kind: 'proposal' | 'proforma'
       title: string
       pitch: string
       status: 'draft' | 'sent' | 'accepted' | 'refused'
@@ -199,6 +206,7 @@ export const create = mutation({
       sentAt?: string
     } = {
       userId,
+      kind: args.kind ?? 'proposal',
       title: args.title,
       pitch: args.pitch,
       status,
@@ -226,6 +234,7 @@ export const update = mutation({
     companyId: v.optional(v.id('companies')),
     amount: v.optional(v.number()),
     currency: v.optional(v.string()),
+    kind: v.optional(proposalKind),
   },
   handler: async (ctx, args): Promise<null> => {
     const { userId } = await requireUser(ctx)
@@ -245,12 +254,14 @@ export const update = mutation({
       companyId?: Id<'companies'>
       amount?: number
       currency?: string
+      kind?: 'proposal' | 'proforma'
     } = { updatedAt: Date.now() }
     if (args.title !== undefined) patch.title = args.title
     if (args.pitch !== undefined) patch.pitch = args.pitch
     if (args.companyId !== undefined) patch.companyId = args.companyId
     if (args.amount !== undefined) patch.amount = args.amount
     if (args.currency !== undefined) patch.currency = args.currency
+    if (args.kind !== undefined) patch.kind = args.kind
 
     await ctx.db.patch(args.id, patch)
     return null
