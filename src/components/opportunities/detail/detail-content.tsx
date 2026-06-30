@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '~/components/ui/dialog'
+import { ProposalFormDialog } from '~/components/proposals/proposal-form-dialog'
 import { ActivityTimeline } from '../activity-timeline'
 import { OpportunityForm, type OpportunityFormSubmit } from '../opportunity-form'
 import { buildUpdateArgs } from '../update-args'
@@ -50,6 +51,7 @@ export function OpportunityDetailContent({
   const { label: stageLabelOf } = useStageLabels()
 
   const [editOpen, setEditOpen] = useState(false)
+  const [proposalOpen, setProposalOpen] = useState(false)
   const [editPending, setEditPending] = useState(false)
   const [removing, setRemoving] = useState(false)
   // Déclencheur de valeur mérité : opportunité passée à « Gagné » à l'instant.
@@ -112,6 +114,7 @@ export function OpportunityDetailContent({
         removing={removing}
         onEdit={() => setEditOpen(true)}
         onRemove={handleRemove}
+        onCreateDocument={() => setProposalOpen(true)}
         onStage={handleStage}
         onPriority={handlePriority}
       />
@@ -196,6 +199,32 @@ export function OpportunityDetailContent({
           />
         </DialogContent>
       </Dialog>
+
+      <ProposalFormDialog
+        open={proposalOpen}
+        onOpenChange={setProposalOpen}
+        proposal={null}
+        initialDraft={{
+          title: opportunity.title,
+          pitch: opportunity.description ?? '',
+          kind: 'proforma',
+        }}
+        initialRecipient={
+          opportunity.effectiveTargetType === 'company' && opportunity.companyId
+            ? {
+                targetType: 'company',
+                companyId: opportunity.companyId,
+                opportunityId: opportunity._id,
+              }
+            : opportunity.effectiveTargetType === 'person' && opportunity.contactId
+              ? {
+                  targetType: 'person',
+                  contactId: opportunity.contactId,
+                  opportunityId: opportunity._id,
+                }
+              : null
+        }
+      />
     </div>
   )
 }

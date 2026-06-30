@@ -5,31 +5,34 @@ import { api } from '../../../convex/_generated/api'
 import { toast } from '~/components/ui/sonner'
 import { m } from '~/lib/paraglide/messages'
 import { aiCreditMessage } from '~/lib/billing/plan'
+import type { AssistantKind } from './assistant-kinds'
 
 export type CopilotMode = 'fast' | 'quality'
 
-/**
- * Orchestrateur du copilote : liste des fils (historique), fil courant, envoi de
- * message (mode rapide/qualité), flux streamé, et arbitrage des approbations
- * d'écriture. À l'ouverture, reprend le dernier fil (continuité) ; « Nouveau »
- * repart d'un fil vierge.
- */
-export function useCopilot(onCreditExhausted?: () => void) {
+export function useCopilot(
+  assistantKind: AssistantKind,
+  onCreditExhausted?: () => void,
+) {
   const [threadId, setThreadId] = useState<string | null>(null)
   const [mode, setMode] = useState<CopilotMode>('fast')
   const [sending, setSending] = useState(false)
   const lastPrompt = useRef<string>('')
   const didInit = useRef(false)
 
-  const threads = useQuery(api.aiChat.listThreads, {}) ?? []
+  const threads =
+    useQuery(api.aiChat.listThreads, { assistantKind }) ?? []
   const createThread = useMutation(api.aiChat.createThread)
   const renameThread = useMutation(api.aiChat.renameThread)
   const sendMessage = useAction(api.aiChat.sendMessage)
-  const respondApproval = useMutation(api.aiChat.respondApproval)
+  const respondApproval = useMutation(api.aiApprovals.respondApproval)
   const reportError = useMutation(api.observability.reportClientError)
 
-  // Reprise du dernier fil au premier chargement (decision 7). Une seule fois :
-  // ensuite « Nouveau » / sélection priment.
+  useEffect(() => {
+    didInit.current = false
+    setThreadId(null)
+    lastPrompt.current = ''
+  }, [assistantKind])
+
   useEffect(() => {
     if (didInit.current || threads.length === 0) return
     didInit.current = true
@@ -41,15 +44,14 @@ export function useCopilot(onCreditExhausted?: () => void) {
     threadId ? { threadId } : 'skip',
     { initialNumItems: 50, stream: true },
   )
-
   const uiMessages = threadId ? toUIMessages(messages.results ?? []) : []
 
   const ensureThread = useCallback(async (): Promise<string> => {
     if (threadId) return threadId
-    const { threadId: id } = await createThread({})
+    const { threadId: id } = await createThread({ assistantKind })
     setThreadId(id)
     return id
-  }, [threadId, createThread])
+  }, [assistantKind, createThread, threadId])
 
   const deliver = useCallback(
     async (id: string, prompt: string) => {
@@ -67,12 +69,12 @@ export function useCopilot(onCreditExhausted?: () => void) {
           message:
             error instanceof Error ? error.message : 'Erreur copilote inconnue',
           route: '/app/copilot',
-          metadata: JSON.stringify({ threadId: id, mode }),
+          metadata: JSON.stringify({ threadId: id, mode, assistantKind }),
         })
         toast.error(m.copilot_error())
       }
     },
-    [sendMessage, mode, onCreditExhausted, reportError],
+    [assistantKind, mode, onCreditExhausted, reportError, sendMessage],
   )
 
   const send = useCallback(
@@ -88,7 +90,7 @@ export function useCopilot(onCreditExhausted?: () => void) {
         setSending(false)
       }
     },
-    [sending, ensureThread, deliver],
+    [deliver, ensureThread, sending],
   )
 
   const approve = useCallback(
@@ -98,16 +100,15 @@ export function useCopilot(onCreditExhausted?: () => void) {
         toast.message(m.copilot_approve_denied())
         return
       }
-      if (threadId && lastPrompt.current) {
-        setSending(true)
-        try {
-          await deliver(threadId, lastPrompt.current)
-        } finally {
-          setSending(false)
-        }
+      if (!threadId || !lastPrompt.current) return
+      setSending(true)
+      try {
+        await deliver(threadId, lastPrompt.current)
+      } finally {
+        setSending(false)
       }
     },
-    [respondApproval, threadId, deliver],
+    [deliver, respondApproval, threadId],
   )
 
   const selectThread = useCallback((id: string) => {
@@ -129,6 +130,7 @@ export function useCopilot(onCreditExhausted?: () => void) {
   return {
     threads,
     threadId,
+    assistantKind,
     mode,
     setMode,
     sending,

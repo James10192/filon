@@ -115,11 +115,17 @@ export function ListView({
         chips={chips}
         onClearAll={reset}
         actions={
-          <ExportButton
-            base="propositions"
-            rows={filtered ?? []}
-            columns={PROPOSAL_COLUMNS}
-          />
+          <>
+            <Button onClick={onCreate} className="shrink-0">
+              <Plus className="size-4" />
+              <span>Créer un document</span>
+            </Button>
+            <ExportButton
+              base="propositions"
+              rows={filtered ?? []}
+              columns={PROPOSAL_COLUMNS}
+            />
+          </>
         }
       >
         <Select
@@ -164,7 +170,7 @@ export function ListView({
             action={
               <Button onClick={onCreate}>
                 <Plus className="size-4" />
-                {m.prop_new()}
+                Créer un document
               </Button>
             }
           />

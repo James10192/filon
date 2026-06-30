@@ -1,5 +1,6 @@
 import { defineSchema, defineTable } from 'convex/server'
 import { v } from 'convex/values'
+import { assistantKindValidator } from './lib/assistant'
 
 /**
  * Filon · modèle de données.
@@ -723,11 +724,13 @@ export default defineSchema({
   aiThreads: defineTable({
     userId: v.string(),
     threadId: v.string(),
+    assistantKind: v.optional(assistantKindValidator),
     title: v.optional(v.string()),
     lastMessageAt: v.number(),
     createdAt: v.number(),
   })
     .index('by_user', ['userId'])
+    .index('by_user_kind_last', ['userId', 'assistantKind', 'lastMessageAt'])
     .index('by_user_last', ['userId', 'lastMessageAt'])
     .index('by_threadId', ['threadId']),
 
@@ -752,6 +755,7 @@ export default defineSchema({
   aiEvents: defineTable({
     userId: v.string(),
     threadId: v.optional(v.string()),
+    assistantKind: v.optional(assistantKindValidator),
     type: v.string(),
     level: v.union(
       v.literal('info'),
@@ -766,8 +770,23 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index('by_user_created', ['userId', 'createdAt'])
+    .index('by_user_kind_created', ['userId', 'assistantKind', 'createdAt'])
     .index('by_level_created', ['level', 'createdAt'])
     .index('by_thread', ['threadId']),
+
+  aiResponseRatings: defineTable({
+    userId: v.string(),
+    threadId: v.string(),
+    assistantKind: assistantKindValidator,
+    messageKey: v.string(),
+    rating: v.union(v.literal('up'), v.literal('down')),
+    comment: v.optional(v.string()),
+    escalatedToSupport: v.optional(v.boolean()),
+    createdAt: v.number(),
+  })
+    .index('by_user_created', ['userId', 'createdAt'])
+    .index('by_thread', ['threadId'])
+    .index('by_thread_message', ['threadId', 'messageKey']),
 
   // Journal d'erreurs applicatives persistantes. Capte les erreurs client
   // importantes (toast + contexte) et les erreurs serveur métier / intégrations
@@ -827,6 +846,201 @@ export default defineSchema({
     .index('by_status', ['status'])
     .index('by_created', ['createdAt'])
     .index('by_status_created', ['status', 'createdAt']),
+
+  supportThreads: defineTable({
+    userId: v.string(),
+    aiThreadId: v.optional(v.string()),
+    feedbackId: v.optional(v.id('feedback')),
+    assistantKind: assistantKindValidator,
+    status: v.union(
+      v.literal('pending'),
+      v.literal('active'),
+      v.literal('released'),
+      v.literal('dismissed'),
+    ),
+    priority: v.union(
+      v.literal('low'),
+      v.literal('medium'),
+      v.literal('high'),
+    ),
+    category: v.optional(v.string()),
+    requestedReason: v.optional(v.string()),
+    assignedAgentId: v.optional(v.string()),
+    assignedAgentName: v.optional(v.string()),
+    lastUserMessageAt: v.optional(v.number()),
+    lastAgentMessageAt: v.optional(v.number()),
+    lastActivityAt: v.number(),
+    requestedAt: v.number(),
+    takenOverAt: v.optional(v.number()),
+    releasedAt: v.optional(v.number()),
+  })
+    .index('by_user_requested', ['userId', 'requestedAt'])
+    .index('by_user_thread', ['userId', 'aiThreadId'])
+    .index('by_status_requested', ['status', 'requestedAt'])
+    .index('by_assigned_status', ['assignedAgentId', 'status'])
+    .index('by_ai_thread', ['aiThreadId']),
+
+  supportMessages: defineTable({
+    userId: v.string(),
+    supportThreadId: v.id('supportThreads'),
+    aiThreadId: v.optional(v.string()),
+    role: v.union(
+      v.literal('user'),
+      v.literal('agent'),
+      v.literal('system'),
+    ),
+    via: v.union(v.literal('ai'), v.literal('human')),
+    body: v.string(),
+    actorUserId: v.optional(v.string()),
+    actorName: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index('by_supportThread', ['supportThreadId'])
+    .index('by_user_created', ['userId', 'createdAt'])
+    .index('by_ai_thread', ['aiThreadId']),
+
+  supportPresence: defineTable({
+    supportThreadId: v.id('supportThreads'),
+    agentUserId: v.string(),
+    lastSeenAt: v.number(),
+  })
+    .index('by_support_agent', ['supportThreadId', 'agentUserId'])
+    .index('by_agent_seen', ['agentUserId', 'lastSeenAt']),
+
+  aiMemories: defineTable({
+    userId: v.string(),
+    organizationId: v.optional(v.string()),
+    assistantKind: v.optional(assistantKindValidator),
+    scope: v.union(v.literal('user'), v.literal('organization')),
+    category: v.union(
+      v.literal('preference'),
+      v.literal('activity'),
+      v.literal('goal'),
+      v.literal('organization'),
+      v.literal('commercial_posture'),
+      v.literal('support_signal'),
+    ),
+    key: v.string(),
+    value: v.string(),
+    source: v.union(v.literal('manual'), v.literal('auto')),
+    confidence: v.optional(v.number()),
+    updatedAt: v.number(),
+    createdAt: v.number(),
+  })
+    .index('by_user_scope', ['userId', 'scope'])
+    .index('by_user_key', ['userId', 'key'])
+    .index('by_org_scope', ['organizationId', 'scope']),
+
+  conversationMemory: defineTable({
+    userId: v.string(),
+    organizationId: v.optional(v.string()),
+    threadId: v.optional(v.string()),
+    assistantKind: assistantKindValidator,
+    scope: v.union(v.literal('user'), v.literal('organization')),
+    summary: v.string(),
+    keywords: v.array(v.string()),
+    embeddingStatus: v.union(
+      v.literal('pending'),
+      v.literal('ready'),
+      v.literal('unavailable'),
+    ),
+    embedding: v.optional(v.array(v.number())),
+    source: v.union(
+      v.literal('chat'),
+      v.literal('support'),
+      v.literal('feedback'),
+      v.literal('product_usage'),
+    ),
+    createdAt: v.number(),
+  })
+    .index('by_user_created', ['userId', 'createdAt'])
+    .index('by_user_thread', ['userId', 'threadId'])
+    .index('by_org_created', ['organizationId', 'createdAt']),
+
+  memoryExtractionRuns: defineTable({
+    userId: v.string(),
+    threadId: v.optional(v.string()),
+    supportThreadId: v.optional(v.id('supportThreads')),
+    source: v.union(
+      v.literal('chat'),
+      v.literal('support'),
+      v.literal('feedback'),
+      v.literal('product_usage'),
+    ),
+    status: v.union(
+      v.literal('pending'),
+      v.literal('completed'),
+      v.literal('failed'),
+      v.literal('skipped'),
+    ),
+    summary: v.optional(v.string()),
+    error: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index('by_user_created', ['userId', 'createdAt'])
+    .index('by_thread_created', ['threadId', 'createdAt']),
+
+  knowledgeSources: defineTable({
+    slug: v.string(),
+    label: v.string(),
+    kind: v.union(
+      v.literal('public_docs'),
+      v.literal('local_docs'),
+      v.literal('product_update'),
+      v.literal('manual'),
+    ),
+    url: v.optional(v.string()),
+    enabled: v.boolean(),
+    lastSyncedAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index('by_slug', ['slug']),
+
+  knowledgeDocuments: defineTable({
+    sourceId: v.id('knowledgeSources'),
+    slug: v.string(),
+    title: v.string(),
+    url: v.optional(v.string()),
+    body: v.string(),
+    checksum: v.string(),
+    lastSyncedAt: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_source', ['sourceId'])
+    .index('by_source_slug', ['sourceId', 'slug']),
+
+  knowledgeChunks: defineTable({
+    sourceId: v.id('knowledgeSources'),
+    documentId: v.id('knowledgeDocuments'),
+    chunkIndex: v.number(),
+    title: v.optional(v.string()),
+    text: v.string(),
+    keywords: v.array(v.string()),
+    embeddingStatus: v.union(
+      v.literal('pending'),
+      v.literal('ready'),
+      v.literal('unavailable'),
+    ),
+    embedding: v.optional(v.array(v.number())),
+    createdAt: v.number(),
+  })
+    .index('by_document', ['documentId'])
+    .index('by_source', ['sourceId']),
+
+  knowledgeSyncRuns: defineTable({
+    sourceId: v.id('knowledgeSources'),
+    status: v.union(
+      v.literal('pending'),
+      v.literal('completed'),
+      v.literal('failed'),
+    ),
+    documentsSynced: v.number(),
+    chunksSynced: v.number(),
+    error: v.optional(v.string()),
+    createdAt: v.number(),
+    completedAt: v.optional(v.number()),
+  }).index('by_source_created', ['sourceId', 'createdAt']),
 
   // --- Équipe : organisations & membres (surcouche visibilité, additif) ---
   // Le mono-utilisateur reste intact : chaque membre garde SON pipeline scopé

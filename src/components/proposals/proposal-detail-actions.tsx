@@ -113,6 +113,14 @@ export function ProposalDetailActions({
     }
   }
 
+  async function handleDownloadPdf() {
+    try {
+      await downloadProposalPdf(proposalDetail)
+    } catch {
+      toast.error("L'export PDF a échoué.")
+    }
+  }
+
   return (
     <div className="flex shrink-0 flex-wrap items-center gap-2">
       <AskCopilotButton
@@ -136,7 +144,7 @@ export function ProposalDetailActions({
         variant="outline"
         size="sm"
         disabled={busy}
-        onClick={() => void downloadProposalPdf(proposalDetail)}
+        onClick={() => void handleDownloadPdf()}
       >
         <Download className="size-4" />
         {kind === 'proforma' ? 'Télécharger PDF' : 'Exporter PDF'}

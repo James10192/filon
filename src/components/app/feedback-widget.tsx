@@ -42,7 +42,9 @@ type FeedbackType = 'bug' | 'idea' | 'other'
 type FeedbackPriority = 'low' | 'medium' | 'high'
 
 export function FeedbackWidget() {
+  const location = useLocation()
   const [open, setOpen] = useState(false)
+  const isFullscreenCopilot = location.pathname === '/app/copilot'
 
   return (
     <>
@@ -57,7 +59,9 @@ export function FeedbackWidget() {
           'hover:bg-surface-2 hover:text-fg',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-ring)]',
           // Au-dessus de la bottombar mobile (~3.5rem + safe-area) ; coin bas en desktop.
-          'bottom-[calc(4.5rem+env(safe-area-inset-bottom))] lg:bottom-5',
+          isFullscreenCopilot
+            ? 'bottom-[calc(8rem+env(safe-area-inset-bottom))] lg:bottom-24'
+            : 'bottom-[calc(4.5rem+env(safe-area-inset-bottom))] lg:bottom-5',
         )}
       >
         <MessageSquarePlus className="size-4 text-accent" />

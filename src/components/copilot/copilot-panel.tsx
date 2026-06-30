@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useQuery } from 'convex/react'
+import { useMutation, useQuery } from 'convex/react'
 import { Link } from '@tanstack/react-router'
 import {
   Coins,
@@ -9,13 +9,16 @@ import {
   ListChecks,
   Sparkles,
   Sun,
+  LifeBuoy,
 } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import { m } from '~/lib/paraglide/messages'
 import { cn } from '~/lib/utils'
+import { toast } from '~/components/ui/sonner'
 import { Button } from '~/components/ui/button'
 import { Skeleton } from '~/components/ui/skeleton'
 import { useCopilot } from './use-copilot'
+import { CopilotAssistantSwitcher } from './copilot-assistant-switcher'
 import { CopilotCredits } from './copilot-credits'
 import { CopilotConversation } from './copilot-conversation'
 import { CopilotPrompt } from './copilot-prompt'
@@ -24,21 +27,11 @@ import { CopilotThreadsRail } from './copilot-threads-rail'
 import { CopilotActivity } from './copilot-activity'
 import { BriefWidget } from './brief/brief-widget'
 import { CopilotHelp } from './copilot-help'
+import type { AssistantKind } from './assistant-kinds'
 
 type Tab = 'conversation' | 'activity' | 'brief' | 'help'
-
-/** Seed contextuel injecté par un bouton « Demander au copilote ». */
 export type CopilotSeed = { prompt: string; nonce: number }
 
-/**
- * Hub copilote assemblé : rail d'historique (repliable) + conversation streamée
- * ou journal d'actions, plus crédits et saisie. Réutilisé par le tiroir et la
- * route plein écran. Gating crédits/accès géré ici.
- *
- * `seed` (optionnel) : prompt contextuel injecté depuis une page. À sa
- * réception, on bascule sur l'onglet conversation, on démarre un nouveau fil et
- * on pré-remplit la saisie (l'utilisateur valide l'envoi).
- */
 export function CopilotPanel({
   onNavigate,
   seed = null,
@@ -46,13 +39,11 @@ export function CopilotPanel({
 }: {
   onNavigate?: () => void
   seed?: CopilotSeed | null
-  /** Onglet d'ouverture (« brief » pour l'entrée « Brief du jour »). */
   initialTab?: Tab
 }) {
   const credits = useQuery(api.aiCredits.myCredits, {})
+  const [assistantKind, setAssistantKind] = useState<AssistantKind>('support')
   const [exhausted, setExhausted] = useState(false)
-  // Rail d'historique ouvert par défaut sur grand écran, replié sur mobile (où
-  // il occuperait la moitié de la largeur). `matchMedia` côté client uniquement.
   const [railOpen, setRailOpen] = useState(
     () =>
       typeof window === 'undefined' ||
@@ -60,19 +51,25 @@ export function CopilotPanel({
   )
   const [tab, setTab] = useState<Tab>(initialTab ?? 'conversation')
   const [draft, setDraft] = useState('')
-  const copilot = useCopilot(() => setExhausted(true))
 
-  // Consomme un seed (nonce) : nouveau fil + pré-remplissage de la saisie.
+  const copilot = useCopilot(assistantKind, () => setExhausted(true))
+  const supportState = useQuery(
+    api.support.supportLiveThread,
+    assistantKind === 'support' && copilot.threadId
+      ? { aiThreadId: copilot.threadId }
+      : 'skip',
+  )
+  const requestHandoff = useMutation(api.support.requestHandoff)
+  const supportUserSend = useMutation(api.support.supportUserSend)
+  const rateResponse = useMutation(api.aiRatings.rateResponse)
+
   useEffect(() => {
     if (!seed) return
     setTab('conversation')
     copilot.newThread()
     setDraft(seed.prompt)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seed?.nonce])
 
-  // Narration « Priorise ma journée » : seed la saisie de la conversation
-  // (l'utilisateur valide l'envoi : aucune consommation surprise de crédits).
   const narrate = (prompt: string) => {
     copilot.newThread()
     setDraft(prompt)
@@ -85,6 +82,49 @@ export function CopilotPanel({
   }
 
   const showBrief = credits.plan === 'copilot_max'
+  const canCoach =
+    credits.plan === 'copilot' || credits.plan === 'copilot_max'
+  const supportOpen =
+    assistantKind === 'support' &&
+    !!supportState &&
+    (supportState.thread.status === 'pending' ||
+      supportState.thread.status === 'active')
+
+  async function handleSubmit(text: string) {
+    if (supportOpen && supportState) {
+      await supportUserSend({
+        supportThreadId: supportState.thread._id,
+        body: text,
+      })
+      setDraft('')
+      return
+    }
+    await copilot.send(text)
+    setDraft('')
+  }
+
+  async function handleRequestHandoff() {
+    if (assistantKind !== 'support' || !copilot.threadId) return
+    await requestHandoff({
+      aiThreadId: copilot.threadId,
+      assistantKind: 'support',
+      priority: 'medium',
+    })
+    toast.success('Votre demande a ete transmise au support.')
+  }
+
+  async function handleRate(messageKey: string, rating: 'up' | 'down') {
+    if (!copilot.threadId) return
+    await rateResponse({
+      threadId: copilot.threadId,
+      messageKey,
+      rating,
+      escalateToSupport: rating === 'down' && assistantKind === 'support',
+    })
+    if (rating === 'down' && assistantKind === 'support') {
+      toast.message('Retour enregistre, vous pouvez demander un agent si besoin.')
+    }
+  }
 
   return (
     <div className="flex h-full min-h-0">
@@ -112,7 +152,7 @@ export function CopilotPanel({
         <div className="flex shrink-0 items-center gap-1 border-b border-border px-2 py-1.5">
           <button
             type="button"
-            onClick={() => setRailOpen((v) => !v)}
+            onClick={() => setRailOpen((value) => !value)}
             aria-label={m.copilot_history()}
             aria-pressed={railOpen}
             className="flex size-8 items-center justify-center rounded-[var(--radius-sm)] text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg"
@@ -161,7 +201,24 @@ export function CopilotPanel({
           </div>
         ) : (
           <>
-            <div className="shrink-0 border-b border-border p-3">
+            <div className="shrink-0 space-y-3 border-b border-border p-3">
+              <CopilotAssistantSwitcher
+                value={assistantKind}
+                onChange={setAssistantKind}
+                canCoach={canCoach}
+              />
+              {assistantKind === 'coach' && (
+                <div className="rounded-[var(--radius)] border border-border bg-surface-2 px-3 py-2 text-sm text-fg-muted">
+                  Le coach reste 100 % IA pour l'instant, aucun coach humain
+                  n'est disponible aujourd'hui.
+                </div>
+              )}
+              {assistantKind === 'support' && supportState?.thread.status === 'pending' && (
+                <div className="flex items-center gap-2 rounded-[var(--radius)] border border-accent/20 bg-accent/5 px-3 py-2 text-sm text-fg-muted">
+                  <LifeBuoy className="size-4 text-accent" />
+                  Votre demande de relais humain est en attente.
+                </div>
+              )}
               <CopilotCredits />
             </div>
             <div className="relative flex min-h-0 flex-1 flex-col">
@@ -172,9 +229,18 @@ export function CopilotPanel({
               <CopilotConversation
                 messages={copilot.uiMessages}
                 sending={copilot.sending}
-                onPick={copilot.send}
+                onPick={handleSubmit}
                 onDecision={copilot.approve}
                 onNavigate={onNavigate}
+                assistantKind={assistantKind}
+                threadId={copilot.threadId}
+                supportState={
+                  assistantKind === 'support' ? (supportState ?? null) : null
+                }
+                onRate={handleRate}
+                onRequestHandoff={
+                  assistantKind === 'support' ? handleRequestHandoff : undefined
+                }
               />
             </div>
             <div className="shrink-0 space-y-2.5 border-t border-border p-3">
@@ -202,12 +268,7 @@ export function CopilotPanel({
                         {m.copilot_fair_use_desc()}
                       </p>
                     </div>
-                    <Button
-                      asChild
-                      size="sm"
-                      variant="outline"
-                      className="shrink-0"
-                    >
+                    <Button asChild size="sm" variant="outline" className="shrink-0">
                       <Link to="/app/tarifs" onClick={onNavigate}>
                         {m.copilot_recharge()}
                       </Link>
@@ -219,7 +280,7 @@ export function CopilotPanel({
                 mode={copilot.mode}
                 onModeChange={copilot.setMode}
                 sending={copilot.sending}
-                onSubmit={copilot.send}
+                onSubmit={handleSubmit}
                 value={draft}
                 onValueChange={setDraft}
               />

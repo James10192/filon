@@ -26,10 +26,10 @@ function recipientName(proposal: LoadedProposal): string {
 export async function downloadProposalPdf(
   proposal: LoadedProposal,
 ): Promise<void> {
-  const { default: JsPDF } = await import('jspdf')
+  const { jsPDF } = await import('jspdf')
 
   const kind = normalizeProposalKind(proposal.kind)
-  const doc = new JsPDF({ unit: 'mm', format: 'a4' })
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   const marginX = 18
   let y = 20
 
@@ -95,5 +95,13 @@ export async function downloadProposalPdf(
     .toLowerCase()
     .replace(/[^a-z0-9]+/gi, '-')
     .replace(/^-+|-+$/g, '')
-  doc.save(`filon-${kind}-${safeTitle || 'document'}-${stamp}.pdf`)
+  const blob = doc.output('blob')
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = `filon-${kind}-${safeTitle || 'document'}-${stamp}.pdf`
+  document.body.append(anchor)
+  anchor.click()
+  anchor.remove()
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000)
 }

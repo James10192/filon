@@ -19,7 +19,6 @@ import { ProposalDetailPane } from './detail/detail-pane'
 import { PaneErrorBoundary } from './detail/pane-error-boundary'
 import { ProposalFormDialog } from './proposal-form-dialog'
 import { useLensSet } from '~/components/opportunities/use-stage-labels'
-import { proposalKindActionLabel } from './proposal-kind'
 
 /**
  * Espace de travail Propositions unifié. Un sélecteur de vue (Liste / Tableau)
@@ -50,10 +49,7 @@ export function ProposalWorkspace({
   // Defaut (emploi/recrutement) : texte historique inchange.
   const pageTitle =
     lensSet === 'vente' ? m.prop_page_title_vente() : m.prop_page_title()
-  const newLabel =
-    lensSet === 'vente'
-      ? proposalKindActionLabel('proposal')
-      : m.prop_new()
+  const newLabel = 'Créer un document'
 
   // Formulaire création / édition, partagé par les deux vues.
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -103,7 +99,7 @@ export function ProposalWorkspace({
             <ViewSwitcher value={view} onChange={onViewChange} />
             <Button onClick={openCreate} className="shrink-0">
               <Plus className="size-4" />
-              <span className="hidden sm:inline">{newLabel}</span>
+              <span>{newLabel}</span>
             </Button>
           </>
         }

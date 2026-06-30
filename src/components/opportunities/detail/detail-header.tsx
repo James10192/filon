@@ -1,6 +1,7 @@
 import type { FunctionReturnType } from 'convex/server'
 import {
   ExternalLink,
+  FileText,
   Pencil,
   MapPin,
   Coins,
@@ -40,6 +41,7 @@ export function DetailHeader({
   removing,
   onEdit,
   onRemove,
+  onCreateDocument,
   onStage,
   onPriority,
 }: {
@@ -47,6 +49,7 @@ export function DetailHeader({
   removing: boolean
   onEdit: () => void
   onRemove: () => void
+  onCreateDocument: () => void
   onStage: (next: Stage) => void
   onPriority: (next: Priority) => void
 }) {
@@ -78,6 +81,16 @@ export function DetailHeader({
         </div>
         <div className="flex shrink-0 items-center gap-1">
           <AskCopilotButton seed={seed} variant="icon" />
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label="Créer un document"
+            title="Créer un document"
+            className="size-11 p-0 sm:size-9"
+            onClick={onCreateDocument}
+          >
+            <FileText className="size-4" />
+          </Button>
           <Button
             variant="ghost"
             size="sm"

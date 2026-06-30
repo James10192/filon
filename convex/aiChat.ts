@@ -14,7 +14,12 @@ import {
   requireUserFromAction,
   requireCopilot,
 } from './lib/withUser'
-import { forbiddenError, notFoundError, allowsQualityModel } from './lib/plan'
+import {
+  forbiddenError,
+  notFoundError,
+  allowsQualityModel,
+  planLimitError,
+} from './lib/plan'
 import { creditsForUsage } from './lib/credits'
 import { readCreditState, ensureAiBudget, type AiBudget } from './lib/aiGate'
 import { decryptSecret } from './lib/crypto'
@@ -24,6 +29,8 @@ import { copilot } from './agent/agent'
 import { tools } from './agent/tools'
 import { toolsFor, stopWhenFor } from './agent/gating'
 import { modelFor, MODELS, type AiMode } from './agent/models'
+import { assistantKindValidator } from './lib/assistant'
+import { buildContextualPrompt, allowsCoach } from './lib/aiChatRuntime'
 
 const modeValidator = v.union(v.literal('fast'), v.literal('quality'))
 
@@ -39,6 +46,7 @@ export const recordThread = internalMutation({
   args: {
     userId: v.string(),
     threadId: v.string(),
+    assistantKind: assistantKindValidator,
     title: v.optional(v.string()),
   },
   handler: async (ctx, args): Promise<null> => {
@@ -46,6 +54,7 @@ export const recordThread = internalMutation({
     const doc: Record<string, unknown> = {
       userId: args.userId,
       threadId: args.threadId,
+      assistantKind: args.assistantKind,
       lastMessageAt: now,
       createdAt: now,
     }
@@ -61,52 +70,54 @@ export const recordThread = internalMutation({
 const TOOL_TITLE: Record<string, string> = {
   summarize_pipeline: 'Analyse du pipeline',
   pipeline_stats: 'Analyse du pipeline',
-  list_opportunities: "Recherche d'opportunités",
-  search_opportunities: "Recherche d'opportunités",
+  list_opportunities: "Recherche d'opportunites",
+  search_opportunities: "Recherche d'opportunites",
   list_proposals: 'Revue des propositions',
-  due_followups: 'Relances à faire',
+  due_followups: 'Relances a faire',
   find_company: 'Recherche carnet',
   find_contact: 'Recherche carnet',
-  create_opportunity: 'Nouvelle opportunité',
-  schedule_followup: 'Relance planifiée',
-  update_opportunity_stage: 'Mise à jour du pipeline',
+  create_opportunity: 'Nouvelle opportunite',
+  schedule_followup: 'Relance planifiee',
+  update_opportunity_stage: 'Mise a jour du pipeline',
   draft_application: 'Brouillon de candidature',
-  add_activity: 'Note ajoutée',
+  add_activity: 'Note ajoutee',
 }
 
 function deriveTitle(toolsUsed: string[], prompt: string): string {
-  for (const t of toolsUsed) {
-    if (TOOL_TITLE[t]) return TOOL_TITLE[t]
+  for (const toolName of toolsUsed) {
+    if (TOOL_TITLE[toolName]) return TOOL_TITLE[toolName]
   }
   const clean = prompt.trim().replace(/\s+/g, ' ')
   if (!clean) return 'Conversation'
-  return clean.length > 48 ? `${clean.slice(0, 48)}…` : clean
+  return clean.length > 48 ? `${clean.slice(0, 48)}...` : clean
 }
 
 export const bumpThread = internalMutation({
   args: {
     userId: v.string(),
     threadId: v.string(),
+    assistantKind: v.optional(assistantKindValidator),
     toolsUsed: v.optional(v.array(v.string())),
     prompt: v.optional(v.string()),
   },
   handler: async (
     ctx,
-    { userId, threadId, toolsUsed, prompt },
+    { userId, threadId, assistantKind, toolsUsed, prompt },
   ): Promise<null> => {
     const doc = await ctx.db
       .query('aiThreads')
       .withIndex('by_threadId', (q) => q.eq('threadId', threadId))
       .unique()
-    if (doc && doc.userId === userId) {
-      const patch: { lastMessageAt: number; title?: string } = {
-        lastMessageAt: Date.now(),
-      }
-      if (!doc.title && prompt !== undefined) {
-        patch.title = deriveTitle(toolsUsed ?? [], prompt)
-      }
-      await ctx.db.patch(doc._id, patch)
+    if (!doc || doc.userId !== userId) return null
+
+    const patch: Record<string, unknown> = { lastMessageAt: Date.now() }
+    if (assistantKind !== undefined && doc.assistantKind !== assistantKind) {
+      patch.assistantKind = assistantKind
     }
+    if (!doc.title && prompt !== undefined) {
+      patch.title = deriveTitle(toolsUsed ?? [], prompt)
+    }
+    await ctx.db.patch(doc._id, patch)
     return null
   },
 })
@@ -142,6 +153,7 @@ export const logEvent = internalMutation({
   args: {
     userId: v.string(),
     threadId: v.optional(v.string()),
+    assistantKind: v.optional(assistantKindValidator),
     type: v.string(),
     level: v.union(v.literal('info'), v.literal('warning'), v.literal('error')),
     message: v.string(),
@@ -159,6 +171,7 @@ export const logEvent = internalMutation({
       createdAt: Date.now(),
     }
     if (args.threadId !== undefined) doc.threadId = args.threadId
+    if (args.assistantKind !== undefined) doc.assistantKind = args.assistantKind
     if (args.tool !== undefined) doc.tool = args.tool
     if (args.model !== undefined) doc.model = args.model
     if (args.mode !== undefined) doc.mode = args.mode
@@ -211,11 +224,15 @@ export const renameThread = mutation({
 })
 
 export const createThread = mutation({
-  args: { title: v.optional(v.string()) },
+  args: {
+    title: v.optional(v.string()),
+    assistantKind: v.optional(assistantKindValidator),
+  },
   handler: async (ctx, args): Promise<{ threadId: string }> => {
     const { userId } = await requireUser(ctx)
     await requireCopilot(ctx, userId)
     await ctx.runMutation(internal.aiCredits.ensureCredits, { userId })
+    const assistantKind = args.assistantKind ?? 'pipeline'
 
     const { threadId } = await copilot.createThread(ctx, {
       userId,
@@ -224,6 +241,7 @@ export const createThread = mutation({
     await ctx.runMutation(internal.aiChat.recordThread, {
       userId,
       threadId,
+      assistantKind,
       ...(args.title !== undefined ? { title: args.title } : {}),
     })
     return { threadId }
@@ -231,14 +249,17 @@ export const createThread = mutation({
 })
 
 export const listThreads = query({
-  args: {},
-  handler: async (ctx): Promise<Doc<'aiThreads'>[]> => {
+  args: { assistantKind: v.optional(assistantKindValidator) },
+  handler: async (ctx, args): Promise<Doc<'aiThreads'>[]> => {
     const { userId } = await requireUser(ctx)
-    return ctx.db
+    const rows = await ctx.db
       .query('aiThreads')
       .withIndex('by_user_last', (q) => q.eq('userId', userId))
       .order('desc')
       .collect()
+    return args.assistantKind
+      ? rows.filter((row) => row.assistantKind === args.assistantKind)
+      : rows
   },
 })
 
@@ -254,7 +275,7 @@ export const listMessages = query({
       .query('aiThreads')
       .withIndex('by_threadId', (q) => q.eq('threadId', args.threadId))
       .unique()
-    if (!mirror || mirror.userId !== userId) throw forbiddenError('Non autorisé')
+    if (!mirror || mirror.userId !== userId) throw forbiddenError('Non autorise')
 
     const paginated: PaginationResult<MessageDoc> = await copilot.listMessages(
       ctx,
@@ -268,6 +289,18 @@ export const listMessages = query({
       streamArgs: args.streamArgs,
     })
     return { ...paginated, streams }
+  },
+})
+
+export const threadMirror = internalQuery({
+  args: { userId: v.string(), threadId: v.string() },
+  handler: async (ctx, args) => {
+    const doc = await ctx.db
+      .query('aiThreads')
+      .withIndex('by_threadId', (q) => q.eq('threadId', args.threadId))
+      .unique()
+    if (!doc || doc.userId !== args.userId) return null
+    return doc
   },
 })
 
@@ -289,8 +322,19 @@ export const sendMessage = action({
   handler: async (ctx, args): Promise<{ ok: true }> => {
     const { userId } = await requireUserFromAction(ctx)
     const requested: AiMode = args.mode ?? 'fast'
+    const mirror = await ctx.runQuery(internal.aiChat.threadMirror, {
+      userId,
+      threadId: args.threadId,
+    })
+    if (!mirror) throw forbiddenError('Conversation introuvable')
+    const assistantKind = mirror.assistantKind ?? 'pipeline'
 
     const gate = await ctx.runQuery(internal.aiChat.aiGate, { userId })
+    if (assistantKind === 'coach' && !allowsCoach(gate.plan)) {
+      throw planLimitError(
+        'Le coach marketing IA est reserve aux plans Copilot.',
+      )
+    }
 
     let byokKey: string | null = null
     const byok = await ctx.runQuery(internal.byok.resolve, { userId })
@@ -301,7 +345,6 @@ export const sendMessage = action({
         byokKey = null
       }
     }
-
     if (!byokKey) ensureAiBudget(gate)
 
     const mode: AiMode =
@@ -312,9 +355,10 @@ export const sendMessage = action({
     await ctx.runMutation(internal.aiChat.logEvent, {
       userId,
       threadId: args.threadId,
+      assistantKind,
       type: 'message_started',
       level: 'info',
-      message: 'Message envoyé au copilote',
+      message: 'Message envoye au copilote',
       mode,
       metadata: stringifyMetadata({
         promptPreview: args.prompt.slice(0, 180),
@@ -327,28 +371,37 @@ export const sendMessage = action({
         threadId: args.threadId,
         userId,
       })
-
-      const today = new Date().toISOString().slice(0, 10)
-      const contextualPrompt =
-        `Contexte (ne pas répondre à ceci) : date du jour = ${today}.\n\n${args.prompt}`
+      const recall = await ctx.runQuery(internal.memory.recallContextForUser, {
+        userId,
+        query: args.prompt,
+        assistantKind,
+        limit: 3,
+      })
+      const contextualPrompt = buildContextualPrompt({
+        today: new Date().toISOString().slice(0, 10),
+        assistantKind,
+        userPrompt: args.prompt,
+        durableLines: recall.durable.map(
+          (item: { key: string; value: string }) =>
+            `- ${item.key} : ${item.value}`,
+        ),
+        semanticLines: recall.semantic.map(
+          (item: { summary: string }) => `- ${item.summary}`,
+        ),
+      })
 
       const orgRole = await ctx.runQuery(internal.agent.orgReads.orgRole, {
         userId,
       })
-      const exposedTools = toolsFor(gate.plan, orgRole?.role ?? null, tools)
-      const stopWhen = stopWhenFor(gate.plan)
-
-      const model = MODELS[mode]
       const result = await thread.streamText(
         {
           prompt: contextualPrompt,
           model: modelFor(mode, gate.plan, byokKey ?? undefined),
-          tools: exposedTools,
-          stopWhen,
+          tools: toolsFor(gate.plan, orgRole?.role ?? null, tools),
+          stopWhen: stopWhenFor(gate.plan),
         },
         { saveStreamDeltas: true },
       )
-
       await result.consumeStream()
 
       const usage = await result.usage
@@ -357,21 +410,22 @@ export const sendMessage = action({
       const outputTokens = usage.outputTokens ?? 0
       const toolsUsed = Array.from(new Set(toolCalls.map((c) => c.toolName)))
       const credits = creditsForUsage(inputTokens, outputTokens, mode)
-
       const tasks: Promise<unknown>[] = [
         ctx.runMutation(internal.aiChat.bumpThread, {
           userId,
           threadId: args.threadId,
+          assistantKind,
           toolsUsed,
           prompt: args.prompt,
         }),
         ctx.runMutation(internal.aiChat.logEvent, {
           userId,
           threadId: args.threadId,
+          assistantKind,
           type: 'message_completed',
           level: 'info',
-          message: 'Réponse copilote générée',
-          model,
+          message: 'Reponse copilote generee',
+          model: MODELS[mode],
           mode,
           metadata: stringifyMetadata({
             inputTokens,
@@ -381,14 +435,21 @@ export const sendMessage = action({
             byok: Boolean(byokKey),
           }),
         }),
+        ctx.runMutation(internal.memory.recordConversationMemory, {
+          userId,
+          threadId: args.threadId,
+          assistantKind,
+          scope: 'user',
+          source: 'chat',
+          summary: `${assistantKind}: ${args.prompt.slice(0, 240)}`,
+        }),
       ]
-
       if (!byokKey) {
         tasks.push(
           ctx.runMutation(internal.aiCredits.debit, {
             userId,
             threadId: args.threadId,
-            model,
+            model: MODELS[mode],
             mode,
             inputTokens,
             outputTokens,
@@ -397,7 +458,6 @@ export const sendMessage = action({
           }),
         )
       }
-
       await Promise.all(tasks)
       return { ok: true }
     } catch (error) {
@@ -406,6 +466,7 @@ export const sendMessage = action({
         ctx.runMutation(internal.aiChat.logEvent, {
           userId,
           threadId: args.threadId,
+          assistantKind,
           type: 'message_failed',
           level: 'error',
           message,
@@ -425,6 +486,7 @@ export const sendMessage = action({
           metadata: stringifyMetadata({
             threadId: args.threadId,
             mode,
+            assistantKind,
           }),
         }),
       ])
@@ -432,62 +494,3 @@ export const sendMessage = action({
     }
   },
 })
-
-export const respondApproval = mutation({
-  args: {
-    tool: v.string(),
-    decision: v.union(
-      v.literal('once'),
-      v.literal('always'),
-      v.literal('deny'),
-    ),
-  },
-  handler: async (ctx, args): Promise<{ approved: boolean }> => {
-    const { userId } = await requireUser(ctx)
-    if (args.decision === 'deny') {
-      await ctx.runMutation(internal.aiChat.logEvent, {
-        userId,
-        type: 'approval_denied',
-        level: 'warning',
-        message: "Action IA refusée par l'utilisateur",
-        tool: args.tool,
-      })
-      return { approved: false }
-    }
-
-    if (args.decision === 'always') {
-      const doc = await ctx.db
-        .query('aiPermissionPrefs')
-        .withIndex('by_user', (q) => q.eq('userId', userId))
-        .unique()
-      if (!doc) {
-        await ctx.db.insert('aiPermissionPrefs', {
-          userId,
-          mode: 'ask',
-          alwaysAllow: [args.tool],
-          updatedAt: Date.now(),
-        })
-      } else if (!doc.alwaysAllow.includes(args.tool)) {
-        await ctx.db.patch(doc._id, {
-          alwaysAllow: [...doc.alwaysAllow, args.tool],
-          updatedAt: Date.now(),
-        })
-      }
-    }
-
-    await ctx.runMutation(internal.aiChat.logEvent, {
-      userId,
-      type: 'approval_granted',
-      level: 'info',
-      message:
-        args.decision === 'always'
-          ? 'Action IA autorisée de façon persistante'
-          : 'Action IA autorisée une fois',
-      tool: args.tool,
-      metadata: stringifyMetadata({ decision: args.decision }),
-    })
-
-    return { approved: true }
-  },
-})
-

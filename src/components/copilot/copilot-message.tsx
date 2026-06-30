@@ -1,5 +1,5 @@
 import type { UIMessage } from '@convex-dev/agent/react'
-import { Sparkles } from 'lucide-react'
+import { Sparkles, ThumbsDown, ThumbsUp, LifeBuoy } from 'lucide-react'
 import { MessageResponse } from '~/components/ai-elements/message'
 import {
   Tool,
@@ -9,6 +9,8 @@ import {
   ToolOutput,
   type ToolPart,
 } from '~/components/ai-elements/tool'
+import { Button } from '~/components/ui/button'
+import type { AssistantKind } from './assistant-kinds'
 import { CopilotApprovalCard } from './copilot-approval-card'
 import { renderToolResult } from './widgets'
 
@@ -18,38 +20,39 @@ type ApprovalOutput = {
   summary?: string
 }
 
-/** Détecte une sortie d'outil qui réclame une approbation (médiée client). */
 function asApproval(output: unknown): { tool: string; summary: string } | null {
   if (output && typeof output === 'object') {
-    const o = output as ApprovalOutput
-    if (o.approvalRequired && o.tool) {
-      return { tool: o.tool, summary: o.summary ?? o.tool }
+    const candidate = output as ApprovalOutput
+    if (candidate.approvalRequired && candidate.tool) {
+      return { tool: candidate.tool, summary: candidate.summary ?? candidate.tool }
     }
   }
   return null
 }
 
-/**
- * Rendu d'un message UI. Assistant : avatar accent + contenu (Streamdown +
- * cartes d'outil). Utilisateur : bulle alignée à droite. Apparition animée.
- */
 export function CopilotMessage({
   message,
   pending,
+  assistantKind,
+  threadId,
   onDecision,
   onNavigate,
+  onRate,
+  onRequestHandoff,
 }: {
   message: UIMessage
   pending: boolean
+  assistantKind: AssistantKind
+  threadId: string | null
   onDecision: (tool: string, decision: 'once' | 'always' | 'deny') => void
   onNavigate?: () => void
+  onRate: (messageKey: string, rating: 'up' | 'down') => void
+  onRequestHandoff?: () => void
 }) {
-  const isUser = message.role === 'user'
-
-  if (isUser) {
+  if (message.role === 'user') {
     const text = message.parts
-      .filter((p) => p.type === 'text')
-      .map((p) => (p as { text?: string }).text ?? '')
+      .filter((part) => part.type === 'text')
+      .map((part) => (part as { text?: string }).text ?? '')
       .join('')
     return (
       <div className="flex animate-in fade-in slide-in-from-bottom-1 justify-end duration-300">
@@ -86,6 +89,39 @@ export function CopilotMessage({
           }
           return null
         })}
+        {threadId && (
+          <div className="flex flex-wrap gap-2 pt-1">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => onRate(message.key, 'up')}
+            >
+              <ThumbsUp className="size-4" />
+              Utile
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => onRate(message.key, 'down')}
+            >
+              <ThumbsDown className="size-4" />
+              A revoir
+            </Button>
+            {assistantKind === 'support' && onRequestHandoff && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={onRequestHandoff}
+              >
+                <LifeBuoy className="size-4" />
+                Parler a un agent
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )
@@ -104,7 +140,6 @@ function ToolPartView({
 }) {
   const approval =
     part.state === 'output-available' ? asApproval(part.output) : null
-
   if (approval) {
     return (
       <CopilotApprovalCard
@@ -115,8 +150,6 @@ function ToolPartView({
     )
   }
 
-  // Rendu riche (generative UI) quand le résultat est disponible : tuiles,
-  // barres, listes premium au lieu d'un JSON brut.
   const toolName =
     part.type === 'dynamic-tool'
       ? part.toolName

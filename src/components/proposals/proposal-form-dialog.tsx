@@ -41,6 +41,19 @@ const CURRENCIES = ['XOF', 'EUR', 'USD'] as const
 
 type RecipientTarget = 'company' | 'person'
 type RecipientStatus = 'pending' | 'sent' | 'accepted' | 'refused'
+type ProposalInitialDraft = {
+  title?: string
+  pitch?: string
+  amount?: number
+  currency?: string
+  kind?: ProposalKind
+}
+type ProposalInitialRecipient = {
+  targetType: RecipientTarget
+  companyId?: Id<'companies'>
+  contactId?: Id<'contacts'>
+  opportunityId?: Id<'opportunities'>
+}
 
 const RECIPIENT_STATUSES: RecipientStatus[] = [
   'pending',
@@ -72,11 +85,17 @@ export function ProposalFormDialog({
   open,
   onOpenChange,
   proposal,
+  initialDraft,
+  initialRecipient,
+  onCreated,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   /** Si fourni, le dialog edite cette proposition. Sinon, creation. */
   proposal?: ProposalDoc | null
+  initialDraft?: ProposalInitialDraft | null
+  initialRecipient?: ProposalInitialRecipient | null
+  onCreated?: (proposalId: Id<'proposals'>) => void
 }) {
   const companies = useQuery(api.companies.list, open ? {} : 'skip')
   const contacts = useQuery(api.contacts.list, open ? {} : 'skip')
@@ -133,13 +152,18 @@ export function ProposalFormDialog({
       setAmount(proposal.amount !== undefined ? String(proposal.amount) : '')
       setCurrency(proposal.currency ?? 'XOF')
     } else {
-      setKind('proposal')
-      setTitle('')
-      setPitch('')
-      setAmount('')
-      setCurrency('XOF')
+      setKind(initialDraft?.kind ?? 'proposal')
+      setTitle(initialDraft?.title ?? '')
+      setPitch(initialDraft?.pitch ?? '')
+      setAmount(
+        initialDraft?.amount !== undefined ? String(initialDraft.amount) : '',
+      )
+      setCurrency(initialDraft?.currency ?? 'XOF')
+      setRecipientTarget(initialRecipient?.targetType ?? 'company')
+      setRecipientCompanyId(initialRecipient?.companyId ?? '__none__')
+      setRecipientContactId(initialRecipient?.contactId ?? '__none__')
     }
-  }, [open, proposal])
+  }, [open, proposal, initialDraft, initialRecipient])
 
   const parsedAmount = useMemo(() => {
     return amount.trim() ? Number(amount.replace(/\s/g, '')) : undefined
@@ -239,7 +263,40 @@ export function ProposalFormDialog({
         }
         if (parsedAmount !== undefined) args.amount = parsedAmount
         const id = await create(args)
+        try {
+          if (
+            initialRecipient &&
+            ((initialRecipient.targetType === 'company' &&
+              initialRecipient.companyId) ||
+              (initialRecipient.targetType === 'person' &&
+                initialRecipient.contactId))
+          ) {
+            const recipientArgs: {
+              proposalId: Id<'proposals'>
+              targetType: RecipientTarget
+              companyId?: Id<'companies'>
+              contactId?: Id<'contacts'>
+              opportunityId?: Id<'opportunities'>
+            } = {
+              proposalId: id,
+              targetType: initialRecipient.targetType,
+            }
+            if (initialRecipient.companyId) {
+              recipientArgs.companyId = initialRecipient.companyId
+            }
+            if (initialRecipient.contactId) {
+              recipientArgs.contactId = initialRecipient.contactId
+            }
+            if (initialRecipient.opportunityId) {
+              recipientArgs.opportunityId = initialRecipient.opportunityId
+            }
+            await addRecipient(recipientArgs)
+          }
+        } catch {
+          toast.error('Le document a ete cree, mais le rattachement a l’opportunité a échoué.')
+        }
         setWorkingId(id)
+        onCreated?.(id)
         toast.success(m.prop_toast_offer_saved())
       }
     } catch {

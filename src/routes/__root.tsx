@@ -1,4 +1,3 @@
-import '../react-global'
 // Polices auto-hebergees (@fontsource) : injectent les @font-face au bundle,
 // cote serveur ET client. Hanken Grotesk = UI/corps/titres, JetBrains Mono =
 // chiffres / metadonnees ("assay"). Poids charges = ceux reellement utilises.

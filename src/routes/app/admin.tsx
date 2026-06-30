@@ -12,12 +12,14 @@ import { AdminPaymentsPanel } from '~/components/admin/admin-payments-panel'
 import { AdminIncidentsPanel } from '~/components/admin/admin-incidents-panel'
 import { AdminAiPanel } from '~/components/admin/admin-ai-panel'
 import { AdminUpdatesPanel } from '~/components/admin/admin-updates-panel'
+import { AdminSupportPanel } from '~/components/admin/admin-support-panel'
 import { m } from '~/lib/paraglide/messages'
 
 type AdminTab =
   | 'utilisateurs'
   | 'metriques'
   | 'feedbacks'
+  | 'support'
   | 'paiements'
   | 'incidents'
   | 'ia'
@@ -39,6 +41,7 @@ export const Route = createFileRoute('/app/admin')({
     if (
       tab === 'metriques' ||
       tab === 'feedbacks' ||
+      tab === 'support' ||
       tab === 'paiements' ||
       tab === 'incidents' ||
       tab === 'ia' ||
@@ -120,6 +123,7 @@ function AdminContent() {
             <TabsTrigger value="utilisateurs">{m.admin_tab_users()}</TabsTrigger>
             <TabsTrigger value="metriques">{m.admin_tab_metrics()}</TabsTrigger>
             <TabsTrigger value="feedbacks">{m.admin_tab_feedbacks()}</TabsTrigger>
+            <TabsTrigger value="support">Support</TabsTrigger>
             <TabsTrigger value="paiements">{m.admin_tab_payments()}</TabsTrigger>
             <TabsTrigger value="incidents">Incidents</TabsTrigger>
             <TabsTrigger value="ia">IA</TabsTrigger>
@@ -138,6 +142,9 @@ function AdminContent() {
         </TabsContent>
         <TabsContent value="feedbacks">
           <AdminFeedbackPanel />
+        </TabsContent>
+        <TabsContent value="support">
+          <AdminSupportPanel />
         </TabsContent>
         <TabsContent value="paiements">
           <AdminPaymentsPanel />

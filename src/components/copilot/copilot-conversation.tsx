@@ -6,28 +6,50 @@ import {
   ConversationContent,
   ConversationScrollButton,
 } from '~/components/ai-elements/conversation'
-import { CopilotMessage } from './copilot-message'
+import type { AssistantKind } from './assistant-kinds'
 import { CopilotEmpty } from './copilot-empty'
+import { CopilotMessage } from './copilot-message'
+import { SupportLiveThread } from './support-live-thread'
 
-/**
- * Fil de conversation : état vide (prompts suggérés) tant qu'aucun message,
- * sinon la liste des messages streamés dans une colonne lisible centrée, plus un
- * indicateur « réflexion » (avatar + points animés) pendant l'attente.
- */
+type SupportState = {
+  thread: {
+    status: 'pending' | 'active' | 'released' | 'dismissed'
+    assignedAgentName?: string
+  }
+  messages: Array<{
+    _id: string
+    role: 'user' | 'agent' | 'system'
+    via: 'ai' | 'human'
+    body: string
+    actorName?: string
+    createdAt: number
+  }>
+} | null
+
 export function CopilotConversation({
   messages,
   sending,
   onPick,
   onDecision,
   onNavigate,
+  assistantKind,
+  threadId,
+  supportState,
+  onRate,
+  onRequestHandoff,
 }: {
   messages: UIMessage[]
   sending: boolean
   onPick: (prompt: string) => void
   onDecision: (tool: string, decision: 'once' | 'always' | 'deny') => void
   onNavigate?: () => void
+  assistantKind: AssistantKind
+  threadId: string | null
+  supportState: SupportState
+  onRate: (messageKey: string, rating: 'up' | 'down') => void
+  onRequestHandoff?: () => void
 }) {
-  if (messages.length === 0) {
+  if (messages.length === 0 && !supportState) {
     return <CopilotEmpty onPick={onPick} />
   }
 
@@ -42,10 +64,20 @@ export function CopilotConversation({
             key={message.key}
             message={message}
             pending={sending}
+            assistantKind={assistantKind}
+            threadId={threadId}
             onDecision={onDecision}
             onNavigate={onNavigate}
+            onRate={onRate}
+            onRequestHandoff={onRequestHandoff}
           />
         ))}
+        {supportState && (
+          <SupportLiveThread
+            thread={supportState.thread}
+            messages={supportState.messages}
+          />
+        )}
         {awaitingReply && (
           <div className="flex animate-in fade-in gap-3 duration-300">
             <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-accent/10 text-accent ring-1 ring-accent/15">
