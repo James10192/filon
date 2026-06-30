@@ -285,21 +285,38 @@ export const updateFeedbackStatus = mutation({
     if (note) patch.adminNote = note
     await ctx.db.patch(args.id, patch)
 
-    const resolvedNow = existing.status !== 'done' && args.status === 'done'
-    if (resolvedNow) {
-      const body = note
-        ? `Votre retour a été traité. Note de l'équipe : ${note}`
-        : 'Votre retour a été traité par l’équipe produit.'
-      const actionUrl =
-        existing.context && existing.context.startsWith('/app')
-          ? existing.context
-          : undefined
+    const statusChanged = existing.status !== args.status
+    const actionUrl =
+      existing.context && existing.context.startsWith('/app')
+        ? existing.context
+        : undefined
+
+    if (statusChanged && args.status === 'in_progress') {
+      await createNotification(ctx, {
+        userId: existing.userId,
+        kind: 'product_update',
+        title: 'Feedback pris en compte',
+        body: note
+          ? `Nous avons bien pris en charge votre retour. Note de l'équipe : ${note}`
+          : 'Nous avons bien pris en charge votre retour. Merci, nous sommes dessus.',
+        ...(actionUrl ? { actionUrl, actionLabel: 'Voir le contexte' } : {}),
+        meta: JSON.stringify({
+          feedbackId: existing._id,
+          type: existing.type,
+          status: args.status,
+        }),
+      })
+    }
+
+    if (statusChanged && args.status === 'done') {
       await createNotification(ctx, {
         userId: existing.userId,
         kind: 'feedback_resolved',
         title: 'Feedback traité',
-        body,
-        ...(actionUrl ? { actionUrl, actionLabel: 'Ouvrir' } : {}),
+        body: note
+          ? `Votre retour a été traité. Note de l'équipe : ${note}`
+          : 'Votre retour a été traité par l’équipe produit. Merci pour votre aide.',
+        ...(actionUrl ? { actionUrl, actionLabel: 'Voir le contexte' } : {}),
         meta: JSON.stringify({
           feedbackId: existing._id,
           type: existing.type,
@@ -492,16 +509,56 @@ function parseJsonObject(raw: string | undefined): Record<string, unknown> | nul
 }
 
 function previewFromMessage(message: MessageDoc): string {
-  const parts = (message as any).parts
+  const directText = (message as { text?: unknown }).text
+  if (typeof directText === 'string' && directText.trim()) {
+    return directText.trim()
+  }
+
+  const parts = (message as { parts?: unknown }).parts
   if (!Array.isArray(parts)) return ''
-  const texts = parts
+
+  const snippets = parts
     .map((part) => {
       if (!part || typeof part !== 'object') return ''
-      if (part.type === 'text' && typeof part.text === 'string') return part.text
+      const candidate = part as {
+        type?: string
+        text?: string
+        toolName?: string
+        state?: string
+        output?: unknown
+      }
+
+      if (candidate.type === 'text' && typeof candidate.text === 'string') {
+        return candidate.text.trim()
+      }
+
+      if (
+        candidate.state === 'output-available' &&
+        candidate.output &&
+        typeof candidate.output === 'object'
+      ) {
+        const output = candidate.output as {
+          approvalRequired?: boolean
+          summary?: string
+        }
+        if (output.approvalRequired && typeof output.summary === 'string') {
+          return output.summary.trim()
+        }
+      }
+
+      if (candidate.type === 'dynamic-tool' && typeof candidate.toolName === 'string') {
+        return `Outil : ${candidate.toolName}`
+      }
+
+      if (typeof candidate.type === 'string' && candidate.type.startsWith('tool-')) {
+        return `Outil : ${candidate.type.replace(/^tool-/, '')}`
+      }
+
       return ''
     })
-    .filter(Boolean)
-  return texts.join('\n').trim()
+    .filter((value): value is string => Boolean(value))
+
+  return snippets.join('\n').trim()
 }
 
 export const incidentsMetrics = query({

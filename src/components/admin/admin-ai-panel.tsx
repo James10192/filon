@@ -1,6 +1,13 @@
 import { useState, type ReactNode } from 'react'
 import { useQuery } from 'convex/react'
-import { Bot, Inbox, ListChecks, MessageSquareText, Sparkles, X } from 'lucide-react'
+import {
+  Bot,
+  Inbox,
+  ListChecks,
+  MessageSquareText,
+  Sparkles,
+  X,
+} from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
@@ -44,10 +51,27 @@ export function AdminAiPanel() {
           ))
         ) : (
           <>
-            <MetricCard title="Fils IA" value={overview.totals.threads.toLocaleString('fr-FR')} icon={<MessageSquareText className="size-4" />} />
-            <MetricCard title="Actions IA" value={overview.totals.actions.toLocaleString('fr-FR')} icon={<ListChecks className="size-4" />} />
-            <MetricCard title="Échecs IA" value={overview.totals.failures.toLocaleString('fr-FR')} icon={<Bot className="size-4" />} danger />
-            <MetricCard title="Crédits du mois" value={overview.totals.credits.toLocaleString('fr-FR')} icon={<Sparkles className="size-4" />} />
+            <MetricCard
+              title="Fils IA"
+              value={overview.totals.threads.toLocaleString('fr-FR')}
+              icon={<MessageSquareText className="size-4" />}
+            />
+            <MetricCard
+              title="Actions IA"
+              value={overview.totals.actions.toLocaleString('fr-FR')}
+              icon={<ListChecks className="size-4" />}
+            />
+            <MetricCard
+              title="Échecs IA"
+              value={overview.totals.failures.toLocaleString('fr-FR')}
+              icon={<Bot className="size-4" />}
+              danger
+            />
+            <MetricCard
+              title="Crédits du mois"
+              value={overview.totals.credits.toLocaleString('fr-FR')}
+              icon={<Sparkles className="size-4" />}
+            />
           </>
         )}
       </div>
@@ -82,86 +106,107 @@ export function AdminAiPanel() {
               />
             ) : (
               <ul className="flex flex-col divide-y divide-border">
-                {overview.recentThreads.map((thread) => (
-                  <li key={thread.threadId}>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedThreadId(thread.threadId)}
-                      className="flex w-full flex-col gap-1.5 px-4 py-3 text-left transition-colors hover:bg-surface-2"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="line-clamp-1 text-sm font-medium text-fg">
-                          {thread.title}
-                        </span>
-                        <span className="ml-auto text-xs text-fg-subtle">
-                          {formatRelative(thread.lastMessageAt)}
-                        </span>
-                      </div>
-                      <p className="text-xs text-fg-subtle">
-                        {thread.userName ?? thread.userEmail}
-                      </p>
-                    </button>
-                  </li>
-                ))}
+                {overview.recentThreads.map((thread) => {
+                  const selected = thread.threadId === selectedThreadId
+                  return (
+                    <li key={thread.threadId}>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedThreadId(thread.threadId)}
+                        className={
+                          selected
+                            ? 'flex w-full flex-col gap-1.5 bg-surface-2 px-4 py-3 text-left'
+                            : 'flex w-full flex-col gap-1.5 px-4 py-3 text-left transition-colors hover:bg-surface-2'
+                        }
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="line-clamp-1 text-sm font-medium text-fg">
+                            {thread.title}
+                          </span>
+                          <span className="ml-auto text-xs text-fg-subtle">
+                            {formatRelative(thread.lastMessageAt)}
+                          </span>
+                        </div>
+                        <p className="text-xs text-fg-subtle">
+                          {thread.userName ?? thread.userEmail}
+                        </p>
+                      </button>
+                    </li>
+                  )
+                })}
               </ul>
             )}
           </CardContent>
         </Card>
 
-        <div className="grid gap-5">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Événements IA récents</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {overview === undefined ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <Skeleton key={i} className="h-14 rounded-[var(--radius)]" />
-                ))
-              ) : overview.recentEvents.length === 0 ? (
-                <EmptyState
-                  title="Aucun événement"
-                  body="Les exécutions et erreurs du copilote apparaîtront ici."
-                />
-              ) : (
-                overview.recentEvents.slice(0, 12).map((event) => (
-                  <div
-                    key={event._id}
-                    className="rounded-[var(--radius)] border border-border bg-surface-2 px-3 py-3"
-                  >
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant={eventVariant(event.level)}>{event.level}</Badge>
-                      <Badge variant="outline">{event.type}</Badge>
-                      {event.tool && <Badge variant="outline">{event.tool}</Badge>}
-                      <span className="ml-auto text-xs text-fg-subtle">
-                        {formatRelative(event.createdAt)}
-                      </span>
-                    </div>
-                    <p className="mt-2 text-sm text-fg">{event.message}</p>
-                    <p className="mt-1 text-xs text-fg-subtle">
-                      {event.userName ?? event.userEmail}
-                    </p>
-                  </div>
-                ))
-              )}
-            </CardContent>
+        <div className="hidden lg:block">
+          <Card className="h-full overflow-hidden">
+            {selectedThreadId ? (
+              <ThreadDetail
+                detail={threadDetail ?? null}
+                onClose={() => setSelectedThreadId(null)}
+              />
+            ) : (
+              <SelectionPlaceholder />
+            )}
           </Card>
         </div>
       </div>
 
-      <Sheet open={selectedThreadId !== null && !isDesktop} onOpenChange={(open) => !open && setSelectedThreadId(null)}>
-        <SheetContent side="right" className="w-full max-w-full gap-0 p-0 [&>button:last-child]:hidden">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Événements IA récents</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {overview === undefined ? (
+            Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-14 rounded-[var(--radius)]" />
+            ))
+          ) : overview.recentEvents.length === 0 ? (
+            <EmptyState
+              title="Aucun événement"
+              body="Les exécutions et erreurs du copilote apparaîtront ici."
+            />
+          ) : (
+            overview.recentEvents.slice(0, 12).map((event) => (
+              <div
+                key={event._id}
+                className="rounded-[var(--radius)] border border-border bg-surface-2 px-3 py-3"
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant={eventVariant(event.level)}>{event.level}</Badge>
+                  <Badge variant="outline">{event.type}</Badge>
+                  {event.tool && <Badge variant="outline">{event.tool}</Badge>}
+                  <span className="ml-auto text-xs text-fg-subtle">
+                    {formatRelative(event.createdAt)}
+                  </span>
+                </div>
+                <p className="mt-2 text-sm text-fg">{event.message}</p>
+                <p className="mt-1 text-xs text-fg-subtle">
+                  {event.userName ?? event.userEmail}
+                </p>
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
+
+      <Sheet
+        open={selectedThreadId !== null && !isDesktop}
+        onOpenChange={(open) => !open && setSelectedThreadId(null)}
+      >
+        <SheetContent
+          side="right"
+          className="w-full max-w-full gap-0 p-0 [&>button:last-child]:hidden"
+        >
           <SheetTitle className="sr-only">Conversation IA</SheetTitle>
           <SheetDescription className="sr-only">Détail conversation IA</SheetDescription>
-          <ThreadDetail detail={threadDetail ?? null} onClose={() => setSelectedThreadId(null)} />
+          <ThreadDetail
+            detail={threadDetail ?? null}
+            onClose={() => setSelectedThreadId(null)}
+          />
         </SheetContent>
       </Sheet>
-
-      {selectedThreadId && isDesktop && (
-        <Card className="overflow-hidden">
-          <ThreadDetail detail={threadDetail ?? null} onClose={() => setSelectedThreadId(null)} />
-        </Card>
-      )}
     </section>
   )
 }
@@ -190,29 +235,41 @@ function ThreadDetail({
             {detail.thread.userName ?? detail.thread.userEmail}
           </p>
         </div>
-        <Button variant="ghost" size="icon" className="h-11 w-11" onClick={onClose} aria-label="Fermer">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-11 w-11"
+          onClick={onClose}
+          aria-label="Fermer"
+        >
           <X className="size-4" />
         </Button>
       </header>
 
-      <div className="grid gap-5 overflow-y-auto px-5 py-5 lg:grid-cols-[minmax(0,1.25fr)_minmax(18rem,0.75fr)]">
+      <div className="grid gap-5 overflow-y-auto px-5 py-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(18rem,0.8fr)]">
         <Card>
           <CardHeader>
             <CardTitle className="text-sm">Messages</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {detail.messages.length === 0 ? (
-              <EmptyState title="Aucun message" body="Ce fil ne contient pas encore de contenu lisible." />
+              <EmptyState
+                title="Aucun message"
+                body="Ce fil ne contient pas encore de contenu lisible."
+              />
             ) : (
               detail.messages.map((message: any) => (
-                <div key={message.key} className="rounded-[var(--radius)] border border-border bg-surface-2 px-3 py-3">
+                <div
+                  key={message.key}
+                  className="rounded-[var(--radius)] border border-border bg-surface-2 px-3 py-3"
+                >
                   <div className="mb-2 flex items-center gap-2">
                     <Badge variant={message.role === 'user' ? 'outline' : 'accent'}>
-                      {message.role}
+                      {message.role === 'user' ? 'Utilisateur' : 'Assistant'}
                     </Badge>
                   </div>
                   <p className="whitespace-pre-wrap text-sm text-fg">
-                    {message.preview || 'Message non textuel'}
+                    {message.preview || 'Aperçu indisponible'}
                   </p>
                 </div>
               ))
@@ -226,18 +283,28 @@ function ThreadDetail({
               <CardTitle className="text-sm">Événements</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {detail.events.map((event: any) => (
-                <div key={event._id} className="rounded-[var(--radius)] border border-border bg-surface-2 px-3 py-3">
-                  <div className="flex items-center gap-2">
-                    <Badge variant={eventVariant(event.level)}>{event.level}</Badge>
-                    <Badge variant="outline">{event.type}</Badge>
-                    <span className="ml-auto text-xs text-fg-subtle">
-                      {formatRelative(event.createdAt)}
-                    </span>
+              {detail.events.length === 0 ? (
+                <EmptyState
+                  title="Aucun événement"
+                  body="Ce fil n’a pas encore produit de journal d’exécution."
+                />
+              ) : (
+                detail.events.map((event: any) => (
+                  <div
+                    key={event._id}
+                    className="rounded-[var(--radius)] border border-border bg-surface-2 px-3 py-3"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Badge variant={eventVariant(event.level)}>{event.level}</Badge>
+                      <Badge variant="outline">{event.type}</Badge>
+                      <span className="ml-auto text-xs text-fg-subtle">
+                        {formatRelative(event.createdAt)}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-sm text-fg">{event.message}</p>
                   </div>
-                  <p className="mt-2 text-sm text-fg">{event.message}</p>
-                </div>
-              ))}
+                ))
+              )}
             </CardContent>
           </Card>
 
@@ -247,10 +314,16 @@ function ThreadDetail({
             </CardHeader>
             <CardContent className="space-y-3">
               {detail.actions.length === 0 ? (
-                <EmptyState title="Aucune action" body="Ce fil n'a pas encore produit d'écriture métier." />
+                <EmptyState
+                  title="Aucune action"
+                  body="Ce fil n’a pas encore produit d’écriture métier."
+                />
               ) : (
                 detail.actions.map((action: any) => (
-                  <div key={action._id} className="rounded-[var(--radius)] border border-border bg-surface-2 px-3 py-3">
+                  <div
+                    key={action._id}
+                    className="rounded-[var(--radius)] border border-border bg-surface-2 px-3 py-3"
+                  >
                     <div className="flex items-center gap-2">
                       <Badge variant="outline">{action.tool}</Badge>
                       <span className="ml-auto text-xs text-fg-subtle">
@@ -285,11 +358,23 @@ function MetricCard({
       <CardContent className="flex items-start justify-between gap-3 p-5">
         <div className="space-y-1.5">
           <p className="eyebrow">{title}</p>
-          <p className={danger ? 'assay text-2xl font-semibold text-danger' : 'assay text-2xl font-semibold text-fg'}>
+          <p
+            className={
+              danger
+                ? 'assay text-2xl font-semibold text-danger'
+                : 'assay text-2xl font-semibold text-fg'
+            }
+          >
             {value}
           </p>
         </div>
-        <span className={danger ? 'flex size-9 items-center justify-center rounded-[var(--radius)] bg-danger-soft text-danger' : 'flex size-9 items-center justify-center rounded-[var(--radius)] bg-accent-soft text-accent'}>
+        <span
+          className={
+            danger
+              ? 'flex size-9 items-center justify-center rounded-[var(--radius)] bg-danger-soft text-danger'
+              : 'flex size-9 items-center justify-center rounded-[var(--radius)] bg-accent-soft text-accent'
+          }
+        >
           {icon}
         </span>
       </CardContent>
@@ -305,6 +390,22 @@ function EmptyState({ title, body }: { title: string; body: string }) {
       </span>
       <p className="text-sm font-medium text-fg">{title}</p>
       <p className="max-w-xs text-sm text-fg-muted">{body}</p>
+    </div>
+  )
+}
+
+function SelectionPlaceholder() {
+  return (
+    <div className="flex h-full min-h-[24rem] flex-col items-center justify-center gap-3 px-6 text-center">
+      <span className="flex size-12 items-center justify-center rounded-[var(--radius)] bg-surface-2 text-accent">
+        <MessageSquareText className="size-5" />
+      </span>
+      <div className="space-y-1">
+        <p className="text-sm font-medium text-fg">Sélectionne une conversation</p>
+        <p className="max-w-xs text-sm text-fg-muted">
+          Le détail s’affichera ici avec les messages, les événements et les actions.
+        </p>
+      </div>
     </div>
   )
 }
