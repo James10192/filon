@@ -2,7 +2,7 @@ import { v } from 'convex/values'
 import { action, internalMutation, mutation, query } from './_generated/server'
 import { api } from './_generated/api'
 import type { Doc, Id } from './_generated/dataModel'
-import { isAdmin, requireAdmin, type QueryCtx } from './lib/withUser'
+import { isAdmin, requireAdmin, type MutationCtx, type QueryCtx } from './lib/withUser'
 import { PRICING, type PaidPlan } from './lib/pricing'
 import { createNotification } from './notifications'
 import {
@@ -274,56 +274,7 @@ export const updateFeedbackStatus = mutation({
   },
   handler: async (ctx, args) => {
     await requireAdmin(ctx)
-    const existing = await ctx.db.get(args.id)
-    if (!existing) {
-      throw notFoundError('Feedback introuvable.')
-    }
-    const patch: { status: Doc<'feedback'>['status']; adminNote?: string } = {
-      status: args.status,
-    }
-    const note = args.adminNote?.trim()
-    if (note) patch.adminNote = note
-    await ctx.db.patch(args.id, patch)
-
-    const statusChanged = existing.status !== args.status
-    const actionUrl =
-      existing.context && existing.context.startsWith('/app')
-        ? existing.context
-        : undefined
-
-    if (statusChanged && args.status === 'in_progress') {
-      await createNotification(ctx, {
-        userId: existing.userId,
-        kind: 'product_update',
-        title: 'Feedback pris en compte',
-        body: note
-          ? `Nous avons bien pris en charge votre retour. Note de l'équipe : ${note}`
-          : 'Nous avons bien pris en charge votre retour. Merci, nous sommes dessus.',
-        ...(actionUrl ? { actionUrl, actionLabel: 'Voir le contexte' } : {}),
-        meta: JSON.stringify({
-          feedbackId: existing._id,
-          type: existing.type,
-          status: args.status,
-        }),
-      })
-    }
-
-    if (statusChanged && args.status === 'done') {
-      await createNotification(ctx, {
-        userId: existing.userId,
-        kind: 'feedback_resolved',
-        title: 'Feedback traité',
-        body: note
-          ? `Votre retour a été traité. Note de l'équipe : ${note}`
-          : 'Votre retour a été traité par l’équipe produit. Merci pour votre aide.',
-        ...(actionUrl ? { actionUrl, actionLabel: 'Voir le contexte' } : {}),
-        meta: JSON.stringify({
-          feedbackId: existing._id,
-          type: existing.type,
-          status: args.status,
-        }),
-      })
-    }
+    await applyFeedbackStatusChange(ctx, args)
     return { ok: true as const }
   },
 })
@@ -372,17 +323,71 @@ export const opsSetFeedbackStatus = internalMutation({
     adminNote: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const existing = await ctx.db.get(args.id)
-    if (!existing) throw notFoundError('Feedback introuvable.')
-    const patch: { status: Doc<'feedback'>['status']; adminNote?: string } = {
-      status: args.status,
-    }
-    const note = args.adminNote?.trim()
-    if (note) patch.adminNote = note
-    await ctx.db.patch(args.id, patch)
+    await applyFeedbackStatusChange(ctx, args)
     return { ok: true as const }
   },
 })
+
+async function applyFeedbackStatusChange(
+  ctx: MutationCtx,
+  args: {
+    id: Id<'feedback'>
+    status: Doc<'feedback'>['status']
+    adminNote?: string
+  },
+): Promise<void> {
+  const existing = await ctx.db.get(args.id)
+  if (!existing) {
+    throw notFoundError('Feedback introuvable.')
+  }
+
+  const patch: { status: Doc<'feedback'>['status']; adminNote?: string } = {
+    status: args.status,
+  }
+  const note = args.adminNote?.trim()
+  if (note) patch.adminNote = note
+  await ctx.db.patch(args.id, patch)
+
+  const statusChanged = existing.status !== args.status
+  const actionUrl =
+    existing.context && existing.context.startsWith('/app')
+      ? existing.context
+      : undefined
+
+  if (statusChanged && args.status === 'in_progress') {
+    await createNotification(ctx, {
+      userId: existing.userId,
+      kind: 'product_update',
+      title: 'Feedback pris en compte',
+      body: note
+        ? `Nous avons bien pris en charge votre retour. Note de l'équipe : ${note}`
+        : 'Nous avons bien pris en charge votre retour. Merci, nous sommes dessus.',
+      ...(actionUrl ? { actionUrl, actionLabel: 'Voir le contexte' } : {}),
+      meta: JSON.stringify({
+        feedbackId: existing._id,
+        type: existing.type,
+        status: args.status,
+      }),
+    })
+  }
+
+  if (statusChanged && args.status === 'done') {
+    await createNotification(ctx, {
+      userId: existing.userId,
+      kind: 'feedback_resolved',
+      title: 'Feedback traité',
+      body: note
+        ? `Votre retour a été traité. Note de l'équipe : ${note}`
+        : 'Votre retour a été traité par l’équipe produit. Merci pour votre aide.',
+      ...(actionUrl ? { actionUrl, actionLabel: 'Voir le contexte' } : {}),
+      meta: JSON.stringify({
+        feedbackId: existing._id,
+        type: existing.type,
+        status: args.status,
+      }),
+    })
+  }
+}
 
 /**
  * Métriques des feedbacks (cross-tenant, réservé admin) : volume total, par
