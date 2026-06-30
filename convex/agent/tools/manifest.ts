@@ -53,6 +53,7 @@ export const TOOL_MANIFEST: Record<string, { gate: ToolGate }> = {
   due_followups: { gate: anyCopilot },
   schedule_followup: { gate: anyCopilot },
   list_proposals: { gate: anyCopilot },
+  get_proposal_detail: { gate: anyCopilot },
   find_company: { gate: anyCopilot },
   find_contact: { gate: anyCopilot },
 

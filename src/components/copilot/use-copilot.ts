@@ -6,6 +6,7 @@ import { toast } from '~/components/ui/sonner'
 import { m } from '~/lib/paraglide/messages'
 import { aiCreditMessage } from '~/lib/billing/plan'
 import type { AssistantKind } from './assistant-kinds'
+import { sanitizeCopilotMessages } from './sanitize-ui-messages'
 
 export type CopilotMode = 'fast' | 'quality'
 
@@ -44,7 +45,9 @@ export function useCopilot(
     threadId ? { threadId } : 'skip',
     { initialNumItems: 50, stream: true },
   )
-  const uiMessages = threadId ? toUIMessages(messages.results ?? []) : []
+  const uiMessages = threadId
+    ? sanitizeCopilotMessages(toUIMessages(messages.results ?? []))
+    : []
 
   const ensureThread = useCallback(async (): Promise<string> => {
     if (threadId) return threadId

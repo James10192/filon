@@ -42,7 +42,7 @@ export function CopilotPanel({
   initialTab?: Tab
 }) {
   const credits = useQuery(api.aiCredits.myCredits, {})
-  const [assistantKind, setAssistantKind] = useState<AssistantKind>('support')
+  const [assistantKind, setAssistantKind] = useState<AssistantKind>('pipeline')
   const [exhausted, setExhausted] = useState(false)
   const [railOpen, setRailOpen] = useState(
     () =>
@@ -211,6 +211,13 @@ export function CopilotPanel({
                 <div className="rounded-[var(--radius)] border border-border bg-surface-2 px-3 py-2 text-sm text-fg-muted">
                   Le coach reste 100 % IA pour l'instant, aucun coach humain
                   n'est disponible aujourd'hui.
+                </div>
+              )}
+              {assistantKind === 'support' && (
+                <div className="rounded-[var(--radius)] border border-border bg-surface-2 px-3 py-2 text-sm text-fg-muted">
+                  Le support répond aux questions produit. Pour analyser une
+                  opportunité, une proposition ou une relance, utilisez le mode
+                  Pipeline.
                 </div>
               )}
               {assistantKind === 'support' && supportState?.thread.status === 'pending' && (

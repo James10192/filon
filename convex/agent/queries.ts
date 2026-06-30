@@ -1,6 +1,6 @@
 import { v } from 'convex/values'
 import { internalQuery, type QueryCtx } from '../_generated/server'
-import type { Doc } from '../_generated/dataModel'
+import type { Doc, Id } from '../_generated/dataModel'
 
 /**
  * Lectures internes du copilote (scopées `userId`), appelées par les outils de
@@ -65,6 +65,145 @@ async function compactOpp(ctx: QueryCtx, o: Doc<'opportunities'>) {
     hasNextAction: Boolean(o.nextActionAt),
     tags: o.tags,
   }
+}
+
+function normalizeLookup(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase()
+    .trim()
+}
+
+async function resolveOpportunitySnapshot(
+  ctx: QueryCtx,
+  userId: string,
+  opportunityId: Id<'opportunities'> | undefined,
+) {
+  if (!opportunityId) return null
+  const opportunity = await ctx.db.get(opportunityId)
+  if (!opportunity || opportunity.userId !== userId) return null
+  return {
+    title: opportunity.title,
+    stage: opportunity.stage,
+  }
+}
+
+async function proposalDetail(ctx: QueryCtx, userId: string, p: Doc<'proposals'>) {
+  const company =
+    p.companyId !== undefined ? await ctx.db.get(p.companyId) : null
+  const companyName = company && company.userId === userId ? company.name : null
+
+  const recipientRows = await ctx.db
+    .query('proposalRecipients')
+    .withIndex('by_proposal', (q) => q.eq('proposalId', p._id))
+    .collect()
+  const recipients = await Promise.all(
+    recipientRows
+      .filter((row) => row.userId === userId)
+      .sort((a, b) => a.createdAt - b.createdAt)
+      .map(async (row) => {
+        const target =
+          row.targetType === 'company' && row.companyId
+            ? await ctx.db.get(row.companyId)
+            : row.targetType === 'person' && row.contactId
+              ? await ctx.db.get(row.contactId)
+              : null
+        const targetName =
+          target && target.userId === userId && 'name' in target
+            ? target.name
+            : null
+        const linkedOpportunity = await resolveOpportunitySnapshot(
+          ctx,
+          userId,
+          row.opportunityId,
+        )
+        return {
+          id: row._id,
+          targetType: row.targetType,
+          targetName,
+          status: row.status,
+          note: row.note ?? null,
+          amount: row.amount ?? null,
+          sentAt: row.sentAt ?? null,
+          respondedAt: row.respondedAt ?? null,
+          opportunityTitle: linkedOpportunity?.title ?? null,
+          opportunityStage: linkedOpportunity?.stage ?? null,
+        }
+      }),
+  )
+
+  const followupRows = await ctx.db
+    .query('followups')
+    .withIndex('by_proposal', (q) => q.eq('proposalId', p._id))
+    .collect()
+  const followups = await Promise.all(
+    followupRows
+      .filter((row) => row.userId === userId)
+      .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
+      .map(async (row) => {
+        const linkedOpportunity = await resolveOpportunitySnapshot(
+          ctx,
+          userId,
+          row.opportunityId,
+        )
+        return {
+          id: row._id,
+          label: row.label,
+          dueDate: row.dueDate,
+          done: row.done,
+          opportunityTitle: linkedOpportunity?.title ?? null,
+        }
+      }),
+  )
+
+  return {
+    id: p._id,
+    title: p.title,
+    kind: p.kind ?? 'proposal',
+    status: p.status,
+    amount: p.amount ?? null,
+    currency: p.currency ?? 'XOF',
+    sentAt: p.sentAt ?? null,
+    companyName,
+    companyAttached: Boolean(p.companyId) && companyName !== null,
+    recipientCount: recipients.length,
+    hasRecipients: recipients.length > 0,
+    recipients,
+    followupCount: followups.length,
+    hasOpenFollowups: followups.some((row) => !row.done),
+    followups,
+  }
+}
+
+async function findProposalByQuery(
+  ctx: QueryCtx,
+  userId: string,
+  query: string,
+): Promise<Doc<'proposals'> | null> {
+  const trimmed = query.trim()
+  if (!trimmed) return null
+
+  const docs = await ctx.db
+    .query('proposals')
+    .withSearchIndex('search_title', (q) =>
+      q.search('title', trimmed).eq('userId', userId),
+    )
+    .take(5)
+  if (docs.length === 0) return null
+
+  const target = normalizeLookup(trimmed)
+  docs.sort((a, b) => {
+    const aTitle = normalizeLookup(a.title)
+    const bTitle = normalizeLookup(b.title)
+    const aScore =
+      aTitle === target ? 3 : aTitle.startsWith(target) ? 2 : aTitle.includes(target) ? 1 : 0
+    const bScore =
+      bTitle === target ? 3 : bTitle.startsWith(target) ? 2 : bTitle.includes(target) ? 1 : 0
+    if (aScore !== bScore) return bScore - aScore
+    return b.createdAt - a.createdAt
+  })
+  return docs[0] ?? null
 }
 
 export const pipelineSummary = internalQuery({
@@ -181,6 +320,24 @@ export const listProposals = internalQuery({
       amount: p.amount ?? null,
       currency: p.currency ?? 'XOF',
     }))
+  },
+})
+
+export const getProposalDetail = internalQuery({
+  args: {
+    userId: v.string(),
+    proposalId: v.optional(v.id('proposals')),
+    query: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const proposal =
+      args.proposalId !== undefined
+        ? await ctx.db.get(args.proposalId)
+        : args.query
+          ? await findProposalByQuery(ctx, args.userId, args.query)
+          : null
+    if (!proposal || proposal.userId !== args.userId) return null
+    return proposalDetail(ctx, args.userId, proposal)
   },
 })
 

@@ -16,9 +16,9 @@ export function assistantKindLabel(kind: AssistantKind): string {
 export function assistantKindDescription(kind: AssistantKind): string {
   switch (kind) {
     case 'support':
-      return 'Aide produit et support client'
+      return 'Aide produit uniquement, avec relais support'
     case 'pipeline':
-      return 'Copilot commercial sur vos donnees'
+      return 'Analyse vos opportunités, propositions et relances'
     case 'coach':
       return 'Coaching marketing IA, sans relais humain'
   }

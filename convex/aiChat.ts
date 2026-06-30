@@ -30,7 +30,8 @@ import { tools } from './agent/tools'
 import { toolsFor, stopWhenFor } from './agent/gating'
 import { modelFor, MODELS, type AiMode } from './agent/models'
 import { assistantKindValidator } from './lib/assistant'
-import { buildContextualPrompt, allowsCoach } from './lib/aiChatRuntime'
+import { buildSystemPrompt, allowsCoach } from './lib/aiChatRuntime'
+import { looksLikePipelineRequest } from './lib/copilotRouting'
 
 const modeValidator = v.union(v.literal('fast'), v.literal('quality'))
 
@@ -73,6 +74,7 @@ const TOOL_TITLE: Record<string, string> = {
   list_opportunities: "Recherche d'opportunites",
   search_opportunities: "Recherche d'opportunites",
   list_proposals: 'Revue des propositions',
+  get_proposal_detail: 'Revue des propositions',
   due_followups: 'Relances a faire',
   find_company: 'Recherche carnet',
   find_contact: 'Recherche carnet',
@@ -313,6 +315,14 @@ function errorText(error: unknown): string {
   return 'Erreur IA inconnue'
 }
 
+function supportRedirectText(): string {
+  return [
+    'Cette demande concerne votre pipeline commercial, pas le support produit.',
+    'Passez en mode Pipeline pour analyser la proposition, les destinataires et les relances avec vos données Filon.',
+    'Le relais humain reste réservé au support produit.',
+  ].join(' ')
+}
+
 export const sendMessage = action({
   args: {
     threadId: v.string(),
@@ -328,6 +338,42 @@ export const sendMessage = action({
     })
     if (!mirror) throw forbiddenError('Conversation introuvable')
     const assistantKind = mirror.assistantKind ?? 'pipeline'
+
+    if (
+      assistantKind === 'support' &&
+      looksLikePipelineRequest(args.prompt)
+    ) {
+      const redirect = supportRedirectText()
+      await Promise.all([
+        copilot.saveMessages(ctx, {
+          threadId: args.threadId,
+          userId,
+          messages: [
+            { role: 'user', content: args.prompt },
+            { role: 'assistant', content: redirect },
+          ],
+        }),
+        ctx.runMutation(internal.aiChat.bumpThread, {
+          userId,
+          threadId: args.threadId,
+          assistantKind,
+          prompt: args.prompt,
+        }),
+        ctx.runMutation(internal.aiChat.logEvent, {
+          userId,
+          threadId: args.threadId,
+          assistantKind,
+          type: 'message_redirected',
+          level: 'info',
+          message: 'Demande support redirigee vers le mode Pipeline',
+          mode: 'fast',
+          metadata: stringifyMetadata({
+            promptPreview: args.prompt.slice(0, 180),
+          }),
+        }),
+      ])
+      return { ok: true }
+    }
 
     const gate = await ctx.runQuery(internal.aiChat.aiGate, { userId })
     if (assistantKind === 'coach' && !allowsCoach(gate.plan)) {
@@ -377,10 +423,9 @@ export const sendMessage = action({
         assistantKind,
         limit: 3,
       })
-      const contextualPrompt = buildContextualPrompt({
+      const systemPrompt = buildSystemPrompt({
         today: new Date().toISOString().slice(0, 10),
         assistantKind,
-        userPrompt: args.prompt,
         durableLines: recall.durable.map(
           (item: { key: string; value: string }) =>
             `- ${item.key} : ${item.value}`,
@@ -390,14 +435,21 @@ export const sendMessage = action({
         ),
       })
 
-      const orgRole = await ctx.runQuery(internal.agent.orgReads.orgRole, {
-        userId,
-      })
+      const orgRole =
+        assistantKind === 'support'
+          ? null
+          : await ctx.runQuery(internal.agent.orgReads.orgRole, {
+              userId,
+            })
       const result = await thread.streamText(
         {
-          prompt: contextualPrompt,
+          prompt: args.prompt,
+          system: systemPrompt,
           model: modelFor(mode, gate.plan, byokKey ?? undefined),
-          tools: toolsFor(gate.plan, orgRole?.role ?? null, tools),
+          tools:
+            assistantKind === 'support'
+              ? {}
+              : toolsFor(gate.plan, orgRole?.role ?? null, tools),
           stopWhen: stopWhenFor(gate.plan),
         },
         { saveStreamDeltas: true },

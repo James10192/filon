@@ -4,6 +4,7 @@ import { PipelineSummary, type PipelineData } from './pipeline-stats'
 import { ListOpportunities, OpportunitiesNeedingAction } from './opportunities'
 import { DueFollowups, type FollowupItem } from './due-followups'
 import { ListProposals, type ProposalItem } from './list-proposals'
+import { ProposalDetail, type ProposalDetailData } from './proposal-detail'
 import {
   FindCompany,
   FindContact,
@@ -52,6 +53,8 @@ export const WIDGETS: Record<string, Widget> = {
     createElement(DueFollowups, { items: (output ?? []) as FollowupItem[] }),
   list_proposals: (output) =>
     createElement(ListProposals, { items: (output ?? []) as ProposalItem[] }),
+  get_proposal_detail: (output) =>
+    createElement(ProposalDetail, { proposal: output as ProposalDetailData }),
   find_company: (output) =>
     createElement(FindCompany, { items: (output ?? []) as CompanyItem[] }),
   find_contact: (output) =>

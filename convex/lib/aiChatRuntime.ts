@@ -12,13 +12,15 @@ export function buildAssistantInstruction(kind: AssistantKind): string {
         'Mode assistant : support client Filon.',
         'Réponds en français.',
         'Tu aides à comprendre et utiliser le produit.',
+        "Tu ne fais pas d'analyse métier sur les opportunités, propositions, proformas, relances ou destinataires.",
+        "Si la demande porte sur ces sujets, dis brièvement qu'elle doit être traitée dans le mode Pipeline.",
         'Si un vrai traitement humain est nécessaire, propose le relais support.',
       ].join('\n')
     case 'coach':
       return [
         'Mode assistant : coach marketing IA.',
         'Réponds en français.',
-        'Il n’existe pas de coach humain disponible aujourd’hui.',
+        "Il n'existe pas de coach humain disponible aujourd'hui.",
         'Fournis des recommandations structurées, concrètes et prioritaires.',
       ].join('\n')
     case 'pipeline':
@@ -26,14 +28,15 @@ export function buildAssistantInstruction(kind: AssistantKind): string {
         'Mode assistant : copilote pipeline Filon.',
         'Réponds en français.',
         'Reste centré sur les données commerciales et les actions du pipeline.',
+        "Quand l'utilisateur cite une proposition, une proforma ou une opportunité précise, appuie-toi sur les outils avant de conseiller.",
+        'Si des données utiles manquent, nomme précisément ce qui manque au lieu de répondre de façon générique.',
       ].join('\n')
   }
 }
 
-export function buildContextualPrompt(args: {
+export function buildSystemPrompt(args: {
   today: string
   assistantKind: AssistantKind
-  userPrompt: string
   durableLines: string[]
   semanticLines: string[]
 }): string {
@@ -46,7 +49,6 @@ export function buildContextualPrompt(args: {
     args.semanticLines.length > 0
       ? `Rappels de conversations passées :\n${args.semanticLines.join('\n')}`
       : '',
-    args.userPrompt,
   ]
   return sections.filter(Boolean).join('\n\n')
 }
