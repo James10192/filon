@@ -358,6 +358,24 @@ export default defineSchema({
     flaggedByName: v.optional(v.string()),
     flaggedAt: v.optional(v.number()),
     flaggedNote: v.optional(v.string()),
+    // --- Recouvrement MailPulse (additif) ---
+    // Filon garde le suivi metier, MailPulse garde les envois email/WhatsApp.
+    recoveryStatus: v.optional(
+      v.union(
+        v.literal('not_started'),
+        v.literal('prompted'),
+        v.literal('manual_followup'),
+        v.literal('mailpulse_pending'),
+        v.literal('mailpulse_active'),
+        v.literal('paid'),
+        v.literal('cancelled'),
+      ),
+    ),
+    recoveryPromptedAt: v.optional(v.number()),
+    recoveryFollowupId: v.optional(v.id('followups')),
+    mailpulseContactId: v.optional(v.string()),
+    mailpulseSequenceId: v.optional(v.string()),
+    mailpulseLastSyncAt: v.optional(v.number()),
     // Position dans la colonne kanban (tri intra-stage).
     order: v.number(),
     createdAt: v.number(),
@@ -564,6 +582,29 @@ export default defineSchema({
     // pas d'objectif fixe (la carte propose d'en definir un).
     rankGoalLabel: v.optional(v.string()),
     rankGoalTargetActives: v.optional(v.number()),
+    // --- MailPulse & recouvrement (additif) ---
+    mailpulsePromptOnWon: v.optional(v.boolean()),
+    mailpulseConnectionStatus: v.optional(
+      v.union(
+        v.literal('not_linked'),
+        v.literal('pending'),
+        v.literal('linked'),
+      ),
+    ),
+    mailpulseAccountId: v.optional(v.string()),
+    mailpulseWorkspaceId: v.optional(v.string()),
+    recoveryReminderDelayDays: v.optional(v.number()),
+    recoveryFallbackFollowupEnabled: v.optional(v.boolean()),
+    recoveryPreferredChannels: v.optional(
+      v.array(v.union(v.literal('email'), v.literal('whatsapp'))),
+    ),
+    recoveryMode: v.optional(
+      v.union(
+        v.literal('manual'),
+        v.literal('semi_auto'),
+        v.literal('automatic'),
+      ),
+    ),
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index('by_user', ['userId']),

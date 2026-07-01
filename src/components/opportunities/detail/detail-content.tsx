@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useMutation } from 'convex/react'
+import { useMutation, useQuery } from 'convex/react'
 import type { FunctionReturnType } from 'convex/server'
 import { api } from '../../../../convex/_generated/api'
 import { m } from '~/lib/paraglide/messages'
@@ -24,8 +24,12 @@ import { DetailHeader } from './detail-header'
 import { AiDraftTeaser } from './ai-draft-teaser'
 import { AiSignalCard } from '../ai-signal-card'
 import { UpgradeNudge } from '~/components/billing/upgrade-nudge'
+import { MailPulseRecoveryDialog } from '~/components/mailpulse/mailpulse-recovery-dialog'
 
 type LoadedOpportunity = FunctionReturnType<typeof api.opportunities.get>
+type RecoverySettings = {
+  mailpulsePromptOnWon?: boolean
+}
 
 /**
  * Contenu central du détail d'une opportunité, partagé par le panneau split
@@ -48,6 +52,8 @@ export function OpportunityDetailContent({
   const setPriority = useMutation(api.opportunities.setPriority)
   const update = useMutation(api.opportunities.update)
   const remove = useMutation(api.opportunities.remove)
+  const markRecoveryPrompted = useMutation(api.recovery.markPrompted)
+  const settings = useQuery(api.settings.get, {}) as RecoverySettings | undefined
   const { label: stageLabelOf } = useStageLabels()
 
   const [editOpen, setEditOpen] = useState(false)
@@ -56,13 +62,25 @@ export function OpportunityDetailContent({
   const [removing, setRemoving] = useState(false)
   // Déclencheur de valeur mérité : opportunité passée à « Gagné » à l'instant.
   const [justWon, setJustWon] = useState(false)
+  const [mailpulseDialogOpen, setMailpulseDialogOpen] = useState(false)
 
   async function handleStage(next: Stage) {
     if (next === opportunity.stage) return
     try {
       await setStage({ id: opportunity._id, stage: next })
       toast.success(m.opp_moved_to({ stage: stageLabelOf(next) }))
-      if (next === 'won') setJustWon(true)
+      if (next === 'won') {
+        setJustWon(true)
+        const shouldPrompt = settings?.mailpulsePromptOnWon ?? true
+        if (shouldPrompt && opportunity.recoveryStatus === undefined) {
+          try {
+            await markRecoveryPrompted({ opportunityId: opportunity._id })
+            setMailpulseDialogOpen(true)
+          } catch {
+            toast.error("Le rappel MailPulse n'a pas pu etre prepare")
+          }
+        }
+      }
     } catch {
       toast.error(m.opp_move_error())
     }
@@ -224,6 +242,12 @@ export function OpportunityDetailContent({
                 }
               : null
         }
+      />
+
+      <MailPulseRecoveryDialog
+        open={mailpulseDialogOpen}
+        onOpenChange={setMailpulseDialogOpen}
+        opportunityId={opportunity._id}
       />
     </div>
   )

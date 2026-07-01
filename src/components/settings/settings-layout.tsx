@@ -11,6 +11,7 @@ import { AccountSection } from './account-section'
 import { LinkedAccountsSection } from './linked-accounts-section'
 import { SubscriptionManagement } from './subscription-management'
 import { ByokSection } from './byok-section'
+import { MailPulseSettingsCard } from '~/components/mailpulse/mailpulse-settings-card'
 
 type SectionKey = 'compte' | 'preferences'
 
@@ -65,6 +66,7 @@ export function SettingsLayout() {
             <>
               <AppearanceSection />
               <MonEspaceSection />
+              <MailPulseSettingsCard />
               <PreferencesSection />
             </>
           )}

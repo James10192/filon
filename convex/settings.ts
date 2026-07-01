@@ -19,7 +19,34 @@ import { requireUser } from './lib/withUser'
 const DEFAULT_SETTINGS = {
   pipelineStages: undefined as string[] | undefined,
   currency: 'XOF',
+  mailpulsePromptOnWon: true,
+  mailpulseConnectionStatus: 'not_linked' as const,
+  mailpulseAccountId: undefined as string | undefined,
+  mailpulseWorkspaceId: undefined as string | undefined,
+  recoveryReminderDelayDays: 3,
+  recoveryFallbackFollowupEnabled: true,
+  recoveryPreferredChannels: ['email', 'whatsapp'] as Array<
+    'email' | 'whatsapp'
+  >,
+  recoveryMode: 'semi_auto' as const,
 }
+
+const connectionStatusValidator = v.union(
+  v.literal('not_linked'),
+  v.literal('pending'),
+  v.literal('linked'),
+)
+
+const recoveryChannelValidator = v.union(
+  v.literal('email'),
+  v.literal('whatsapp'),
+)
+
+const recoveryModeValidator = v.union(
+  v.literal('manual'),
+  v.literal('semi_auto'),
+  v.literal('automatic'),
+)
 
 /**
  * Preferences du user courant. Retourne un objet par defaut si la ligne n'a
@@ -39,7 +66,7 @@ export const get = query({
     if (!settings) {
       return DEFAULT_SETTINGS
     }
-    return settings
+    return { ...DEFAULT_SETTINGS, ...settings }
   },
 })
 
@@ -52,6 +79,14 @@ export const upsert = mutation({
   args: {
     pipelineStages: v.optional(v.array(v.string())),
     currency: v.optional(v.string()),
+    mailpulsePromptOnWon: v.optional(v.boolean()),
+    mailpulseConnectionStatus: v.optional(connectionStatusValidator),
+    mailpulseAccountId: v.optional(v.string()),
+    mailpulseWorkspaceId: v.optional(v.string()),
+    recoveryReminderDelayDays: v.optional(v.number()),
+    recoveryFallbackFollowupEnabled: v.optional(v.boolean()),
+    recoveryPreferredChannels: v.optional(v.array(recoveryChannelValidator)),
+    recoveryMode: v.optional(recoveryModeValidator),
   },
   handler: async (ctx, args): Promise<null> => {
     const { userId } = await requireUser(ctx)
@@ -67,11 +102,44 @@ export const upsert = mutation({
         updatedAt: number
         pipelineStages?: string[]
         currency?: string
+        mailpulsePromptOnWon?: boolean
+        mailpulseConnectionStatus?: 'not_linked' | 'pending' | 'linked'
+        mailpulseAccountId?: string
+        mailpulseWorkspaceId?: string
+        recoveryReminderDelayDays?: number
+        recoveryFallbackFollowupEnabled?: boolean
+        recoveryPreferredChannels?: Array<'email' | 'whatsapp'>
+        recoveryMode?: 'manual' | 'semi_auto' | 'automatic'
       } = { updatedAt: now }
       if (args.pipelineStages !== undefined) {
         patch.pipelineStages = args.pipelineStages
       }
       if (args.currency !== undefined) patch.currency = args.currency
+      if (args.mailpulsePromptOnWon !== undefined) {
+        patch.mailpulsePromptOnWon = args.mailpulsePromptOnWon
+      }
+      if (args.mailpulseConnectionStatus !== undefined) {
+        patch.mailpulseConnectionStatus = args.mailpulseConnectionStatus
+      }
+      if (args.mailpulseAccountId !== undefined) {
+        patch.mailpulseAccountId = args.mailpulseAccountId
+      }
+      if (args.mailpulseWorkspaceId !== undefined) {
+        patch.mailpulseWorkspaceId = args.mailpulseWorkspaceId
+      }
+      if (args.recoveryReminderDelayDays !== undefined) {
+        patch.recoveryReminderDelayDays = args.recoveryReminderDelayDays
+      }
+      if (args.recoveryFallbackFollowupEnabled !== undefined) {
+        patch.recoveryFallbackFollowupEnabled =
+          args.recoveryFallbackFollowupEnabled
+      }
+      if (args.recoveryPreferredChannels !== undefined) {
+        patch.recoveryPreferredChannels = args.recoveryPreferredChannels
+      }
+      if (args.recoveryMode !== undefined) {
+        patch.recoveryMode = args.recoveryMode
+      }
       await ctx.db.patch(existing._id, patch)
       return null
     }
@@ -82,9 +150,40 @@ export const upsert = mutation({
       updatedAt: number
       pipelineStages?: string[]
       currency?: string
+      mailpulsePromptOnWon?: boolean
+      mailpulseConnectionStatus?: 'not_linked' | 'pending' | 'linked'
+      mailpulseAccountId?: string
+      mailpulseWorkspaceId?: string
+      recoveryReminderDelayDays?: number
+      recoveryFallbackFollowupEnabled?: boolean
+      recoveryPreferredChannels?: Array<'email' | 'whatsapp'>
+      recoveryMode?: 'manual' | 'semi_auto' | 'automatic'
     } = { userId, createdAt: now, updatedAt: now }
     if (args.pipelineStages !== undefined) doc.pipelineStages = args.pipelineStages
     if (args.currency !== undefined) doc.currency = args.currency
+    if (args.mailpulsePromptOnWon !== undefined) {
+      doc.mailpulsePromptOnWon = args.mailpulsePromptOnWon
+    }
+    if (args.mailpulseConnectionStatus !== undefined) {
+      doc.mailpulseConnectionStatus = args.mailpulseConnectionStatus
+    }
+    if (args.mailpulseAccountId !== undefined) {
+      doc.mailpulseAccountId = args.mailpulseAccountId
+    }
+    if (args.mailpulseWorkspaceId !== undefined) {
+      doc.mailpulseWorkspaceId = args.mailpulseWorkspaceId
+    }
+    if (args.recoveryReminderDelayDays !== undefined) {
+      doc.recoveryReminderDelayDays = args.recoveryReminderDelayDays
+    }
+    if (args.recoveryFallbackFollowupEnabled !== undefined) {
+      doc.recoveryFallbackFollowupEnabled =
+        args.recoveryFallbackFollowupEnabled
+    }
+    if (args.recoveryPreferredChannels !== undefined) {
+      doc.recoveryPreferredChannels = args.recoveryPreferredChannels
+    }
+    if (args.recoveryMode !== undefined) doc.recoveryMode = args.recoveryMode
 
     await ctx.db.insert('settings', doc)
     return null

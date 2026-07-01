@@ -1,0 +1,142 @@
+import { useState } from 'react'
+import { useMutation, useQuery } from 'convex/react'
+import { ExternalLink, Loader2, Mail, MessageCircle, PlugZap } from 'lucide-react'
+import type { Id } from '../../../convex/_generated/dataModel'
+import { api } from '../../../convex/_generated/api'
+import { mailpulseConnectUrl, mailpulseSignupUrl } from '~/lib/mailpulse'
+import { toast } from '~/components/ui/sonner'
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '~/components/ui/alert-dialog'
+import { Badge } from '~/components/ui/badge'
+import { Button } from '~/components/ui/button'
+import { RecoveryFallbackFollowupNotice } from './recovery-fallback-followup-notice'
+
+type Me = { email?: string; name?: string } | null | undefined
+
+export function MailPulseRecoveryDialog({
+  open,
+  onOpenChange,
+  opportunityId,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  opportunityId: Id<'opportunities'>
+}) {
+  const me = useQuery(api.users.me, {}) as Me
+  const createFollowup = useMutation(api.recovery.createManualFollowup)
+  const markPending = useMutation(api.recovery.markMailpulsePending)
+  const [pending, setPending] = useState<
+    'signup' | 'connect' | 'manual' | null
+  >(null)
+  const [manualCreated, setManualCreated] = useState(false)
+
+  async function openMailPulse(kind: 'signup' | 'connect') {
+    setPending(kind)
+    try {
+      await markPending({ opportunityId })
+      const url =
+        kind === 'signup'
+          ? mailpulseSignupUrl({ email: me?.email, name: me?.name })
+          : mailpulseConnectUrl()
+      window.open(url, '_blank', 'noopener,noreferrer')
+      onOpenChange(false)
+    } catch {
+      toast.error("Impossible de preparer la liaison MailPulse")
+    } finally {
+      setPending(null)
+    }
+  }
+
+  async function createLocalReminder() {
+    setPending('manual')
+    try {
+      await createFollowup({ opportunityId })
+      setManualCreated(true)
+      toast.success('Relance de recouvrement planifiee')
+    } catch {
+      toast.error('Impossible de creer la relance')
+    } finally {
+      setPending(null)
+    }
+  }
+
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <div className="mb-1 flex flex-wrap gap-2">
+            <Badge variant="accent">
+              <Mail className="size-3" />
+              Email
+            </Badge>
+            <Badge variant="success">
+              <MessageCircle className="size-3" />
+              WhatsApp
+            </Badge>
+          </div>
+          <AlertDialogTitle>
+            Securiser ce paiement avec MailPulse
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            Cette opportunite est gagnee. MailPulse peut prendre le relais pour
+            les relances client par email et WhatsApp, pendant que Filon garde
+            le suivi du recouvrement.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+
+        {manualCreated && <RecoveryFallbackFollowupNotice />}
+
+        <div className="grid gap-2">
+          <Button
+            type="button"
+            onClick={() => openMailPulse('signup')}
+            disabled={pending !== null}
+          >
+            {pending === 'signup' ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <ExternalLink className="size-4" />
+            )}
+            Creer un compte MailPulse
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => openMailPulse('connect')}
+            disabled={pending !== null}
+          >
+            {pending === 'connect' ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <PlugZap className="size-4" />
+            )}
+            Lier mon compte MailPulse
+          </Button>
+        </div>
+
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={pending !== null}>
+            Fermer
+          </AlertDialogCancel>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={createLocalReminder}
+            disabled={pending !== null || manualCreated}
+          >
+            {pending === 'manual' && <Loader2 className="size-4 animate-spin" />}
+            Pas maintenant
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
+}
+
