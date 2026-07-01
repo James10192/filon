@@ -36,7 +36,7 @@ export function RecoveryChannelsSelector({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between gap-3">
-        <Label>Canaux souhaites</Label>
+        <Label>Canaux souhaités</Label>
         {!linked && <Badge variant="outline">MailPulse requis</Badge>}
       </div>
       <div className="grid grid-cols-2 gap-2">

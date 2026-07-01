@@ -12,6 +12,11 @@ import { Separator } from '~/components/ui/separator'
 import { Skeleton } from '~/components/ui/skeleton'
 import { Switch } from '~/components/ui/switch'
 import { MailPulseStatusBadge } from './mailpulse-status-badge'
+import {
+  MailPulseLogo,
+  MailPulseWordmark,
+  mailpulsePanelClassName,
+} from './mailpulse-brand'
 import { RecoveryChannelsSelector } from './recovery-channels-selector'
 import { RecoveryDelaySelect } from './recovery-delay-select'
 import { RecoveryModeSelect } from './recovery-mode-select'
@@ -74,7 +79,8 @@ export function MailPulseSettingsCard() {
   async function save() {
     setSaving(true)
     try {
-      await upsert({
+      const trimmedApiKey = apiKey.trim()
+      const payload = {
         mailpulsePromptOnWon: promptOnWon,
         mailpulseConnectionStatus: status,
         recoveryReminderDelayDays: delayDays,
@@ -82,12 +88,14 @@ export function MailPulseSettingsCard() {
         recoveryPreferredChannels: channels,
         recoveryMode: mode,
         mailpulseBaseUrl: baseUrl,
-        mailpulseApiKey: apiKey.trim() || undefined,
-      })
+      }
+      await upsert(
+        trimmedApiKey ? { ...payload, mailpulseApiKey: trimmedApiKey } : payload,
+      )
       setApiKey('')
-      toast.success('Preferences MailPulse enregistrees')
+      toast.success('Préférences MailPulse enregistrées')
     } catch {
-      toast.error("Impossible d'enregistrer ces preferences")
+      toast.error("Impossible d'enregistrer ces préférences")
     } finally {
       setSaving(false)
     }
@@ -104,12 +112,17 @@ export function MailPulseSettingsCard() {
       <CardHeader>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <CardTitle className="flex items-center gap-2">
-              <PlugZap className="size-4 text-fg-muted" />
-              MailPulse & recouvrement
+            <CardTitle className="flex items-center gap-3">
+              <MailPulseLogo />
+              <span className="flex min-w-0 flex-col gap-1">
+                <MailPulseWordmark className="text-base" showLogo={false} />
+                <span className="text-xs font-medium text-orange-600 dark:text-orange-400">
+                  Recouvrement email et WhatsApp
+                </span>
+              </span>
             </CardTitle>
             <p className="mt-1.5 text-sm text-fg-muted">
-              Proposez MailPulse au moment ou une opportunite est gagnee.
+              Proposez MailPulse au moment où une opportunité est gagnée.
             </p>
           </div>
           <MailPulseStatusBadge status={status} />
@@ -128,7 +141,7 @@ export function MailPulseSettingsCard() {
             }
           >
             <ExternalLink className="size-4" />
-            Creer un compte MailPulse
+            Créer un compte MailPulse
           </Button>
           <Button
             type="button"
@@ -142,13 +155,13 @@ export function MailPulseSettingsCard() {
 
         <Separator />
 
-        <div className="grid gap-4 rounded-lg border border-orange-200/70 bg-orange-50/60 p-4 dark:border-orange-900/40 dark:bg-orange-950/15">
+        <div className={`grid gap-4 rounded-lg border p-4 ${mailpulsePanelClassName}`}>
           <div>
             <h3 className="text-sm font-semibold text-fg">
               Connexion API MailPulse
             </h3>
             <p className="mt-1 text-xs text-fg-muted">
-              Collez ici l'URL et la cle Filon generee dans MailPulse.
+              Collez ici l'URL et la clé Filon générée dans MailPulse.
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
@@ -162,7 +175,7 @@ export function MailPulseSettingsCard() {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="mailpulse-api-key">Cle API Filon</Label>
+              <Label htmlFor="mailpulse-api-key">Clé API Filon</Label>
               <Input
                 id="mailpulse-api-key"
                 value={apiKey}
@@ -176,23 +189,23 @@ export function MailPulseSettingsCard() {
           </div>
           <div className="flex flex-wrap items-center gap-2 text-xs text-fg-muted">
             <span className="rounded-full bg-orange-100 px-2 py-1 font-medium text-orange-700 dark:bg-orange-950 dark:text-orange-300">
-              {settings.mailpulseApiKeySet ? 'Cle active' : 'Cle absente'}
+              {settings.mailpulseApiKeySet ? 'Clé active' : 'Clé absente'}
             </span>
             {settings.mailpulseApiKeyPreview && (
-              <span>Derniere cle: {settings.mailpulseApiKeyPreview}</span>
+              <span>Dernière clé : {settings.mailpulseApiKeyPreview}</span>
             )}
           </div>
         </div>
 
         <SwitchRow
           id="mailpulse-prompt"
-          label="Proposer MailPulse quand une opportunite est gagnee"
+          label="Proposer MailPulse quand une opportunité est gagnée"
           checked={promptOnWon}
           onCheckedChange={setPromptOnWon}
         />
         <SwitchRow
           id="mailpulse-fallback"
-          label="Creer une relance locale si MailPulse n'est pas lie"
+          label="Créer une relance locale si MailPulse n'est pas lié"
           checked={fallbackEnabled}
           onCheckedChange={setFallbackEnabled}
         />

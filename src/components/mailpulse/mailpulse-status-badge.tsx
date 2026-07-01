@@ -11,7 +11,7 @@ export function MailPulseStatusBadge({
     return (
       <Badge variant="success">
         <ShieldCheck className="size-3" />
-        Lie
+        Lié
       </Badge>
     )
   }
@@ -20,7 +20,7 @@ export function MailPulseStatusBadge({
     return (
       <Badge variant="warning">
         <Link className="size-3" />
-        A finaliser
+        À finaliser
       </Badge>
     )
   }
@@ -28,7 +28,7 @@ export function MailPulseStatusBadge({
   return (
     <Badge variant="outline">
       <Unlink className="size-3" />
-      Non lie
+      Non lié
     </Badge>
   )
 }

@@ -1,5 +1,5 @@
 import { v } from 'convex/values'
-import { action, internalMutation, internalQuery, mutation } from './_generated/server'
+import { action, internalMutation, internalQuery, mutation, query } from './_generated/server'
 import { internal } from './_generated/api'
 import type { Doc, Id } from './_generated/dataModel'
 import {
@@ -10,8 +10,12 @@ import {
 import { forbiddenError, notFoundError, validationError } from './lib/plan'
 
 const DEFAULT_DELAY_DAYS = 3
-const FOLLOWUP_LABEL = 'Verifier si le paiement a ete recu'
+const FOLLOWUP_LABEL = 'Vérifier si le paiement a été reçu'
 const DEFAULT_MAILPULSE_URL = 'http://localhost:3001'
+const MAILPULSE_RECOVERY_STATUSES = new Set([
+  'mailpulse_pending',
+  'mailpulse_active',
+])
 
 type MailpulseRecoveryResponse = {
   status?: string
@@ -68,13 +72,52 @@ function statusFromMailpulse(status: string | undefined) {
   return 'mailpulse_pending' as const
 }
 
+export const listMailpulseRecoveries = query({
+  args: {},
+  handler: async (ctx) => {
+    const { userId } = await requireUser(ctx)
+    const rows = await ctx.db
+      .query('opportunities')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .collect()
+
+    return rows
+      .filter((opportunity) =>
+        MAILPULSE_RECOVERY_STATUSES.has(opportunity.recoveryStatus ?? ''),
+      )
+      .sort(
+        (a, b) =>
+          (b.mailpulseLastSyncAt ?? b.updatedAt) -
+          (a.mailpulseLastSyncAt ?? a.updatedAt),
+      )
+      .map((opportunity) => ({
+        _id: opportunity._id,
+        title: opportunity.title,
+        status: opportunity.recoveryStatus,
+        ...(opportunity.compensation
+          ? { compensation: opportunity.compensation }
+          : {}),
+        ...(opportunity.deadline ? { deadline: opportunity.deadline } : {}),
+        ...(opportunity.mailpulseLastSyncAt
+          ? { mailpulseLastSyncAt: opportunity.mailpulseLastSyncAt }
+          : {}),
+        ...(opportunity.mailpulseContactId
+          ? { mailpulseContactId: opportunity.mailpulseContactId }
+          : {}),
+        ...(opportunity.mailpulseSequenceId
+          ? { mailpulseSequenceId: opportunity.mailpulseSequenceId }
+          : {}),
+      }))
+  },
+})
+
 export const markPrompted = mutation({
   args: { opportunityId: v.id('opportunities') },
   handler: async (ctx, args) => {
     const { userId } = await requireUser(ctx)
     const opportunity = await ownedOpportunity(ctx, userId, args.opportunityId)
     if (opportunity.stage !== 'won') {
-      throw validationError('Le recouvrement concerne une opportunite gagnee')
+      throw validationError('Le recouvrement concerne une opportunité gagnée')
     }
     if (opportunity.recoveryStatus !== undefined) return null
 
@@ -93,7 +136,7 @@ export const createManualFollowup = mutation({
     const { userId } = await requireUser(ctx)
     const opportunity = await ownedOpportunity(ctx, userId, args.opportunityId)
     if (opportunity.stage !== 'won') {
-      throw validationError('Le recouvrement concerne une opportunite gagnee')
+      throw validationError('Le recouvrement concerne une opportunité gagnée')
     }
     if (opportunity.recoveryFollowupId) return opportunity.recoveryFollowupId
 
@@ -123,7 +166,7 @@ export const markMailpulsePending = mutation({
     const { userId } = await requireUser(ctx)
     const opportunity = await ownedOpportunity(ctx, userId, args.opportunityId)
     if (opportunity.stage !== 'won') {
-      throw validationError('Le recouvrement concerne une opportunite gagnee')
+      throw validationError('Le recouvrement concerne une opportunité gagnée')
     }
     const now = Date.now()
     await ctx.db.patch(args.opportunityId, {
@@ -148,7 +191,7 @@ export const loadMailpulseRecoveryContext = internalQuery({
       throw forbiddenError('Non autorise')
     }
     if (opportunity.stage !== 'won') {
-      throw validationError('Le recouvrement concerne une opportunite gagnee')
+      throw validationError('Le recouvrement concerne une opportunité gagnée')
     }
 
     const settings = await ctx.db
@@ -157,7 +200,7 @@ export const loadMailpulseRecoveryContext = internalQuery({
       .unique()
     const apiKey = settings?.mailpulseApiKey?.trim()
     if (!apiKey) {
-      throw validationError('Configurez une cle API MailPulse avant de lancer le recouvrement')
+      throw validationError('Configurez une clé API MailPulse avant de lancer le recouvrement')
     }
 
     const contact = opportunity.contactId
@@ -214,14 +257,19 @@ export const applyMailpulseRecoveryResult = internalMutation({
   handler: async (ctx, args) => {
     const opportunity = await ownedOpportunity(ctx, args.userId, args.opportunityId)
     const now = Date.now()
-    await ctx.db.patch(args.opportunityId, {
+    const patch: Partial<Doc<'opportunities'>> = {
       recoveryStatus: statusFromMailpulse(args.status),
       recoveryPromptedAt: opportunity.recoveryPromptedAt ?? now,
-      mailpulseContactId: args.mailpulseContactId,
-      mailpulseSequenceId: args.mailpulseSequenceId,
       mailpulseLastSyncAt: now,
       updatedAt: now,
-    })
+    }
+    if (args.mailpulseContactId !== undefined) {
+      patch.mailpulseContactId = args.mailpulseContactId
+    }
+    if (args.mailpulseSequenceId !== undefined) {
+      patch.mailpulseSequenceId = args.mailpulseSequenceId
+    }
+    await ctx.db.patch(args.opportunityId, patch)
     return null
   },
 })
@@ -251,16 +299,20 @@ export const startMailpulseRecovery = action({
       .catch(() => null)) as MailpulseRecoveryResponse | null
     if (!response.ok) {
       throw validationError(
-        body?.error?.message ?? "MailPulse n'a pas accepte cette opportunite",
+        body?.error?.message ?? "MailPulse n'a pas accepté cette opportunité",
       )
     }
 
     await ctx.runMutation(internal.recovery.applyMailpulseRecoveryResult, {
       userId,
       opportunityId: args.opportunityId,
-      status: body?.status,
-      mailpulseContactId: body?.mailpulseContactId,
-      mailpulseSequenceId: body?.mailpulseSequenceId,
+      ...(body?.status ? { status: body.status } : {}),
+      ...(body?.mailpulseContactId
+        ? { mailpulseContactId: body.mailpulseContactId }
+        : {}),
+      ...(body?.mailpulseSequenceId
+        ? { mailpulseSequenceId: body.mailpulseSequenceId }
+        : {}),
     })
     return body
   },
@@ -295,9 +347,13 @@ export const syncMailpulseRecoveryStatus = action({
     await ctx.runMutation(internal.recovery.applyMailpulseRecoveryResult, {
       userId,
       opportunityId: args.opportunityId,
-      status: body?.status,
-      mailpulseContactId: body?.mailpulseContactId,
-      mailpulseSequenceId: body?.mailpulseSequenceId,
+      ...(body?.status ? { status: body.status } : {}),
+      ...(body?.mailpulseContactId
+        ? { mailpulseContactId: body.mailpulseContactId }
+        : {}),
+      ...(body?.mailpulseSequenceId
+        ? { mailpulseSequenceId: body.mailpulseSequenceId }
+        : {}),
     })
     return body
   },

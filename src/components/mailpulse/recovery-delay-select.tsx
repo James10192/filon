@@ -8,10 +8,10 @@ import {
 } from '~/components/ui/select'
 
 const OPTIONS = [
-  { value: 0, label: 'Le jour meme' },
-  { value: 3, label: 'Apres 3 jours' },
-  { value: 7, label: 'Apres 7 jours' },
-  { value: 14, label: 'Apres 14 jours' },
+  { value: 0, label: 'Le jour même' },
+  { value: 3, label: 'Après 3 jours' },
+  { value: 7, label: 'Après 7 jours' },
+  { value: 14, label: 'Après 14 jours' },
 ]
 
 export function RecoveryDelaySelect({
@@ -23,7 +23,7 @@ export function RecoveryDelaySelect({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <Label htmlFor="mailpulse-delay">Reminder local</Label>
+      <Label htmlFor="mailpulse-delay">Rappel local</Label>
       <Select
         value={String(value)}
         onValueChange={(next) => onChange(Number(next))}

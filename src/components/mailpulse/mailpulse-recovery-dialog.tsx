@@ -16,6 +16,7 @@ import {
 } from '~/components/ui/alert-dialog'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
+import { MailPulseWordmark } from './mailpulse-brand'
 import { RecoveryFallbackFollowupNotice } from './recovery-fallback-followup-notice'
 import type { MailPulseSettings } from './types'
 
@@ -51,12 +52,12 @@ export function MailPulseRecoveryDialog({
       if (!configured) {
         await markPending({ opportunityId })
         window.open(mailpulseConnectUrl(), '_blank', 'noopener,noreferrer')
-        toast.info('Configurez MailPulse pour lancer la sequence')
+        toast.info('Configurez MailPulse pour lancer la séquence')
         onOpenChange(false)
         return
       }
       await startMailpulseRecovery({ opportunityId })
-      toast.success('Sequence MailPulse preparee')
+      toast.success('Séquence MailPulse préparée')
       onOpenChange(false)
     } catch {
       toast.error("Impossible de lancer le recouvrement MailPulse")
@@ -76,7 +77,7 @@ export function MailPulseRecoveryDialog({
       window.open(url, '_blank', 'noopener,noreferrer')
       onOpenChange(false)
     } catch {
-      toast.error("Impossible de preparer la liaison MailPulse")
+      toast.error("Impossible de préparer la liaison MailPulse")
     } finally {
       setPending(null)
     }
@@ -87,9 +88,9 @@ export function MailPulseRecoveryDialog({
     try {
       await createFollowup({ opportunityId })
       setManualCreated(true)
-      toast.success('Relance de recouvrement planifiee')
+      toast.success('Relance de recouvrement planifiée')
     } catch {
-      toast.error('Impossible de creer la relance')
+      toast.error('Impossible de créer la relance')
     } finally {
       setPending(null)
     }
@@ -110,10 +111,13 @@ export function MailPulseRecoveryDialog({
             </Badge>
           </div>
           <AlertDialogTitle>
-            Securiser ce paiement avec MailPulse
+            <span className="flex items-center gap-2">
+              <MailPulseWordmark className="text-lg" />
+            </span>
+            <span className="mt-2 block">Sécuriser ce paiement</span>
           </AlertDialogTitle>
           <AlertDialogDescription>
-            Cette opportunite est gagnee. MailPulse peut prendre le relais pour
+            Cette opportunité est gagnée. MailPulse peut prendre le relais pour
             les relances client par email et WhatsApp, pendant que Filon garde
             le suivi du recouvrement.
           </AlertDialogDescription>
@@ -133,7 +137,7 @@ export function MailPulseRecoveryDialog({
               <PlugZap className="size-4" />
             )}
             {configured
-              ? 'Lancer la sequence MailPulse'
+              ? 'Lancer la séquence MailPulse'
               : 'Configurer MailPulse'}
           </Button>
           <Button
@@ -147,7 +151,7 @@ export function MailPulseRecoveryDialog({
             ) : (
               <ExternalLink className="size-4" />
             )}
-            Creer un compte MailPulse
+            Créer un compte MailPulse
           </Button>
           <Button
             type="button"

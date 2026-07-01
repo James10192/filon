@@ -26,6 +26,7 @@ import { AiDraftTeaser } from './ai-draft-teaser'
 import { AiSignalCard } from '../ai-signal-card'
 import { UpgradeNudge } from '~/components/billing/upgrade-nudge'
 import { MailPulseRecoveryDialog } from '~/components/mailpulse/mailpulse-recovery-dialog'
+import { MailPulseLogo, MailPulseWordmark } from '~/components/mailpulse/mailpulse-brand'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 
@@ -84,7 +85,7 @@ export function OpportunityDetailContent({
             await markRecoveryPrompted({ opportunityId: opportunity._id })
             setMailpulseDialogOpen(true)
           } catch {
-            toast.error("Le rappel MailPulse n'a pas pu etre prepare")
+            toast.error("Le rappel MailPulse n'a pas pu être préparé")
           }
         }
       }
@@ -134,7 +135,7 @@ export function OpportunityDetailContent({
     setSyncingMailpulse(true)
     try {
       await syncMailpulseRecoveryStatus({ opportunityId: opportunity._id })
-      toast.success('Statut MailPulse synchronise')
+      toast.success('Statut MailPulse synchronisé')
     } catch {
       toast.error('Impossible de synchroniser MailPulse')
     } finally {
@@ -315,14 +316,23 @@ function MailPulseRecoveryPanel({
           ) : (
             <RefreshCw className="size-3.5" />
           )}
-          Sync
+          Synchroniser
         </Button>
       }
     >
       <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-3 rounded-[var(--radius)] border border-orange-200/80 bg-orange-50/55 p-3 dark:border-orange-900/50 dark:bg-orange-950/15">
+          <MailPulseLogo />
+          <div className="min-w-0">
+            <MailPulseWordmark className="text-sm" showLogo={false} />
+            <p className="mt-0.5 text-xs text-fg-muted">
+              Suivi de recouvrement email et WhatsApp.
+            </p>
+          </div>
+        </div>
         <div className="flex flex-wrap gap-2">
           <Badge variant={active ? 'success' : 'warning'}>
-            {active ? 'Actif' : 'Prepare'}
+            {active ? 'Actif' : 'Préparé'}
           </Badge>
           <Badge variant="accent">
             <Mail className="size-3" />
@@ -342,13 +352,13 @@ function MailPulseRecoveryPanel({
           )}
           {sequenceId && (
             <div className="flex justify-between gap-3">
-              <dt>Sequence</dt>
+              <dt>Séquence</dt>
               <dd className="truncate font-mono text-fg">{sequenceId}</dd>
             </div>
           )}
           {lastSyncAt && (
             <div className="flex justify-between gap-3">
-              <dt>Derniere sync</dt>
+              <dt>Dernière sync</dt>
               <dd className="text-fg">
                 {new Date(lastSyncAt).toLocaleString('fr-FR')}
               </dd>
