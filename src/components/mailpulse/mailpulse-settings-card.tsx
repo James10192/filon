@@ -6,6 +6,7 @@ import { mailpulseConnectUrl, mailpulseSignupUrl } from '~/lib/mailpulse'
 import { toast } from '~/components/ui/sonner'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '~/components/ui/card'
+import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
 import { Separator } from '~/components/ui/separator'
 import { Skeleton } from '~/components/ui/skeleton'
@@ -40,6 +41,8 @@ export function MailPulseSettingsCard() {
   )
   const [status, setStatus] =
     useState<MailPulseConnectionStatus>('not_linked')
+  const [baseUrl, setBaseUrl] = useState('')
+  const [apiKey, setApiKey] = useState('')
   const [hydrated, setHydrated] = useState(false)
   const [saving, setSaving] = useState(false)
 
@@ -51,6 +54,7 @@ export function MailPulseSettingsCard() {
     setMode(settings.recoveryMode ?? 'semi_auto')
     setChannels(settings.recoveryPreferredChannels ?? DEFAULT_RECOVERY_CHANNELS)
     setStatus(settings.mailpulseConnectionStatus ?? 'not_linked')
+    setBaseUrl(settings.mailpulseBaseUrl ?? '')
     setHydrated(true)
   }, [settings, hydrated])
 
@@ -62,6 +66,8 @@ export function MailPulseSettingsCard() {
     delayDays !== (settings.recoveryReminderDelayDays ?? 3) ||
     mode !== (settings.recoveryMode ?? 'semi_auto') ||
     status !== (settings.mailpulseConnectionStatus ?? 'not_linked') ||
+    baseUrl !== (settings.mailpulseBaseUrl ?? '') ||
+    apiKey.trim().length > 0 ||
     channels.join('|') !==
       (settings.recoveryPreferredChannels ?? DEFAULT_RECOVERY_CHANNELS).join('|')
 
@@ -75,7 +81,10 @@ export function MailPulseSettingsCard() {
         recoveryFallbackFollowupEnabled: fallbackEnabled,
         recoveryPreferredChannels: channels,
         recoveryMode: mode,
+        mailpulseBaseUrl: baseUrl,
+        mailpulseApiKey: apiKey.trim() || undefined,
       })
+      setApiKey('')
       toast.success('Preferences MailPulse enregistrees')
     } catch {
       toast.error("Impossible d'enregistrer ces preferences")
@@ -132,6 +141,48 @@ export function MailPulseSettingsCard() {
         </div>
 
         <Separator />
+
+        <div className="grid gap-4 rounded-lg border border-orange-200/70 bg-orange-50/60 p-4 dark:border-orange-900/40 dark:bg-orange-950/15">
+          <div>
+            <h3 className="text-sm font-semibold text-fg">
+              Connexion API MailPulse
+            </h3>
+            <p className="mt-1 text-xs text-fg-muted">
+              Collez ici l'URL et la cle Filon generee dans MailPulse.
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+            <div className="grid gap-2">
+              <Label htmlFor="mailpulse-url">URL MailPulse</Label>
+              <Input
+                id="mailpulse-url"
+                value={baseUrl}
+                placeholder="http://localhost:3001"
+                onChange={(event) => setBaseUrl(event.target.value)}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="mailpulse-api-key">Cle API Filon</Label>
+              <Input
+                id="mailpulse-api-key"
+                value={apiKey}
+                type="password"
+                placeholder={
+                  settings.mailpulseApiKeyPreview ?? 'mp_filon_...'
+                }
+                onChange={(event) => setApiKey(event.target.value)}
+              />
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 text-xs text-fg-muted">
+            <span className="rounded-full bg-orange-100 px-2 py-1 font-medium text-orange-700 dark:bg-orange-950 dark:text-orange-300">
+              {settings.mailpulseApiKeySet ? 'Cle active' : 'Cle absente'}
+            </span>
+            {settings.mailpulseApiKeyPreview && (
+              <span>Derniere cle: {settings.mailpulseApiKeyPreview}</span>
+            )}
+          </div>
+        </div>
 
         <SwitchRow
           id="mailpulse-prompt"

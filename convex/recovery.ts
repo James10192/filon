@@ -1,11 +1,24 @@
 import { v } from 'convex/values'
-import { mutation } from './_generated/server'
+import { action, internalMutation, internalQuery, mutation } from './_generated/server'
+import { internal } from './_generated/api'
 import type { Doc, Id } from './_generated/dataModel'
-import { requireUser, type MutationCtx } from './lib/withUser'
+import {
+  requireUser,
+  requireUserFromAction,
+  type MutationCtx,
+} from './lib/withUser'
 import { forbiddenError, notFoundError, validationError } from './lib/plan'
 
 const DEFAULT_DELAY_DAYS = 3
 const FOLLOWUP_LABEL = 'Verifier si le paiement a ete recu'
+const DEFAULT_MAILPULSE_URL = 'http://localhost:3001'
+
+type MailpulseRecoveryResponse = {
+  status?: string
+  mailpulseContactId?: string
+  mailpulseSequenceId?: string
+  error?: { message?: string }
+}
 
 async function ownedOpportunity(
   ctx: MutationCtx,
@@ -34,6 +47,25 @@ function dueDateForDelay(delayDays: number): string {
   const due = new Date()
   due.setDate(due.getDate() + delayDays)
   return due.toISOString()
+}
+
+function normalizeBaseUrl(value: string | undefined): string {
+  return (value?.trim().replace(/\/+$/, '') || DEFAULT_MAILPULSE_URL)
+}
+
+function parseAmountDue(value: string | undefined): number {
+  if (!value) return 0
+  const normalized = value
+    .replace(/[^\d,.-]/g, '')
+    .replace(/\s/g, '')
+    .replace(',', '.')
+  const parsed = Number.parseFloat(normalized)
+  return Number.isFinite(parsed) ? Math.max(parsed, 0) : 0
+}
+
+function statusFromMailpulse(status: string | undefined) {
+  if (status === 'active') return 'mailpulse_active' as const
+  return 'mailpulse_pending' as const
 }
 
 export const markPrompted = mutation({
@@ -101,5 +133,172 @@ export const markMailpulsePending = mutation({
       updatedAt: now,
     })
     return null
+  },
+})
+
+export const loadMailpulseRecoveryContext = internalQuery({
+  args: {
+    userId: v.string(),
+    opportunityId: v.id('opportunities'),
+  },
+  handler: async (ctx, args) => {
+    const opportunity = await ctx.db.get(args.opportunityId)
+    if (!opportunity) throw notFoundError('Introuvable')
+    if (opportunity.userId !== args.userId) {
+      throw forbiddenError('Non autorise')
+    }
+    if (opportunity.stage !== 'won') {
+      throw validationError('Le recouvrement concerne une opportunite gagnee')
+    }
+
+    const settings = await ctx.db
+      .query('settings')
+      .withIndex('by_user', (q) => q.eq('userId', args.userId))
+      .unique()
+    const apiKey = settings?.mailpulseApiKey?.trim()
+    if (!apiKey) {
+      throw validationError('Configurez une cle API MailPulse avant de lancer le recouvrement')
+    }
+
+    const contact = opportunity.contactId
+      ? await ctx.db.get(opportunity.contactId)
+      : null
+    const company = opportunity.companyId
+      ? await ctx.db.get(opportunity.companyId)
+      : null
+    const ownedContact =
+      contact && contact.userId === args.userId ? contact : null
+    const ownedCompany =
+      company && company.userId === args.userId ? company : null
+
+    const clientEmail = ownedContact?.email?.trim()
+    if (!clientEmail) {
+      throw validationError('Ajoutez un email client avant de lancer MailPulse')
+    }
+
+    const dueDate =
+      opportunity.deadline?.trim() || new Date().toISOString().slice(0, 10)
+    const clientName =
+      ownedContact?.name?.trim() ||
+      ownedCompany?.name?.trim() ||
+      opportunity.title
+
+    return {
+      baseUrl: normalizeBaseUrl(settings?.mailpulseBaseUrl),
+      apiKey,
+      payload: {
+        source: 'filon' as const,
+        opportunityId: args.opportunityId,
+        workspaceId: settings?.mailpulseWorkspaceId,
+        userId: args.userId,
+        clientName,
+        clientEmail,
+        clientPhone: ownedContact?.phone,
+        opportunityTitle: opportunity.title,
+        amountDue: parseAmountDue(opportunity.compensation),
+        currency: settings?.currency ?? 'XOF',
+        dueDate,
+      },
+    }
+  },
+})
+
+export const applyMailpulseRecoveryResult = internalMutation({
+  args: {
+    userId: v.string(),
+    opportunityId: v.id('opportunities'),
+    status: v.optional(v.string()),
+    mailpulseContactId: v.optional(v.string()),
+    mailpulseSequenceId: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const opportunity = await ownedOpportunity(ctx, args.userId, args.opportunityId)
+    const now = Date.now()
+    await ctx.db.patch(args.opportunityId, {
+      recoveryStatus: statusFromMailpulse(args.status),
+      recoveryPromptedAt: opportunity.recoveryPromptedAt ?? now,
+      mailpulseContactId: args.mailpulseContactId,
+      mailpulseSequenceId: args.mailpulseSequenceId,
+      mailpulseLastSyncAt: now,
+      updatedAt: now,
+    })
+    return null
+  },
+})
+
+export const startMailpulseRecovery = action({
+  args: { opportunityId: v.id('opportunities') },
+  handler: async (ctx, args) => {
+    const { userId } = await requireUserFromAction(ctx)
+    const recoveryContext = await ctx.runQuery(
+      internal.recovery.loadMailpulseRecoveryContext,
+      { userId, opportunityId: args.opportunityId },
+    )
+
+    const response = await fetch(
+      `${recoveryContext.baseUrl}/api/integrations/filon/recovery`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${recoveryContext.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(recoveryContext.payload),
+      },
+    )
+    const body = (await response
+      .json()
+      .catch(() => null)) as MailpulseRecoveryResponse | null
+    if (!response.ok) {
+      throw validationError(
+        body?.error?.message ?? "MailPulse n'a pas accepte cette opportunite",
+      )
+    }
+
+    await ctx.runMutation(internal.recovery.applyMailpulseRecoveryResult, {
+      userId,
+      opportunityId: args.opportunityId,
+      status: body?.status,
+      mailpulseContactId: body?.mailpulseContactId,
+      mailpulseSequenceId: body?.mailpulseSequenceId,
+    })
+    return body
+  },
+})
+
+export const syncMailpulseRecoveryStatus = action({
+  args: { opportunityId: v.id('opportunities') },
+  handler: async (ctx, args) => {
+    const { userId } = await requireUserFromAction(ctx)
+    const recoveryContext = await ctx.runQuery(
+      internal.recovery.loadMailpulseRecoveryContext,
+      { userId, opportunityId: args.opportunityId },
+    )
+    const url = new URL(
+      '/api/integrations/filon/recovery/status',
+      recoveryContext.baseUrl,
+    )
+    url.searchParams.set('filonOpportunityId', recoveryContext.payload.opportunityId)
+
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${recoveryContext.apiKey}` },
+    })
+    const body = (await response
+      .json()
+      .catch(() => null)) as MailpulseRecoveryResponse | null
+    if (!response.ok) {
+      throw validationError(
+        body?.error?.message ?? 'Statut MailPulse indisponible pour ce dossier',
+      )
+    }
+
+    await ctx.runMutation(internal.recovery.applyMailpulseRecoveryResult, {
+      userId,
+      opportunityId: args.opportunityId,
+      status: body?.status,
+      mailpulseContactId: body?.mailpulseContactId,
+      mailpulseSequenceId: body?.mailpulseSequenceId,
+    })
+    return body
   },
 })

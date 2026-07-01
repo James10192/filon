@@ -593,6 +593,9 @@ export default defineSchema({
     ),
     mailpulseAccountId: v.optional(v.string()),
     mailpulseWorkspaceId: v.optional(v.string()),
+    mailpulseBaseUrl: v.optional(v.string()),
+    mailpulseApiKey: v.optional(v.string()),
+    mailpulseApiKeyPreview: v.optional(v.string()),
     recoveryReminderDelayDays: v.optional(v.number()),
     recoveryFallbackFollowupEnabled: v.optional(v.boolean()),
     recoveryPreferredChannels: v.optional(

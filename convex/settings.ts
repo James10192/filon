@@ -23,6 +23,9 @@ const DEFAULT_SETTINGS = {
   mailpulseConnectionStatus: 'not_linked' as const,
   mailpulseAccountId: undefined as string | undefined,
   mailpulseWorkspaceId: undefined as string | undefined,
+  mailpulseBaseUrl: undefined as string | undefined,
+  mailpulseApiKeyPreview: undefined as string | undefined,
+  mailpulseApiKeySet: false,
   recoveryReminderDelayDays: 3,
   recoveryFallbackFollowupEnabled: true,
   recoveryPreferredChannels: ['email', 'whatsapp'] as Array<
@@ -66,7 +69,12 @@ export const get = query({
     if (!settings) {
       return DEFAULT_SETTINGS
     }
-    return { ...DEFAULT_SETTINGS, ...settings }
+    const { mailpulseApiKey, ...safeSettings } = settings
+    return {
+      ...DEFAULT_SETTINGS,
+      ...safeSettings,
+      mailpulseApiKeySet: Boolean(mailpulseApiKey),
+    }
   },
 })
 
@@ -83,6 +91,8 @@ export const upsert = mutation({
     mailpulseConnectionStatus: v.optional(connectionStatusValidator),
     mailpulseAccountId: v.optional(v.string()),
     mailpulseWorkspaceId: v.optional(v.string()),
+    mailpulseBaseUrl: v.optional(v.string()),
+    mailpulseApiKey: v.optional(v.string()),
     recoveryReminderDelayDays: v.optional(v.number()),
     recoveryFallbackFollowupEnabled: v.optional(v.boolean()),
     recoveryPreferredChannels: v.optional(v.array(recoveryChannelValidator)),
@@ -106,6 +116,9 @@ export const upsert = mutation({
         mailpulseConnectionStatus?: 'not_linked' | 'pending' | 'linked'
         mailpulseAccountId?: string
         mailpulseWorkspaceId?: string
+        mailpulseBaseUrl?: string
+        mailpulseApiKey?: string
+        mailpulseApiKeyPreview?: string
         recoveryReminderDelayDays?: number
         recoveryFallbackFollowupEnabled?: boolean
         recoveryPreferredChannels?: Array<'email' | 'whatsapp'>
@@ -126,6 +139,19 @@ export const upsert = mutation({
       }
       if (args.mailpulseWorkspaceId !== undefined) {
         patch.mailpulseWorkspaceId = args.mailpulseWorkspaceId
+      }
+      if (args.mailpulseBaseUrl !== undefined) {
+        patch.mailpulseBaseUrl = normalizeMailpulseBaseUrl(
+          args.mailpulseBaseUrl,
+        )
+      }
+      if (args.mailpulseApiKey !== undefined) {
+        const apiKey = args.mailpulseApiKey.trim()
+        if (apiKey) {
+          patch.mailpulseApiKey = apiKey
+          patch.mailpulseApiKeyPreview = previewApiKey(apiKey)
+          patch.mailpulseConnectionStatus = 'linked'
+        }
       }
       if (args.recoveryReminderDelayDays !== undefined) {
         patch.recoveryReminderDelayDays = args.recoveryReminderDelayDays
@@ -154,6 +180,9 @@ export const upsert = mutation({
       mailpulseConnectionStatus?: 'not_linked' | 'pending' | 'linked'
       mailpulseAccountId?: string
       mailpulseWorkspaceId?: string
+      mailpulseBaseUrl?: string
+      mailpulseApiKey?: string
+      mailpulseApiKeyPreview?: string
       recoveryReminderDelayDays?: number
       recoveryFallbackFollowupEnabled?: boolean
       recoveryPreferredChannels?: Array<'email' | 'whatsapp'>
@@ -173,6 +202,17 @@ export const upsert = mutation({
     if (args.mailpulseWorkspaceId !== undefined) {
       doc.mailpulseWorkspaceId = args.mailpulseWorkspaceId
     }
+    if (args.mailpulseBaseUrl !== undefined) {
+      doc.mailpulseBaseUrl = normalizeMailpulseBaseUrl(args.mailpulseBaseUrl)
+    }
+    if (args.mailpulseApiKey !== undefined) {
+      const apiKey = args.mailpulseApiKey.trim()
+      if (apiKey) {
+        doc.mailpulseApiKey = apiKey
+        doc.mailpulseApiKeyPreview = previewApiKey(apiKey)
+        doc.mailpulseConnectionStatus = 'linked'
+      }
+    }
     if (args.recoveryReminderDelayDays !== undefined) {
       doc.recoveryReminderDelayDays = args.recoveryReminderDelayDays
     }
@@ -189,3 +229,12 @@ export const upsert = mutation({
     return null
   },
 })
+
+function normalizeMailpulseBaseUrl(value: string): string {
+  return value.trim().replace(/\/+$/, '')
+}
+
+function previewApiKey(value: string): string {
+  if (value.length <= 14) return `${value.slice(0, 4)}...`
+  return `${value.slice(0, 10)}...${value.slice(-4)}`
+}

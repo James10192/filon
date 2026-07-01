@@ -7,6 +7,9 @@ export type MailPulseSettings = {
   mailpulseConnectionStatus?: MailPulseConnectionStatus
   mailpulseAccountId?: string
   mailpulseWorkspaceId?: string
+  mailpulseBaseUrl?: string
+  mailpulseApiKeyPreview?: string
+  mailpulseApiKeySet?: boolean
   recoveryReminderDelayDays?: number
   recoveryFallbackFollowupEnabled?: boolean
   recoveryPreferredChannels?: RecoveryChannel[]

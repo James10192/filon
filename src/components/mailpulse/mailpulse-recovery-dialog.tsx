@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useMutation, useQuery } from 'convex/react'
+import { useAction, useMutation, useQuery } from 'convex/react'
 import { ExternalLink, Loader2, Mail, MessageCircle, PlugZap } from 'lucide-react'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { api } from '../../../convex/_generated/api'
@@ -17,6 +17,7 @@ import {
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { RecoveryFallbackFollowupNotice } from './recovery-fallback-followup-notice'
+import type { MailPulseSettings } from './types'
 
 type Me = { email?: string; name?: string } | null | undefined
 
@@ -30,12 +31,39 @@ export function MailPulseRecoveryDialog({
   opportunityId: Id<'opportunities'>
 }) {
   const me = useQuery(api.users.me, {}) as Me
+  const settings = useQuery(api.settings.get, {}) as
+    | MailPulseSettings
+    | undefined
+  const startMailpulseRecovery = useAction(api.recovery.startMailpulseRecovery)
   const createFollowup = useMutation(api.recovery.createManualFollowup)
   const markPending = useMutation(api.recovery.markMailpulsePending)
   const [pending, setPending] = useState<
-    'signup' | 'connect' | 'manual' | null
+    'start' | 'signup' | 'connect' | 'manual' | null
   >(null)
   const [manualCreated, setManualCreated] = useState(false)
+
+  const configured =
+    Boolean(settings?.mailpulseApiKeySet) && Boolean(settings?.mailpulseBaseUrl)
+
+  async function launchMailPulseRecovery() {
+    setPending('start')
+    try {
+      if (!configured) {
+        await markPending({ opportunityId })
+        window.open(mailpulseConnectUrl(), '_blank', 'noopener,noreferrer')
+        toast.info('Configurez MailPulse pour lancer la sequence')
+        onOpenChange(false)
+        return
+      }
+      await startMailpulseRecovery({ opportunityId })
+      toast.success('Sequence MailPulse preparee')
+      onOpenChange(false)
+    } catch {
+      toast.error("Impossible de lancer le recouvrement MailPulse")
+    } finally {
+      setPending(null)
+    }
+  }
 
   async function openMailPulse(kind: 'signup' | 'connect') {
     setPending(kind)
@@ -96,6 +124,21 @@ export function MailPulseRecoveryDialog({
         <div className="grid gap-2">
           <Button
             type="button"
+            onClick={launchMailPulseRecovery}
+            disabled={pending !== null || settings === undefined}
+          >
+            {pending === 'start' ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <PlugZap className="size-4" />
+            )}
+            {configured
+              ? 'Lancer la sequence MailPulse'
+              : 'Configurer MailPulse'}
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
             onClick={() => openMailPulse('signup')}
             disabled={pending !== null}
           >
@@ -108,7 +151,7 @@ export function MailPulseRecoveryDialog({
           </Button>
           <Button
             type="button"
-            variant="secondary"
+            variant="outline"
             onClick={() => openMailPulse('connect')}
             disabled={pending !== null}
           >

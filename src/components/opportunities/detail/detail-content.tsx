@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { useMutation, useQuery } from 'convex/react'
+import { useAction, useMutation, useQuery } from 'convex/react'
 import type { FunctionReturnType } from 'convex/server'
+import { Loader2, Mail, MessageCircle, RefreshCw } from 'lucide-react'
 import { api } from '../../../../convex/_generated/api'
 import { m } from '~/lib/paraglide/messages'
 import { toast } from '~/components/ui/sonner'
@@ -25,6 +26,8 @@ import { AiDraftTeaser } from './ai-draft-teaser'
 import { AiSignalCard } from '../ai-signal-card'
 import { UpgradeNudge } from '~/components/billing/upgrade-nudge'
 import { MailPulseRecoveryDialog } from '~/components/mailpulse/mailpulse-recovery-dialog'
+import { Badge } from '~/components/ui/badge'
+import { Button } from '~/components/ui/button'
 
 type LoadedOpportunity = FunctionReturnType<typeof api.opportunities.get>
 type RecoverySettings = {
@@ -53,6 +56,9 @@ export function OpportunityDetailContent({
   const update = useMutation(api.opportunities.update)
   const remove = useMutation(api.opportunities.remove)
   const markRecoveryPrompted = useMutation(api.recovery.markPrompted)
+  const syncMailpulseRecoveryStatus = useAction(
+    api.recovery.syncMailpulseRecoveryStatus,
+  )
   const settings = useQuery(api.settings.get, {}) as RecoverySettings | undefined
   const { label: stageLabelOf } = useStageLabels()
 
@@ -60,6 +66,7 @@ export function OpportunityDetailContent({
   const [proposalOpen, setProposalOpen] = useState(false)
   const [editPending, setEditPending] = useState(false)
   const [removing, setRemoving] = useState(false)
+  const [syncingMailpulse, setSyncingMailpulse] = useState(false)
   // Déclencheur de valeur mérité : opportunité passée à « Gagné » à l'instant.
   const [justWon, setJustWon] = useState(false)
   const [mailpulseDialogOpen, setMailpulseDialogOpen] = useState(false)
@@ -123,6 +130,18 @@ export function OpportunityDetailContent({
     }
   }
 
+  async function handleMailpulseSync() {
+    setSyncingMailpulse(true)
+    try {
+      await syncMailpulseRecoveryStatus({ opportunityId: opportunity._id })
+      toast.success('Statut MailPulse synchronise')
+    } catch {
+      toast.error('Impossible de synchroniser MailPulse')
+    } finally {
+      setSyncingMailpulse(false)
+    }
+  }
+
   const isPage = layout === 'page'
 
   return (
@@ -162,6 +181,17 @@ export function OpportunityDetailContent({
           <AiSignalCard opportunityId={opportunity._id} />
 
           <AiDraftTeaser />
+
+          {opportunity.recoveryStatus?.startsWith('mailpulse_') && (
+            <MailPulseRecoveryPanel
+              status={opportunity.recoveryStatus}
+              contactId={opportunity.mailpulseContactId}
+              sequenceId={opportunity.mailpulseSequenceId}
+              lastSyncAt={opportunity.mailpulseLastSyncAt}
+              syncing={syncingMailpulse}
+              onSync={handleMailpulseSync}
+            />
+          )}
 
           <CompanyContactPanel
             company={opportunity.company}
@@ -250,5 +280,82 @@ export function OpportunityDetailContent({
         opportunityId={opportunity._id}
       />
     </div>
+  )
+}
+
+function MailPulseRecoveryPanel({
+  status,
+  contactId,
+  sequenceId,
+  lastSyncAt,
+  syncing,
+  onSync,
+}: {
+  status: string
+  contactId?: string
+  sequenceId?: string
+  lastSyncAt?: number
+  syncing: boolean
+  onSync: () => void
+}) {
+  const active = status === 'mailpulse_active'
+  return (
+    <Panel
+      title="Recouvrement MailPulse"
+      action={
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={onSync}
+          disabled={syncing}
+        >
+          {syncing ? (
+            <Loader2 className="size-3.5 animate-spin" />
+          ) : (
+            <RefreshCw className="size-3.5" />
+          )}
+          Sync
+        </Button>
+      }
+    >
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap gap-2">
+          <Badge variant={active ? 'success' : 'warning'}>
+            {active ? 'Actif' : 'Prepare'}
+          </Badge>
+          <Badge variant="accent">
+            <Mail className="size-3" />
+            Email
+          </Badge>
+          <Badge variant="success">
+            <MessageCircle className="size-3" />
+            WhatsApp
+          </Badge>
+        </div>
+        <dl className="grid gap-2 text-xs text-fg-muted">
+          {contactId && (
+            <div className="flex justify-between gap-3">
+              <dt>Contact MailPulse</dt>
+              <dd className="truncate font-mono text-fg">{contactId}</dd>
+            </div>
+          )}
+          {sequenceId && (
+            <div className="flex justify-between gap-3">
+              <dt>Sequence</dt>
+              <dd className="truncate font-mono text-fg">{sequenceId}</dd>
+            </div>
+          )}
+          {lastSyncAt && (
+            <div className="flex justify-between gap-3">
+              <dt>Derniere sync</dt>
+              <dd className="text-fg">
+                {new Date(lastSyncAt).toLocaleString('fr-FR')}
+              </dd>
+            </div>
+          )}
+        </dl>
+      </div>
+    </Panel>
   )
 }
