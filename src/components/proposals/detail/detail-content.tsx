@@ -8,6 +8,7 @@ import { EntityDocuments } from '~/components/shared/entity-documents'
 import { ProposalFormDialog } from '../proposal-form-dialog'
 import { ProposalDetailActions } from '../proposal-detail-actions'
 import { ProposalFollowupsPanel } from '../proposal-followups-panel'
+import { ProposalLinesPanel } from '../proposal-lines-panel'
 import { ProposalRecipientsPanel } from '../proposal-recipients-panel'
 import { DetailPanel } from '../detail-panel'
 import {
@@ -132,6 +133,28 @@ export function ProposalDetailContent({
               {proposal.pitch}
             </p>
           </DetailPanel>
+
+          {kind === 'proforma' && proposal.lineItems && (
+            <ProposalLinesPanel
+              lines={proposal.lineItems}
+              currency={proposal.currency}
+            />
+          )}
+
+          {kind === 'proforma' && (proposal.terms || proposal.clientNote) && (
+            <DetailPanel title="Conditions">
+              <div className="space-y-3 text-sm leading-relaxed text-fg">
+                {proposal.terms && (
+                  <p className="whitespace-pre-wrap">{proposal.terms}</p>
+                )}
+                {proposal.clientNote && (
+                  <p className="whitespace-pre-wrap text-fg-muted">
+                    {proposal.clientNote}
+                  </p>
+                )}
+              </div>
+            </DetailPanel>
+          )}
 
           <ProposalRecipientsPanel
             recipients={recipients}

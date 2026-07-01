@@ -25,6 +25,41 @@ const proposalKind = v.union(
   v.literal('proforma'),
 )
 
+const lineItemValidator = v.object({
+  label: v.string(),
+  description: v.optional(v.string()),
+  quantity: v.number(),
+  unitPrice: v.number(),
+})
+
+type ProposalLineItem = {
+  label: string
+  description?: string
+  quantity: number
+  unitPrice: number
+}
+
+function cleanLineItems(items: ProposalLineItem[] | undefined) {
+  if (items === undefined) return undefined
+  return items
+    .map((item) => {
+      const label = item.label.trim()
+      const description = item.description?.trim()
+      return {
+        label,
+        ...(description ? { description } : {}),
+        quantity: Math.max(0, item.quantity),
+        unitPrice: Math.max(0, item.unitPrice),
+      }
+    })
+    .filter((item) => item.label && item.quantity > 0)
+}
+
+function lineItemsTotal(items: ProposalLineItem[] | undefined) {
+  if (!items || items.length === 0) return undefined
+  return items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0)
+}
+
 /** Charge une proposition en verifiant qu'elle appartient au user courant. */
 async function getOwnedProposal(
   ctx: QueryCtx | MutationCtx,
@@ -172,9 +207,13 @@ export const create = mutation({
   args: {
     title: v.string(),
     pitch: v.string(),
+    lineItems: v.optional(v.array(lineItemValidator)),
     companyId: v.optional(v.id('companies')),
     amount: v.optional(v.number()),
     currency: v.optional(v.string()),
+    validUntil: v.optional(v.string()),
+    terms: v.optional(v.string()),
+    clientNote: v.optional(v.string()),
     kind: v.optional(proposalKind),
     status: v.optional(proposalStatus),
   },
@@ -201,8 +240,12 @@ export const create = mutation({
       currency: string
       createdAt: number
       updatedAt: number
+      lineItems?: ProposalLineItem[]
       companyId?: Id<'companies'>
       amount?: number
+      validUntil?: string
+      terms?: string
+      clientNote?: string
       sentAt?: string
     } = {
       userId,
@@ -214,8 +257,15 @@ export const create = mutation({
       createdAt: now,
       updatedAt: now,
     }
+    const lineItems = cleanLineItems(args.lineItems)
+    const derivedAmount = lineItemsTotal(lineItems)
+    if (lineItems !== undefined) doc.lineItems = lineItems
     if (args.companyId !== undefined) doc.companyId = args.companyId
-    if (args.amount !== undefined) doc.amount = args.amount
+    if (derivedAmount !== undefined) doc.amount = derivedAmount
+    else if (args.amount !== undefined) doc.amount = args.amount
+    if (args.validUntil !== undefined) doc.validUntil = args.validUntil
+    if (args.terms !== undefined) doc.terms = args.terms
+    if (args.clientNote !== undefined) doc.clientNote = args.clientNote
     if (status === 'sent') doc.sentAt = new Date(now).toISOString()
 
     return ctx.db.insert('proposals', doc)
@@ -231,9 +281,13 @@ export const update = mutation({
     id: v.id('proposals'),
     title: v.optional(v.string()),
     pitch: v.optional(v.string()),
+    lineItems: v.optional(v.array(lineItemValidator)),
     companyId: v.optional(v.id('companies')),
     amount: v.optional(v.number()),
     currency: v.optional(v.string()),
+    validUntil: v.optional(v.string()),
+    terms: v.optional(v.string()),
+    clientNote: v.optional(v.string()),
     kind: v.optional(proposalKind),
   },
   handler: async (ctx, args): Promise<null> => {
@@ -251,16 +305,31 @@ export const update = mutation({
       updatedAt: number
       title?: string
       pitch?: string
+      lineItems?: ProposalLineItem[]
       companyId?: Id<'companies'>
       amount?: number
       currency?: string
+      validUntil?: string
+      terms?: string
+      clientNote?: string
       kind?: 'proposal' | 'proforma'
     } = { updatedAt: Date.now() }
     if (args.title !== undefined) patch.title = args.title
     if (args.pitch !== undefined) patch.pitch = args.pitch
+    if (args.lineItems !== undefined) {
+      const lineItems = cleanLineItems(args.lineItems)
+      patch.lineItems = lineItems
+      const derivedAmount = lineItemsTotal(lineItems)
+      if (derivedAmount !== undefined) patch.amount = derivedAmount
+    }
     if (args.companyId !== undefined) patch.companyId = args.companyId
-    if (args.amount !== undefined) patch.amount = args.amount
+    if (args.amount !== undefined && patch.amount === undefined) {
+      patch.amount = args.amount
+    }
     if (args.currency !== undefined) patch.currency = args.currency
+    if (args.validUntil !== undefined) patch.validUntil = args.validUntil
+    if (args.terms !== undefined) patch.terms = args.terms
+    if (args.clientNote !== undefined) patch.clientNote = args.clientNote
     if (args.kind !== undefined) patch.kind = args.kind
 
     await ctx.db.patch(args.id, patch)

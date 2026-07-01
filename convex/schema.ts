@@ -428,8 +428,21 @@ export default defineSchema({
     kind: v.optional(v.union(v.literal('proposal'), v.literal('proforma'))),
     title: v.string(),
     pitch: v.string(),
+    lineItems: v.optional(
+      v.array(
+        v.object({
+          label: v.string(),
+          description: v.optional(v.string()),
+          quantity: v.number(),
+          unitPrice: v.number(),
+        }),
+      ),
+    ),
     amount: v.optional(v.number()),
     currency: v.optional(v.string()),
+    validUntil: v.optional(v.string()),
+    terms: v.optional(v.string()),
+    clientNote: v.optional(v.string()),
     status: v.union(
       v.literal('draft'),
       v.literal('sent'),

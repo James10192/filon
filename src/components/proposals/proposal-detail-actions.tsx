@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { useMutation } from 'convex/react'
+import { useMutation, useQuery } from 'convex/react'
 import type { FunctionReturnType } from 'convex/server'
 import {
   CheckCircle2,
   Download,
+  FileSpreadsheet,
+  FileText,
   Loader2,
   MoreHorizontal,
   Pencil,
@@ -39,6 +41,10 @@ import { toast } from '~/components/ui/sonner'
 import { AskCopilotButton } from '~/components/copilot/ask-copilot-button'
 import { STATUS_LABELS, type ProposalStatus } from './proposal-status'
 import { downloadProposalPdf } from '~/lib/export/proforma-pdf'
+import {
+  downloadProposalCsv,
+  downloadProposalXlsx,
+} from '~/lib/export/proposal-spreadsheet'
 import { normalizeProposalKind } from './proposal-kind'
 
 /**
@@ -58,8 +64,11 @@ export function ProposalDetailActions({
   const setStatus = useMutation(api.proposals.setStatus)
   const remove = useMutation(api.proposals.remove)
   const convert = useMutation(api.proposals.convertToOpportunity)
+  const me = useQuery(api.users.me, {})
+  const orgs = useQuery(api.organizations.mine, {})
 
   const [busy, setBusy] = useState(false)
+  const [exporting, setExporting] = useState<'pdf' | 'xlsx' | 'csv' | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [confirmConvert, setConfirmConvert] = useState(false)
 
@@ -114,10 +123,43 @@ export function ProposalDetailActions({
   }
 
   async function handleDownloadPdf() {
+    if (exporting) return
+    setExporting('pdf')
     try {
-      await downloadProposalPdf(proposalDetail)
+      const org = orgs?.[0]
+      await downloadProposalPdf(proposalDetail, {
+        name: org?.name ?? me?.name ?? 'Filon',
+        ...(me?.email ? { email: me.email } : {}),
+        ...(me?.headline ? { subtitle: me.headline } : {}),
+      })
     } catch {
       toast.error("L'export PDF a échoué.")
+    } finally {
+      setExporting(null)
+    }
+  }
+
+  async function handleDownloadXlsx() {
+    if (exporting) return
+    setExporting('xlsx')
+    try {
+      await downloadProposalXlsx(proposalDetail)
+    } catch {
+      toast.error("L'export Excel a échoué.")
+    } finally {
+      setExporting(null)
+    }
+  }
+
+  function handleDownloadCsv() {
+    if (exporting) return
+    setExporting('csv')
+    try {
+      downloadProposalCsv(proposalDetail)
+    } catch {
+      toast.error("L'export CSV a échoué.")
+    } finally {
+      setExporting(null)
     }
   }
 
@@ -143,10 +185,14 @@ export function ProposalDetailActions({
       <Button
         variant="outline"
         size="sm"
-        disabled={busy}
+        disabled={busy || exporting === 'pdf'}
         onClick={() => void handleDownloadPdf()}
       >
-        <Download className="size-4" />
+        {exporting === 'pdf' ? (
+          <Loader2 className="size-4 animate-spin" />
+        ) : (
+          <Download className="size-4" />
+        )}
         {kind === 'proforma' ? 'Télécharger PDF' : 'Exporter PDF'}
       </Button>
 
@@ -173,6 +219,15 @@ export function ProposalDetailActions({
               {m.prop_action_back_to_draft()}
             </DropdownMenuItem>
           )}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onSelect={() => void handleDownloadXlsx()}>
+            <FileSpreadsheet className="size-4" />
+            Exporter Excel
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={handleDownloadCsv}>
+            <FileText className="size-4" />
+            Exporter CSV
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
             variant="destructive"

@@ -28,6 +28,11 @@ import {
   STATUS_LABELS,
   type ProposalStatus,
 } from '~/components/proposals/proposal-status'
+import {
+  normalizeProposalKind,
+  proposalKindLabel,
+  type ProposalKind,
+} from '~/components/proposals/proposal-kind'
 
 /** Date (ISO string ou timestamp ms) -> « JJ/MM/AAAA », vide si absente. */
 function formatDateCell(value: string | number | null | undefined): string {
@@ -111,6 +116,7 @@ export const OPPORTUNITY_COLUMNS: CsvColumn<ExportOpportunity>[] = [
 
 /** Forme minimale d'une proposition (api.proposals.*). */
 export type ExportProposal = {
+  kind?: string
   title?: string
   status?: string
   companyName?: string | null
@@ -118,12 +124,19 @@ export type ExportProposal = {
   amount?: number | null
   currency?: string | null
   sentAt?: string | null
+  validUntil?: string | null
+  lineItems?: Array<{ label: string; quantity: number; unitPrice: number }> | null
   createdAt?: string | number | null
   pitch?: string | null
+  terms?: string | null
   notes?: string | null
 }
 
 export const PROPOSAL_COLUMNS: CsvColumn<ExportProposal>[] = [
+  {
+    header: 'Type',
+    value: (p) => proposalKindLabel(normalizeProposalKind(p.kind) as ProposalKind),
+  },
   { header: 'Titre', value: (p) => p.title ?? '' },
   {
     header: 'Statut',
@@ -137,8 +150,16 @@ export const PROPOSAL_COLUMNS: CsvColumn<ExportProposal>[] = [
   { header: 'Montant', value: (p) => p.amount ?? '' },
   { header: 'Devise', value: (p) => p.currency ?? '' },
   { header: 'Envoyée le', value: (p) => formatDateCell(p.sentAt) },
+  { header: 'Valable jusqu’au', value: (p) => formatDateCell(p.validUntil) },
+  {
+    header: 'Lignes',
+    value: (p) =>
+      p.lineItems?.map((line) => `${line.label} x${line.quantity}`).join(' | ') ??
+      '',
+  },
   { header: 'Créée le', value: (p) => formatDateCell(p.createdAt) },
   { header: 'Pitch', value: (p) => p.pitch ?? '' },
+  { header: 'Conditions', value: (p) => p.terms ?? '' },
   { header: 'Notes', value: (p) => p.notes ?? '' },
 ]
 
