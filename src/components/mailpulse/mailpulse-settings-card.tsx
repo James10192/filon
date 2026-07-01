@@ -77,6 +77,12 @@ export function MailPulseSettingsCard() {
       (settings.recoveryPreferredChannels ?? DEFAULT_RECOVERY_CHANNELS).join('|')
 
   async function save() {
+    const normalizedBaseUrl = normalizeMailPulseUrlInput(baseUrl)
+    if (baseUrl.trim() && !normalizedBaseUrl) {
+      toast.error("Renseignez une URL MailPulse valide, par exemple https://mailpulse-two.vercel.app")
+      return
+    }
+
     setSaving(true)
     try {
       const trimmedApiKey = apiKey.trim()
@@ -87,7 +93,7 @@ export function MailPulseSettingsCard() {
         recoveryFallbackFollowupEnabled: fallbackEnabled,
         recoveryPreferredChannels: channels,
         recoveryMode: mode,
-        mailpulseBaseUrl: baseUrl,
+        mailpulseBaseUrl: normalizedBaseUrl ?? '',
       }
       await upsert(
         trimmedApiKey ? { ...payload, mailpulseApiKey: trimmedApiKey } : payload,
@@ -170,7 +176,11 @@ export function MailPulseSettingsCard() {
               <Input
                 id="mailpulse-url"
                 value={baseUrl}
-                placeholder="http://localhost:3001"
+                type="url"
+                inputMode="url"
+                autoCapitalize="none"
+                autoComplete="off"
+                placeholder="https://mailpulse-two.vercel.app"
                 onChange={(event) => setBaseUrl(event.target.value)}
               />
             </div>
@@ -230,6 +240,23 @@ export function MailPulseSettingsCard() {
       </CardFooter>
     </Card>
   )
+}
+
+function normalizeMailPulseUrlInput(value: string): string | null {
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  if (trimmed.includes('@')) return null
+
+  const withProtocol = /^https?:\/\//i.test(trimmed)
+    ? trimmed
+    : `https://${trimmed}`
+  try {
+    const url = new URL(withProtocol)
+    if (!url.hostname.includes('.')) return null
+    return url.origin.replace(/\/+$/, '')
+  } catch {
+    return null
+  }
 }
 
 function SwitchRow({

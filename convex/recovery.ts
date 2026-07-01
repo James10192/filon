@@ -11,7 +11,7 @@ import { forbiddenError, notFoundError, validationError } from './lib/plan'
 
 const DEFAULT_DELAY_DAYS = 3
 const FOLLOWUP_LABEL = 'Vérifier si le paiement a été reçu'
-const DEFAULT_MAILPULSE_URL = 'http://localhost:3001'
+const DEFAULT_MAILPULSE_URL = 'https://mailpulse-two.vercel.app'
 const MAILPULSE_RECOVERY_STATUSES = new Set([
   'mailpulse_pending',
   'mailpulse_active',
@@ -54,7 +54,19 @@ function dueDateForDelay(delayDays: number): string {
 }
 
 function normalizeBaseUrl(value: string | undefined): string {
-  return (value?.trim().replace(/\/+$/, '') || DEFAULT_MAILPULSE_URL)
+  const trimmed = value?.trim()
+  if (!trimmed || trimmed.includes('@')) return DEFAULT_MAILPULSE_URL
+
+  const withProtocol = /^https?:\/\//i.test(trimmed)
+    ? trimmed
+    : `https://${trimmed}`
+  try {
+    const url = new URL(withProtocol)
+    if (!url.hostname.includes('.')) return DEFAULT_MAILPULSE_URL
+    return url.origin.replace(/\/+$/, '')
+  } catch {
+    return DEFAULT_MAILPULSE_URL
+  }
 }
 
 function parseAmountDue(value: string | undefined): number {

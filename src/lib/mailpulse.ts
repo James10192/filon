@@ -1,10 +1,37 @@
-const DEFAULT_MAILPULSE_URL = 'http://localhost:3001'
+const LOCAL_MAILPULSE_URL = 'http://localhost:3001'
+const PRODUCTION_MAILPULSE_URL = 'https://mailpulse-two.vercel.app'
 
 function mailpulseBaseUrl(): string {
-  return (
-    import.meta.env.VITE_MAILPULSE_URL?.replace(/\/$/, '') ??
-    DEFAULT_MAILPULSE_URL
-  )
+  const localFilon =
+    typeof window !== 'undefined' &&
+    ['localhost', '127.0.0.1'].includes(window.location.hostname)
+  const configured = import.meta.env.VITE_MAILPULSE_URL?.trim()
+  const normalized = configured ? normalizeMailPulseBaseUrl(configured) : null
+  if (normalized && (localFilon || !isLocalUrl(normalized))) return normalized
+
+  if (localFilon) {
+    return LOCAL_MAILPULSE_URL
+  }
+
+  return PRODUCTION_MAILPULSE_URL
+}
+
+function normalizeMailPulseBaseUrl(value: string): string | null {
+  if (value.includes('@')) return null
+  const withProtocol = /^https?:\/\//i.test(value) ? value : `https://${value}`
+  try {
+    return new URL(withProtocol).origin.replace(/\/+$/, '')
+  } catch {
+    return null
+  }
+}
+
+function isLocalUrl(value: string): boolean {
+  try {
+    return ['localhost', '127.0.0.1'].includes(new URL(value).hostname)
+  } catch {
+    return false
+  }
 }
 
 export function mailpulseSignupUrl(params?: {

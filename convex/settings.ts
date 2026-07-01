@@ -231,7 +231,19 @@ export const upsert = mutation({
 })
 
 function normalizeMailpulseBaseUrl(value: string): string {
-  return value.trim().replace(/\/+$/, '')
+  const trimmed = value.trim()
+  if (!trimmed || trimmed.includes('@')) return ''
+
+  const withProtocol = /^https?:\/\//i.test(trimmed)
+    ? trimmed
+    : `https://${trimmed}`
+  try {
+    const url = new URL(withProtocol)
+    if (!url.hostname.includes('.')) return ''
+    return url.origin.replace(/\/+$/, '')
+  } catch {
+    return ''
+  }
 }
 
 function previewApiKey(value: string): string {
