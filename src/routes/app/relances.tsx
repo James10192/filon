@@ -8,6 +8,7 @@ import {
   Clock3,
   Loader2,
   RefreshCw,
+  Settings,
   ShieldCheck,
   Target,
 } from 'lucide-react'
@@ -104,36 +105,39 @@ function Content({
   groups: DueGroups
   mailpulseRecoveries: MailPulseRecovery[]
 }) {
-  const total =
+  const localTotal =
     groups.overdue.length +
     groups.today.length +
     groups.thisWeek.length +
-    groups.later.length +
-    mailpulseRecoveries.length
-
-  if (total === 0) return <EmptyState />
+    groups.later.length
 
   return (
     <div className="flex flex-col gap-7">
       <MailPulseRecoverySection items={mailpulseRecoveries} />
-      <Section
-        title={m.dash_relances_section_overdue()}
-        tone="danger"
-        items={groups.overdue}
-        icon={<AlertTriangle className="size-4 text-danger" />}
-      />
-      <Section
-        title={m.dash_relances_section_today()}
-        tone="warning"
-        items={groups.today}
-        icon={<BellRing className="size-4 text-warning" />}
-      />
-      <Section
-        title={m.dash_relances_section_week()}
-        tone="neutral"
-        items={groups.thisWeek}
-      />
-      <Section title={m.dash_relances_section_later()} tone="neutral" items={groups.later} />
+      {localTotal === 0 ? (
+        <EmptyState />
+      ) : (
+        <>
+          <Section
+            title={m.dash_relances_section_overdue()}
+            tone="danger"
+            items={groups.overdue}
+            icon={<AlertTriangle className="size-4 text-danger" />}
+          />
+          <Section
+            title={m.dash_relances_section_today()}
+            tone="warning"
+            items={groups.today}
+            icon={<BellRing className="size-4 text-warning" />}
+          />
+          <Section
+            title={m.dash_relances_section_week()}
+            tone="neutral"
+            items={groups.thisWeek}
+          />
+          <Section title={m.dash_relances_section_later()} tone="neutral" items={groups.later} />
+        </>
+      )}
     </div>
   )
 }
@@ -143,8 +147,6 @@ function MailPulseRecoverySection({
 }: {
   items: MailPulseRecovery[]
 }) {
-  if (items.length === 0) return null
-
   return (
     <section className="flex flex-col gap-3">
       <header className="flex items-center gap-2">
@@ -159,12 +161,46 @@ function MailPulseRecoverySection({
           {items.length}
         </Badge>
       </header>
-      <div className="flex flex-col gap-2.5">
-        {items.map((item) => (
-          <MailPulseRecoveryItem key={item._id} item={item} />
-        ))}
-      </div>
+      {items.length === 0 ? (
+        <MailPulseRecoveryEmptyCard />
+      ) : (
+        <div className="flex flex-col gap-2.5">
+          {items.map((item) => (
+            <MailPulseRecoveryItem key={item._id} item={item} />
+          ))}
+        </div>
+      )}
     </section>
+  )
+}
+
+function MailPulseRecoveryEmptyCard() {
+  return (
+    <div
+      className={`flex flex-col gap-3 rounded-[var(--radius)] border p-3.5 shadow-[var(--shadow-card)] sm:flex-row sm:items-center ${mailpulsePanelClassName}`}
+    >
+      <MailPulseLogo />
+      <div className="min-w-0 flex-1">
+        <MailPulseWordmark className="text-sm" showLogo={false} />
+        <p className="mt-1 text-sm text-fg-muted">
+          Aucun recouvrement MailPulse n'est encore lancé. Passez une
+          opportunité en gagnée, puis lancez MailPulse depuis la fiche
+          opportunité.
+        </p>
+      </div>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        asChild
+        className="border-orange-200 text-orange-700 hover:bg-orange-100 dark:border-orange-900/70 dark:text-orange-300 dark:hover:bg-orange-950/30"
+      >
+        <Link to="/app/parametres">
+          <Settings className="size-4" />
+          Configurer
+        </Link>
+      </Button>
+    </div>
   )
 }
 
