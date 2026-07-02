@@ -23,6 +23,8 @@ import {
   docsToc,
   getDocsPage,
 } from './docs-content'
+import { richContentFor } from './docs-rich-content'
+import { RichDocsShowcase } from './docs-rich-showcase'
 
 type DocsViewProps = {
   slug?: string
@@ -36,7 +38,13 @@ export function DocsView({ slug }: DocsViewProps) {
   if (!page) return <DocsNotFound />
 
   const Icon = page.icon
-  const toc = docsToc(page, locale)
+  const richContent = richContentFor(page.slug, locale)
+  const toc = [
+    { title: copy.interfacePreview, url: '#interface', depth: 2 },
+    { title: copy.workflow, url: '#workflow', depth: 2 },
+    { title: copy.productProofs, url: '#preuves-produit', depth: 2 },
+    ...docsToc(page, locale),
+  ]
 
   return (
     <div className="min-h-[100dvh] bg-bg text-fg">
@@ -70,6 +78,8 @@ export function DocsView({ slug }: DocsViewProps) {
                 <ActionLink href="/inscription" label={copy.createAccount} primary />
                 <ActionLink href={page.appHref ?? '/app'} label={copy.openInApp} />
               </div>
+
+              <RichDocsShowcase content={richContent} copy={copy} />
 
               {page.sections.map((section) => (
                 <section key={section.id} id={section.id} className="scroll-mt-24">
@@ -309,6 +319,12 @@ function copyFor(locale: 'fr' | 'en') {
         openInApp: "Voir dans l'application",
         modulesTitle: 'Modules documentés',
         onThisPage: 'Dans cette page',
+        interfaceKicker: 'Capture produit',
+        interfacePreview: 'Aperçu de l’interface',
+        workflowKicker: 'Diagramme',
+        workflow: 'Flux opérationnel',
+        proofsKicker: 'Pourquoi c’est solide',
+        productProofs: 'Preuves produit',
         notFoundKicker: 'Documentation',
         notFoundTitle: 'Page introuvable',
         notFoundBody: "Cette page de documentation n'existe pas ou a été déplacée.",
@@ -322,6 +338,12 @@ function copyFor(locale: 'fr' | 'en') {
         openInApp: 'Open in app',
         modulesTitle: 'Documented modules',
         onThisPage: 'On this page',
+        interfaceKicker: 'Product capture',
+        interfacePreview: 'Interface preview',
+        workflowKicker: 'Diagram',
+        workflow: 'Operational flow',
+        proofsKicker: 'Why it is solid',
+        productProofs: 'Product proof points',
         notFoundKicker: 'Documentation',
         notFoundTitle: 'Page not found',
         notFoundBody: 'This documentation page does not exist or has moved.',
