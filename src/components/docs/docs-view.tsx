@@ -91,10 +91,9 @@ export function DocsView({ slug }: DocsViewProps) {
                       (item) => {
                         const ItemIcon = item.icon
                         return (
-                          <Link
+                          <a
                             key={item.slug}
-                            to="/docs/$slug"
-                            params={{ slug: item.slug }}
+                            href={docsPageHref(item.slug)}
                             className="group rounded-[var(--radius)] border border-border bg-surface p-4 text-fg transition-colors hover:border-accent/45"
                           >
                             <div className="mb-3 flex items-center gap-2">
@@ -106,7 +105,7 @@ export function DocsView({ slug }: DocsViewProps) {
                             <p className="m-0 text-sm leading-relaxed text-fg-muted">
                               {item.description[locale]}
                             </p>
-                          </Link>
+                          </a>
                         )
                       },
                     )}
@@ -208,19 +207,23 @@ function DocsNavItem({
 
   if (page.slug === 'vue-ensemble') {
     return (
-      <Link to="/docs" className={className}>
+      <a href="/docs" className={className}>
         <Icon className="mt-0.5 size-4 shrink-0" />
         <span>{page.title[locale]}</span>
-      </Link>
+      </a>
     )
   }
 
   return (
-    <Link to="/docs/$slug" params={{ slug: page.slug }} className={className}>
+    <a href={docsPageHref(page.slug)} className={className}>
       <Icon className="mt-0.5 size-4 shrink-0" />
       <span>{page.title[locale]}</span>
-    </Link>
+    </a>
   )
+}
+
+function docsPageHref(slug: string) {
+  return slug === 'vue-ensemble' ? '/docs' : `/docs/${slug}`
 }
 
 function MobileDocsMenu({ activeSlug }: { activeSlug: string }) {
