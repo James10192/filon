@@ -377,7 +377,8 @@ export function richContentFor(slug: string, locale: 'fr' | 'en'): RichContent {
     }),
   }
 
-  return content[slug] ?? fallback
+  const selectedSlug = content[slug] ? slug : 'vue-ensemble'
+  return withAssets(selectedSlug, content[slug] ?? fallback, fr)
 }
 
 type RichSource = {
@@ -394,10 +395,16 @@ type RichSource = {
 
 function makeRichContent(source: RichSource): RichContent {
   const index = source.fr ? 0 : 1
+  const workflow = source.workflow[index]
+
   return {
     screenshotTitle: source.title[index],
     screenshotSubtitle: source.subtitle[index],
     screenshotStatus: source.status[index],
+    screenshotSrc: '/docs/screenshots/dashboard.png',
+    screenshotAlt: source.fr
+      ? `Capture réelle Filon · ${source.title[0]}`
+      : `Real Filon screenshot · ${source.title[1]}`,
     sidebarItems: source.nav[index],
     metricCards: source.metrics[index].map(([label, value]) => ({ label, value })),
     tableRows: source.rows[index].map(([label, status, meta]) => ({
@@ -405,7 +412,51 @@ function makeRichContent(source: RichSource): RichContent {
       status,
       meta,
     })),
-    workflow: source.workflow[index],
+    workflow,
+    diagramDefinition: workflowToMermaid(workflow),
     proofs: source.proofs[index].map(([title, body]) => ({ title, body })),
   }
+}
+
+function withAssets(
+  slug: string,
+  content: RichContent,
+  fr: boolean,
+): RichContent {
+  const screenshotSrc =
+    screenshotBySlug[slug] ?? screenshotBySlug['vue-ensemble']
+
+  return {
+    ...content,
+    screenshotSrc,
+    screenshotAlt: fr
+      ? `Capture réelle de Filon pour ${content.screenshotTitle}`
+      : `Real Filon screenshot for ${content.screenshotTitle}`,
+  }
+}
+
+const screenshotBySlug: Record<string, string> = {
+  'vue-ensemble': '/docs/screenshots/dashboard.png',
+  opportunites: '/docs/screenshots/opportunites.png',
+  veille: '/docs/screenshots/veille.png',
+  'carnet-propositions': '/docs/screenshots/propositions.png',
+  'relances-mailpulse': '/docs/screenshots/relances.png',
+  'copilot-ia': '/docs/screenshots/copilot.png',
+  'organisation-tarifs-parametres': '/docs/screenshots/parametres.png',
+}
+
+function workflowToMermaid(steps: string[]) {
+  const nodes = steps.map((step, index) => {
+    const nodeId = `S${index + 1}`
+    return `  ${nodeId}["${escapeMermaidLabel(step)}"]`
+  })
+  const links = steps.slice(0, -1).map((_, index) => {
+    return `  S${index + 1} --> S${index + 2}`
+  })
+
+  return ['flowchart LR', ...nodes, ...links].join('\n')
+}
+
+function escapeMermaidLabel(value: string) {
+  return value.replace(/"/g, '\\"')
 }

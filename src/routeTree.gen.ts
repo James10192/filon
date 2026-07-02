@@ -15,7 +15,7 @@ import { Route as ConnexionRouteImport } from './routes/connexion'
 import { Route as AppRouteRouteImport } from './routes/app/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app/index'
-import { Route as DocsSlugRouteImport } from './routes/docs.$slug'
+import { Route as DocsSlugRouteImport } from './routes/docs_.$slug'
 import { Route as AppVeilleRouteImport } from './routes/app/veille'
 import { Route as AppTarifsRouteImport } from './routes/app/tarifs'
 import { Route as AppRelancesRouteImport } from './routes/app/relances'
@@ -65,9 +65,9 @@ const AppIndexRoute = AppIndexRouteImport.update({
   getParentRoute: () => AppRouteRoute,
 } as any)
 const DocsSlugRoute = DocsSlugRouteImport.update({
-  id: '/$slug',
-  path: '/$slug',
-  getParentRoute: () => DocsRoute,
+  id: '/docs_/$slug',
+  path: '/docs/$slug',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AppVeilleRoute = AppVeilleRouteImport.update({
   id: '/veille',
@@ -159,7 +159,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteRouteWithChildren
   '/connexion': typeof ConnexionRoute
-  '/docs': typeof DocsRouteWithChildren
+  '/docs': typeof DocsRoute
   '/inscription': typeof InscriptionRoute
   '/app/admin': typeof AppAdminRoute
   '/app/copilot': typeof AppCopilotRoute
@@ -184,7 +184,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/connexion': typeof ConnexionRoute
-  '/docs': typeof DocsRouteWithChildren
+  '/docs': typeof DocsRoute
   '/inscription': typeof InscriptionRoute
   '/app/admin': typeof AppAdminRoute
   '/app/copilot': typeof AppCopilotRoute
@@ -211,7 +211,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/app': typeof AppRouteRouteWithChildren
   '/connexion': typeof ConnexionRoute
-  '/docs': typeof DocsRouteWithChildren
+  '/docs': typeof DocsRoute
   '/inscription': typeof InscriptionRoute
   '/app/admin': typeof AppAdminRoute
   '/app/copilot': typeof AppCopilotRoute
@@ -226,7 +226,7 @@ export interface FileRoutesById {
   '/app/relances': typeof AppRelancesRoute
   '/app/tarifs': typeof AppTarifsRoute
   '/app/veille': typeof AppVeilleRoute
-  '/docs/$slug': typeof DocsSlugRoute
+  '/docs_/$slug': typeof DocsSlugRoute
   '/app/': typeof AppIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/ph/$': typeof ApiPhSplatRoute
@@ -305,7 +305,7 @@ export interface FileRouteTypes {
     | '/app/relances'
     | '/app/tarifs'
     | '/app/veille'
-    | '/docs/$slug'
+    | '/docs_/$slug'
     | '/app/'
     | '/api/auth/$'
     | '/api/ph/$'
@@ -317,8 +317,9 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRouteRoute: typeof AppRouteRouteWithChildren
   ConnexionRoute: typeof ConnexionRoute
-  DocsRoute: typeof DocsRouteWithChildren
+  DocsRoute: typeof DocsRoute
   InscriptionRoute: typeof InscriptionRoute
+  DocsSlugRoute: typeof DocsSlugRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiPhSplatRoute: typeof ApiPhSplatRoute
 }
@@ -367,12 +368,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRouteRoute
     }
-    '/docs/$slug': {
-      id: '/docs/$slug'
-      path: '/$slug'
+    '/docs_/$slug': {
+      id: '/docs_/$slug'
+      path: '/docs/$slug'
       fullPath: '/docs/$slug'
       preLoaderRoute: typeof DocsSlugRouteImport
-      parentRoute: typeof DocsRoute
+      parentRoute: typeof rootRouteImport
     }
     '/app/veille': {
       id: '/app/veille'
@@ -558,22 +559,13 @@ const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
   AppRouteRouteChildren,
 )
 
-interface DocsRouteChildren {
-  DocsSlugRoute: typeof DocsSlugRoute
-}
-
-const DocsRouteChildren: DocsRouteChildren = {
-  DocsSlugRoute: DocsSlugRoute,
-}
-
-const DocsRouteWithChildren = DocsRoute._addFileChildren(DocsRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRouteRoute: AppRouteRouteWithChildren,
   ConnexionRoute: ConnexionRoute,
-  DocsRoute: DocsRouteWithChildren,
+  DocsRoute: DocsRoute,
   InscriptionRoute: InscriptionRoute,
+  DocsSlugRoute: DocsSlugRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiPhSplatRoute: ApiPhSplatRoute,
 }

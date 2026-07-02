@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { DocsView } from '~/components/docs/docs-view'
 
-export const Route = createFileRoute('/docs/$slug')({
+export const Route = createFileRoute('/docs_/$slug')({
   component: DocsSlugPage,
   head: () => ({
     meta: [
