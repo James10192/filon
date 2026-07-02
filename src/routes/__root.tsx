@@ -14,6 +14,7 @@ import {
   Scripts,
   createRootRouteWithContext,
 } from '@tanstack/react-router'
+import { RootProvider as DocsRootProvider } from 'fumadocs-ui/provider/tanstack'
 import type { QueryClient } from '@tanstack/react-query'
 import type { ConvexQueryClient } from '@convex-dev/react-query'
 import { Toaster } from '~/components/ui/sonner'
@@ -182,7 +183,12 @@ function RootDocument() {
       <body>
         <ThemeProvider>
           <LocaleProvider>
-            <Outlet />
+            <DocsRootProvider
+              search={{ enabled: false }}
+              theme={{ enabled: false }}
+            >
+              <Outlet />
+            </DocsRootProvider>
           </LocaleProvider>
         </ThemeProvider>
         <Toaster />

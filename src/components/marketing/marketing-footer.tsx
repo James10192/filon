@@ -2,7 +2,6 @@ import { Link } from '@tanstack/react-router'
 import { KanbanSquare, Mail } from 'lucide-react'
 import { m } from '~/lib/paraglide/messages'
 
-const DOCS_URL = 'https://filon-docs.vercel.app'
 const GITHUB_URL = 'https://github.com/James10192'
 const EMAIL = 'djedjelipatrick@gmail.com'
 const WHATSAPP_URL = 'https://wa.me/2250141540178'
@@ -24,8 +23,8 @@ export function MarketingFooter() {
     {
       title: m.footer_col_resources(),
       links: [
-        { label: m.footer_link_docs(), href: DOCS_URL },
-        { label: m.footer_link_getting_started(), href: `${DOCS_URL}/` },
+        { label: m.footer_link_docs(), to: '/docs' },
+        { label: m.footer_link_getting_started(), to: '/docs', hash: 'demarrage' },
         { label: m.footer_link_github(), href: GITHUB_URL },
       ],
     },

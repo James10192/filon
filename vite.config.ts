@@ -20,6 +20,10 @@ export default defineConfig({
       '@convex-dev/better-auth',
       '@convex-dev/react-query',
       'better-auth',
+      'fumadocs-core',
+      'fumadocs-ui',
+      'fumadocs-mdx',
+      'next-themes',
     ],
     // Libs navigateur-only (export Excel/PDF), importées dynamiquement dans des
     // handlers onClick : jamais dans le graphe SSR. Externalisées par sécurité.

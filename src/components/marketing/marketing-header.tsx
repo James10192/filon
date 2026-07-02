@@ -24,8 +24,6 @@ import {
 } from '~/components/ui/sheet'
 import { useScrollState } from './use-scroll-state'
 
-const DOCS_URL = 'https://filon-docs.vercel.app'
-
 function useNav() {
   return [
     { href: '#produit', label: m.nav_product() },
@@ -123,14 +121,12 @@ export function MarketingHeader() {
               {item.label}
             </a>
           ))}
-          <a
-            href={DOCS_URL}
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            to="/docs"
             className="flex h-9 items-center rounded-[var(--radius)] px-3 text-sm font-medium text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg"
           >
             {m.nav_docs()}
-          </a>
+          </Link>
         </nav>
 
         <div className="ml-auto hidden items-center gap-2 md:flex">
@@ -213,15 +209,13 @@ function MobileMenu({
               {item.label}
             </a>
           ))}
-          <a
-            href={DOCS_URL}
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            to="/docs"
             onClick={() => setOpen(false)}
             className="flex h-12 items-center rounded-[var(--radius)] px-3 text-base font-medium text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg"
           >
             {m.nav_docs()}
-          </a>
+          </Link>
         </nav>
 
         <div className="mt-auto flex flex-col gap-2.5 border-t border-border px-5 py-5">

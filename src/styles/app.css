@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
 
 /* Polices chargees via @fontsource (importees dans src/react-global.ts) :
    - Hanken Grotesk : UI / corps / titres (grotesque distinctive, lisible)
