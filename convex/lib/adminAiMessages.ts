@@ -46,7 +46,7 @@ function textFromContent(content: unknown, role: string): string {
     return role === 'user' ? cleanUserText(content) : content.trim()
   }
   if (!Array.isArray(content)) return ''
-  return content
+  const text = content
     .map((part: AgentPart) =>
       part?.type === 'text' && typeof part.text === 'string'
         ? part.text.trim()
@@ -54,6 +54,7 @@ function textFromContent(content: unknown, role: string): string {
     )
     .filter(Boolean)
     .join('\n\n')
+  return role === 'user' ? cleanUserText(text) : text
 }
 
 function firstToolPart(content: unknown): AgentPart | null {
@@ -121,7 +122,12 @@ export function serializeAdminAiMessage(
     }
   }
 
-  const text = (raw.text ?? textFromContent(content, role)).trim()
+  const fallbackText =
+    typeof raw.text === 'string' && raw.text.trim()
+      ? raw.text
+      : textFromContent(content, role)
+  const text =
+    role === 'user' ? cleanUserText(fallbackText) : fallbackText.trim()
   return {
     ...base,
     kind: text ? 'text' : 'empty',
