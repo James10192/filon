@@ -12,7 +12,7 @@ import {
   type Plan,
 } from './lib/plan'
 import { copilot } from './agent/agent'
-import type { MessageDoc } from '@convex-dev/agent'
+import { serializeAdminAiMessage } from './lib/adminAiMessages'
 
 /**
  * Back-office /admin · gestion utilisateurs, métriques, feedbacks.
@@ -525,59 +525,6 @@ function parseJsonObject(raw: string | undefined): Record<string, unknown> | nul
   }
 }
 
-function previewFromMessage(message: MessageDoc): string {
-  const directText = (message as { text?: unknown }).text
-  if (typeof directText === 'string' && directText.trim()) {
-    return directText.trim()
-  }
-
-  const parts = (message as { parts?: unknown }).parts
-  if (!Array.isArray(parts)) return ''
-
-  const snippets = parts
-    .map((part) => {
-      if (!part || typeof part !== 'object') return ''
-      const candidate = part as {
-        type?: string
-        text?: string
-        toolName?: string
-        state?: string
-        output?: unknown
-      }
-
-      if (candidate.type === 'text' && typeof candidate.text === 'string') {
-        return candidate.text.trim()
-      }
-
-      if (
-        candidate.state === 'output-available' &&
-        candidate.output &&
-        typeof candidate.output === 'object'
-      ) {
-        const output = candidate.output as {
-          approvalRequired?: boolean
-          summary?: string
-        }
-        if (output.approvalRequired && typeof output.summary === 'string') {
-          return output.summary.trim()
-        }
-      }
-
-      if (candidate.type === 'dynamic-tool' && typeof candidate.toolName === 'string') {
-        return `Outil : ${candidate.toolName}`
-      }
-
-      if (typeof candidate.type === 'string' && candidate.type.startsWith('tool-')) {
-        return `Outil : ${candidate.type.replace(/^tool-/, '')}`
-      }
-
-      return ''
-    })
-    .filter((value): value is string => Boolean(value))
-
-  return snippets.join('\n').trim()
-}
-
 export const incidentsMetrics = query({
   args: {},
   handler: async (ctx) => {
@@ -786,11 +733,14 @@ export const aiThreadDetail = query({
         userName: user?.name,
         userEmail: user?.email ?? thread.userId,
       },
-      messages: paginated.page.map((message, index) => ({
-        key: (message as any)._id ?? (message as any).key ?? `${index}`,
-        role: (message as any).role ?? 'assistant',
-        preview: previewFromMessage(message),
-      })),
+      messages: paginated.page
+        .slice()
+        .sort((a, b) => {
+          const left = (a as { _creationTime?: number })._creationTime ?? 0
+          const right = (b as { _creationTime?: number })._creationTime ?? 0
+          return left - right
+        })
+        .map(serializeAdminAiMessage),
       events: events
         .sort((a, b) => b.createdAt - a.createdAt)
         .map((event) => ({

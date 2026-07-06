@@ -23,7 +23,10 @@ const PIPELINE_ENTITY_SIGNALS = [
 
 const PIPELINE_ACTION_SIGNALS = [
   'faire avancer',
+  'avancer',
   'relancer',
+  'relance',
+  'relances',
   'envoyer',
   'suivre',
   'analyser',
@@ -33,6 +36,21 @@ const PIPELINE_ACTION_SIGNALS = [
   'brouillon',
   'closing',
   'convertir',
+  'destinataire',
+  'destinataires',
+  'faire signer',
+  'signer',
+]
+
+const STRONG_PIPELINE_SIGNALS = [
+  'proposition',
+  'proforma',
+  'devis',
+  'destinataire',
+  'destinataires',
+  'relance',
+  'relances',
+  'closing',
 ]
 
 const SUPPORT_PRODUCT_SIGNALS = [
@@ -65,5 +83,10 @@ export function looksLikePipelineRequest(prompt: string): boolean {
   const hasSupportSignal = SUPPORT_PRODUCT_SIGNALS.some((signal) =>
     text.includes(signal),
   )
+  const hasStrongPipelineSignal = STRONG_PIPELINE_SIGNALS.some((signal) =>
+    text.includes(signal),
+  )
+  if (hasStrongPipelineSignal && hasActionSignal) return true
+
   return hasActionSignal || !hasSupportSignal
 }

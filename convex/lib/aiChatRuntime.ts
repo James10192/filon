@@ -12,8 +12,9 @@ export function buildAssistantInstruction(kind: AssistantKind): string {
         'Mode assistant : support client Filon.',
         'Réponds en français.',
         'Tu aides à comprendre et utiliser le produit.',
-        "Tu ne fais pas d'analyse métier sur les opportunités, propositions, proformas, relances ou destinataires.",
-        "Si la demande porte sur ces sujets, dis brièvement qu'elle doit être traitée dans le mode Pipeline.",
+        "Ne traite jamais une demande métier liée aux opportunités, propositions, proformas, devis, relances, destinataires, pipeline ou closing.",
+        "Pour ces demandes, réponds en une phrase : « Cette demande doit être traitée dans le mode Pipeline pour utiliser vos données Filon. »",
+        "Ne donne pas de conseil commercial générique depuis le mode Support.",
         'Si un vrai traitement humain est nécessaire, propose le relais support.',
       ].join('\n')
     case 'coach':
@@ -28,7 +29,9 @@ export function buildAssistantInstruction(kind: AssistantKind): string {
         'Mode assistant : copilote pipeline Filon.',
         'Réponds en français.',
         'Reste centré sur les données commerciales et les actions du pipeline.',
-        "Quand l'utilisateur cite une proposition, une proforma ou une opportunité précise, appuie-toi sur les outils avant de conseiller.",
+        "Quand l'utilisateur cite une proposition, une proforma, un devis ou une opportunité précise, commence par l'outil de détail adapté avant de conseiller.",
+        "Pour une proposition nommée, utilise get_proposal_detail avec le nom cité, puis base la réponse sur son statut, ses destinataires, son montant et ses relances.",
+        "Si le détail n'est pas trouvé, dis clairement ce qui manque et propose la recherche la plus proche, sans inventer d'entreprise ni de destinataire.",
         'Si des données utiles manquent, nomme précisément ce qui manque au lieu de répondre de façon générique.',
       ].join('\n')
   }

@@ -20,6 +20,11 @@ import {
   SheetTitle,
 } from '~/components/ui/sheet'
 import { useMediaQuery } from '~/hooks/use-media-query'
+import { cn } from '~/lib/utils'
+import {
+  ConversationPanel,
+  type AdminAiMessage,
+} from './admin-ai-chat'
 import { formatRelative } from './admin-meta'
 
 function eventVariant(level: 'info' | 'warning' | 'error') {
@@ -44,100 +49,15 @@ export function AdminAiPanel() {
 
   return (
     <section className="flex flex-col gap-5">
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
-        {overview === undefined ? (
-          Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-28 rounded-[var(--radius-lg)]" />
-          ))
-        ) : (
-          <>
-            <MetricCard
-              title="Fils IA"
-              value={overview.totals.threads.toLocaleString('fr-FR')}
-              icon={<MessageSquareText className="size-4" />}
-            />
-            <MetricCard
-              title="Actions IA"
-              value={overview.totals.actions.toLocaleString('fr-FR')}
-              icon={<ListChecks className="size-4" />}
-            />
-            <MetricCard
-              title="Échecs IA"
-              value={overview.totals.failures.toLocaleString('fr-FR')}
-              icon={<Bot className="size-4" />}
-              danger
-            />
-            <MetricCard
-              title="Crédits du mois"
-              value={overview.totals.credits.toLocaleString('fr-FR')}
-              icon={<Sparkles className="size-4" />}
-            />
-          </>
-        )}
-      </div>
-
-      {overview && overview.byType.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Événements IA les plus fréquents</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-wrap gap-2">
-            {overview.byType.map((item) => (
-              <Badge key={item.type} variant="outline">
-                {item.type} · {item.count}
-              </Badge>
-            ))}
-          </CardContent>
-        </Card>
-      )}
+      <MetricsGrid overview={overview} />
+      <EventTypes overview={overview} />
 
       <div className="grid gap-5 lg:grid-cols-[24rem_minmax(0,1fr)]">
-        <Card className="overflow-hidden">
-          <CardHeader>
-            <CardTitle className="text-sm">Conversations récentes</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            {overview === undefined ? (
-              <ListSkeleton />
-            ) : overview.recentThreads.length === 0 ? (
-              <EmptyState
-                title="Aucune conversation"
-                body="Les fils du copilote apparaîtront ici."
-              />
-            ) : (
-              <ul className="flex flex-col divide-y divide-border">
-                {overview.recentThreads.map((thread) => {
-                  const selected = thread.threadId === selectedThreadId
-                  return (
-                    <li key={thread.threadId}>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedThreadId(thread.threadId)}
-                        className={
-                          selected
-                            ? 'flex w-full flex-col gap-1.5 bg-surface-2 px-4 py-3 text-left'
-                            : 'flex w-full flex-col gap-1.5 px-4 py-3 text-left transition-colors hover:bg-surface-2'
-                        }
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="line-clamp-1 text-sm font-medium text-fg">
-                            {thread.title}
-                          </span>
-                          <span className="ml-auto text-xs text-fg-subtle">
-                            {formatRelative(thread.lastMessageAt)}
-                          </span>
-                        </div>
-                        <p className="text-xs text-fg-subtle">
-                          {thread.userName ?? thread.userEmail}
-                        </p>
-                      </button>
-                    </li>
-                  )
-                })}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
+        <RecentThreads
+          overview={overview}
+          selectedThreadId={selectedThreadId}
+          onSelect={setSelectedThreadId}
+        />
 
         <div className="hidden lg:block">
           <Card className="h-full overflow-hidden">
@@ -153,43 +73,7 @@ export function AdminAiPanel() {
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Événements IA récents</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {overview === undefined ? (
-            Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-14 rounded-[var(--radius)]" />
-            ))
-          ) : overview.recentEvents.length === 0 ? (
-            <EmptyState
-              title="Aucun événement"
-              body="Les exécutions et erreurs du copilote apparaîtront ici."
-            />
-          ) : (
-            overview.recentEvents.slice(0, 12).map((event) => (
-              <div
-                key={event._id}
-                className="rounded-[var(--radius)] border border-border bg-surface-2 px-3 py-3"
-              >
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant={eventVariant(event.level)}>{event.level}</Badge>
-                  <Badge variant="outline">{event.type}</Badge>
-                  {event.tool && <Badge variant="outline">{event.tool}</Badge>}
-                  <span className="ml-auto text-xs text-fg-subtle">
-                    {formatRelative(event.createdAt)}
-                  </span>
-                </div>
-                <p className="mt-2 text-sm text-fg">{event.message}</p>
-                <p className="mt-1 text-xs text-fg-subtle">
-                  {event.userName ?? event.userEmail}
-                </p>
-              </div>
-            ))
-          )}
-        </CardContent>
-      </Card>
+      <RecentEvents overview={overview} />
 
       <Sheet
         open={selectedThreadId !== null && !isDesktop}
@@ -200,7 +84,9 @@ export function AdminAiPanel() {
           className="w-full max-w-full gap-0 p-0 [&>button:last-child]:hidden"
         >
           <SheetTitle className="sr-only">Conversation IA</SheetTitle>
-          <SheetDescription className="sr-only">Détail conversation IA</SheetDescription>
+          <SheetDescription className="sr-only">
+            Détail conversation IA
+          </SheetDescription>
           <ThreadDetail
             detail={threadDetail ?? null}
             onClose={() => setSelectedThreadId(null)}
@@ -208,6 +94,117 @@ export function AdminAiPanel() {
         </SheetContent>
       </Sheet>
     </section>
+  )
+}
+
+function MetricsGrid({ overview }: { overview: any }) {
+  return (
+    <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+      {overview === undefined ? (
+        Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-28 rounded-[var(--radius-lg)]" />
+        ))
+      ) : (
+        <>
+          <MetricCard
+            title="Fils IA"
+            value={overview.totals.threads.toLocaleString('fr-FR')}
+            icon={<MessageSquareText className="size-4" />}
+          />
+          <MetricCard
+            title="Actions IA"
+            value={overview.totals.actions.toLocaleString('fr-FR')}
+            icon={<ListChecks className="size-4" />}
+          />
+          <MetricCard
+            title="Échecs IA"
+            value={overview.totals.failures.toLocaleString('fr-FR')}
+            icon={<Bot className="size-4" />}
+            danger
+          />
+          <MetricCard
+            title="Crédits du mois"
+            value={overview.totals.credits.toLocaleString('fr-FR')}
+            icon={<Sparkles className="size-4" />}
+          />
+        </>
+      )}
+    </div>
+  )
+}
+
+function EventTypes({ overview }: { overview: any }) {
+  if (!overview || overview.byType.length === 0) return null
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-sm">
+          Événements IA les plus fréquents
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-wrap gap-2">
+        {overview.byType.map((item: any) => (
+          <Badge key={item.type} variant="outline">
+            {item.type} · {item.count}
+          </Badge>
+        ))}
+      </CardContent>
+    </Card>
+  )
+}
+
+function RecentThreads({
+  overview,
+  selectedThreadId,
+  onSelect,
+}: {
+  overview: any
+  selectedThreadId: string | null
+  onSelect: (threadId: string) => void
+}) {
+  return (
+    <Card className="overflow-hidden">
+      <CardHeader>
+        <CardTitle className="text-sm">Conversations récentes</CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        {overview === undefined ? (
+          <ListSkeleton />
+        ) : overview.recentThreads.length === 0 ? (
+          <EmptyState
+            title="Aucune conversation"
+            body="Les fils du copilote apparaîtront ici."
+          />
+        ) : (
+          <ul className="flex flex-col divide-y divide-border">
+            {overview.recentThreads.map((thread: any) => (
+              <li key={thread.threadId}>
+                <button
+                  type="button"
+                  onClick={() => onSelect(thread.threadId)}
+                  className={cn(
+                    'flex w-full flex-col gap-1.5 px-4 py-3 text-left transition-colors hover:bg-surface-2',
+                    thread.threadId === selectedThreadId && 'bg-surface-2',
+                  )}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="line-clamp-1 text-sm font-medium text-fg">
+                      {thread.title}
+                    </span>
+                    <span className="ml-auto text-xs text-fg-subtle">
+                      {formatRelative(thread.lastMessageAt)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-fg-subtle">
+                    {thread.userName ?? thread.userEmail}
+                  </p>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
   )
 }
 
@@ -230,7 +227,9 @@ function ThreadDetail({
     <div className="flex h-full flex-col">
       <header className="flex items-start justify-between gap-3 border-b border-border px-5 py-4">
         <div className="space-y-1">
-          <h3 className="text-base font-semibold text-fg">{detail.thread.title}</h3>
+          <h3 className="text-base font-semibold text-fg">
+            {detail.thread.title}
+          </h3>
           <p className="text-sm text-fg-muted">
             {detail.thread.userName ?? detail.thread.userEmail}
           </p>
@@ -247,98 +246,131 @@ function ThreadDetail({
       </header>
 
       <div className="grid gap-5 overflow-y-auto px-5 py-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(18rem,0.8fr)]">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Messages</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {detail.messages.length === 0 ? (
-              <EmptyState
-                title="Aucun message"
-                body="Ce fil ne contient pas encore de contenu lisible."
-              />
-            ) : (
-              detail.messages.map((message: any) => (
-                <div
-                  key={message.key}
-                  className="rounded-[var(--radius)] border border-border bg-surface-2 px-3 py-3"
-                >
-                  <div className="mb-2 flex items-center gap-2">
-                    <Badge variant={message.role === 'user' ? 'outline' : 'accent'}>
-                      {message.role === 'user' ? 'Utilisateur' : 'Assistant'}
-                    </Badge>
-                  </div>
-                  <p className="whitespace-pre-wrap text-sm text-fg">
-                    {message.preview || 'Aperçu indisponible'}
-                  </p>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
+        <ConversationPanel
+          messages={detail.messages as AdminAiMessage[]}
+          emptyState={
+            <EmptyState
+              title="Aucun message"
+              body="Ce fil ne contient pas encore de contenu lisible."
+            />
+          }
+        />
 
         <div className="space-y-5">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Événements</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {detail.events.length === 0 ? (
-                <EmptyState
-                  title="Aucun événement"
-                  body="Ce fil n’a pas encore produit de journal d’exécution."
-                />
-              ) : (
-                detail.events.map((event: any) => (
-                  <div
-                    key={event._id}
-                    className="rounded-[var(--radius)] border border-border bg-surface-2 px-3 py-3"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Badge variant={eventVariant(event.level)}>{event.level}</Badge>
-                      <Badge variant="outline">{event.type}</Badge>
-                      <span className="ml-auto text-xs text-fg-subtle">
-                        {formatRelative(event.createdAt)}
-                      </span>
-                    </div>
-                    <p className="mt-2 text-sm text-fg">{event.message}</p>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Actions exécutées</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {detail.actions.length === 0 ? (
-                <EmptyState
-                  title="Aucune action"
-                  body="Ce fil n’a pas encore produit d’écriture métier."
-                />
-              ) : (
-                detail.actions.map((action: any) => (
-                  <div
-                    key={action._id}
-                    className="rounded-[var(--radius)] border border-border bg-surface-2 px-3 py-3"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline">{action.tool}</Badge>
-                      <span className="ml-auto text-xs text-fg-subtle">
-                        {formatRelative(action.createdAt)}
-                      </span>
-                    </div>
-                    <p className="mt-2 text-sm text-fg">{action.summary}</p>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
+          <EventsPanel events={detail.events} />
+          <ActionsPanel actions={detail.actions} />
         </div>
       </div>
     </div>
+  )
+}
+
+function RecentEvents({ overview }: { overview: any }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-sm">Événements IA récents</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {overview === undefined ? (
+          Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-14 rounded-[var(--radius)]" />
+          ))
+        ) : overview.recentEvents.length === 0 ? (
+          <EmptyState
+            title="Aucun événement"
+            body="Les exécutions et erreurs du copilote apparaîtront ici."
+          />
+        ) : (
+          overview.recentEvents.slice(0, 12).map((event: any) => (
+            <div
+              key={event._id}
+              className="rounded-[var(--radius)] border border-border bg-surface-2 px-3 py-3"
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant={eventVariant(event.level)}>{event.level}</Badge>
+                <Badge variant="outline">{event.type}</Badge>
+                {event.tool && <Badge variant="outline">{event.tool}</Badge>}
+                <span className="ml-auto text-xs text-fg-subtle">
+                  {formatRelative(event.createdAt)}
+                </span>
+              </div>
+              <p className="mt-2 text-sm text-fg">{event.message}</p>
+              <p className="mt-1 text-xs text-fg-subtle">
+                {event.userName ?? event.userEmail}
+              </p>
+            </div>
+          ))
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+function EventsPanel({ events }: { events: any[] }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-sm">Événements</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {events.length === 0 ? (
+          <EmptyState
+            title="Aucun événement"
+            body="Ce fil n’a pas encore produit de journal d’exécution."
+          />
+        ) : (
+          events.map((event) => (
+            <div
+              key={event._id}
+              className="rounded-[var(--radius)] border border-border bg-surface-2 px-3 py-3"
+            >
+              <div className="flex items-center gap-2">
+                <Badge variant={eventVariant(event.level)}>{event.level}</Badge>
+                <Badge variant="outline">{event.type}</Badge>
+                <span className="ml-auto text-xs text-fg-subtle">
+                  {formatRelative(event.createdAt)}
+                </span>
+              </div>
+              <p className="mt-2 text-sm text-fg">{event.message}</p>
+            </div>
+          ))
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+function ActionsPanel({ actions }: { actions: any[] }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-sm">Actions exécutées</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {actions.length === 0 ? (
+          <EmptyState
+            title="Aucune action"
+            body="Ce fil n’a pas encore produit d’écriture métier."
+          />
+        ) : (
+          actions.map((action) => (
+            <div
+              key={action._id}
+              className="rounded-[var(--radius)] border border-border bg-surface-2 px-3 py-3"
+            >
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">{action.tool}</Badge>
+                <span className="ml-auto text-xs text-fg-subtle">
+                  {formatRelative(action.createdAt)}
+                </span>
+              </div>
+              <p className="mt-2 text-sm text-fg">{action.summary}</p>
+            </div>
+          ))
+        )}
+      </CardContent>
+    </Card>
   )
 }
 
@@ -359,21 +391,19 @@ function MetricCard({
         <div className="space-y-1.5">
           <p className="eyebrow">{title}</p>
           <p
-            className={
-              danger
-                ? 'assay text-2xl font-semibold text-danger'
-                : 'assay text-2xl font-semibold text-fg'
-            }
+            className={cn(
+              'assay text-2xl font-semibold',
+              danger ? 'text-danger' : 'text-fg',
+            )}
           >
             {value}
           </p>
         </div>
         <span
-          className={
-            danger
-              ? 'flex size-9 items-center justify-center rounded-[var(--radius)] bg-danger-soft text-danger'
-              : 'flex size-9 items-center justify-center rounded-[var(--radius)] bg-accent-soft text-accent'
-          }
+          className={cn(
+            'flex size-9 items-center justify-center rounded-[var(--radius)]',
+            danger ? 'bg-danger-soft text-danger' : 'bg-accent-soft text-accent',
+          )}
         >
           {icon}
         </span>
@@ -401,7 +431,9 @@ function SelectionPlaceholder() {
         <MessageSquareText className="size-5" />
       </span>
       <div className="space-y-1">
-        <p className="text-sm font-medium text-fg">Sélectionne une conversation</p>
+        <p className="text-sm font-medium text-fg">
+          Sélectionne une conversation
+        </p>
         <p className="max-w-xs text-sm text-fg-muted">
           Le détail s’affichera ici avec les messages, les événements et les actions.
         </p>
