@@ -156,6 +156,7 @@ function SidebarNav() {
                     >
                       <Link
                         to={item.to}
+                        preload={false}
                         aria-current={active ? 'page' : undefined}
                       >
                         <Icon className="size-4" />
@@ -211,7 +212,11 @@ function AdminNavGroup({ pathname }: { pathname: string }) {
               tooltip={m.shell_admin_nav()}
               className={cn(active && ACTIVE_NAV)}
             >
-              <Link to="/app/admin" aria-current={active ? 'page' : undefined}>
+              <Link
+                to="/app/admin"
+                preload={false}
+                aria-current={active ? 'page' : undefined}
+              >
                 <Shield className="size-4" />
                 <span>{m.shell_admin_nav()}</span>
               </Link>
