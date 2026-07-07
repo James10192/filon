@@ -33,6 +33,7 @@ import {
   MailPulseWordmark,
   mailpulsePanelClassName,
 } from '~/components/mailpulse/mailpulse-brand'
+import { RecoveryDashboardSection } from '~/components/recovery/recovery-dashboard-section'
 
 export const Route = createFileRoute('/app/relances')({
   component: RelancesPage,
@@ -113,6 +114,7 @@ function Content({
 
   return (
     <div className="flex flex-col gap-7">
+      <RecoveryDashboardSection />
       <MailPulseRecoverySection items={mailpulseRecoveries} />
       {localTotal === 0 ? (
         <EmptyState />

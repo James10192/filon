@@ -571,6 +571,156 @@ export default defineSchema({
     .index('by_entity', ['entityType', 'entityId']),
 
   // Préférences utilisateur (1 ligne par user).
+  billingProfiles: defineTable({
+    userId: v.string(),
+    displayName: v.string(),
+    logoStorageId: v.optional(v.id('_storage')),
+    email: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    address: v.optional(v.string()),
+    city: v.optional(v.string()),
+    country: v.optional(v.string()),
+    taxId: v.optional(v.string()),
+    rccm: v.optional(v.string()),
+    website: v.optional(v.string()),
+    accentColor: v.optional(v.string()),
+    legalNote: v.optional(v.string()),
+    paymentTerms: v.optional(v.string()),
+    paymentDetails: v.optional(v.string()),
+    signature: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index('by_user', ['userId']),
+
+  organizationBillingProfiles: defineTable({
+    organizationId: v.id('organizations'),
+    displayName: v.string(),
+    logoStorageId: v.optional(v.id('_storage')),
+    email: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    address: v.optional(v.string()),
+    city: v.optional(v.string()),
+    country: v.optional(v.string()),
+    taxId: v.optional(v.string()),
+    rccm: v.optional(v.string()),
+    website: v.optional(v.string()),
+    accentColor: v.optional(v.string()),
+    legalNote: v.optional(v.string()),
+    paymentTerms: v.optional(v.string()),
+    paymentDetails: v.optional(v.string()),
+    signature: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index('by_org', ['organizationId']),
+
+  billingDocuments: defineTable({
+    userId: v.string(),
+    scopeKey: v.string(),
+    scopeType: v.union(v.literal('user'), v.literal('organization')),
+    organizationId: v.optional(v.id('organizations')),
+    proposalId: v.optional(v.id('proposals')),
+    recoveryCaseId: v.optional(v.id('recoveryCases')),
+    documentType: v.union(
+      v.literal('proforma_hors_fne'),
+      v.literal('devis'),
+      v.literal('facture_hors_fne'),
+      v.literal('recu_paiement'),
+    ),
+    documentNumber: v.string(),
+    year: v.number(),
+    sequence: v.number(),
+    createdAt: v.number(),
+  })
+    .index('by_user_created', ['userId', 'createdAt'])
+    .index('by_scope_year_type', ['scopeKey', 'year', 'documentType']),
+
+  recoveryCases: defineTable({
+    userId: v.string(),
+    organizationId: v.optional(v.id('organizations')),
+    opportunityId: v.id('opportunities'),
+    proposalId: v.optional(v.id('proposals')),
+    companyId: v.optional(v.id('companies')),
+    contactId: v.optional(v.id('contacts')),
+    persona: v.optional(
+      v.union(
+        v.literal('relationnel'),
+        v.literal('commercial'),
+        v.literal('freelance'),
+        v.literal('immobilier'),
+        v.literal('assurance'),
+        v.literal('recrutement'),
+        v.literal('emploi'),
+        v.literal('autre'),
+      ),
+    ),
+    status: v.union(
+      v.literal('to_invoice'),
+      v.literal('invoice_ready'),
+      v.literal('invoice_sent'),
+      v.literal('waiting_payment'),
+      v.literal('mailpulse_active'),
+      v.literal('payment_promised'),
+      v.literal('partial_paid'),
+      v.literal('paid_to_confirm'),
+      v.literal('paid_confirmed'),
+      v.literal('proof_missing'),
+      v.literal('dispute'),
+      v.literal('cancelled'),
+    ),
+    amountExpected: v.optional(v.number()),
+    amountPaid: v.optional(v.number()),
+    currency: v.optional(v.string()),
+    dueDate: v.optional(v.string()),
+    paidAt: v.optional(v.string()),
+    invoiceDocumentId: v.optional(v.id('billingDocuments')),
+    proofDocumentId: v.optional(v.id('documents')),
+    fneReference: v.optional(v.string()),
+    fneIntegrationStatus: v.optional(
+      v.union(
+        v.literal('none'),
+        v.literal('requested'),
+        v.literal('connected'),
+      ),
+    ),
+    mailpulseContactId: v.optional(v.string()),
+    mailpulseSequenceId: v.optional(v.string()),
+    nextInternalCheckAt: v.optional(v.string()),
+    nextClientReminderAt: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_user', ['userId'])
+    .index('by_user_status', ['userId', 'status'])
+    .index('by_user_opportunity', ['userId', 'opportunityId'])
+    .index('by_opportunity', ['opportunityId'])
+    .index('by_user_next', ['userId', 'nextInternalCheckAt']),
+
+  recoveryEvidence: defineTable({
+    userId: v.string(),
+    recoveryCaseId: v.id('recoveryCases'),
+    documentId: v.optional(v.id('documents')),
+    kind: v.union(
+      v.literal('facture_fne'),
+      v.literal('facture_hors_fne_filon'),
+      v.literal('proforma_hors_fne'),
+      v.literal('recu'),
+      v.literal('virement_bancaire'),
+      v.literal('recu_mobile_money'),
+      v.literal('bon_commande'),
+      v.literal('contrat_signe'),
+      v.literal('email_client'),
+      v.literal('autre'),
+    ),
+    reference: v.optional(v.string()),
+    amount: v.optional(v.number()),
+    issuedAt: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index('by_user', ['userId'])
+    .index('by_case', ['recoveryCaseId'])
+    .index('by_document', ['documentId']),
+
   settings: defineTable({
     userId: v.string(),
     pipelineStages: v.optional(v.array(v.string())),

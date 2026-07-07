@@ -25,6 +25,7 @@ import { CarnetSharingCard } from './carnet-sharing-card'
 import { TeamBoard } from './team-board'
 import { MetricsDashboard } from './metrics-dashboard'
 import { OrgSettingsCard } from './org-settings-card'
+import { OrgBillingProfileCard } from '~/components/billing/billing-profile-card'
 import { ROLE_META, isManagerRole, roleLabel, type OrgRole } from './roles'
 
 /** Membre sélectionné dont le manager consulte le carnet (lecture seule). */
@@ -166,7 +167,8 @@ export function OrgHub() {
           <CarnetSharingCard organizationId={current.organizationId} />
         </TabsContent>
         {isAdmin && (
-          <TabsContent value="settings" className="mt-5">
+          <TabsContent value="settings" className="mt-5 flex flex-col gap-6">
+            <OrgBillingProfileCard organizationId={current.organizationId} />
             <OrgSettingsCard
               organizationId={current.organizationId}
               name={current.name}

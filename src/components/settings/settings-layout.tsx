@@ -12,6 +12,7 @@ import { LinkedAccountsSection } from './linked-accounts-section'
 import { SubscriptionManagement } from './subscription-management'
 import { ByokSection } from './byok-section'
 import { MailPulseSettingsCard } from '~/components/mailpulse/mailpulse-settings-card'
+import { BillingProfileCard } from '~/components/billing/billing-profile-card'
 
 type SectionKey = 'compte' | 'preferences'
 
@@ -57,6 +58,7 @@ export function SettingsLayout() {
             <>
               <ProfileSection />
               <ProfilePhotoSection />
+              <BillingProfileCard />
               <SubscriptionManagement />
               <ByokSection />
               <LinkedAccountsSection />

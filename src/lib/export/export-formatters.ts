@@ -2,6 +2,19 @@ export type ExportIssuer = {
   name: string
   email?: string
   subtitle?: string
+  logoUrl?: string | null
+  phone?: string
+  address?: string
+  city?: string
+  country?: string
+  taxId?: string
+  rccm?: string
+  website?: string
+  accentColor?: string
+  legalNote?: string
+  paymentTerms?: string
+  paymentDetails?: string
+  signature?: string
 }
 
 export function formatExportDate(value?: string | number | null): string {

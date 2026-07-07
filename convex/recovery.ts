@@ -1,4 +1,4 @@
-import { v } from 'convex/values'
+﻿import { v } from 'convex/values'
 import { action, internalMutation, internalQuery, mutation, query } from './_generated/server'
 import { internal } from './_generated/api'
 import type { Doc, Id } from './_generated/dataModel'
@@ -8,9 +8,13 @@ import {
   type MutationCtx,
 } from './lib/withUser'
 import { forbiddenError, notFoundError, validationError } from './lib/plan'
+import {
+  ensureRecoveryCase,
+  parseAmountDue,
+} from './lib/recoveryCaseHelpers'
 
 const DEFAULT_DELAY_DAYS = 3
-const FOLLOWUP_LABEL = 'Vérifier si le paiement a été reçu'
+const FOLLOWUP_LABEL = 'VÃ©rifier si le paiement a Ã©tÃ© reÃ§u'
 const DEFAULT_MAILPULSE_URL = 'https://mailpulse-two.vercel.app'
 const MAILPULSE_RECOVERY_STATUSES = new Set([
   'mailpulse_pending',
@@ -69,16 +73,6 @@ function normalizeBaseUrl(value: string | undefined): string {
   }
 }
 
-function parseAmountDue(value: string | undefined): number {
-  if (!value) return 0
-  const normalized = value
-    .replace(/[^\d,.-]/g, '')
-    .replace(/\s/g, '')
-    .replace(',', '.')
-  const parsed = Number.parseFloat(normalized)
-  return Number.isFinite(parsed) ? Math.max(parsed, 0) : 0
-}
-
 function statusFromMailpulse(status: string | undefined) {
   if (status === 'active') return 'mailpulse_active' as const
   return 'mailpulse_pending' as const
@@ -129,10 +123,11 @@ export const markPrompted = mutation({
     const { userId } = await requireUser(ctx)
     const opportunity = await ownedOpportunity(ctx, userId, args.opportunityId)
     if (opportunity.stage !== 'won') {
-      throw validationError('Le recouvrement concerne une opportunité gagnée')
+      throw validationError('Le recouvrement concerne une opportunitÃ© gagnÃ©e')
     }
     if (opportunity.recoveryStatus !== undefined) return null
 
+    await ensureRecoveryCase(ctx, userId, opportunity)
     await ctx.db.patch(args.opportunityId, {
       recoveryStatus: 'prompted',
       recoveryPromptedAt: Date.now(),
@@ -148,11 +143,12 @@ export const createManualFollowup = mutation({
     const { userId } = await requireUser(ctx)
     const opportunity = await ownedOpportunity(ctx, userId, args.opportunityId)
     if (opportunity.stage !== 'won') {
-      throw validationError('Le recouvrement concerne une opportunité gagnée')
+      throw validationError('Le recouvrement concerne une opportunitÃ© gagnÃ©e')
     }
     if (opportunity.recoveryFollowupId) return opportunity.recoveryFollowupId
 
     const now = Date.now()
+    const caseId = await ensureRecoveryCase(ctx, userId, opportunity)
     const followupId = await ctx.db.insert('followups', {
       userId,
       opportunityId: args.opportunityId,
@@ -168,6 +164,11 @@ export const createManualFollowup = mutation({
       recoveryFollowupId: followupId,
       updatedAt: now,
     })
+    await ctx.db.patch(caseId, {
+      status: 'waiting_payment',
+      nextInternalCheckAt: dueDateForDelay(await recoveryDelayDays(ctx, userId)),
+      updatedAt: now,
+    })
     return followupId
   },
 })
@@ -178,14 +179,20 @@ export const markMailpulsePending = mutation({
     const { userId } = await requireUser(ctx)
     const opportunity = await ownedOpportunity(ctx, userId, args.opportunityId)
     if (opportunity.stage !== 'won') {
-      throw validationError('Le recouvrement concerne une opportunité gagnée')
+      throw validationError('Le recouvrement concerne une opportunitÃ© gagnÃ©e')
     }
     const now = Date.now()
+    const caseId = await ensureRecoveryCase(ctx, userId, opportunity)
     await ctx.db.patch(args.opportunityId, {
       recoveryStatus: 'mailpulse_pending',
       recoveryPromptedAt: opportunity.recoveryPromptedAt ?? now,
       mailpulseLastSyncAt: now,
       updatedAt: now,
+    })
+    await ctx.db.patch(caseId, {
+      status: 'waiting_payment',
+      updatedAt: now,
+      ...(opportunity.deadline ? { nextClientReminderAt: opportunity.deadline } : {}),
     })
     return null
   },
@@ -203,7 +210,7 @@ export const loadMailpulseRecoveryContext = internalQuery({
       throw forbiddenError('Non autorise')
     }
     if (opportunity.stage !== 'won') {
-      throw validationError('Le recouvrement concerne une opportunité gagnée')
+      throw validationError('Le recouvrement concerne une opportunitÃ© gagnÃ©e')
     }
 
     const settings = await ctx.db
@@ -212,7 +219,7 @@ export const loadMailpulseRecoveryContext = internalQuery({
       .unique()
     const apiKey = settings?.mailpulseApiKey?.trim()
     if (!apiKey) {
-      throw validationError('Configurez une clé API MailPulse avant de lancer le recouvrement')
+      throw validationError('Configurez une clÃ© API MailPulse avant de lancer le recouvrement')
     }
 
     const contact = opportunity.contactId
@@ -249,7 +256,6 @@ export const loadMailpulseRecoveryContext = internalQuery({
         clientName,
         clientEmail,
         clientPhone: ownedContact?.phone,
-        opportunityTitle: opportunity.title,
         amountDue: parseAmountDue(opportunity.compensation),
         currency: settings?.currency ?? 'XOF',
         dueDate,
@@ -282,6 +288,16 @@ export const applyMailpulseRecoveryResult = internalMutation({
       patch.mailpulseSequenceId = args.mailpulseSequenceId
     }
     await ctx.db.patch(args.opportunityId, patch)
+    const caseId = await ensureRecoveryCase(ctx, args.userId, opportunity)
+    await ctx.db.patch(caseId, {
+      status:
+        statusFromMailpulse(args.status) === 'mailpulse_active'
+          ? 'mailpulse_active'
+          : 'waiting_payment',
+      updatedAt: now,
+      ...(args.mailpulseContactId ? { mailpulseContactId: args.mailpulseContactId } : {}),
+      ...(args.mailpulseSequenceId ? { mailpulseSequenceId: args.mailpulseSequenceId } : {}),
+    })
     return null
   },
 })
@@ -311,7 +327,7 @@ export const startMailpulseRecovery = action({
       .catch(() => null)) as MailpulseRecoveryResponse | null
     if (!response.ok) {
       throw validationError(
-        body?.error?.message ?? "MailPulse n'a pas accepté cette opportunité",
+        body?.error?.message ?? "MailPulse n'a pas acceptÃ© cette opportunitÃ©",
       )
     }
 

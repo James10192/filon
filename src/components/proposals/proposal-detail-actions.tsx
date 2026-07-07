@@ -41,6 +41,7 @@ import { toast } from '~/components/ui/sonner'
 import { AskCopilotButton } from '~/components/copilot/ask-copilot-button'
 import { STATUS_LABELS, type ProposalStatus } from './proposal-status'
 import { downloadProposalPdf } from '~/lib/export/proforma-pdf'
+import type { ExportIssuer } from '~/lib/export/export-formatters'
 import {
   downloadProposalCsv,
   downloadProposalXlsx,
@@ -64,8 +65,12 @@ export function ProposalDetailActions({
   const setStatus = useMutation(api.proposals.setStatus)
   const remove = useMutation(api.proposals.remove)
   const convert = useMutation(api.proposals.convertToOpportunity)
+  const allocateDocumentNumber = useMutation(
+    api.billingProfiles.allocateDocumentNumber,
+  )
   const me = useQuery(api.users.me, {})
   const orgs = useQuery(api.organizations.mine, {})
+  const billing = useQuery(api.billingProfiles.getMine, {})
 
   const [busy, setBusy] = useState(false)
   const [exporting, setExporting] = useState<'pdf' | 'xlsx' | 'csv' | null>(null)
@@ -127,11 +132,40 @@ export function ProposalDetailActions({
     setExporting('pdf')
     try {
       const org = orgs?.[0]
-      await downloadProposalPdf(proposalDetail, {
-        name: org?.name ?? me?.name ?? 'Filon',
-        ...(me?.email ? { email: me.email } : {}),
-        ...(me?.headline ? { subtitle: me.headline } : {}),
-      })
+      const documentType =
+        kind === 'proforma' ? 'proforma_hors_fne' : 'devis'
+      const organizationScope =
+        billing?.defaultScope.type === 'organization'
+          ? billing.organizations.find(
+              (item) =>
+                item.organizationId === billing.defaultScope.organizationId,
+            )
+          : null
+      const allocated = organizationScope
+        ? await allocateDocumentNumber({
+            scopeType: 'organization',
+            organizationId: organizationScope.organizationId,
+            proposalId: proposal._id,
+            documentType,
+          })
+        : await allocateDocumentNumber({
+            scopeType: 'user',
+            proposalId: proposal._id,
+            documentType,
+          })
+      await downloadProposalPdf(
+        proposalDetail,
+        issuerFromBilling({
+          profile: organizationScope?.profile ?? billing?.solo,
+          fallbackName: org?.name ?? me?.name ?? 'Filon',
+          fallbackEmail: me?.email,
+          fallbackSubtitle: me?.headline,
+        }),
+        {
+          documentNumber: allocated.documentNumber,
+          documentType,
+        },
+      )
     } catch {
       toast.error("L'export PDF a échoué.")
     } finally {
@@ -289,6 +323,60 @@ export function ProposalDetailActions({
       </AlertDialog>
     </div>
   )
+}
+
+function issuerFromBilling({
+  profile,
+  fallbackName,
+  fallbackEmail,
+  fallbackSubtitle,
+}: {
+  profile:
+    | {
+        displayName?: string
+        email?: string
+        logoUrl?: string | null
+        phone?: string
+        address?: string
+        city?: string
+        country?: string
+        taxId?: string
+        rccm?: string
+        website?: string
+        accentColor?: string
+        legalNote?: string
+        paymentTerms?: string
+        paymentDetails?: string
+        signature?: string
+      }
+    | null
+    | undefined
+  fallbackName: string
+  fallbackEmail?: string
+  fallbackSubtitle?: string
+}): ExportIssuer {
+  return {
+    name: profile?.displayName ?? fallbackName,
+    ...(profile?.email || fallbackEmail
+      ? { email: profile?.email ?? fallbackEmail }
+      : {}),
+    ...(fallbackSubtitle ? { subtitle: fallbackSubtitle } : {}),
+    ...(profile?.logoUrl ? { logoUrl: profile.logoUrl } : {}),
+    ...(profile?.phone ? { phone: profile.phone } : {}),
+    ...(profile?.address ? { address: profile.address } : {}),
+    ...(profile?.city ? { city: profile.city } : {}),
+    ...(profile?.country ? { country: profile.country } : {}),
+    ...(profile?.taxId ? { taxId: profile.taxId } : {}),
+    ...(profile?.rccm ? { rccm: profile.rccm } : {}),
+    ...(profile?.website ? { website: profile.website } : {}),
+    ...(profile?.accentColor ? { accentColor: profile.accentColor } : {}),
+    ...(profile?.legalNote ? { legalNote: profile.legalNote } : {}),
+    ...(profile?.paymentTerms ? { paymentTerms: profile.paymentTerms } : {}),
+    ...(profile?.paymentDetails
+      ? { paymentDetails: profile.paymentDetails }
+      : {}),
+    ...(profile?.signature ? { signature: profile.signature } : {}),
+  }
 }
 
 /** Boutons d'action de statut, contextualisés selon le statut courant. */

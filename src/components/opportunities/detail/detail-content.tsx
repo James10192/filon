@@ -29,6 +29,7 @@ import { MailPulseRecoveryDialog } from '~/components/mailpulse/mailpulse-recove
 import { MailPulseLogo, MailPulseWordmark } from '~/components/mailpulse/mailpulse-brand'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
+import { OpportunityRecoveryPanel } from '~/components/recovery/opportunity-recovery-panel'
 
 type LoadedOpportunity = FunctionReturnType<typeof api.opportunities.get>
 type RecoverySettings = {
@@ -56,6 +57,7 @@ export function OpportunityDetailContent({
   const setPriority = useMutation(api.opportunities.setPriority)
   const update = useMutation(api.opportunities.update)
   const remove = useMutation(api.opportunities.remove)
+  const createRecoveryCase = useMutation(api.recoveryCases.createOrGet)
   const markRecoveryPrompted = useMutation(api.recovery.markPrompted)
   const syncMailpulseRecoveryStatus = useAction(
     api.recovery.syncMailpulseRecoveryStatus,
@@ -79,6 +81,11 @@ export function OpportunityDetailContent({
       toast.success(m.opp_moved_to({ stage: stageLabelOf(next) }))
       if (next === 'won') {
         setJustWon(true)
+        try {
+          await createRecoveryCase({ opportunityId: opportunity._id })
+        } catch {
+          toast.error("Le dossier de recouvrement n'a pas pu être préparé")
+        }
         const shouldPrompt = settings?.mailpulsePromptOnWon ?? true
         if (shouldPrompt && opportunity.recoveryStatus === undefined) {
           try {
@@ -182,6 +189,15 @@ export function OpportunityDetailContent({
           <AiSignalCard opportunityId={opportunity._id} />
 
           <AiDraftTeaser />
+
+          {opportunity.stage === 'won' && (
+            <OpportunityRecoveryPanel
+              opportunityId={opportunity._id}
+              contactEmail={opportunity.contact?.email}
+              onGenerateDocument={() => setProposalOpen(true)}
+              onOpenMailPulse={() => setMailpulseDialogOpen(true)}
+            />
+          )}
 
           {opportunity.recoveryStatus?.startsWith('mailpulse_') && (
             <MailPulseRecoveryPanel
