@@ -1,5 +1,5 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { Link } from '@tanstack/react-router'
+import { useState } from 'react'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useAction, useQuery } from 'convex/react'
 import {
   AlertTriangle,
@@ -12,7 +12,6 @@ import {
   ShieldCheck,
   Target,
 } from 'lucide-react'
-import { useState } from 'react'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { m } from '~/lib/paraglide/messages'
@@ -20,10 +19,7 @@ import { Skeleton } from '~/components/ui/skeleton'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { PageToolbar } from '~/components/app/page-toolbar'
-import {
-  FollowupItem,
-  type Followup,
-} from '~/components/relances/followup-item'
+import { FollowupItem, type Followup } from '~/components/relances/followup-item'
 import { NewFollowupDialog } from '~/components/relances/new-followup-dialog'
 import { ExportButton } from '~/components/billing/export-button'
 import { FOLLOWUP_COLUMNS } from '~/lib/export'
@@ -74,16 +70,7 @@ function RelancesPage() {
           <div className="flex items-center gap-2">
             <ExportButton
               base="relances"
-              rows={
-                groups
-                  ? [
-                      ...groups.overdue,
-                      ...groups.today,
-                      ...groups.thisWeek,
-                      ...groups.later,
-                    ]
-                  : []
-              }
+              rows={groups ? flattenGroups(groups) : []}
               columns={FOLLOWUP_COLUMNS}
             />
             <NewFollowupDialog />
@@ -106,67 +93,163 @@ function Content({
   groups: DueGroups
   mailpulseRecoveries: MailPulseRecovery[]
 }) {
-  const localTotal =
-    groups.overdue.length +
-    groups.today.length +
-    groups.thisWeek.length +
-    groups.later.length
+  const urgentCount = groups.overdue.length + groups.today.length
+  const upcomingCount = groups.thisWeek.length + groups.later.length
 
   return (
-    <div className="flex flex-col gap-7">
-      <RecoveryDashboardSection />
-      <MailPulseRecoverySection items={mailpulseRecoveries} />
-      {localTotal === 0 ? (
-        <EmptyState />
-      ) : (
-        <>
-          <Section
-            title={m.dash_relances_section_overdue()}
-            tone="danger"
-            items={groups.overdue}
-            icon={<AlertTriangle className="size-4 text-danger" />}
-          />
-          <Section
-            title={m.dash_relances_section_today()}
-            tone="warning"
-            items={groups.today}
-            icon={<BellRing className="size-4 text-warning" />}
-          />
-          <Section
-            title={m.dash_relances_section_week()}
-            tone="neutral"
-            items={groups.thisWeek}
-          />
-          <Section title={m.dash_relances_section_later()} tone="neutral" items={groups.later} />
-        </>
-      )}
+    <div className="grid items-start gap-8 xl:grid-cols-[minmax(0,1fr)_20rem]">
+      <main className="min-w-0 space-y-10">
+        <PrioritySection groups={groups} count={urgentCount} />
+        <RecoveryDashboardSection />
+      </main>
+
+      <aside className="min-w-0 space-y-8 xl:sticky xl:top-20">
+        <UpcomingSection groups={groups} count={upcomingCount} />
+        <MailPulseRecoverySection items={mailpulseRecoveries} />
+      </aside>
     </div>
   )
 }
 
-function MailPulseRecoverySection({
-  items,
-}: {
-  items: MailPulseRecovery[]
-}) {
+function PrioritySection({ groups, count }: { groups: DueGroups; count: number }) {
   return (
-    <section className="flex flex-col gap-3">
-      <header className="flex items-center gap-2">
-        <MailPulseLogo className="size-7" />
-        <h2 className="text-xs font-semibold uppercase tracking-[0.06em] text-fg-muted">
-          Recouvrements MailPulse
-        </h2>
-        <Badge
-          variant="outline"
-          className="border-orange-200 text-orange-700 dark:border-orange-900 dark:text-orange-300"
-        >
-          {items.length}
+    <section className="flex flex-col gap-4" aria-labelledby="priority-heading">
+      <header className="flex items-start justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="flex size-8 items-center justify-center rounded-[var(--radius-sm)] bg-danger-soft text-danger">
+              <BellRing className="size-4" />
+            </span>
+            <h2 id="priority-heading" className="text-base font-semibold text-fg">
+              À traiter maintenant
+            </h2>
+            <Badge variant={count > 0 ? 'danger' : 'outline'} className="assay">
+              {count}
+            </Badge>
+          </div>
+          <p className="mt-1.5 text-sm text-fg-muted">
+            Les actions en retard ou prévues aujourd'hui passent en premier.
+          </p>
+        </div>
+      </header>
+
+      {count === 0 ? (
+        <PriorityEmptyState />
+      ) : (
+        <div className="space-y-3">
+          <FollowupGroup
+            title={m.dash_relances_section_overdue()}
+            tone="danger"
+            items={groups.overdue}
+            icon={<AlertTriangle className="size-4" />}
+          />
+          <FollowupGroup
+            title={m.dash_relances_section_today()}
+            tone="warning"
+            items={groups.today}
+            icon={<BellRing className="size-4" />}
+          />
+        </div>
+      )}
+    </section>
+  )
+}
+
+function UpcomingSection({ groups, count }: { groups: DueGroups; count: number }) {
+  return (
+    <section className="flex flex-col gap-3" aria-labelledby="upcoming-heading">
+      <header className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Clock3 className="size-4 text-fg-subtle" />
+          <h2 id="upcoming-heading" className="text-sm font-semibold text-fg">
+            À venir
+          </h2>
+        </div>
+        <Badge variant="outline" className="assay">
+          {count}
         </Badge>
       </header>
+
+      {count === 0 ? (
+        <p className="rounded-[var(--radius)] border border-dashed bg-surface px-4 py-5 text-sm text-fg-muted">
+          Aucune échéance planifiée après aujourd'hui.
+        </p>
+      ) : (
+        <div className="space-y-3">
+          <FollowupGroup
+            title={m.dash_relances_section_week()}
+            tone="neutral"
+            items={groups.thisWeek}
+          />
+          <FollowupGroup
+            title={m.dash_relances_section_later()}
+            tone="neutral"
+            items={groups.later}
+          />
+        </div>
+      )}
+    </section>
+  )
+}
+
+function FollowupGroup({
+  title,
+  tone,
+  items,
+  icon,
+}: {
+  title: string
+  tone: 'danger' | 'warning' | 'neutral'
+  items: Followup[]
+  icon?: React.ReactNode
+}) {
+  if (items.length === 0) return null
+  const variant = tone === 'danger' ? 'danger' : tone === 'warning' ? 'warning' : 'outline'
+
+  return (
+    <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface">
+      <div className="flex items-center gap-2 border-b border-border bg-surface-2 px-4 py-2.5">
+        <span className={tone === 'danger' ? 'text-danger' : tone === 'warning' ? 'text-warning' : 'text-fg-subtle'}>
+          {icon}
+        </span>
+        <h3 className="text-sm font-medium text-fg">{title}</h3>
+        <Badge variant={variant} className="assay ml-auto">
+          {items.length}
+        </Badge>
+      </div>
+      <div className="divide-y divide-border">
+        {items.map((followup) => (
+          <FollowupItem key={followup._id} followup={followup} variant="row" />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function MailPulseRecoverySection({ items }: { items: MailPulseRecovery[] }) {
+  return (
+    <section className="flex flex-col gap-3" aria-labelledby="mailpulse-heading">
+      <header>
+        <div className="flex items-center gap-2">
+          <h2 id="mailpulse-heading">
+            <MailPulseWordmark className="text-sm" />
+          </h2>
+          <Badge
+            variant="outline"
+            className="assay border-orange-200 text-orange-700 dark:border-orange-900 dark:text-orange-300"
+          >
+            {items.length}
+          </Badge>
+        </div>
+        <p className="mt-1.5 text-sm text-fg-muted">
+          Canal automatisé pour les dossiers de recouvrement.
+        </p>
+      </header>
+
       {items.length === 0 ? (
         <MailPulseRecoveryEmptyCard />
       ) : (
-        <div className="flex flex-col gap-2.5">
+        <div className="flex flex-col gap-3">
           {items.map((item) => (
             <MailPulseRecoveryItem key={item._id} item={item} />
           ))}
@@ -178,28 +261,20 @@ function MailPulseRecoverySection({
 
 function MailPulseRecoveryEmptyCard() {
   return (
-    <div
-      className={`flex flex-col gap-3 rounded-[var(--radius)] border p-3.5 shadow-[var(--shadow-card)] sm:flex-row sm:items-center ${mailpulsePanelClassName}`}
-    >
-      <MailPulseLogo />
-      <div className="min-w-0 flex-1">
-        <MailPulseWordmark className="text-sm" showLogo={false} />
-        <p className="mt-1 text-sm text-fg-muted">
-          Aucun recouvrement MailPulse n'est encore lancé. Passez une
-          opportunité en gagnée, puis lancez MailPulse depuis la fiche
-          opportunité.
-        </p>
-      </div>
+    <div className={`rounded-[var(--radius-lg)] border p-4 ${mailpulsePanelClassName}`}>
+      <p className="text-sm font-medium text-fg">Aucun dossier automatisé</p>
+      <p className="mt-1.5 text-sm text-fg-muted">
+        Lancez MailPulse depuis une opportunité gagnée lorsque le client doit être relancé.
+      </p>
       <Button
         type="button"
         variant="outline"
-        size="sm"
         asChild
-        className="border-orange-200 text-orange-700 hover:bg-orange-100 dark:border-orange-900/70 dark:text-orange-300 dark:hover:bg-orange-950/30"
+        className="mt-4 w-full border-orange-200 text-orange-700 hover:bg-orange-100 dark:border-orange-900/70 dark:text-orange-300 dark:hover:bg-orange-950/30"
       >
         <Link to="/app/parametres">
           <Settings className="size-4" />
-          Configurer
+          Configurer MailPulse
         </Link>
       </Button>
     </div>
@@ -224,71 +299,91 @@ function MailPulseRecoveryItem({ item }: { item: MailPulseRecovery }) {
   }
 
   return (
-    <div
-      className={`group flex flex-col gap-3 rounded-[var(--radius)] border p-3.5 shadow-[var(--shadow-card)] sm:flex-row sm:items-start ${mailpulsePanelClassName}`}
-    >
-      <MailPulseLogo />
-
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <MailPulseWordmark className="text-sm" showLogo={false} />
-          <Badge variant={active ? 'success' : 'warning'}>
-            {active ? (
-              <ShieldCheck className="size-3" />
-            ) : (
-              <Clock3 className="size-3" />
-            )}
-            {active ? 'Actif' : 'En attente'}
-          </Badge>
-        </div>
-
-        <p className="mt-2 text-sm font-medium text-fg">
-          Recouvrement client
-        </p>
-        <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-fg-muted">
-          <span className="inline-flex min-w-0 items-center gap-1">
-            <Target className="size-3.5 shrink-0 text-fg-subtle" />
-            <Link
-              to="/app/opportunites"
-              search={{ view: 'liste', id: item._id }}
-              className="truncate hover:text-fg hover:underline"
-            >
-              {item.title}
-            </Link>
-          </span>
-          {item.compensation && <span>{item.compensation}</span>}
-          {item.deadline && <span>Échéance : {formatShortDate(item.deadline)}</span>}
-        </div>
-
-        {(item.mailpulseContactId || item.mailpulseSequenceId) && (
-          <div className="mt-2 flex flex-wrap gap-2 font-mono text-[11px] text-fg-subtle">
-            {item.mailpulseContactId && (
-              <span>contact:{item.mailpulseContactId}</span>
-            )}
-            {item.mailpulseSequenceId && (
-              <span>séquence:{item.mailpulseSequenceId}</span>
+    <article className={`rounded-[var(--radius-lg)] border p-4 ${mailpulsePanelClassName}`}>
+      <div className="flex items-start gap-2.5">
+        <MailPulseLogo className="size-7" />
+        <div className="min-w-0 flex-1">
+          <Link
+            to="/app/opportunites"
+            search={{ view: 'liste', id: item._id }}
+            className="block truncate text-sm font-semibold text-fg hover:underline"
+          >
+            {item.title}
+          </Link>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <Badge variant={active ? 'success' : 'warning'}>
+              {active ? <ShieldCheck className="size-3" /> : <Clock3 className="size-3" />}
+              {active ? 'Actif' : 'En attente'}
+            </Badge>
+            {item.deadline && (
+              <span className="assay-meta">{formatShortDate(item.deadline)}</span>
             )}
           </div>
-        )}
+        </div>
+      </div>
+
+      {item.compensation && (
+        <p className="assay mt-3 text-xs font-medium text-fg">{item.compensation}</p>
+      )}
+      <div className="mt-3 flex items-center gap-1.5 text-xs text-fg-muted">
+        <Target className="size-3.5 shrink-0 text-fg-subtle" />
+        <span>Recouvrement client</span>
       </div>
 
       <Button
         type="button"
         variant="outline"
-        size="sm"
         onClick={onSync}
         disabled={syncing}
-        className="border-orange-200 text-orange-700 hover:bg-orange-100 dark:border-orange-900/70 dark:text-orange-300 dark:hover:bg-orange-950/30"
+        className="mt-4 w-full border-orange-200 text-orange-700 hover:bg-orange-100 dark:border-orange-900/70 dark:text-orange-300 dark:hover:bg-orange-950/30"
       >
-        {syncing ? (
-          <Loader2 className="size-4 animate-spin" />
-        ) : (
-          <RefreshCw className="size-4" />
-        )}
+        {syncing ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
         Synchroniser
       </Button>
+    </article>
+  )
+}
+
+function PriorityEmptyState() {
+  return (
+    <div className="flex items-start gap-3 rounded-[var(--radius-lg)] border border-dashed bg-surface px-4 py-5">
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-success-soft text-success">
+        <CheckCircle2 className="size-5" />
+      </span>
+      <div>
+        <p className="text-sm font-medium text-fg">Aucune relance urgente</p>
+        <p className="mt-1 text-sm text-fg-muted">
+          Les prochaines échéances restent visibles dans la colonne À venir.
+        </p>
+      </div>
     </div>
   )
+}
+
+function LoadingState() {
+  return (
+    <div className="grid items-start gap-8 xl:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="space-y-10">
+        {[0, 1].map((section) => (
+          <section key={section} className="space-y-4">
+            <div className="space-y-2">
+              <Skeleton className="h-5 w-44" />
+              <Skeleton className="h-4 w-72 max-w-full" />
+            </div>
+            <Skeleton className="h-36 rounded-[var(--radius-lg)]" />
+          </section>
+        ))}
+      </div>
+      <div className="space-y-8">
+        <Skeleton className="h-44 rounded-[var(--radius-lg)]" />
+        <Skeleton className="h-52 rounded-[var(--radius-lg)]" />
+      </div>
+    </div>
+  )
+}
+
+function flattenGroups(groups: DueGroups) {
+  return [...groups.overdue, ...groups.today, ...groups.thisWeek, ...groups.later]
 }
 
 function formatShortDate(value: string) {
@@ -299,84 +394,4 @@ function formatShortDate(value: string) {
     month: 'short',
     year: 'numeric',
   }).format(date)
-}
-
-function Section({
-  title,
-  tone,
-  items,
-  icon,
-}: {
-  title: string
-  tone: 'danger' | 'warning' | 'neutral'
-  items: Followup[]
-  icon?: React.ReactNode
-}) {
-  if (items.length === 0) return null
-  const variant =
-    tone === 'danger' ? 'danger' : tone === 'warning' ? 'warning' : 'outline'
-
-  return (
-    <section className="flex flex-col gap-3">
-      <header className="flex items-center gap-2">
-        {icon}
-        <h2 className="text-xs font-semibold uppercase tracking-[0.06em] text-fg-muted">
-          {title}
-        </h2>
-        <Badge variant={variant} className="tabular-nums">
-          {items.length}
-        </Badge>
-      </header>
-      <div className="flex flex-col gap-2.5">
-        {items.map((followup) => (
-          <FollowupItem key={followup._id} followup={followup} />
-        ))}
-      </div>
-    </section>
-  )
-}
-
-function EmptyState() {
-  return (
-    <div className="flex flex-col items-center justify-center rounded-[var(--radius-lg)] border border-dashed border-border bg-surface px-6 py-16 text-center">
-      <span className="flex size-12 items-center justify-center rounded-full bg-success-soft text-success">
-        <CheckCircle2 className="size-6" />
-      </span>
-      <h2 className="mt-4 text-lg font-semibold tracking-[-0.01em] text-fg">
-        {m.dash_relances_empty_title()}
-      </h2>
-      <p className="mt-1 max-w-sm text-sm text-fg-muted">
-        {m.dash_relances_empty_desc()}
-      </p>
-      <div className="mt-5">
-        <NewFollowupDialog />
-      </div>
-    </div>
-  )
-}
-
-function LoadingState() {
-  return (
-    <div className="flex flex-col gap-7">
-      {[3, 2].map((count, s) => (
-        <section key={s} className="flex flex-col gap-3">
-          <Skeleton className="h-4 w-28" />
-          <div className="flex flex-col gap-2.5">
-            {Array.from({ length: count }).map((_, i) => (
-              <div
-                key={i}
-                className="flex items-start gap-3 rounded-[var(--radius)] border border-border bg-surface p-3.5"
-              >
-                <Skeleton className="size-5 shrink-0 rounded-full" />
-                <div className="flex-1 space-y-2">
-                  <Skeleton className="h-4 w-3/5" />
-                  <Skeleton className="h-3 w-2/5" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      ))}
-    </div>
-  )
 }

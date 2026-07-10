@@ -34,7 +34,13 @@ function dueTone(iso: string): Tone {
   return 'neutral'
 }
 
-export function FollowupItem({ followup }: { followup: Followup }) {
+export function FollowupItem({
+  followup,
+  variant = 'card',
+}: {
+  followup: Followup
+  variant?: 'card' | 'row'
+}) {
   const toggle = useMutation(api.followups.toggle)
   const remove = useMutation(api.followups.remove)
   const [busy, setBusy] = useState(false)
@@ -75,7 +81,10 @@ export function FollowupItem({ followup }: { followup: Followup }) {
   return (
     <div
       className={cn(
-        'group flex items-start gap-3 rounded-[var(--radius)] border border-border bg-surface p-3.5 shadow-[var(--shadow-card)] transition-colors hover:border-border-strong',
+        'group flex items-start gap-3 bg-surface p-3.5 transition-colors',
+        variant === 'card'
+          ? 'rounded-[var(--radius)] border border-border shadow-sm hover:border-border-strong'
+          : 'rounded-none hover:bg-surface-2/60',
         followup.done && 'opacity-60',
       )}
     >
@@ -126,9 +135,9 @@ export function FollowupItem({ followup }: { followup: Followup }) {
           trigger={
             <Button
               variant="ghost"
-              size="icon-sm"
+              size="icon"
               aria-label="Modifier la relance"
-              className="text-fg-subtle hover:text-fg"
+              className="text-fg-subtle hover:text-fg md:size-9"
             >
               <Pencil className="size-4" />
             </Button>
@@ -139,9 +148,9 @@ export function FollowupItem({ followup }: { followup: Followup }) {
           <AlertDialogTrigger asChild>
             <Button
               variant="ghost"
-              size="icon-sm"
+              size="icon"
               aria-label={m.dash_followup_remove_aria()}
-              className="text-fg-subtle hover:text-danger"
+              className="text-fg-subtle hover:text-danger md:size-9"
             >
               <Trash2 className="size-4" />
             </Button>
@@ -191,7 +200,7 @@ function CheckButton({
       aria-pressed={done}
       aria-label={done ? m.dash_followup_mark_undone_aria() : m.dash_followup_mark_done_aria()}
       className={cn(
-        'mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border transition-colors',
+        'relative mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border transition-colors after:absolute after:-inset-3 after:content-[\'\']',
         done
           ? 'border-success bg-success text-white'
           : 'border-border-strong text-transparent hover:border-accent hover:text-accent/40',
