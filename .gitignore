@@ -19,3 +19,6 @@ src/lib/paraglide
 
 # Données locales / cookies de session (jamais committées)
 data/
+
+# Worktrees locaux Claude/Codex
+.claude/worktrees/

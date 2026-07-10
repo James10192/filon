@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-10T20:26:17.747Z",
+  "title": "Design System: Filon",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Indigo de décision",
+        "canonical": "oklch(0.511 0.214 277)",
+        "tonalRamp": ["oklch(0.15 0.06 277)", "oklch(0.25 0.10 277)", "oklch(0.36 0.16 277)", "oklch(0.511 0.214 277)", "oklch(0.62 0.18 277)", "oklch(0.73 0.13 277)", "oklch(0.84 0.07 277)", "oklch(0.95 0.02 277)"]
+      },
+      "background": {
+        "role": "neutral",
+        "displayName": "Zinc d'atelier",
+        "canonical": "#fafafa",
+        "tonalRamp": ["#18181b", "#27272a", "#3f3f46", "#52525b", "#71717a", "#a1a1aa", "#e4e4e7", "#fafafa"]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Surface de travail",
+        "canonical": "#ffffff",
+        "tonalRamp": ["#18181b", "#27272a", "#3f3f46", "#71717a", "#a1a1aa", "#d4d4d8", "#f4f4f5", "#ffffff"]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Encre de contrôle",
+        "canonical": "#18181b",
+        "tonalRamp": ["#09090b", "#18181b", "#27272a", "#3f3f46", "#52525b", "#71717a", "#a1a1aa", "#e4e4e7"]
+      },
+      "success": {
+        "role": "semantic",
+        "displayName": "Vert de confirmation",
+        "canonical": "#15803d",
+        "tonalRamp": ["#052e16", "#14532d", "#166534", "#15803d", "#16a34a", "#4ade80", "#bbf7d0", "#f0fdf4"]
+      },
+      "warning": {
+        "role": "semantic",
+        "displayName": "Ambre de vigilance",
+        "canonical": "#b45309",
+        "tonalRamp": ["#451a03", "#78350f", "#92400e", "#b45309", "#d97706", "#fbbf24", "#fde68a", "#fffbeb"]
+      },
+      "danger": {
+        "role": "semantic",
+        "displayName": "Rouge d'interruption",
+        "canonical": "#b91c1c",
+        "tonalRamp": ["#450a0a", "#7f1d1d", "#991b1b", "#b91c1c", "#dc2626", "#f87171", "#fecaca", "#fef2f2"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display public", "purpose": "Promesse principale de la landing uniquement." },
+      "headline": { "displayName": "Titre de page", "purpose": "Titre unique d'une vue applicative." },
+      "title": { "displayName": "Titre de travail", "purpose": "Section, carte ou groupe de données." },
+      "body": { "displayName": "Corps d'interface", "purpose": "Libellés développés, descriptions et contenu courant." },
+      "label": { "displayName": "Libellé compact", "purpose": "Métadonnées, contrôles courts et badges." },
+      "assay": { "displayName": "Relevé", "purpose": "Montants, dates, compteurs, identifiants et preuves." }
+    },
+    "shadows": [
+      { "name": "carte-basse", "value": "0 1px 2px rgba(24,24,27,0.04), 0 12px 28px -20px rgba(24,24,27,0.18)", "purpose": "Entité autonome qui doit se détacher légèrement du fond." },
+      { "name": "surface-elevee", "value": "0 8px 24px -8px rgba(24,24,27,0.20)", "purpose": "Menu, popover, dialogue ou élément en déplacement." }
+    ],
+    "motion": [
+      { "name": "ease-out-soft", "value": "cubic-bezier(0.22, 1, 0.36, 1)", "purpose": "Transitions d'état rapides et contrôlées." },
+      { "name": "state-fast", "value": "150ms", "purpose": "Survol, focus, sélection et retour immédiat." },
+      { "name": "state-standard", "value": "200ms", "purpose": "Ouverture ou changement d'état d'un composant." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Bouton principal",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Action dominante d'une vue, une seule fois par zone de décision.",
+      "html": "<button class=\"ds-btn-primary\">Nouvelle opportunité</button>",
+      "css": ".ds-btn-primary { height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0 16px; border: 0; border-radius: var(--radius, 8px); background: var(--color-accent, #4f46e5); color: var(--color-accent-fg, #fff); font: 500 14px/1 'Hanken Grotesk', system-ui, sans-serif; transition: background 150ms cubic-bezier(0.22,1,0.36,1); } .ds-btn-primary:hover { background: var(--color-accent-hover, #4338ca); } .ds-btn-primary:focus-visible { outline: 2px solid var(--color-accent, #4f46e5); outline-offset: 2px; } .ds-btn-primary:active { transform: translateY(1px); }"
+    },
+    {
+      "name": "Bouton secondaire",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Action secondaire sur une surface zinc discrète.",
+      "html": "<button class=\"ds-btn-secondary\">Exporter</button>",
+      "css": ".ds-btn-secondary { height: 44px; display: inline-flex; align-items: center; justify-content: center; padding: 0 16px; border: 1px solid var(--color-border, #e4e4e7); border-radius: var(--radius, 8px); background: var(--color-surface-2, #f4f4f5); color: var(--color-fg, #18181b); font: 500 14px/1 'Hanken Grotesk', system-ui, sans-serif; transition: background 150ms cubic-bezier(0.22,1,0.36,1); } .ds-btn-secondary:hover { background: color-mix(in srgb, var(--color-surface-2, #f4f4f5) 70%, transparent); } .ds-btn-secondary:focus-visible { outline: 2px solid var(--color-accent, #4f46e5); outline-offset: 2px; }"
+    },
+    {
+      "name": "Bouton contour",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Commande discrète qui ne concurrence pas l'action principale.",
+      "html": "<button class=\"ds-btn-outline\">Configurer</button>",
+      "css": ".ds-btn-outline { height: 44px; display: inline-flex; align-items: center; justify-content: center; padding: 0 16px; border: 1px solid var(--color-border, #e4e4e7); border-radius: var(--radius, 8px); background: transparent; color: var(--color-fg, #18181b); font: 500 14px/1 'Hanken Grotesk', system-ui, sans-serif; transition: background 150ms cubic-bezier(0.22,1,0.36,1); } .ds-btn-outline:hover { background: var(--color-surface-2, #f4f4f5); } .ds-btn-outline:focus-visible { outline: 2px solid var(--color-accent, #4f46e5); outline-offset: 2px; }"
+    },
+    {
+      "name": "Champ texte",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Champ standard de 44 px avec focus stable et lisible.",
+      "html": "<label class=\"ds-field-label\">Entreprise<input class=\"ds-input\" placeholder=\"Rechercher une entreprise\"></label>",
+      "css": ".ds-field-label { display: grid; gap: 6px; color: var(--color-fg, #18181b); font: 500 14px/1.4 'Hanken Grotesk', system-ui, sans-serif; } .ds-input { box-sizing: border-box; width: 100%; height: 44px; padding: 0 12px; border: 1px solid var(--color-border, #e4e4e7); border-radius: var(--radius, 8px); background: var(--color-surface, #fff); color: var(--color-fg, #18181b); font: 400 14px/1.4 'Hanken Grotesk', system-ui, sans-serif; transition: border-color 150ms, box-shadow 150ms; } .ds-input::placeholder { color: var(--color-fg-subtle, #71717a); } .ds-input:focus { border-color: var(--color-border-strong, #d4d4d8); outline: none; box-shadow: 0 0 0 2px var(--color-accent-ring, rgba(79,70,229,.45)); }"
+    },
+    {
+      "name": "Badge de statut",
+      "kind": "chip",
+      "refersTo": "badge",
+      "description": "Statut compact dont la couleur porte une signification métier.",
+      "html": "<span class=\"ds-badge-success\">Paiement confirmé</span>",
+      "css": ".ds-badge-success { height: 24px; display: inline-flex; align-items: center; padding: 0 10px; border-radius: var(--radius-sm, 6px); background: var(--color-success-soft, #f0fdf4); color: var(--color-success, #15803d); font: 500 12px/1 'Hanken Grotesk', system-ui, sans-serif; white-space: nowrap; }"
+    },
+    {
+      "name": "Carte de travail",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Entité autonome avec titre, contexte et action suivante.",
+      "html": "<article class=\"ds-card\"><div class=\"ds-card-status\">En attente de paiement</div><h3>Dossier Entreprise K.</h3><p>Solde attendu : 480 000 XOF</p><button>Ouvrir le dossier</button></article>",
+      "css": ".ds-card { width: 320px; padding: 20px; border: 1px solid var(--color-border, #e4e4e7); border-radius: var(--radius-lg, 12px); background: var(--color-surface, #fff); color: var(--color-fg, #18181b); font-family: 'Hanken Grotesk', system-ui, sans-serif; box-shadow: var(--shadow-card, 0 1px 2px rgba(24,24,27,.04)); } .ds-card-status { color: var(--color-warning, #b45309); font-size: 12px; font-weight: 500; } .ds-card h3 { margin: 10px 0 4px; font-size: 16px; letter-spacing: -.01em; } .ds-card p { margin: 0; color: var(--color-fg-muted, #52525b); font: 500 12px/1.5 'JetBrains Mono', monospace; } .ds-card button { margin-top: 16px; padding: 0; border: 0; background: transparent; color: var(--color-accent, #4f46e5); font: 500 14px/1.4 'Hanken Grotesk', system-ui, sans-serif; } .ds-card button:hover { text-decoration: underline; } .ds-card button:focus-visible { outline: 2px solid var(--color-accent, #4f46e5); outline-offset: 2px; }"
+    },
+    {
+      "name": "Élément de navigation actif",
+      "kind": "nav",
+      "refersTo": "navigation-active",
+      "description": "Destination actuelle dans la navigation applicative.",
+      "html": "<a class=\"ds-nav-active\" href=\"#\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14H3V6a2 2 0 0 1 2-2Z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"/></svg><span>Relances</span><strong>3</strong></a>",
+      "css": ".ds-nav-active { height: 36px; display: flex; align-items: center; gap: 10px; padding: 0 10px; border-radius: var(--radius-sm, 6px); background: var(--color-accent-soft, #eef2ff); color: var(--color-accent, #4f46e5); font: 500 14px/1 'Hanken Grotesk', system-ui, sans-serif; text-decoration: none; } .ds-nav-active svg { width: 16px; height: 16px; } .ds-nav-active strong { margin-left: auto; font: 500 11px/1 'JetBrains Mono', monospace; } .ds-nav-active:focus-visible { outline: 2px solid var(--color-accent, #4f46e5); outline-offset: 2px; }"
+    },
+    {
+      "name": "Barre de page",
+      "kind": "custom",
+      "refersTo": "page-toolbar",
+      "description": "Titre, contexte et actions d'une vue sans carte englobante.",
+      "html": "<header class=\"ds-page-toolbar\"><div><h1>Relances</h1><p>Ce qu'il faut traiter maintenant</p></div><button>Planifier</button></header>",
+      "css": ".ds-page-toolbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--color-border, #e4e4e7); background: var(--color-bg, #fafafa); font-family: 'Hanken Grotesk', system-ui, sans-serif; } .ds-page-toolbar h1 { margin: 0; color: var(--color-fg, #18181b); font-size: 19px; line-height: 1.25; letter-spacing: -.02em; } .ds-page-toolbar p { margin: 2px 0 0; color: var(--color-fg-muted, #52525b); font-size: 14px; } .ds-page-toolbar button { height: 44px; padding: 0 16px; border: 0; border-radius: var(--radius, 8px); background: var(--color-accent, #4f46e5); color: #fff; font-weight: 500; } .ds-page-toolbar button:hover { background: var(--color-accent-hover, #4338ca); } .ds-page-toolbar button:focus-visible { outline: 2px solid var(--color-accent, #4f46e5); outline-offset: 2px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "La tour de contrôle des revenus",
+    "overview": "Filon est un instrument de pilotage dense, calme et décisif. Chaque écran organise le travail autour d'une prochaine action, d'un risque ou d'une preuve, pour rendre visible la continuité entre la première piste et l'encaissement vérifié. La densité est assumée lorsqu'elle réduit les changements de contexte, mais chaque niveau d'information doit garder une hiérarchie nette.\n\nLe système repose sur des surfaces zinc, un accent indigo rare et des composants shadcn familiers. Il rejette les interfaces SaaS génériques, les accumulations de cartes sans hiérarchie, les informations simplement déposées sur l'écran et toute décoration gratuite. Les adaptations métier passent par les données, les statuts et les libellés, jamais par une identité visuelle différente pour chaque profession.",
+    "keyCharacteristics": [
+      "Densité professionnelle structurée par la décision suivante.",
+      "Monochrome zinc et indigo réservé à l'action ou à la sélection.",
+      "Hanken Grotesk pour l'interface, JetBrains Mono pour les chiffres et les preuves.",
+      "Composants familiers, états explicites et cibles tactiles de 44 px minimum.",
+      "Responsive structurel : navigation repliée, actions regroupées et données recomposées."
+    ],
+    "rules": [
+      { "name": "The Next Action Rule", "body": "Un écran n'est terminé que lorsque l'action suivante, le blocage principal ou l'état final est immédiatement identifiable.", "section": "overview" },
+      { "name": "The One Accent Rule", "body": "L'indigo est le seul accent de marque. Il occupe moins de 10 % d'un écran produit et ne concurrence jamais les couleurs de statut.", "section": "colors" },
+      { "name": "The Color Means State Rule", "body": "Une couleur vive doit toujours pouvoir être expliquée par une action, une sélection, une étape ou un statut.", "section": "colors" },
+      { "name": "The Instrument Type Rule", "body": "Les valeurs mesurables utilisent JetBrains Mono ; les décisions et explications utilisent Hanken Grotesk.", "section": "typography" },
+      { "name": "The Product Scale Rule", "body": "Les titres de l'application ont une taille fixe. Les échelles fluides sont réservées à la landing publique.", "section": "typography" },
+      { "name": "The Flat-by-Default Rule", "body": "Une bordure et une ombre large ne doivent pas décorer simultanément un composant. Les sections ordinaires restent sans ombre.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do organiser chaque écran autour de la prochaine décision, du risque principal ou de la preuve attendue.",
+      "Do utiliser l'Indigo de décision uniquement pour les actions principales, les sélections et le focus.",
+      "Do utiliser JetBrains Mono avec chiffres tabulaires pour les montants, dates, compteurs et références.",
+      "Do conserver des cibles tactiles d'au moins 44 px pour les actions principales et vérifier WCAG 2.2 AA.",
+      "Do fournir les états chargement, vide, erreur et succès avec une action de reprise claire.",
+      "Do utiliser les composants shadcn existants et la même grammaire de contrôles sur toutes les pages."
+    ],
+    "donts": [
+      "Don't produire une interface SaaS générique.",
+      "Don't créer une accumulation de cartes sans hiérarchie.",
+      "Don't construire un écran où les informations semblent simplement déposées.",
+      "Don't ajouter de décoration gratuite, d'effet sans fonction ou de composition immédiatement reconnaissable comme générée par IA.",
+      "Don't utiliser de texte en dégradé, de glassmorphism, d'orbes, de bento décoratif ou de grille de fond.",
+      "Don't utiliser une bordure latérale colorée épaisse comme accent de carte ou d'alerte.",
+      "Don't répéter de petits titres en capitales espacées au-dessus de chaque section.",
+      "Don't combiner une bordure décorative et une ombre diffuse de plus de 8 px sur le même composant.",
+      "Don't utiliser une police d'affichage dans les boutons, libellés, tableaux ou données.",
+      "Don't transmettre une information importante uniquement par la couleur."
+    ]
+  }
+}
