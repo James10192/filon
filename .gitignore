@@ -7,7 +7,7 @@ dist
 .env.local
 .env*.local
 *.env
-convex/_generated
+convex/_generated/ai
 
 # Notes de dev internes (non publiees)
 HANDOFF.md
