@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { CircleUser, KanbanSquare, type LucideIcon } from 'lucide-react'
 import { m } from '~/lib/paraglide/messages'
 import { cn } from '~/lib/utils'
@@ -14,10 +14,11 @@ import { ByokSection } from './byok-section'
 import { MailPulseSettingsCard } from '~/components/mailpulse/mailpulse-settings-card'
 import { BillingProfileCard } from '~/components/billing/billing-profile-card'
 
-type SectionKey = 'compte' | 'preferences'
+export type SettingsSectionKey = 'compte' | 'preferences'
+type SettingsFocus = 'mailpulse'
 
 type Section = {
-  key: SectionKey
+  key: SettingsSectionKey
   label: () => string
   description: () => string
   icon: LucideIcon
@@ -45,12 +46,42 @@ const SECTIONS: Section[] = [
  * largeur contenue. Le rail occupe l'espace au lieu de laisser une colonne
  * etroite centree sur une page large.
  */
-export function SettingsLayout() {
-  const [active, setActive] = useState<SectionKey>('compte')
+export function SettingsLayout({
+  activeSection = 'compte',
+  focus,
+  onSectionChange,
+}: {
+  activeSection?: SettingsSectionKey
+  focus?: SettingsFocus
+  onSectionChange?: (key: SettingsSectionKey) => void
+}) {
+  const [active, setActive] = useState<SettingsSectionKey>(activeSection)
+  const mailpulseRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    setActive(activeSection)
+  }, [activeSection])
+
+  useEffect(() => {
+    if (active !== 'preferences' || focus !== 'mailpulse') return
+    const frame = window.requestAnimationFrame(() => {
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      mailpulseRef.current?.scrollIntoView({
+        behavior: reduceMotion ? 'auto' : 'smooth',
+        block: 'center',
+      })
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [active, focus])
+
+  function selectSection(key: SettingsSectionKey) {
+    setActive(key)
+    onSectionChange?.(key)
+  }
 
   return (
     <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-10">
-      <SettingsNav active={active} onSelect={setActive} />
+      <SettingsNav active={active} onSelect={selectSection} />
 
       <div className="min-w-0 flex-1">
         <div className="flex max-w-2xl flex-col gap-6">
@@ -68,7 +99,9 @@ export function SettingsLayout() {
             <>
               <AppearanceSection />
               <MonEspaceSection />
-              <MailPulseSettingsCard />
+              <div ref={mailpulseRef} id="mailpulse">
+                <MailPulseSettingsCard />
+              </div>
               <PreferencesSection />
             </>
           )}
@@ -82,8 +115,8 @@ function SettingsNav({
   active,
   onSelect,
 }: {
-  active: SectionKey
-  onSelect: (key: SectionKey) => void
+  active: SettingsSectionKey
+  onSelect: (key: SettingsSectionKey) => void
 }) {
   return (
     <nav

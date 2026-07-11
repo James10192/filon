@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery } from 'convex/react'
-import { ExternalLink, Loader2, PlugZap } from 'lucide-react'
+import { ExternalLink, Info, Loader2, PlugZap } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import { mailpulseConnectUrl, mailpulseSignupUrl } from '~/lib/mailpulse'
 import { toast } from '~/components/ui/sonner'
@@ -79,7 +79,7 @@ export function MailPulseSettingsCard() {
   async function save() {
     const normalizedBaseUrl = normalizeMailPulseUrlInput(baseUrl)
     if (baseUrl.trim() && !normalizedBaseUrl) {
-      toast.error("Renseignez une URL MailPulse valide, par exemple https://mailpulse-two.vercel.app")
+      toast.error("Renseignez une URL ou un endpoint MailPulse valide")
       return
     }
 
@@ -98,6 +98,8 @@ export function MailPulseSettingsCard() {
       await upsert(
         trimmedApiKey ? { ...payload, mailpulseApiKey: trimmedApiKey } : payload,
       )
+      setBaseUrl(normalizedBaseUrl ?? '')
+      if (trimmedApiKey) setStatus('linked')
       setApiKey('')
       toast.success('Préférences MailPulse enregistrées')
     } catch {
@@ -127,7 +129,7 @@ export function MailPulseSettingsCard() {
                 </span>
               </span>
             </CardTitle>
-            <p className="mt-1.5 text-sm text-fg-muted">
+            <p className="mt-1.5 max-w-xl text-pretty text-sm text-fg-muted">
               Proposez MailPulse au moment où une opportunité est gagnée.
             </p>
           </div>
@@ -140,6 +142,7 @@ export function MailPulseSettingsCard() {
           <Button
             type="button"
             variant="outline"
+            className="transition-transform active:scale-[0.96]"
             onClick={() =>
               markPendingAndOpen(
                 mailpulseSignupUrl({ email: me?.email, name: me?.name }),
@@ -152,6 +155,7 @@ export function MailPulseSettingsCard() {
           <Button
             type="button"
             variant="secondary"
+            className="transition-transform active:scale-[0.96]"
             onClick={() => markPendingAndOpen(mailpulseConnectUrl())}
           >
             <PlugZap className="size-4" />
@@ -166,13 +170,21 @@ export function MailPulseSettingsCard() {
             <h3 className="text-sm font-semibold text-fg">
               Connexion API MailPulse
             </h3>
-            <p className="mt-1 text-xs text-fg-muted">
-              Collez ici l'URL et la clé Filon générée dans MailPulse.
+            <p className="mt-1 text-pretty text-xs text-fg-muted">
+              Collez l'adresse MailPulse, puis la clé Filon générée dans MailPulse.
+            </p>
+          </div>
+          <div className="flex gap-2 rounded-[var(--radius-sm)] bg-orange-100/70 p-3 text-xs text-orange-950 dark:bg-orange-950/40 dark:text-orange-100">
+            <Info className="mt-0.5 size-4 shrink-0 text-orange-700 dark:text-orange-300" />
+            <p className="text-pretty">
+              Si MailPulse affiche « Endpoint Filon », vous pouvez le coller ici.
+              Filon gardera automatiquement le domaine MailPulse, par exemple
+              https://mailpulse-two.vercel.app.
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
             <div className="grid gap-2">
-              <Label htmlFor="mailpulse-url">URL MailPulse</Label>
+              <Label htmlFor="mailpulse-url">URL ou endpoint MailPulse</Label>
               <Input
                 id="mailpulse-url"
                 value={baseUrl}
@@ -183,6 +195,9 @@ export function MailPulseSettingsCard() {
                 placeholder="https://mailpulse-two.vercel.app"
                 onChange={(event) => setBaseUrl(event.target.value)}
               />
+              <p className="text-xs text-fg-subtle">
+                Exemple accepté : https://mailpulse-two.vercel.app/api/integrations/filon/recovery
+              </p>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="mailpulse-api-key">Clé API Filon</Label>

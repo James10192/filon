@@ -30,6 +30,8 @@ import {
   mailpulsePanelClassName,
 } from '~/components/mailpulse/mailpulse-brand'
 import { RecoveryDashboardSection } from '~/components/recovery/recovery-dashboard-section'
+import { MailPulseStatusBadge } from '~/components/mailpulse/mailpulse-status-badge'
+import type { MailPulseSettings } from '~/components/mailpulse/types'
 
 export const Route = createFileRoute('/app/relances')({
   component: RelancesPage,
@@ -60,6 +62,9 @@ function RelancesPage() {
     api.recovery.listMailpulseRecoveries,
     {},
   ) as MailPulseRecovery[] | undefined
+  const mailpulseSettings = useQuery(api.settings.get, {}) as
+    | MailPulseSettings
+    | undefined
 
   return (
     <div className="flex flex-col">
@@ -77,10 +82,16 @@ function RelancesPage() {
           </div>
         }
       />
-      {groups === undefined || mailpulseRecoveries === undefined ? (
+      {groups === undefined ||
+      mailpulseRecoveries === undefined ||
+      mailpulseSettings === undefined ? (
         <LoadingState />
       ) : (
-        <Content groups={groups} mailpulseRecoveries={mailpulseRecoveries} />
+        <Content
+          groups={groups}
+          mailpulseRecoveries={mailpulseRecoveries}
+          mailpulseSettings={mailpulseSettings}
+        />
       )}
     </div>
   )
@@ -89,9 +100,11 @@ function RelancesPage() {
 function Content({
   groups,
   mailpulseRecoveries,
+  mailpulseSettings,
 }: {
   groups: DueGroups
   mailpulseRecoveries: MailPulseRecovery[]
+  mailpulseSettings: MailPulseSettings
 }) {
   const urgentCount = groups.overdue.length + groups.today.length
   const upcomingCount = groups.thisWeek.length + groups.later.length
@@ -105,7 +118,10 @@ function Content({
 
       <aside className="min-w-0 space-y-8 xl:sticky xl:top-20">
         <UpcomingSection groups={groups} count={upcomingCount} />
-        <MailPulseRecoverySection items={mailpulseRecoveries} />
+        <MailPulseRecoverySection
+          items={mailpulseRecoveries}
+          settings={mailpulseSettings}
+        />
       </aside>
     </div>
   )
@@ -226,28 +242,37 @@ function FollowupGroup({
   )
 }
 
-function MailPulseRecoverySection({ items }: { items: MailPulseRecovery[] }) {
+function MailPulseRecoverySection({
+  items,
+  settings,
+}: {
+  items: MailPulseRecovery[]
+  settings: MailPulseSettings
+}) {
   return (
     <section className="flex flex-col gap-3" aria-labelledby="mailpulse-heading">
       <header>
-        <div className="flex items-center gap-2">
+        <div className="flex items-start justify-between gap-3">
           <h2 id="mailpulse-heading">
             <MailPulseWordmark className="text-sm" />
           </h2>
+          <MailPulseStatusBadge status={settings.mailpulseConnectionStatus} />
+        </div>
+        <div className="mt-1.5 flex items-center justify-between gap-3">
+          <p className="text-sm text-fg-muted">
+            Canal automatisé pour les dossiers de recouvrement.
+          </p>
           <Badge
             variant="outline"
-            className="assay border-orange-200 text-orange-700 dark:border-orange-900 dark:text-orange-300"
+            className="assay shrink-0 border-orange-200 text-orange-700 dark:border-orange-900 dark:text-orange-300"
           >
             {items.length}
           </Badge>
         </div>
-        <p className="mt-1.5 text-sm text-fg-muted">
-          Canal automatisé pour les dossiers de recouvrement.
-        </p>
       </header>
 
       {items.length === 0 ? (
-        <MailPulseRecoveryEmptyCard />
+        <MailPulseRecoveryEmptyCard settings={settings} />
       ) : (
         <div className="flex flex-col gap-3">
           {items.map((item) => (
@@ -259,22 +284,42 @@ function MailPulseRecoverySection({ items }: { items: MailPulseRecovery[] }) {
   )
 }
 
-function MailPulseRecoveryEmptyCard() {
+function MailPulseRecoveryEmptyCard({ settings }: { settings: MailPulseSettings }) {
+  const configured = isMailPulseConfigured(settings)
+  const pending = settings.mailpulseConnectionStatus === 'pending'
+  const ctaLabel = configured
+    ? 'Voir les préférences MailPulse'
+    : pending
+      ? 'Finaliser MailPulse'
+      : 'Configurer MailPulse'
+
   return (
     <div className={`rounded-[var(--radius-lg)] border p-4 ${mailpulsePanelClassName}`}>
-      <p className="text-sm font-medium text-fg">Aucun dossier automatisé</p>
-      <p className="mt-1.5 text-sm text-fg-muted">
-        Lancez MailPulse depuis une opportunité gagnée lorsque le client doit être relancé.
-      </p>
+      <div className="flex items-start gap-3">
+        <MailPulseLogo className="size-8" />
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-fg">
+            {configured ? 'MailPulse est prêt' : 'Aucun dossier automatisé'}
+          </p>
+          <p className="mt-1.5 text-sm text-fg-muted">
+            {configured
+              ? 'La connexion est active. Lancez MailPulse depuis une opportunité gagnée.'
+              : 'Lancez MailPulse depuis une opportunité gagnée lorsque le client doit être relancé.'}
+          </p>
+        </div>
+      </div>
       <Button
         type="button"
         variant="outline"
         asChild
-        className="mt-4 w-full border-orange-200 text-orange-700 hover:bg-orange-100 dark:border-orange-900/70 dark:text-orange-300 dark:hover:bg-orange-950/30"
+        className="mt-4 w-full border-orange-200 text-orange-700 transition-[background-color,box-shadow,scale] active:scale-[0.96] hover:bg-orange-100 dark:border-orange-900/70 dark:text-orange-300 dark:hover:bg-orange-950/30"
       >
-        <Link to="/app/parametres">
+        <Link
+          to="/app/parametres"
+          search={{ tab: 'preferences', focus: 'mailpulse' }}
+        >
           <Settings className="size-4" />
-          Configurer MailPulse
+          {ctaLabel}
         </Link>
       </Button>
     </div>
@@ -394,4 +439,12 @@ function formatShortDate(value: string) {
     month: 'short',
     year: 'numeric',
   }).format(date)
+}
+
+function isMailPulseConfigured(settings: MailPulseSettings) {
+  return (
+    settings.mailpulseConnectionStatus === 'linked' &&
+    Boolean(settings.mailpulseBaseUrl?.trim()) &&
+    Boolean(settings.mailpulseApiKeySet)
+  )
 }
