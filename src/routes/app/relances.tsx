@@ -314,11 +314,12 @@ function MailPulseRecoveryEmptyCard({ settings }: { settings: MailPulseSettings 
         type="button"
         variant="outline"
         asChild
-        className="mt-4 w-full border-orange-200 text-orange-700 transition-[background-color,box-shadow,scale] active:scale-[0.96] hover:bg-orange-100 dark:border-orange-900/70 dark:text-orange-300 dark:hover:bg-orange-950/30"
+        className="mt-4 w-full border-orange-200 text-orange-700 transition-[background-color,box-shadow,transform] active:scale-[0.96] hover:bg-orange-100 dark:border-orange-900/70 dark:text-orange-300 dark:hover:bg-orange-950/30"
       >
         <Link
           to="/app/parametres"
           search={{ tab: 'preferences', focus: 'mailpulse' }}
+          preload="viewport"
         >
           <Settings className="size-4" />
           {ctaLabel}
