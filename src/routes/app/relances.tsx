@@ -253,22 +253,24 @@ function MailPulseRecoverySection({
     <section className="flex flex-col gap-3" aria-labelledby="mailpulse-heading">
       <header>
         <div className="flex items-start justify-between gap-3">
-          <h2 id="mailpulse-heading">
-            <MailPulseWordmark className="text-sm" />
-          </h2>
+          <div className="flex min-w-0 items-center gap-2">
+            <h2 id="mailpulse-heading">
+              <MailPulseWordmark className="text-sm" />
+            </h2>
+            {items.length > 0 && (
+              <Badge
+                variant="outline"
+                className="assay shrink-0 border-orange-200 text-orange-700 tabular-nums dark:border-orange-900 dark:text-orange-300"
+              >
+                {items.length}
+              </Badge>
+            )}
+          </div>
           <MailPulseStatusBadge status={settings.mailpulseConnectionStatus} />
         </div>
-        <div className="mt-1.5 flex items-center justify-between gap-3">
-          <p className="text-sm text-fg-muted">
-            Canal automatisé pour les dossiers de recouvrement.
-          </p>
-          <Badge
-            variant="outline"
-            className="assay shrink-0 border-orange-200 text-orange-700 dark:border-orange-900 dark:text-orange-300"
-          >
-            {items.length}
-          </Badge>
-        </div>
+        <p className="mt-1.5 text-sm text-fg-muted">
+          Canal automatisé pour les dossiers de recouvrement.
+        </p>
       </header>
 
       {items.length === 0 ? (

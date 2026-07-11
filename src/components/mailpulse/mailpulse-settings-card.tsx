@@ -165,7 +165,7 @@ export function MailPulseSettingsCard() {
 
         <Separator />
 
-        <div className={`grid gap-4 rounded-lg border p-4 ${mailpulsePanelClassName}`}>
+        <div className={`grid gap-3 rounded-lg border p-4 ${mailpulsePanelClassName}`}>
           <div>
             <h3 className="text-sm font-semibold text-fg">
               Connexion API MailPulse
@@ -174,43 +174,53 @@ export function MailPulseSettingsCard() {
               Collez l'adresse MailPulse, puis la clé Filon générée dans MailPulse.
             </p>
           </div>
-          <div className="flex gap-2 rounded-[var(--radius-sm)] bg-orange-100/70 p-3 text-xs text-orange-950 dark:bg-orange-950/40 dark:text-orange-100">
+          <div className="grid gap-x-3 gap-y-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+            <Label
+              htmlFor="mailpulse-url"
+              className="sm:col-start-1 sm:row-start-1"
+            >
+              URL ou endpoint MailPulse
+            </Label>
+            <Input
+              id="mailpulse-url"
+              value={baseUrl}
+              type="url"
+              inputMode="url"
+              autoCapitalize="none"
+              autoComplete="off"
+              placeholder="https://mailpulse-two.vercel.app"
+              className="sm:col-start-1 sm:row-start-2"
+              onChange={(event) => setBaseUrl(event.target.value)}
+            />
+            <p className="text-xs text-fg-subtle sm:col-start-1 sm:row-start-3">
+              Exemple accepté : https://mailpulse-two.vercel.app/api/integrations/filon/recovery
+            </p>
+            <Label
+              htmlFor="mailpulse-api-key"
+              className="mt-3 sm:col-start-2 sm:row-start-1 sm:mt-0"
+            >
+              Clé API Filon
+            </Label>
+            <Input
+              id="mailpulse-api-key"
+              value={apiKey}
+              type="password"
+              placeholder={
+                settings.mailpulseApiKeyPreview ?? 'mp_filon_...'
+              }
+              className="sm:col-start-2 sm:row-start-2"
+              onChange={(event) => setApiKey(event.target.value)}
+            />
+            <p className="text-xs text-fg-subtle sm:col-start-2 sm:row-start-3">
+              La clé reste masquée après enregistrement.
+            </p>
+          </div>
+          <div className="flex gap-2 rounded-[var(--radius-sm)] bg-orange-100/70 px-3 py-2 text-xs text-orange-950 dark:bg-orange-950/40 dark:text-orange-100">
             <Info className="mt-0.5 size-4 shrink-0 text-orange-700 dark:text-orange-300" />
             <p className="text-pretty">
               Si MailPulse affiche « Endpoint Filon », vous pouvez le coller ici.
-              Filon gardera automatiquement le domaine MailPulse, par exemple
-              https://mailpulse-two.vercel.app.
+              Filon gardera automatiquement le domaine MailPulse.
             </p>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-            <div className="grid gap-2">
-              <Label htmlFor="mailpulse-url">URL ou endpoint MailPulse</Label>
-              <Input
-                id="mailpulse-url"
-                value={baseUrl}
-                type="url"
-                inputMode="url"
-                autoCapitalize="none"
-                autoComplete="off"
-                placeholder="https://mailpulse-two.vercel.app"
-                onChange={(event) => setBaseUrl(event.target.value)}
-              />
-              <p className="text-xs text-fg-subtle">
-                Exemple accepté : https://mailpulse-two.vercel.app/api/integrations/filon/recovery
-              </p>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="mailpulse-api-key">Clé API Filon</Label>
-              <Input
-                id="mailpulse-api-key"
-                value={apiKey}
-                type="password"
-                placeholder={
-                  settings.mailpulseApiKeyPreview ?? 'mp_filon_...'
-                }
-                onChange={(event) => setApiKey(event.target.value)}
-              />
-            </div>
           </div>
           <div className="flex flex-wrap items-center gap-2 text-xs text-fg-muted">
             <span className="rounded-full bg-orange-100 px-2 py-1 font-medium text-orange-700 dark:bg-orange-950 dark:text-orange-300">
