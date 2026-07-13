@@ -33,6 +33,8 @@ import { Route as AppPropositionsIdRouteImport } from './routes/app/propositions
 import { Route as AppOpportunitesIdRouteImport } from './routes/app/opportunites.$id'
 import { Route as ApiPhSplatRouteImport } from './routes/api/ph.$'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth.$'
+import { Route as AppPropositionsIdApercuPdfRouteImport } from './routes/app/propositions.$id.apercu-pdf'
+import { Route as ApiPropositionsIdPdfRouteImport } from './routes/api/propositions.$id.pdf'
 
 const InscriptionRoute = InscriptionRouteImport.update({
   id: '/inscription',
@@ -154,6 +156,17 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppPropositionsIdApercuPdfRoute =
+  AppPropositionsIdApercuPdfRouteImport.update({
+    id: '/apercu-pdf',
+    path: '/apercu-pdf',
+    getParentRoute: () => AppPropositionsIdRoute,
+  } as any)
+const ApiPropositionsIdPdfRoute = ApiPropositionsIdPdfRouteImport.update({
+  id: '/api/propositions/$id/pdf',
+  path: '/api/propositions/$id/pdf',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -179,7 +192,9 @@ export interface FileRoutesByFullPath {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/ph/$': typeof ApiPhSplatRoute
   '/app/opportunites/$id': typeof AppOpportunitesIdRoute
-  '/app/propositions/$id': typeof AppPropositionsIdRoute
+  '/app/propositions/$id': typeof AppPropositionsIdRouteWithChildren
+  '/api/propositions/$id/pdf': typeof ApiPropositionsIdPdfRoute
+  '/app/propositions/$id/apercu-pdf': typeof AppPropositionsIdApercuPdfRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -204,7 +219,9 @@ export interface FileRoutesByTo {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/ph/$': typeof ApiPhSplatRoute
   '/app/opportunites/$id': typeof AppOpportunitesIdRoute
-  '/app/propositions/$id': typeof AppPropositionsIdRoute
+  '/app/propositions/$id': typeof AppPropositionsIdRouteWithChildren
+  '/api/propositions/$id/pdf': typeof ApiPropositionsIdPdfRoute
+  '/app/propositions/$id/apercu-pdf': typeof AppPropositionsIdApercuPdfRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -231,7 +248,9 @@ export interface FileRoutesById {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/ph/$': typeof ApiPhSplatRoute
   '/app/opportunites/$id': typeof AppOpportunitesIdRoute
-  '/app/propositions/$id': typeof AppPropositionsIdRoute
+  '/app/propositions/$id': typeof AppPropositionsIdRouteWithChildren
+  '/api/propositions/$id/pdf': typeof ApiPropositionsIdPdfRoute
+  '/app/propositions/$id/apercu-pdf': typeof AppPropositionsIdApercuPdfRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -260,6 +279,8 @@ export interface FileRouteTypes {
     | '/api/ph/$'
     | '/app/opportunites/$id'
     | '/app/propositions/$id'
+    | '/api/propositions/$id/pdf'
+    | '/app/propositions/$id/apercu-pdf'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -285,6 +306,8 @@ export interface FileRouteTypes {
     | '/api/ph/$'
     | '/app/opportunites/$id'
     | '/app/propositions/$id'
+    | '/api/propositions/$id/pdf'
+    | '/app/propositions/$id/apercu-pdf'
   id:
     | '__root__'
     | '/'
@@ -311,6 +334,8 @@ export interface FileRouteTypes {
     | '/api/ph/$'
     | '/app/opportunites/$id'
     | '/app/propositions/$id'
+    | '/api/propositions/$id/pdf'
+    | '/app/propositions/$id/apercu-pdf'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -322,6 +347,7 @@ export interface RootRouteChildren {
   DocsSlugRoute: typeof DocsSlugRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiPhSplatRoute: typeof ApiPhSplatRoute
+  ApiPropositionsIdPdfRoute: typeof ApiPropositionsIdPdfRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -494,6 +520,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/app/propositions/$id/apercu-pdf': {
+      id: '/app/propositions/$id/apercu-pdf'
+      path: '/apercu-pdf'
+      fullPath: '/app/propositions/$id/apercu-pdf'
+      preLoaderRoute: typeof AppPropositionsIdApercuPdfRouteImport
+      parentRoute: typeof AppPropositionsIdRoute
+    }
+    '/api/propositions/$id/pdf': {
+      id: '/api/propositions/$id/pdf'
+      path: '/api/propositions/$id/pdf'
+      fullPath: '/api/propositions/$id/pdf'
+      preLoaderRoute: typeof ApiPropositionsIdPdfRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -509,12 +549,23 @@ const AppOpportunitesRouteWithChildren = AppOpportunitesRoute._addFileChildren(
   AppOpportunitesRouteChildren,
 )
 
+interface AppPropositionsIdRouteChildren {
+  AppPropositionsIdApercuPdfRoute: typeof AppPropositionsIdApercuPdfRoute
+}
+
+const AppPropositionsIdRouteChildren: AppPropositionsIdRouteChildren = {
+  AppPropositionsIdApercuPdfRoute: AppPropositionsIdApercuPdfRoute,
+}
+
+const AppPropositionsIdRouteWithChildren =
+  AppPropositionsIdRoute._addFileChildren(AppPropositionsIdRouteChildren)
+
 interface AppPropositionsRouteChildren {
-  AppPropositionsIdRoute: typeof AppPropositionsIdRoute
+  AppPropositionsIdRoute: typeof AppPropositionsIdRouteWithChildren
 }
 
 const AppPropositionsRouteChildren: AppPropositionsRouteChildren = {
-  AppPropositionsIdRoute: AppPropositionsIdRoute,
+  AppPropositionsIdRoute: AppPropositionsIdRouteWithChildren,
 }
 
 const AppPropositionsRouteWithChildren = AppPropositionsRoute._addFileChildren(
@@ -568,16 +619,8 @@ const rootRouteChildren: RootRouteChildren = {
   DocsSlugRoute: DocsSlugRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiPhSplatRoute: ApiPhSplatRoute,
+  ApiPropositionsIdPdfRoute: ApiPropositionsIdPdfRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

@@ -32,12 +32,43 @@ const lineItemValidator = v.object({
   unitPrice: v.number(),
 })
 
+const documentLanguageValidator = v.union(v.literal('fr'), v.literal('en'))
+const billingRecipientValidator = v.object({
+  name: v.string(),
+  attention: v.optional(v.string()),
+  email: v.optional(v.string()),
+  phone: v.optional(v.string()),
+  address: v.optional(v.string()),
+  city: v.optional(v.string()),
+  country: v.optional(v.string()),
+  taxId: v.optional(v.string()),
+})
+const discountValidator = v.object({
+  type: v.union(v.literal('fixed'), v.literal('percent')),
+  value: v.number(),
+})
+const taxValidator = v.object({ label: v.string(), rate: v.number() })
+
 type ProposalLineItem = {
   label: string
   description?: string
   quantity: number
   unitPrice: number
 }
+
+type BillingRecipient = {
+  name: string
+  attention?: string
+  email?: string
+  phone?: string
+  address?: string
+  city?: string
+  country?: string
+  taxId?: string
+}
+
+type Discount = { type: 'fixed' | 'percent'; value: number }
+type Tax = { label: string; rate: number }
 
 function cleanLineItems(items: ProposalLineItem[] | undefined) {
   if (items === undefined) return undefined
@@ -58,6 +89,56 @@ function cleanLineItems(items: ProposalLineItem[] | undefined) {
 function lineItemsTotal(items: ProposalLineItem[] | undefined) {
   if (!items || items.length === 0) return undefined
   return items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0)
+}
+
+function cleanBillingRecipient(value: BillingRecipient | undefined) {
+  if (value === undefined) return undefined
+  const name = value.name.trim()
+  if (!name) throw validationError('Le nom du client est requis.')
+  const clean: BillingRecipient = { name }
+  for (const key of ['attention', 'email', 'phone', 'address', 'city', 'country', 'taxId'] as const) {
+    const item = value[key]?.trim()
+    if (item) clean[key] = item
+  }
+  return clean
+}
+
+function cleanDiscount(value: Discount | undefined) {
+  if (value === undefined) return undefined
+  if (!Number.isFinite(value.value) || value.value < 0) {
+    throw validationError('La remise doit être positive.')
+  }
+  if (value.type === 'percent' && value.value > 100) {
+    throw validationError('La remise ne peut pas dépasser 100 %.')
+  }
+  return { type: value.type, value }
+}
+
+function cleanTaxes(values: Tax[] | undefined) {
+  if (values === undefined) return undefined
+  return values
+    .map((tax) => ({ label: tax.label.trim(), rate: tax.rate }))
+    .filter((tax) => tax.label)
+    .map((tax) => {
+      if (!Number.isFinite(tax.rate) || tax.rate < 0 || tax.rate > 100) {
+        throw validationError('Chaque taux doit être compris entre 0 et 100 %.')
+      }
+      return tax
+    })
+}
+
+function commercialTotal(
+  subtotal: number | undefined,
+  discount: Discount | undefined,
+  taxes: Tax[] | undefined,
+) {
+  if (subtotal === undefined) return undefined
+  const discountAmount = discount
+    ? Math.min(subtotal, discount.type === 'percent' ? subtotal * discount.value / 100 : discount.value)
+    : 0
+  const taxable = subtotal - discountAmount
+  const taxAmount = (taxes ?? []).reduce((sum, tax) => sum + taxable * tax.rate / 100, 0)
+  return taxable + taxAmount
 }
 
 /** Charge une proposition en verifiant qu'elle appartient au user courant. */
@@ -214,6 +295,11 @@ export const create = mutation({
     validUntil: v.optional(v.string()),
     terms: v.optional(v.string()),
     clientNote: v.optional(v.string()),
+    documentLanguage: v.optional(documentLanguageValidator),
+    billingRecipient: v.optional(billingRecipientValidator),
+    discount: v.optional(discountValidator),
+    taxes: v.optional(v.array(taxValidator)),
+    depositAmount: v.optional(v.number()),
     kind: v.optional(proposalKind),
     status: v.optional(proposalStatus),
   },
@@ -246,6 +332,11 @@ export const create = mutation({
       validUntil?: string
       terms?: string
       clientNote?: string
+      documentLanguage?: 'fr' | 'en'
+      billingRecipient?: BillingRecipient
+      discount?: Discount
+      taxes?: Tax[]
+      depositAmount?: number
       sentAt?: string
     } = {
       userId,
@@ -258,7 +349,16 @@ export const create = mutation({
       updatedAt: now,
     }
     const lineItems = cleanLineItems(args.lineItems)
-    const derivedAmount = lineItemsTotal(lineItems)
+    const discount = cleanDiscount(args.discount)
+    const taxes = cleanTaxes(args.taxes)
+    const derivedAmount = commercialTotal(
+      lineItemsTotal(lineItems) ?? args.amount,
+      discount,
+      taxes,
+    )
+    if (args.depositAmount !== undefined && (!Number.isFinite(args.depositAmount) || args.depositAmount < 0 || (derivedAmount !== undefined && args.depositAmount > derivedAmount))) {
+      throw validationError("L'acompte est invalide.")
+    }
     if (lineItems !== undefined) doc.lineItems = lineItems
     if (args.companyId !== undefined) doc.companyId = args.companyId
     if (derivedAmount !== undefined) doc.amount = derivedAmount
@@ -266,6 +366,12 @@ export const create = mutation({
     if (args.validUntil !== undefined) doc.validUntil = args.validUntil
     if (args.terms !== undefined) doc.terms = args.terms
     if (args.clientNote !== undefined) doc.clientNote = args.clientNote
+    if (args.documentLanguage !== undefined) doc.documentLanguage = args.documentLanguage
+    const billingRecipient = cleanBillingRecipient(args.billingRecipient)
+    if (billingRecipient !== undefined) doc.billingRecipient = billingRecipient
+    if (discount !== undefined) doc.discount = discount
+    if (taxes !== undefined) doc.taxes = taxes
+    if (args.depositAmount !== undefined) doc.depositAmount = args.depositAmount
     if (status === 'sent') doc.sentAt = new Date(now).toISOString()
 
     return ctx.db.insert('proposals', doc)
@@ -288,11 +394,16 @@ export const update = mutation({
     validUntil: v.optional(v.string()),
     terms: v.optional(v.string()),
     clientNote: v.optional(v.string()),
+    documentLanguage: v.optional(documentLanguageValidator),
+    billingRecipient: v.optional(billingRecipientValidator),
+    discount: v.optional(discountValidator),
+    taxes: v.optional(v.array(taxValidator)),
+    depositAmount: v.optional(v.number()),
     kind: v.optional(proposalKind),
   },
   handler: async (ctx, args): Promise<null> => {
     const { userId } = await requireUser(ctx)
-    await getOwnedProposal(ctx, userId, args.id)
+    const proposal = await getOwnedProposal(ctx, userId, args.id)
 
     if (args.companyId) {
       const company = await ctx.db.get(args.companyId)
@@ -313,24 +424,54 @@ export const update = mutation({
       terms?: string
       clientNote?: string
       kind?: 'proposal' | 'proforma'
+      documentLanguage?: 'fr' | 'en'
+      billingRecipient?: BillingRecipient
+      discount?: Discount
+      taxes?: Tax[]
+      depositAmount?: number
     } = { updatedAt: Date.now() }
     if (args.title !== undefined) patch.title = args.title
     if (args.pitch !== undefined) patch.pitch = args.pitch
+    const discount = args.discount !== undefined ? cleanDiscount(args.discount) : undefined
+    const taxes = args.taxes !== undefined ? cleanTaxes(args.taxes) : undefined
+    const hasCommercialChange =
+      args.lineItems !== undefined ||
+      args.amount !== undefined ||
+      args.discount !== undefined ||
+      args.taxes !== undefined
     if (args.lineItems !== undefined) {
       const lineItems = cleanLineItems(args.lineItems)
       patch.lineItems = lineItems
-      const derivedAmount = lineItemsTotal(lineItems)
+    }
+    if (hasCommercialChange) {
+      const effectiveLines = args.lineItems !== undefined
+        ? cleanLineItems(args.lineItems)
+        : proposal.lineItems
+      const baseAmount = lineItemsTotal(effectiveLines) ?? args.amount ?? proposal.amount
+      const derivedAmount = commercialTotal(
+        baseAmount,
+        discount ?? proposal.discount,
+        taxes ?? proposal.taxes,
+      )
       if (derivedAmount !== undefined) patch.amount = derivedAmount
     }
     if (args.companyId !== undefined) patch.companyId = args.companyId
-    if (args.amount !== undefined && patch.amount === undefined) {
-      patch.amount = args.amount
-    }
     if (args.currency !== undefined) patch.currency = args.currency
     if (args.validUntil !== undefined) patch.validUntil = args.validUntil
     if (args.terms !== undefined) patch.terms = args.terms
     if (args.clientNote !== undefined) patch.clientNote = args.clientNote
     if (args.kind !== undefined) patch.kind = args.kind
+    if (args.documentLanguage !== undefined) patch.documentLanguage = args.documentLanguage
+    if (args.billingRecipient !== undefined) patch.billingRecipient = cleanBillingRecipient(args.billingRecipient)
+    if (discount !== undefined) patch.discount = discount
+    if (taxes !== undefined) patch.taxes = taxes
+    if (args.depositAmount !== undefined) {
+      const total = patch.amount ?? proposal.amount
+      if (!Number.isFinite(args.depositAmount) || args.depositAmount < 0 || (total !== undefined && args.depositAmount > total)) {
+        throw validationError("L'acompte est invalide.")
+      }
+      patch.depositAmount = args.depositAmount
+    }
 
     await ctx.db.patch(args.id, patch)
     return null

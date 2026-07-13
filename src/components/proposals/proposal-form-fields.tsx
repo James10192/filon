@@ -224,3 +224,59 @@ export function ProformaFields({
     </>
   )
 }
+
+export type CommercialDocumentFieldsValue = {
+  language: 'fr' | 'en'
+  recipientName: string
+  recipientEmail: string
+  recipientPhone: string
+  recipientAddress: string
+  discountType: 'fixed' | 'percent'
+  discountValue: string
+  taxLabel: string
+  taxRate: string
+  depositAmount: string
+}
+
+export function CommercialDocumentFields({
+  value,
+  onChange,
+}: {
+  value: CommercialDocumentFieldsValue
+  onChange: (next: CommercialDocumentFieldsValue) => void
+}) {
+  function patch(next: Partial<CommercialDocumentFieldsValue>) {
+    onChange({ ...value, ...next })
+  }
+
+  return (
+    <section className="flex flex-col gap-3 rounded-[var(--radius)] border border-border bg-surface-2 p-3">
+      <div>
+        <Label>Document commercial</Label>
+        <p className="text-xs text-fg-muted">Les coordonnées ci-dessous sont propres à ce document.</p>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="document-language">Langue du document</Label>
+          <Select value={value.language} onValueChange={(language) => patch({ language: language as 'fr' | 'en' })}>
+            <SelectTrigger id="document-language"><SelectValue /></SelectTrigger>
+            <SelectContent><SelectItem value="fr">Français</SelectItem><SelectItem value="en">English</SelectItem></SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="billing-recipient">Client facturé</Label>
+          <Input id="billing-recipient" value={value.recipientName} onChange={(event) => patch({ recipientName: event.target.value })} placeholder="Raison sociale ou nom" />
+        </div>
+        <div className="flex flex-col gap-1.5"><Label htmlFor="billing-email">Email client</Label><Input id="billing-email" type="email" value={value.recipientEmail} onChange={(event) => patch({ recipientEmail: event.target.value })} /></div>
+        <div className="flex flex-col gap-1.5"><Label htmlFor="billing-phone">Téléphone client</Label><Input id="billing-phone" value={value.recipientPhone} onChange={(event) => patch({ recipientPhone: event.target.value })} /></div>
+      </div>
+      <div className="flex flex-col gap-1.5"><Label htmlFor="billing-address">Adresse de facturation</Label><Textarea id="billing-address" value={value.recipientAddress} onChange={(event) => patch({ recipientAddress: event.target.value })} className="min-h-16" /></div>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="flex flex-col gap-1.5"><Label htmlFor="discount-value">Remise</Label><Input id="discount-value" inputMode="decimal" value={value.discountValue} onChange={(event) => patch({ discountValue: event.target.value })} placeholder="0" /></div>
+        <div className="flex flex-col gap-1.5"><Label htmlFor="discount-type">Type</Label><Select value={value.discountType} onValueChange={(discountType) => patch({ discountType: discountType as 'fixed' | 'percent' })}><SelectTrigger id="discount-type"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="fixed">Montant</SelectItem><SelectItem value="percent">Pourcentage</SelectItem></SelectContent></Select></div>
+        <div className="flex flex-col gap-1.5"><Label htmlFor="deposit">Acompte</Label><Input id="deposit" inputMode="decimal" value={value.depositAmount} onChange={(event) => patch({ depositAmount: event.target.value })} placeholder="0" /></div>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2"><div className="flex flex-col gap-1.5"><Label htmlFor="tax-label">Taxe</Label><Input id="tax-label" value={value.taxLabel} onChange={(event) => patch({ taxLabel: event.target.value })} placeholder="Ex. TVA" /></div><div className="flex flex-col gap-1.5"><Label htmlFor="tax-rate">Taux (%)</Label><Input id="tax-rate" inputMode="decimal" value={value.taxRate} onChange={(event) => patch({ taxRate: event.target.value })} placeholder="0" /></div></div>
+    </section>
+  )
+}

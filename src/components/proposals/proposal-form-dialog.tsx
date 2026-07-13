@@ -16,6 +16,8 @@ import {
 import { toast } from '~/components/ui/sonner'
 import {
   AmountAndCurrencyFields,
+  CommercialDocumentFields,
+  type CommercialDocumentFieldsValue,
   DocumentTypePicker,
   PitchField,
   ProformaFields,
@@ -43,6 +45,11 @@ type ProposalInitialDraft = {
   validUntil?: string
   terms?: string
   clientNote?: string
+  documentLanguage?: 'fr' | 'en'
+  billingRecipient?: { name: string; email?: string; phone?: string; address?: string }
+  discount?: { type: 'fixed' | 'percent'; value: number }
+  taxes?: Array<{ label: string; rate: number }>
+  depositAmount?: number
 }
 
 type ProposalInitialRecipient = {
@@ -85,6 +92,7 @@ export function ProposalFormDialog({
   const [validUntil, setValidUntil] = useState('')
   const [terms, setTerms] = useState('')
   const [clientNote, setClientNote] = useState('')
+  const [commercial, setCommercial] = useState<CommercialDocumentFieldsValue>(emptyCommercialFields())
   const [submitting, setSubmitting] = useState(false)
   const [errors, setErrors] = useState<{ title?: string; pitch?: string }>({})
 
@@ -103,6 +111,7 @@ export function ProposalFormDialog({
       setValidUntil(proposal.validUntil ?? '')
       setTerms(proposal.terms ?? '')
       setClientNote(proposal.clientNote ?? '')
+      setCommercial(commercialFromProposal(proposal))
       return
     }
     setKind(initialDraft?.kind ?? 'proposal')
@@ -114,6 +123,7 @@ export function ProposalFormDialog({
     setValidUntil(initialDraft?.validUntil ?? '')
     setTerms(initialDraft?.terms ?? '')
     setClientNote(initialDraft?.clientNote ?? '')
+    setCommercial(commercialFromDraft(initialDraft))
   }, [open, proposal, initialDraft])
 
   const parsedAmount = useMemo(
@@ -186,6 +196,7 @@ export function ProposalFormDialog({
       validUntil,
       terms,
       clientNote,
+      commercial,
     })
     if (targetId) {
       await update({ id: targetId, ...payload })
@@ -268,6 +279,7 @@ export function ProposalFormDialog({
               onClientNote={setClientNote}
             />
           )}
+          <CommercialDocumentFields value={commercial} onChange={setCommercial} />
           <div className="flex justify-end">
             <Button type="submit" disabled={submitting} variant="outline">
               {submitting && <Loader2 className="size-4 animate-spin" />}
@@ -314,7 +326,8 @@ function buildProposalPayload({
   lineItems,
   validUntil,
   terms,
-  clientNote,
+    clientNote,
+    commercial,
 }: {
   title: string
   pitch: string
@@ -325,6 +338,7 @@ function buildProposalPayload({
   validUntil: string
   terms: string
   clientNote: string
+  commercial: CommercialDocumentFieldsValue
 }) {
   const payload: {
     title: string
@@ -336,6 +350,11 @@ function buildProposalPayload({
     terms?: string
     clientNote?: string
     amount?: number
+    documentLanguage?: 'fr' | 'en'
+    billingRecipient?: { name: string; email?: string; phone?: string; address?: string }
+    discount?: { type: 'fixed' | 'percent'; value: number }
+    taxes?: Array<{ label: string; rate: number }>
+    depositAmount?: number
   } = { title: title.trim(), pitch: pitch.trim(), currency, kind }
   if (kind === 'proforma') {
     payload.lineItems = lineItems
@@ -345,5 +364,60 @@ function buildProposalPayload({
   } else if (parsedAmount !== undefined) {
     payload.amount = parsedAmount
   }
+  payload.documentLanguage = commercial.language
+  const recipientName = commercial.recipientName.trim()
+  if (recipientName) {
+    const recipient: { name: string; email?: string; phone?: string; address?: string } = { name: recipientName }
+    if (commercial.recipientEmail.trim()) recipient.email = commercial.recipientEmail.trim()
+    if (commercial.recipientPhone.trim()) recipient.phone = commercial.recipientPhone.trim()
+    if (commercial.recipientAddress.trim()) recipient.address = commercial.recipientAddress.trim()
+    payload.billingRecipient = recipient
+  }
+  const discountValue = Number(commercial.discountValue)
+  if (commercial.discountValue.trim() && Number.isFinite(discountValue) && discountValue > 0) {
+    payload.discount = { type: commercial.discountType, value: discountValue }
+  }
+  const taxRate = Number(commercial.taxRate)
+  if (commercial.taxLabel.trim() && commercial.taxRate.trim() && Number.isFinite(taxRate)) {
+    payload.taxes = [{ label: commercial.taxLabel.trim(), rate: taxRate }]
+  }
+  const depositAmount = Number(commercial.depositAmount)
+  if (commercial.depositAmount.trim() && Number.isFinite(depositAmount) && depositAmount >= 0) {
+    payload.depositAmount = depositAmount
+  }
   return payload
+}
+
+function emptyCommercialFields(): CommercialDocumentFieldsValue {
+  return { language: 'fr', recipientName: '', recipientEmail: '', recipientPhone: '', recipientAddress: '', discountType: 'fixed', discountValue: '', taxLabel: '', taxRate: '', depositAmount: '' }
+}
+
+function commercialFromProposal(proposal: ProposalDoc): CommercialDocumentFieldsValue {
+  const value = emptyCommercialFields()
+  value.language = proposal.documentLanguage ?? 'fr'
+  value.recipientName = proposal.billingRecipient?.name ?? ''
+  value.recipientEmail = proposal.billingRecipient?.email ?? ''
+  value.recipientPhone = proposal.billingRecipient?.phone ?? ''
+  value.recipientAddress = proposal.billingRecipient?.address ?? ''
+  value.discountType = proposal.discount?.type ?? 'fixed'
+  value.discountValue = proposal.discount?.value !== undefined ? String(proposal.discount.value) : ''
+  value.taxLabel = proposal.taxes?.[0]?.label ?? ''
+  value.taxRate = proposal.taxes?.[0]?.rate !== undefined ? String(proposal.taxes[0].rate) : ''
+  value.depositAmount = proposal.depositAmount !== undefined ? String(proposal.depositAmount) : ''
+  return value
+}
+
+function commercialFromDraft(draft: ProposalInitialDraft | null | undefined): CommercialDocumentFieldsValue {
+  const value = emptyCommercialFields()
+  value.language = draft?.documentLanguage ?? 'fr'
+  value.recipientName = draft?.billingRecipient?.name ?? ''
+  value.recipientEmail = draft?.billingRecipient?.email ?? ''
+  value.recipientPhone = draft?.billingRecipient?.phone ?? ''
+  value.recipientAddress = draft?.billingRecipient?.address ?? ''
+  value.discountType = draft?.discount?.type ?? 'fixed'
+  value.discountValue = draft?.discount?.value !== undefined ? String(draft.discount.value) : ''
+  value.taxLabel = draft?.taxes?.[0]?.label ?? ''
+  value.taxRate = draft?.taxes?.[0]?.rate !== undefined ? String(draft.taxes[0].rate) : ''
+  value.depositAmount = draft?.depositAmount !== undefined ? String(draft.depositAmount) : ''
+  return value
 }

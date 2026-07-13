@@ -461,6 +461,34 @@ export default defineSchema({
     validUntil: v.optional(v.string()),
     terms: v.optional(v.string()),
     clientNote: v.optional(v.string()),
+    documentLanguage: v.optional(v.union(v.literal('fr'), v.literal('en'))),
+    billingRecipient: v.optional(
+      v.object({
+        name: v.string(),
+        attention: v.optional(v.string()),
+        email: v.optional(v.string()),
+        phone: v.optional(v.string()),
+        address: v.optional(v.string()),
+        city: v.optional(v.string()),
+        country: v.optional(v.string()),
+        taxId: v.optional(v.string()),
+      }),
+    ),
+    discount: v.optional(
+      v.object({
+        type: v.union(v.literal('fixed'), v.literal('percent')),
+        value: v.number(),
+      }),
+    ),
+    taxes: v.optional(
+      v.array(
+        v.object({
+          label: v.string(),
+          rate: v.number(),
+        }),
+      ),
+    ),
+    depositAmount: v.optional(v.number()),
     status: v.union(
       v.literal('draft'),
       v.literal('sent'),
@@ -534,6 +562,8 @@ export default defineSchema({
       v.literal('lettre'),
       v.literal('portfolio'),
       v.literal('contrat'),
+      v.literal('devis'),
+      v.literal('proforma'),
       v.literal('autre'),
     ),
     storageId: v.id('_storage'),
@@ -629,10 +659,45 @@ export default defineSchema({
     documentNumber: v.string(),
     year: v.number(),
     sequence: v.number(),
+    issuedAt: v.optional(v.number()),
+    currentRevision: v.optional(v.number()),
+    cancelledAt: v.optional(v.number()),
     createdAt: v.number(),
   })
     .index('by_user_created', ['userId', 'createdAt'])
-    .index('by_scope_year_type', ['scopeKey', 'year', 'documentType']),
+    .index('by_scope_year_type', ['scopeKey', 'year', 'documentType'])
+    .index('by_proposal_type', ['proposalId', 'documentType']),
+
+  billingDocumentRevisions: defineTable({
+    userId: v.string(),
+    billingDocumentId: v.id('billingDocuments'),
+    proposalId: v.id('proposals'),
+    revision: v.number(),
+    contentHash: v.string(),
+    snapshot: v.string(),
+    plan: v.union(
+      v.literal('free'),
+      v.literal('pro'),
+      v.literal('pro_ai'),
+      v.literal('copilot'),
+      v.literal('copilot_max'),
+    ),
+    brandMode: v.union(v.literal('cobranded'), v.literal('white_label')),
+    language: v.union(v.literal('fr'), v.literal('en')),
+    status: v.union(v.literal('generating'), v.literal('ready'), v.literal('failed'), v.literal('cancelled')),
+    storageId: v.optional(v.id('_storage')),
+    documentId: v.optional(v.id('documents')),
+    filename: v.optional(v.string()),
+    size: v.optional(v.number()),
+    generatedAt: v.optional(v.number()),
+    failureMessage: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_document_revision', ['billingDocumentId', 'revision'])
+    .index('by_document_hash', ['billingDocumentId', 'contentHash'])
+    .index('by_document_id', ['documentId'])
+    .index('by_proposal', ['proposalId']),
 
   recoveryCases: defineTable({
     userId: v.string(),

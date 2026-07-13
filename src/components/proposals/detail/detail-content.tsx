@@ -83,7 +83,6 @@ export function ProposalDetailContent({
           </div>
           <ProposalDetailActions
             proposal={proposalDoc}
-            proposalDetail={proposal}
             onEdit={() => setEditOpen(true)}
           />
         </div>

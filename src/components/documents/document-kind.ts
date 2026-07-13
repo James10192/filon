@@ -9,13 +9,15 @@ import {
 import { m } from '~/lib/paraglide/messages'
 
 /** Types de document, alignes sur le contrat Convex (`DocKind`). */
-export type DocKind = 'cv' | 'lettre' | 'portfolio' | 'contrat' | 'autre'
+export type DocKind = 'cv' | 'lettre' | 'portfolio' | 'contrat' | 'devis' | 'proforma' | 'autre'
 
 export const DOC_KINDS: DocKind[] = [
   'cv',
   'lettre',
   'portfolio',
   'contrat',
+  'devis',
+  'proforma',
   'autre',
 ]
 
@@ -25,6 +27,8 @@ export const KIND_LABELS: Record<DocKind, () => string> = {
   lettre: m.carnet_kind_lettre,
   portfolio: m.carnet_kind_portfolio,
   contrat: m.carnet_kind_contrat,
+  devis: () => 'Devis',
+  proforma: () => 'Proforma',
   autre: m.carnet_kind_autre,
 }
 
@@ -34,6 +38,8 @@ export const KIND_ICONS: Record<DocKind, LucideIcon> = {
   lettre: Mail,
   portfolio: Briefcase,
   contrat: FileSignature,
+  devis: FileText,
+  proforma: FileText,
   autre: File,
 }
 

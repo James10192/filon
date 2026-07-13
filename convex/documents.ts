@@ -1,6 +1,7 @@
 import { v } from 'convex/values'
 import type { Doc, Id } from './_generated/dataModel'
 import { mutation, query } from './_generated/server'
+import { validationError } from './lib/plan'
 import { requireUser, type MutationCtx, type QueryCtx } from './lib/withUser'
 
 /**
@@ -22,10 +23,12 @@ const docKind = v.union(
   v.literal('lettre'),
   v.literal('portfolio'),
   v.literal('contrat'),
+  v.literal('devis'),
+  v.literal('proforma'),
   v.literal('autre'),
 )
 
-type DocKind = 'cv' | 'lettre' | 'portfolio' | 'contrat' | 'autre'
+type DocKind = 'cv' | 'lettre' | 'portfolio' | 'contrat' | 'devis' | 'proforma' | 'autre'
 
 /** Entites auxquelles un document peut etre rattache (Documents 360). */
 const entityType = v.union(
@@ -232,6 +235,16 @@ export const remove = mutation({
   handler: async (ctx, args): Promise<null> => {
     const { userId } = await requireUser(ctx)
     const doc = await getOwnedDocument(ctx, userId, args.id)
+
+    const archivedRevision = await ctx.db
+      .query('billingDocumentRevisions')
+      .withIndex('by_document_id', (q) => q.eq('documentId', args.id))
+      .first()
+    if (archivedRevision) {
+      throw validationError(
+        "Ce document est une révision commerciale archivée et ne peut pas être supprimé.",
+      )
+    }
 
     await ctx.storage.delete(doc.storageId)
     await ctx.db.delete(args.id)

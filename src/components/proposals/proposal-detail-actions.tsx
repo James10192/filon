@@ -1,10 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { useMutation, useQuery } from 'convex/react'
-import type { FunctionReturnType } from 'convex/server'
+import { useMutation } from 'convex/react'
 import {
   CheckCircle2,
-  Download,
+  Eye,
   FileSpreadsheet,
   FileText,
   Loader2,
@@ -40,13 +39,10 @@ import {
 import { toast } from '~/components/ui/sonner'
 import { AskCopilotButton } from '~/components/copilot/ask-copilot-button'
 import { STATUS_LABELS, type ProposalStatus } from './proposal-status'
-import { downloadProposalPdf } from '~/lib/export/proforma-pdf'
-import type { ExportIssuer } from '~/lib/export/export-formatters'
 import {
   downloadProposalCsv,
   downloadProposalXlsx,
 } from '~/lib/export/proposal-spreadsheet'
-import { normalizeProposalKind } from './proposal-kind'
 
 /**
  * Barre d'actions de la page détail : actions de statut contextuelles,
@@ -54,31 +50,22 @@ import { normalizeProposalKind } from './proposal-kind'
  */
 export function ProposalDetailActions({
   proposal,
-  proposalDetail,
   onEdit,
 }: {
   proposal: Doc<'proposals'>
-  proposalDetail: FunctionReturnType<typeof api.proposals.withRecipients>
   onEdit: () => void
 }) {
   const navigate = useNavigate()
   const setStatus = useMutation(api.proposals.setStatus)
   const remove = useMutation(api.proposals.remove)
   const convert = useMutation(api.proposals.convertToOpportunity)
-  const allocateDocumentNumber = useMutation(
-    api.billingProfiles.allocateDocumentNumber,
-  )
-  const me = useQuery(api.users.me, {})
-  const orgs = useQuery(api.organizations.mine, {})
-  const billing = useQuery(api.billingProfiles.getMine, {})
 
   const [busy, setBusy] = useState(false)
-  const [exporting, setExporting] = useState<'pdf' | 'xlsx' | 'csv' | null>(null)
+  const [exporting, setExporting] = useState<'xlsx' | 'csv' | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [confirmConvert, setConfirmConvert] = useState(false)
 
   const status = proposal.status as ProposalStatus
-  const kind = normalizeProposalKind(proposal.kind)
 
   async function changeStatus(next: ProposalStatus) {
     if (busy) return
@@ -124,52 +111,6 @@ export function ProposalDetailActions({
       toast.error(m.prop_toast_convert_error())
       setBusy(false)
       setConfirmConvert(false)
-    }
-  }
-
-  async function handleDownloadPdf() {
-    if (exporting) return
-    setExporting('pdf')
-    try {
-      const org = orgs?.[0]
-      const documentType =
-        kind === 'proforma' ? 'proforma_hors_fne' : 'devis'
-      const organizationScope =
-        billing?.defaultScope.type === 'organization'
-          ? billing.organizations.find(
-              (item) =>
-                item.organizationId === billing.defaultScope.organizationId,
-            )
-          : null
-      const allocated = organizationScope
-        ? await allocateDocumentNumber({
-            scopeType: 'organization',
-            organizationId: organizationScope.organizationId,
-            proposalId: proposal._id,
-            documentType,
-          })
-        : await allocateDocumentNumber({
-            scopeType: 'user',
-            proposalId: proposal._id,
-            documentType,
-          })
-      await downloadProposalPdf(
-        proposalDetail,
-        issuerFromBilling({
-          profile: organizationScope?.profile ?? billing?.solo,
-          fallbackName: org?.name ?? me?.name ?? 'Filon',
-          fallbackEmail: me?.email,
-          fallbackSubtitle: me?.headline,
-        }),
-        {
-          documentNumber: allocated.documentNumber,
-          documentType,
-        },
-      )
-    } catch {
-      toast.error("L'export PDF a échoué.")
-    } finally {
-      setExporting(null)
     }
   }
 
@@ -219,15 +160,11 @@ export function ProposalDetailActions({
       <Button
         variant="outline"
         size="sm"
-        disabled={busy || exporting === 'pdf'}
-        onClick={() => void handleDownloadPdf()}
+        disabled={busy}
+        onClick={() => void navigate({ to: '/app/propositions/$id/apercu-pdf', params: { id: proposal._id } })}
       >
-        {exporting === 'pdf' ? (
-          <Loader2 className="size-4 animate-spin" />
-        ) : (
-          <Download className="size-4" />
-        )}
-        {kind === 'proforma' ? 'Télécharger PDF' : 'Exporter PDF'}
+        <Eye className="size-4" />
+        Aperçu PDF
       </Button>
 
       <Button variant="outline" size="sm" disabled={busy} onClick={onEdit}>
@@ -323,60 +260,6 @@ export function ProposalDetailActions({
       </AlertDialog>
     </div>
   )
-}
-
-function issuerFromBilling({
-  profile,
-  fallbackName,
-  fallbackEmail,
-  fallbackSubtitle,
-}: {
-  profile:
-    | {
-        displayName?: string
-        email?: string
-        logoUrl?: string | null
-        phone?: string
-        address?: string
-        city?: string
-        country?: string
-        taxId?: string
-        rccm?: string
-        website?: string
-        accentColor?: string
-        legalNote?: string
-        paymentTerms?: string
-        paymentDetails?: string
-        signature?: string
-      }
-    | null
-    | undefined
-  fallbackName: string
-  fallbackEmail?: string
-  fallbackSubtitle?: string
-}): ExportIssuer {
-  return {
-    name: profile?.displayName ?? fallbackName,
-    ...(profile?.email || fallbackEmail
-      ? { email: profile?.email ?? fallbackEmail }
-      : {}),
-    ...(fallbackSubtitle ? { subtitle: fallbackSubtitle } : {}),
-    ...(profile?.logoUrl ? { logoUrl: profile.logoUrl } : {}),
-    ...(profile?.phone ? { phone: profile.phone } : {}),
-    ...(profile?.address ? { address: profile.address } : {}),
-    ...(profile?.city ? { city: profile.city } : {}),
-    ...(profile?.country ? { country: profile.country } : {}),
-    ...(profile?.taxId ? { taxId: profile.taxId } : {}),
-    ...(profile?.rccm ? { rccm: profile.rccm } : {}),
-    ...(profile?.website ? { website: profile.website } : {}),
-    ...(profile?.accentColor ? { accentColor: profile.accentColor } : {}),
-    ...(profile?.legalNote ? { legalNote: profile.legalNote } : {}),
-    ...(profile?.paymentTerms ? { paymentTerms: profile.paymentTerms } : {}),
-    ...(profile?.paymentDetails
-      ? { paymentDetails: profile.paymentDetails }
-      : {}),
-    ...(profile?.signature ? { signature: profile.signature } : {}),
-  }
 }
 
 /** Boutons d'action de statut, contextualisés selon le statut courant. */

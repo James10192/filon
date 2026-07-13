@@ -1,9 +1,9 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import type { Doc, Id } from './_generated/dataModel'
-import { requireUser, type QueryCtx } from './lib/withUser'
+import { currentPlan, requireUser, type QueryCtx } from './lib/withUser'
 import { requireOrgAdmin, requireOrgMember } from './lib/withOrg'
-import { validationError } from './lib/plan'
+import { forbiddenError, validationError } from './lib/plan'
 
 const profileArgs = {
   displayName: v.string(),
@@ -307,6 +307,22 @@ export const allocateDocumentNumber = mutation({
     }
 
     const year = new Date().getFullYear()
+    if (args.proposalId) {
+      const existing = await ctx.db
+        .query('billingDocuments')
+        .withIndex('by_proposal_type', (q) =>
+          q.eq('proposalId', args.proposalId).eq('documentType', args.documentType),
+        )
+        .first()
+      if (existing && existing.userId === userId) {
+        return {
+          id: existing._id,
+          documentNumber: existing.documentNumber,
+          year: existing.year,
+          sequence: existing.sequence,
+        }
+      }
+    }
     const previous = await ctx.db
       .query('billingDocuments')
       .withIndex('by_scope_year_type', (q) =>
@@ -333,5 +349,237 @@ export const allocateDocumentNumber = mutation({
     }
     const id = await ctx.db.insert('billingDocuments', row)
     return { id, documentNumber, year, sequence }
+  },
+})
+
+type PreviewLine = { label: string; description?: string; quantity: number; unitPrice: number }
+
+function commercialTotals(
+  lines: PreviewLine[],
+  discount: { type: 'fixed' | 'percent'; value: number } | undefined,
+  taxes: Array<{ label: string; rate: number }> | undefined,
+) {
+  const subtotal = lines.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0)
+  const discountAmount = discount
+    ? Math.min(subtotal, discount.type === 'percent' ? subtotal * discount.value / 100 : discount.value)
+    : 0
+  const taxable = subtotal - discountAmount
+  const taxAmount = (taxes ?? []).reduce((sum, tax) => sum + taxable * tax.rate / 100, 0)
+  return { subtotal, total: taxable + taxAmount }
+}
+
+function snapshotRecipient(
+  proposal: Doc<'proposals'>,
+  company: Doc<'companies'> | null,
+  contact: Doc<'contacts'> | null,
+) {
+  if (proposal.billingRecipient) return proposal.billingRecipient
+  if (contact) {
+    return {
+      name: contact.name,
+      ...(contact.role ? { attention: contact.role } : {}),
+      ...(contact.email ? { email: contact.email } : {}),
+      ...(contact.phone ? { phone: contact.phone } : {}),
+      ...(contact.location ? { city: contact.location } : {}),
+    }
+  }
+  if (company) {
+    return {
+      name: company.name,
+      ...(company.location ? { city: company.location } : {}),
+    }
+  }
+  return { name: '' }
+}
+
+async function previewData(ctx: QueryCtx, userId: string, proposalId: Id<'proposals'>) {
+  const proposal = await ctx.db.get(proposalId)
+  if (!proposal) throw validationError('Proposition introuvable.')
+  if (proposal.userId !== userId) throw forbiddenError('Non autorisé')
+
+  const recipientRow = await ctx.db
+    .query('proposalRecipients')
+    .withIndex('by_proposal', (q) => q.eq('proposalId', proposalId))
+    .first()
+  const company = proposal.companyId ? await ctx.db.get(proposal.companyId) : null
+  const contact = recipientRow?.contactId ? await ctx.db.get(recipientRow.contactId) : null
+  const recipientCompany = recipientRow?.companyId ? await ctx.db.get(recipientRow.companyId) : null
+  const selectedCompany = recipientCompany?.userId === userId ? recipientCompany : company?.userId === userId ? company : null
+  const selectedContact = contact?.userId === userId ? contact : null
+
+  const memberships = await ctx.db
+    .query('memberships')
+    .withIndex('by_user', (q) => q.eq('userId', userId))
+    .collect()
+  const activeMembership = memberships.find((membership) => membership.status === 'active')
+  const organization = activeMembership ? await ctx.db.get(activeMembership.organizationId) : null
+  const organizationProfile = organization && activeMembership
+    ? await ctx.db.query('organizationBillingProfiles').withIndex('by_org', (q) => q.eq('organizationId', organization._id)).unique()
+    : null
+  const user = await userFallback(ctx, userId)
+  const soloProfile = await ctx.db.query('billingProfiles').withIndex('by_user', (q) => q.eq('userId', userId)).unique()
+  const useOrganization = Boolean(organization && activeMembership && organizationProfile)
+  const profile = await serializeProfile(
+    ctx,
+    useOrganization ? organizationProfile : soloProfile,
+    { displayName: useOrganization ? organization!.name : user?.name ?? 'Filon', email: user?.email },
+  )
+  const issuer = {
+    name: profile.displayName,
+    ...(profile.logoUrl ? { logoUrl: profile.logoUrl } : {}),
+    ...(profile.email ? { email: profile.email } : {}),
+    ...(profile.phone ? { phone: profile.phone } : {}),
+    ...(profile.address ? { address: profile.address } : {}),
+    ...(profile.city ? { city: profile.city } : {}),
+    ...(profile.country ? { country: profile.country } : {}),
+    ...(profile.taxId ? { taxId: profile.taxId } : {}),
+    ...(profile.rccm ? { rccm: profile.rccm } : {}),
+    ...(profile.website ? { website: profile.website } : {}),
+    ...(profile.accentColor ? { accentColor: profile.accentColor } : {}),
+    ...(profile.legalNote ? { legalNote: profile.legalNote } : {}),
+    ...(profile.paymentTerms ? { paymentTerms: profile.paymentTerms } : {}),
+    ...(profile.paymentDetails ? { paymentDetails: profile.paymentDetails } : {}),
+    ...(profile.signature ? { signature: profile.signature } : {}),
+  }
+  const documentType = proposal.kind === 'proforma' ? 'proforma_hors_fne' as const : 'devis' as const
+  const billingDocument = await ctx.db.query('billingDocuments')
+    .withIndex('by_proposal_type', (q) => q.eq('proposalId', proposalId).eq('documentType', documentType))
+    .first()
+  const lines: PreviewLine[] = proposal.lineItems?.length
+    ? proposal.lineItems
+    : [{ label: proposal.title, description: proposal.pitch, quantity: 1, unitPrice: proposal.amount ?? 0 }]
+  const totals = commercialTotals(lines, proposal.discount, proposal.taxes)
+  const checklist: string[] = []
+  if (!issuer.name.trim()) checklist.push("L'identité de facturation doit être renseignée.")
+  if (!snapshotRecipient(proposal, selectedCompany, selectedContact).name.trim()) checklist.push('Le client est requis.')
+  if (!proposal.currency?.trim()) checklist.push('La devise est requise.')
+  if (!lines.some((line) => line.label.trim() && line.quantity > 0)) checklist.push('Ajoutez au moins une ligne commerciale valide.')
+  const plan = await currentPlan(ctx, userId)
+  return {
+    proposalId,
+    canFinalize: checklist.length === 0,
+    checklist,
+    scopeType: useOrganization ? 'organization' as const : 'user' as const,
+    ...(useOrganization && organization ? { organizationId: organization._id } : {}),
+    document: {
+      documentType,
+      ...(billingDocument ? { documentNumber: billingDocument.documentNumber, issuedAt: billingDocument.issuedAt, revision: billingDocument.currentRevision } : {}),
+      draft: !billingDocument,
+      language: proposal.documentLanguage ?? 'fr' as const,
+      brandMode: plan === 'free' ? 'cobranded' as const : 'white_label' as const,
+      issuedAt: billingDocument?.issuedAt ?? Date.now(),
+      title: proposal.title,
+      ...(proposal.validUntil ? { validUntil: proposal.validUntil } : {}),
+      issuer,
+      recipient: snapshotRecipient(proposal, selectedCompany, selectedContact),
+      lines,
+      currency: proposal.currency ?? 'XOF',
+      ...(proposal.discount ? { discount: proposal.discount } : {}),
+      ...(proposal.taxes ? { taxes: proposal.taxes } : {}),
+      ...(proposal.depositAmount !== undefined ? { depositAmount: proposal.depositAmount } : {}),
+      ...(proposal.pitch ? { pitch: proposal.pitch } : {}),
+      ...(proposal.terms ? { terms: proposal.terms } : {}),
+      ...(proposal.clientNote ? { clientNote: proposal.clientNote } : {}),
+    },
+    total: totals.total,
+  }
+}
+
+/** Données de l'aperçu PDF, résolues côté serveur avec le scope utilisateur. */
+export const proposalPreview = query({
+  args: { proposalId: v.id('proposals') },
+  handler: async (ctx, args) => {
+    const { userId } = await requireUser(ctx)
+    return previewData(ctx, userId, args.proposalId)
+  },
+})
+
+/** Réserve ou réutilise une révision, sans jamais consommer un second numéro. */
+export const reserveProposalRevision = mutation({
+  args: {
+    proposalId: v.id('proposals'),
+    scopeType: v.union(v.literal('user'), v.literal('organization')),
+    organizationId: v.optional(v.id('organizations')),
+    documentType: documentTypeValidator,
+    contentHash: v.string(),
+    snapshot: v.string(),
+    language: documentLanguageValidator,
+    brandMode: v.union(v.literal('cobranded'), v.literal('white_label')),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireUser(ctx)
+    const proposal = await ctx.db.get(args.proposalId)
+    if (!proposal || proposal.userId !== userId) throw forbiddenError('Non autorisé')
+    let scopeKey = `user:${userId}`
+    if (args.scopeType === 'organization') {
+      if (!args.organizationId) throw validationError('Organisation requise.')
+      await requireOrgMember(ctx, args.organizationId)
+      scopeKey = `organization:${args.organizationId}`
+    }
+    let billingDocument = await ctx.db.query('billingDocuments')
+      .withIndex('by_proposal_type', (q) => q.eq('proposalId', args.proposalId).eq('documentType', args.documentType))
+      .first()
+    const now = Date.now()
+    if (!billingDocument) {
+      const year = new Date(now).getFullYear()
+      const previous = await ctx.db.query('billingDocuments').withIndex('by_scope_year_type', (q) => q.eq('scopeKey', scopeKey).eq('year', year).eq('documentType', args.documentType)).collect()
+      const sequence = previous.length + 1
+      const documentNumber = `${documentPrefix(args.documentType)}-${year}-${String(sequence).padStart(4, '0')}`
+      const id = await ctx.db.insert('billingDocuments', {
+        userId, scopeKey, scopeType: args.scopeType, documentType: args.documentType,
+        documentNumber, year, sequence, issuedAt: now, currentRevision: 0, createdAt: now,
+        ...(args.organizationId ? { organizationId: args.organizationId } : {}), proposalId: args.proposalId,
+      })
+      billingDocument = await ctx.db.get(id)
+    }
+    if (!billingDocument) throw validationError('Impossible de réserver le document.')
+    const same = await ctx.db.query('billingDocumentRevisions').withIndex('by_document_hash', (q) => q.eq('billingDocumentId', billingDocument!._id).eq('contentHash', args.contentHash)).first()
+    if (same) {
+      if (same.status === 'failed') await ctx.db.patch(same._id, { status: 'generating', updatedAt: now })
+      return {
+        revisionId: same._id,
+        documentNumber: billingDocument.documentNumber,
+        revision: same.revision,
+        issuedAt: billingDocument.issuedAt ?? now,
+        reused: same.status === 'ready',
+        ...(same.status === 'ready' && same.storageId ? { url: await ctx.storage.getUrl(same.storageId) } : {}),
+      }
+    }
+    const revision = (billingDocument.currentRevision ?? 0) + 1
+    const revisionId = await ctx.db.insert('billingDocumentRevisions', {
+      userId, billingDocumentId: billingDocument._id, proposalId: args.proposalId, revision,
+      contentHash: args.contentHash, snapshot: args.snapshot, plan: await currentPlan(ctx, userId),
+      brandMode: args.brandMode, language: args.language, status: 'generating', createdAt: now, updatedAt: now,
+    })
+    await ctx.db.patch(billingDocument._id, { currentRevision: revision })
+    return { revisionId, documentNumber: billingDocument.documentNumber, revision, issuedAt: billingDocument.issuedAt ?? now, reused: false }
+  },
+})
+
+export const finalizeProposalRevision = mutation({
+  args: { revisionId: v.id('billingDocumentRevisions'), storageId: v.id('_storage'), filename: v.string(), size: v.number() },
+  handler: async (ctx, args) => {
+    const { userId } = await requireUser(ctx)
+    const revision = await ctx.db.get(args.revisionId)
+    if (!revision || revision.userId !== userId) throw forbiddenError('Non autorisé')
+    if (revision.status === 'ready' && revision.storageId) return { url: await ctx.storage.getUrl(revision.storageId) }
+    const billingDocument = await ctx.db.get(revision.billingDocumentId)
+    if (!billingDocument) throw validationError('Document introuvable.')
+    const kind = billingDocument.documentType === 'devis' ? 'devis' as const : 'proforma' as const
+    const documentId = await ctx.db.insert('documents', { userId, name: args.filename, kind, storageId: args.storageId, size: args.size, createdAt: Date.now() })
+    await ctx.db.insert('documentLinks', { userId, documentId, entityType: 'proposal', entityId: String(revision.proposalId), createdAt: Date.now() })
+    await ctx.db.patch(revision._id, { status: 'ready', storageId: args.storageId, documentId, filename: args.filename, size: args.size, generatedAt: Date.now(), updatedAt: Date.now() })
+    return { url: await ctx.storage.getUrl(args.storageId) }
+  },
+})
+
+export const failProposalRevision = mutation({
+  args: { revisionId: v.id('billingDocumentRevisions'), message: v.string() },
+  handler: async (ctx, args) => {
+    const { userId } = await requireUser(ctx)
+    const revision = await ctx.db.get(args.revisionId)
+    if (!revision || revision.userId !== userId) throw forbiddenError('Non autorisé')
+    if (revision.status !== 'ready') await ctx.db.patch(revision._id, { status: 'failed', failureMessage: args.message.slice(0, 500), updatedAt: Date.now() })
+    return null
   },
 })
