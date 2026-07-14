@@ -30,6 +30,8 @@ const documentTypeValidator = v.union(
   v.literal('recu_paiement'),
 )
 
+const documentLanguageValidator = v.union(v.literal('fr'), v.literal('en'))
+
 type BillingProfile =
   | Doc<'billingProfiles'>
   | Doc<'organizationBillingProfiles'>
