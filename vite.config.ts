@@ -57,6 +57,10 @@ export default defineConfig({
       // Chromium s'appuie sur des binaires et des chemins relatifs : Nitro doit
       // tracer ces paquets sans les transformer dans le bundle Rollup.
       traceDeps: ['puppeteer-core*', '@sparticuz/chromium*'],
+      // Le découpage automatique de Nitro/Vite déclenche actuellement un bug
+      // Rollup au rendu des exports externes. Une fonction Vercel unique évite
+      // ce chemin tout en conservant les dépendances tracées ci-dessus.
+      inlineDynamicImports: true,
     }),
   ],
 })
