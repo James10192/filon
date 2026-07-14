@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import {
+  createFileRoute,
+  Outlet,
+  useLocation,
+  useNavigate,
+} from '@tanstack/react-router'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { m } from '~/lib/paraglide/messages'
 import {
@@ -39,6 +44,18 @@ function narrowView(v: unknown): ProposalView {
 }
 
 function PropositionsPage() {
+  const isNestedRoute = useLocation({
+    select: (location) => location.pathname !== '/app/propositions',
+  })
+
+  if (isNestedRoute) {
+    return <Outlet />
+  }
+
+  return <PropositionsIndexPage />
+}
+
+function PropositionsIndexPage() {
   const { view, id, nouveau } = Route.useSearch()
   const navigate = useNavigate()
 
