@@ -1,9 +1,5 @@
 import { createHash } from 'node:crypto'
 import { createFileRoute } from '@tanstack/react-router'
-// Imports de traçage Nitro : le runtime est chargé à la demande plus bas pour
-// ne pas faire analyser ses exports par Rollup durant le build SSR.
-import '@sparticuz/chromium'
-import 'puppeteer-core'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { fetchAuthMutation, fetchAuthQuery } from '~/lib/auth/auth-server'
