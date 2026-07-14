@@ -73,6 +73,10 @@ type ProfilePatch = {
   signature?: string
 }
 
+type SerializedProfile = Omit<ProfileInput, 'logoStorageId'> & {
+  logoUrl: string | null
+}
+
 async function logoUrl(ctx: QueryCtx, storageId: Id<'_storage'> | undefined) {
   return storageId ? await ctx.storage.getUrl(storageId) : null
 }
@@ -130,7 +134,7 @@ async function serializeProfile(
   ctx: QueryCtx,
   profile: BillingProfile | null,
   fallback: { displayName: string; email?: string },
-) {
+): Promise<SerializedProfile> {
   return {
     ...(profile ?? {}),
     displayName: profile?.displayName ?? fallback.displayName,

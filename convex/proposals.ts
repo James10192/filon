@@ -2,7 +2,7 @@ import { v } from 'convex/values'
 import type { Doc, Id } from './_generated/dataModel'
 import { mutation, query } from './_generated/server'
 import { requireUser, type MutationCtx, type QueryCtx } from './lib/withUser'
-import { forbiddenError, notFoundError } from './lib/plan'
+import { forbiddenError, notFoundError, validationError } from './lib/plan'
 
 /**
  * Domaine : propositions spontanees / demarchage (`api.proposals.*`).
@@ -111,7 +111,7 @@ function cleanDiscount(value: Discount | undefined) {
   if (value.type === 'percent' && value.value > 100) {
     throw validationError('La remise ne peut pas dépasser 100 %.')
   }
-  return { type: value.type, value }
+  return { type: value.type, value: value.value }
 }
 
 function cleanTaxes(values: Tax[] | undefined) {
