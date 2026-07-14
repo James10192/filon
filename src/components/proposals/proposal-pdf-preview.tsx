@@ -24,7 +24,11 @@ export function ProposalPdfPreview({ proposalId }: { proposalId: Id<'proposals'>
   )
 
   function back() {
-    void navigate({ to: '/app/propositions/$id', params: { id: proposalId } })
+    void navigate({
+      to: '/app/propositions/$id',
+      params: { id: proposalId },
+      search: { view: 'liste' },
+    })
   }
 
   function printDocument() {

@@ -161,7 +161,14 @@ export function ProposalDetailActions({
         variant="outline"
         size="sm"
         disabled={busy}
-        onClick={() => void navigate({ to: '/app/propositions/$id/apercu-pdf', params: { id: proposal._id } })}
+        onClick={(event) => {
+          event.stopPropagation()
+          void navigate({
+            to: '/app/propositions/$id/apercu-pdf',
+            params: { id: proposal._id },
+            search: { view: 'liste' },
+          })
+        }}
       >
         <Eye className="size-4" />
         Aperçu PDF

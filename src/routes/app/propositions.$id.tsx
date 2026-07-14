@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate, useParams } from '@tanstack/react-router'
+import { createFileRoute, Link, Outlet, useNavigate, useParams, useRouterState } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
 import { ArrowLeft } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
@@ -17,9 +17,15 @@ export const Route = createFileRoute('/app/propositions/$id')({
 
 function PropositionDetailPage() {
   const { id } = useParams({ from: '/app/propositions/$id' })
+  const isPdfPreview = useRouterState({
+    select: (state) =>
+      state.location.pathname === `/app/propositions/${id}/apercu-pdf`,
+  })
   const proposal = useQuery(api.proposals.withRecipients, {
     id: id as Id<'proposals'>,
   })
+
+  if (isPdfPreview) return <Outlet />
 
   return (
     <div className="flex flex-col gap-5">
