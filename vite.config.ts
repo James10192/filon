@@ -52,6 +52,11 @@ export default defineConfig({
     // Requis par TanStack Start en mode dev (sinon le client entry échoue
     // et l'app tourne en SSR seul, sans hydratation ni JS client).
     viteReact(),
-    nitro({ preset: process.env.NITRO_PRESET ?? 'vercel' }),
+    nitro({
+      preset: process.env.NITRO_PRESET ?? 'vercel',
+      // Chromium s'appuie sur des binaires et des chemins relatifs : Nitro doit
+      // tracer ces paquets sans les transformer dans le bundle Rollup.
+      traceDeps: ['puppeteer-core*', '@sparticuz/chromium*'],
+    }),
   ],
 })
