@@ -27,7 +27,7 @@ export default defineConfig({
     ],
     // Libs navigateur-only (export Excel/PDF), importées dynamiquement dans des
     // handlers onClick : jamais dans le graphe SSR. Externalisées par sécurité.
-    external: ['xlsx', 'jspdf', 'jspdf-autotable'],
+    external: ['xlsx', 'puppeteer-core', '@sparticuz/chromium'],
   },
   plugins: [
     viteTsConfigPaths({ projects: ['./tsconfig.json'] }),
