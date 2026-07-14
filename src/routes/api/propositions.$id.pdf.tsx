@@ -1,8 +1,5 @@
 import { createHash } from 'node:crypto'
 import { createFileRoute } from '@tanstack/react-router'
-import chromium from '@sparticuz/chromium'
-import puppeteer from 'puppeteer-core'
-import type { Page } from 'puppeteer-core'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { fetchAuthMutation, fetchAuthQuery } from '~/lib/auth/auth-server'
@@ -11,12 +8,38 @@ import { documentFilename, renderProposalDocumentHtml, type ProposalDocumentMode
 const PDF_CONTENT_TYPE = 'application/pdf'
 const json = (body: Record<string, string>, status = 200) => Response.json(body, { status })
 
+type PdfPage = {
+  evaluate(pageFunction: () => Promise<void>): Promise<void>
+  setContent(html: string, options: { waitUntil: 'networkidle0' }): Promise<void>
+  pdf(options: { format: 'A4'; printBackground: boolean; preferCSSPageSize: boolean }): Promise<Uint8Array>
+}
+
+type PdfBrowser = { close(): Promise<void>; newPage(): Promise<PdfPage> }
+
+type PdfRuntime = {
+  chromium: { args: string[]; executablePath(): Promise<string> }
+  puppeteer: { launch(options: { args: string[]; executablePath: string; headless: boolean }): Promise<PdfBrowser> }
+}
+
+async function loadPdfRuntime(): Promise<PdfRuntime> {
+  const chromiumPackage = '@sparticuz/chromium'
+  const puppeteerPackage = 'puppeteer-core'
+  const [chromiumModule, puppeteerModule] = await Promise.all([
+    import(/* @vite-ignore */ chromiumPackage),
+    import(/* @vite-ignore */ puppeteerPackage),
+  ])
+  return {
+    chromium: chromiumModule.default as PdfRuntime['chromium'],
+    puppeteer: puppeteerModule.default as PdfRuntime['puppeteer'],
+  }
+}
+
 function documentHash(model: ProposalDocumentModel) {
   const content = { documentType: model.documentType, language: model.language, brandMode: model.brandMode, title: model.title, validUntil: model.validUntil, issuer: model.issuer, recipient: model.recipient, lines: model.lines, currency: model.currency, discount: model.discount, taxes: model.taxes, depositAmount: model.depositAmount, pitch: model.pitch, terms: model.terms, clientNote: model.clientNote }
   return createHash('sha256').update(JSON.stringify(content)).digest('hex')
 }
 
-async function waitForAssets(page: Page) {
+async function waitForAssets(page: PdfPage) {
   await page.evaluate(async () => {
     await document.fonts.ready
     await Promise.all([...document.images].map((image) => image.complete ? Promise.resolve() : new Promise<void>((resolve) => { image.addEventListener('load', () => resolve(), { once: true }); image.addEventListener('error', () => resolve(), { once: true }) })))
@@ -39,6 +62,7 @@ export const Route = createFileRoute('/api/propositions/$id/pdf')({
           revisionId = reservation.revisionId
           if (reservation.url) return json({ url: reservation.url })
           const model: ProposalDocumentModel = { ...previewModel, documentNumber: reservation.documentNumber, revision: reservation.revision, issuedAt: reservation.issuedAt, draft: false }
+          const { chromium, puppeteer } = await loadPdfRuntime()
           const browser = await puppeteer.launch({ args: chromium.args, executablePath: await chromium.executablePath(), headless: true })
           let pdf: Uint8Array
           try {
