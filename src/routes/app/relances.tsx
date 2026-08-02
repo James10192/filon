@@ -298,7 +298,7 @@ function MailPulseRecoveryEmptyCard({ settings }: { settings: MailPulseSettings 
   return (
     <div className={`rounded-[var(--radius-lg)] border p-4 ${mailpulsePanelClassName}`}>
       <div className="flex items-start gap-3">
-        <MailPulseLogo className="size-8" />
+        <MailPulseLogo className="h-8 w-12" />
         <div className="min-w-0">
           <p className="text-sm font-medium text-fg">
             {configured ? 'MailPulse est prêt' : 'Aucun dossier automatisé'}
@@ -349,7 +349,7 @@ function MailPulseRecoveryItem({ item }: { item: MailPulseRecovery }) {
   return (
     <article className={`rounded-[var(--radius-lg)] border p-4 ${mailpulsePanelClassName}`}>
       <div className="flex items-start gap-2.5">
-        <MailPulseLogo className="size-7" />
+        <MailPulseLogo className="h-7 w-11" />
         <div className="min-w-0 flex-1">
           <Link
             to="/app/opportunites"

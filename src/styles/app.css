@@ -143,6 +143,8 @@
    On NE les redeclare PAS en @theme inline (sinon double definition).
    --------------------------------------------------------------------------- */
 :root {
+  --mailpulse-signal: #ff5a1f;
+
   /* zinc 50 / 900 */
   --background: oklch(0.985 0 0);
   --foreground: oklch(0.21 0.006 285.9);

@@ -1,4 +1,3 @@
-import { Mail } from 'lucide-react'
 import { cn } from '~/lib/utils'
 
 export function MailPulseLogo({ className }: { className?: string }) {
@@ -6,12 +5,20 @@ export function MailPulseLogo({ className }: { className?: string }) {
     <span
       aria-hidden="true"
       className={cn(
-        'inline-flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-orange-600',
-        'dark:text-orange-500',
+        'inline-flex h-9 w-14 shrink-0 items-center justify-center text-zinc-950 dark:text-zinc-50',
         className,
       )}
     >
-      <Mail className="size-5" strokeWidth={2.4} />
+      <img
+        alt=""
+        className="h-full w-full object-contain dark:hidden"
+        src="/brand/mailpulse-mark-light.png"
+      />
+      <img
+        alt=""
+        className="hidden h-full w-full object-contain dark:block"
+        src="/brand/mailpulse-mark-dark.png"
+      />
     </span>
   )
 }
@@ -30,9 +37,9 @@ export function MailPulseWordmark({
         className,
       )}
     >
-      {showLogo && <MailPulseLogo className="size-8" />}
+      {showLogo && <MailPulseLogo className="h-8 w-12" />}
       <span>
-        Mail<span className="text-orange-600 dark:text-orange-400">Pulse</span>
+        Mail<span className="text-[var(--mailpulse-signal)]">Pulse</span>
       </span>
     </span>
   )
