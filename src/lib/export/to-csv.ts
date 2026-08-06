@@ -6,7 +6,7 @@
  *
  * Choix de format pense pour Excel / LibreOffice en contexte francophone :
  * - separateur point-virgule (`;`) : Excel FR attend `;`, pas la virgule.
- * - BOM UTF-8 en tete : sans lui, Excel Windows casse les accents (« é » -> « Ã© »).
+ * - BOM UTF-8 en tete : sans lui, Excel Windows casse les accents (« é » -> « é »).
  * - CRLF en fin de ligne : convention CSV (RFC 4180), robuste sous Windows.
  */
 

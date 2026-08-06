@@ -140,9 +140,9 @@ export async function activeMemberUserIds(
 }
 
 /**
- * SOURCE DE VÉRITÉ UNIQUE du consentement carnet (défaut ON / opt-out).
- * `undefined` ou `true` => partagé ; seul `false` bloque. Ne JAMAIS tester
- * `=== true` ailleurs (cela masquerait les lignes legacy `undefined`). Consommé
+ * SOURCE DE VERITE UNIQUE du partage carnet (opt-out).
+ * Seul `false` desactive le partage. Les lignes legacy `undefined` restent partagees.
+ * Ne jamais déduire ce consentement ailleurs. Consommé
  * par la garde backend ET exposé en dérivé `sharesCarnet` côté `members.list`.
  */
 export function carnetSharingEnabled(m: Doc<'memberships'>): boolean {

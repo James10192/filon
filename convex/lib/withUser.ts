@@ -3,6 +3,9 @@ import type {
   GenericMutationCtx,
   GenericQueryCtx,
 } from 'convex/server'
+import { v } from 'convex/values'
+import { internalQuery } from '../_generated/server'
+import { internal } from '../_generated/api'
 import type { DataModel } from '../_generated/dataModel'
 import { authComponent } from '../auth'
 import {
@@ -11,6 +14,7 @@ import {
   forbiddenError,
   planOf,
   planLimitError,
+  suspendedError,
   type Plan,
 } from './plan'
 import type { Doc } from '../_generated/dataModel'
@@ -53,6 +57,13 @@ export async function requireUser(ctx: AnyCtx): Promise<AuthedUser> {
   if (!authUser) {
     throw authError('Non authentifié')
   }
+  // Garde de suspension : un administrateur peut poser `users.suspended = true`
+  // (cf. admin.setSuspended). Sans cette lecture, le flag est décoratif. Point
+  // read indexé `by_authId` — négligeable, sur le chemin de toute query/mutation.
+  const doc = await userDocOf(ctx, authUser._id)
+  if (doc?.suspended === true) {
+    throw suspendedError()
+  }
   return {
     userId: authUser._id,
     email: (authUser as { email?: string }).email ?? '',
@@ -73,6 +84,11 @@ export async function requireUser(ctx: AnyCtx): Promise<AuthedUser> {
 export async function optionalUser(ctx: AnyCtx): Promise<AuthedUser | null> {
   const authUser = await authComponent.safeGetAuthUser(ctx)
   if (!authUser) return null
+  // Ne throw JAMAIS (contrat de cette variante) : un compte suspendu est traité
+  // comme non authentifié → la query renvoie un résultat vide au lieu de casser
+  // la coquille (sidebar/dashboard). Le vrai blocage vient de requireUser.
+  const doc = await userDocOf(ctx, authUser._id)
+  if (doc?.suspended === true) return null
   return {
     userId: authUser._id,
     email: (authUser as { email?: string }).email ?? '',
@@ -91,11 +107,32 @@ export async function requireUserFromAction(
   if (!authUser) {
     throw authError('Non authentifié')
   }
+  // Une action n'a pas `ctx.db` : la garde de suspension passe par une
+  // internalQuery. Sans elle, les chemins en action (Paystack, copilote IA,
+  // veille) resteraient ouverts à un compte suspendu.
+  const { suspended } = await ctx.runQuery(internal.lib.withUser.userAuthState, {
+    userId: authUser._id,
+  })
+  if (suspended) {
+    throw suspendedError()
+  }
   return {
     userId: authUser._id,
     email: (authUser as { email?: string }).email ?? '',
   }
 }
+
+/**
+ * Query interne : état d'authentification applicatif d'un user (suspension).
+ * Consommée par {@link requireUserFromAction} (les actions n'ont pas `ctx.db`).
+ */
+export const userAuthState = internalQuery({
+  args: { userId: v.string() },
+  handler: async (ctx, { userId }): Promise<{ suspended: boolean }> => {
+    const doc = await userDocOf(ctx, userId)
+    return { suspended: doc?.suspended === true }
+  },
+})
 
 /**
  * Palier d'abonnement effectif du user courant. Lit la ligne `users` via

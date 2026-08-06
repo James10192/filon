@@ -1,6 +1,7 @@
 import { v } from 'convex/values'
 import { mutation } from './_generated/server'
 import { requireUser } from './lib/withUser'
+import { enforceRateLimit } from './lib/rateLimiter'
 
 /**
  * Import rapide du carnet (activation « non-vide-vite »).
@@ -28,6 +29,7 @@ export const bulkCreate = mutation({
   },
   handler: async (ctx, { entries }): Promise<{ created: number }> => {
     const { userId } = await requireUser(ctx)
+    await enforceRateLimit(ctx, 'contactsImport', userId)
     const now = Date.now()
     let created = 0
     for (const entry of entries.slice(0, BULK_CAP)) {

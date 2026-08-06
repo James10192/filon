@@ -56,7 +56,7 @@ const SITE = {
 
 /**
  * JSON-LD (Organization + SoftwareApplication). Offres en XOF alignées sur la
- * grille `convex/lib/pricing.ts` (Pro 3500 / mois, Pro+ IA 9000 / mois). Rendu
+ * grille commerciale v2 (Découverte, Pro et Copilot). Rendu
  * dans le <head> de la racine pour une couverture sitewide.
  */
 const jsonLd = JSON.stringify({
@@ -80,15 +80,22 @@ const jsonLd = JSON.stringify({
       offers: [
         {
           '@type': 'Offer',
-          name: 'Pro',
-          price: '3500',
+          name: 'Découverte',
+          price: '0',
           priceCurrency: 'XOF',
           category: 'monthly',
         },
         {
           '@type': 'Offer',
-          name: 'Pro+ IA',
-          price: '9000',
+          name: 'Pro',
+          price: '5000',
+          priceCurrency: 'XOF',
+          category: 'monthly',
+        },
+        {
+          '@type': 'Offer',
+          name: 'Copilot',
+          price: '15000',
           priceCurrency: 'XOF',
           category: 'monthly',
         },

@@ -11,7 +11,7 @@ import {
   PipelineFunnel,
   PipelineFunnelSkeleton,
 } from '~/components/dashboard/pipeline-funnel'
-import { TodayStack, TodayStackSkeleton } from '~/components/dashboard/today-stack'
+import { TodayCommandCenter, TodayCommandCenterSkeleton } from '~/components/today/today-command-center'
 import {
   SecondaryKpis,
   SecondaryKpisSkeleton,
@@ -112,7 +112,7 @@ function DashboardPage() {
 
         {/* Prochaines actions + timeline d'activité */}
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-          <TodayStack />
+          <TodayCommandCenter />
           <RecentActivity />
         </div>
 
@@ -199,7 +199,7 @@ function DashboardSkeleton() {
         <PipelineFunnelSkeleton />
         <KpiRowSkeleton />
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-          <TodayStackSkeleton />
+          <TodayCommandCenterSkeleton />
           <RecentActivitySkeleton />
         </div>
         <SecondaryKpisSkeleton />

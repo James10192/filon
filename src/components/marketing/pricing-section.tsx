@@ -94,7 +94,7 @@ export function PricingSection() {
 
         <div
           ref={gridRef}
-          className="mt-10 grid items-stretch gap-4 sm:auto-rows-fr sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
+          className="mt-10 grid items-stretch gap-4 sm:auto-rows-fr sm:grid-cols-2 xl:grid-cols-4"
         >
           {PLAN_CARDS.map((card) => (
             <div key={card.key} data-pricing-card className="h-full">
@@ -104,6 +104,7 @@ export function PricingSection() {
                 cta={
                   <PublicCta
                     planKey={card.key}
+                    quoteOnly={card.quoteOnly ?? false}
                     featured={card.featured}
                     authed={authed}
                   />
@@ -134,10 +135,12 @@ export function PricingSection() {
  */
 function PublicCta({
   planKey,
+  quoteOnly,
   featured,
   authed,
 }: {
   planKey: (typeof PLAN_CARDS)[number]['key']
+  quoteOnly: boolean
   featured?: boolean
   authed: boolean
 }) {
@@ -154,8 +157,12 @@ function PublicCta({
     )
   }
 
+  if (quoteOnly) {
+    return <Button variant="outline" className="w-full" asChild><a href="mailto:bonjour@filon.ci?subject=Filon%20Équipe">Parler à l’équipe</a></Button>
+  }
+
   const label =
-    planKey === 'free' ? m.cta_start_free() : m.cta_create_account()
+    planKey === 'discovery_v2' ? m.cta_start_free() : m.cta_create_account()
 
   return (
     <Button

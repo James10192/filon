@@ -20,6 +20,10 @@ export const PLAN_COMBOS: ReadonlyArray<{ plan: PaidPlan; interval: Interval }> 
   { plan: 'copilot', interval: 'annual' },
   { plan: 'copilot_max', interval: 'monthly' },
   { plan: 'copilot_max', interval: 'annual' },
+  { plan: 'pro_v2', interval: 'monthly' },
+  { plan: 'pro_v2', interval: 'annual' },
+  { plan: 'copilot_v2', interval: 'monthly' },
+  { plan: 'copilot_v2', interval: 'annual' },
 ]
 
 /** Clé logique stable d'un couple, partagée DB (`planKey`) et runtime. */

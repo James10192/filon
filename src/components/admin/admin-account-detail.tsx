@@ -58,7 +58,17 @@ import {
 } from './admin-meta'
 import { m } from '~/lib/paraglide/messages'
 
-const PLAN_OPTIONS: Plan[] = ['free', 'pro', 'pro_ai', 'copilot']
+const PLAN_OPTIONS: Plan[] = [
+  'free',
+  'discovery_v2',
+  'pro',
+  'pro_ai',
+  'copilot',
+  'copilot_max',
+  'pro_v2',
+  'copilot_v2',
+  'team_v2',
+]
 const STAGE_ORDER = [
   'lead',
   'contacted',

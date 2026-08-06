@@ -29,10 +29,14 @@ function billingError(message: string): ConvexError<{ kind: 'BILLING'; message: 
 
 const planValidator = v.union(
   v.literal('free'),
+  v.literal('discovery_v2'),
   v.literal('pro'),
   v.literal('pro_ai'),
+  v.literal('pro_v2'),
   v.literal('copilot'),
   v.literal('copilot_max'),
+  v.literal('copilot_v2'),
+  v.literal('team_v2'),
 )
 
 const intervalValidator = v.union(
@@ -124,10 +128,14 @@ export const myPlan = query({
 /** Ordre des paliers, pour distinguer un downgrade d'un upgrade. */
 const PLAN_RANK: Record<Plan, number> = {
   free: 0,
-  pro: 1,
-  pro_ai: 2,
-  copilot: 3,
-  copilot_max: 4,
+  discovery_v2: 1,
+  pro: 2,
+  pro_ai: 3,
+  copilot: 4,
+  copilot_max: 5,
+  pro_v2: 6,
+  copilot_v2: 7,
+  team_v2: 8,
 }
 
 /**

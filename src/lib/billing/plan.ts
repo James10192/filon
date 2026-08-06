@@ -23,8 +23,10 @@ export {
   allowsQualityModel,
   permModeAllowed,
   type Plan,
+  type V2Plan,
   type PermMode,
   type AppErrorData,
+  PLAN_ENTITLEMENTS,
 } from '../../../convex/lib/plan'
 
 import type { AppErrorData } from '../../../convex/lib/plan'

@@ -19,6 +19,12 @@ import {
   parseRawText,
   type ParsedOffer,
 } from './parser'
+import {
+  assertPublicHttpUrl,
+  VEILLE_FETCH_TIMEOUT_MS,
+  VEILLE_MAX_BYTES,
+} from './urlGuard'
+import { enforceRateLimit } from '../lib/rateLimiter'
 import type { MonitorSearch } from './monitor'
 import type { ActionCtx } from '../_generated/server'
 
@@ -174,19 +180,32 @@ async function applySearches(
 export const parseSource = action({
   args: { url: v.optional(v.string()), text: v.optional(v.string()) },
   handler: async (
-    _ctx,
+    ctx,
     args,
   ): Promise<ParsedOffer & { partial?: boolean; error?: string }> => {
+    // Auth obligatoire : sans elle, cette action est un proxy fetch ouvert
+    // (SSRF). C'est la première ligne de défense, avant même la validation
+    // d'URL. Bloque aussi les comptes suspendus (cf. requireUserFromAction).
+    const { userId } = await requireUserFromAction(ctx)
+    await enforceRateLimit(ctx, 'veilleParse', userId)
+
     if (args.text && args.text.trim().length > 0) {
       return parseRawText(args.text)
     }
-    const url = args.url?.trim()
-    if (!url) return { source: 'manuel', keywords: [], raw: '', partial: true }
+    const rawUrl = args.url?.trim()
+    if (!rawUrl) return { source: 'manuel', keywords: [], raw: '', partial: true }
 
+    // Rejette les cibles internes/privées avant tout fetch (throw VALIDATION).
+    const url = assertPublicHttpUrl(rawUrl).toString()
     const src = detectSource(url)
     try {
-      const res = await fetch(url, { headers: browserHeaders() })
-      if (!res.ok) {
+      const res = await fetch(url, {
+        headers: browserHeaders(),
+        signal: AbortSignal.timeout(VEILLE_FETCH_TIMEOUT_MS),
+        redirect: 'error', // pas de suivi de redirection (re-cible SSRF)
+      })
+      const contentLength = Number(res.headers.get('content-length') ?? '0')
+      if (!res.ok || contentLength > VEILLE_MAX_BYTES) {
         return {
           source: src,
           sourceUrl: url,

@@ -37,7 +37,7 @@ export const DEFAULT_STAGE_LABELS: Record<StageKey, string> = {
   applied: 'Candidature envoyée',
   interview: 'Entretien',
   negotiation: 'Négociation',
-  won: 'Gagné',
+  won: 'Closing',
   lost: 'Perdu',
 }
 
@@ -89,7 +89,7 @@ export function stageLabelsFromArray(
   const result = { ...DEFAULT_STAGE_LABELS }
   STAGE_ORDER.forEach((key, index) => {
     const label = stored[index]?.trim()
-    if (label) result[key] = label
+    if (label) result[key] = key === 'won' && label === 'Gagné' ? 'Closing' : label
   })
   return result
 }

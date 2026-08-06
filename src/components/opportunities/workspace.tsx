@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Plus } from 'lucide-react'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { m } from '~/lib/paraglide/messages'
@@ -37,12 +37,20 @@ export function OpportunityWorkspace({
   onViewChange,
   onSelect,
   onClose,
+  title,
+  subtitle,
+  showViewSwitcher = true,
+  headerAddon,
 }: {
   view: OpportunityView
   selectedId: Id<'opportunities'> | null
   onViewChange: (view: OpportunityView) => void
   onSelect: (id: Id<'opportunities'>) => void
   onClose: () => void
+  title?: string
+  subtitle?: string
+  showViewSwitcher?: boolean
+  headerAddon?: ReactNode
 }) {
   const quickCapture = useQuickCapture()
   const isDesktop = useMediaQuery('(min-width: 1024px)')
@@ -75,11 +83,13 @@ export function OpportunityWorkspace({
   return (
     <div className="flex flex-col">
       <PageToolbar
-        title={m.opp_workspace_title()}
-        subtitle={m.opp_workspace_subtitle()}
+        title={title ?? m.opp_workspace_title()}
+        subtitle={subtitle ?? m.opp_workspace_subtitle()}
         actions={
           <>
-            <ViewSwitcher value={view} onChange={onViewChange} />
+            {showViewSwitcher && (
+              <ViewSwitcher value={view} onChange={onViewChange} />
+            )}
             <Button onClick={quickCapture.open}>
               <Plus className="size-4" />
               <span className="hidden sm:inline">{m.opp_add()}</span>
@@ -87,6 +97,8 @@ export function OpportunityWorkspace({
           </>
         }
       />
+
+      {headerAddon}
 
       <div className="flex gap-5">
         <div className={cn('min-w-0 flex-1', showSidePane && 'lg:max-w-[calc(100%-30rem)]')}>

@@ -29,7 +29,7 @@ export const STAGE_LABEL: Record<Stage, string> = {
   applied: 'Candidature envoyée',
   interview: 'Entretien',
   negotiation: 'Négociation',
-  won: 'Gagné',
+  won: 'Closing',
   lost: 'Perdu',
 }
 
@@ -40,7 +40,7 @@ export const STAGE_SHORT: Record<Stage, string> = {
   applied: 'Envoyée',
   interview: 'Entretien',
   negotiation: 'Négo.',
-  won: 'Gagné',
+  won: 'Closing',
   lost: 'Perdu',
 }
 

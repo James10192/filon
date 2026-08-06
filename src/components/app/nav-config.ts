@@ -3,6 +3,11 @@ import {
   Bot,
   Briefcase,
   Rss,
+  Inbox,
+  Handshake,
+  ClipboardList,
+  UsersRound,
+  ChartNoAxesCombined,
   Building2,
   Send,
   BellRing,
@@ -43,14 +48,61 @@ export type NavGroup = {
 /** Navigation regroupee par domaine, avec petits intitules. */
 export const NAV_GROUPS: NavGroup[] = [
   {
-    title: m.nav_group_pilotage,
+    title: () => 'Espace de travail',
     items: [
       {
         to: '/app',
-        label: m.nav_dashboard,
+        label: () => "Aujourd'hui",
         icon: LayoutDashboard,
         exact: true,
-        keywords: 'dashboard accueil pilotage synthese',
+        keywords: 'aujourdhui accueil actions priorites',
+      },
+      {
+        to: '/app/captures',
+        label: () => 'Captures',
+        icon: Inbox,
+        exact: false,
+        keywords: 'captures inbox veille import pistes a qualifier',
+      },
+    ],
+  },
+  {
+    title: () => 'Développement',
+    items: [
+      {
+        to: '/app/relations',
+        label: () => 'Relations',
+        icon: Handshake,
+        exact: false,
+        keywords: 'contacts entreprises relation partage historique besoins actions',
+      },
+      {
+        to: '/app/besoins',
+        label: () => 'Besoins',
+        icon: ClipboardList,
+        exact: false,
+        keywords: 'besoins qualification version offre probleme priorite',
+      },
+      {
+        to: '/app/deals',
+        label: () => 'Deals',
+        icon: Briefcase,
+        exact: false,
+        keywords: 'deals pipeline prospection negociation closing opportunites',
+      },
+      {
+        to: '/app/clients',
+        label: () => 'Clients',
+        icon: UsersRound,
+        exact: false,
+        keywords: 'clients onboarding satisfaction renouvellement upsell reactivation',
+      },
+      {
+        to: '/app/analyses',
+        label: () => 'Analyses',
+        icon: ChartNoAxesCombined,
+        exact: false,
+        keywords: 'analyses conversion prevision activite performance',
       },
       {
         to: '/app/copilot',
@@ -58,26 +110,6 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: Bot,
         exact: false,
         keywords: 'copilot copilote ia agent intelligence assistant chat',
-      },
-    ],
-  },
-  {
-    title: m.nav_group_pipeline,
-    items: [
-      {
-        to: '/app/opportunites',
-        label: m.nav_opportunities,
-        icon: Briefcase,
-        exact: false,
-        keywords:
-          'pistes candidatures missions offres pipeline kanban tableau liste calendrier',
-      },
-      {
-        to: '/app/veille',
-        label: m.nav_watch,
-        icon: Rss,
-        exact: false,
-        keywords: 'import offres educarriere surveillance recherche',
       },
     ],
   },
@@ -90,6 +122,20 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: Building2,
         exact: false,
         keywords: 'carnet entreprises societes companies contacts particuliers adresses',
+      },
+      {
+        to: '/app/opportunites',
+        label: m.nav_opportunities,
+        icon: Briefcase,
+        exact: false,
+        keywords: 'ancienne vue opportunites pipeline tableau liste calendrier',
+      },
+      {
+        to: '/app/veille',
+        label: m.nav_watch,
+        icon: Rss,
+        exact: false,
+        keywords: 'veille import offres surveillance recherche',
       },
       {
         to: '/app/propositions',

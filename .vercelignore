@@ -1,0 +1,4 @@
+qa-screenshots/
+.codex-*.log
+devserver*.out
+devserver*.err

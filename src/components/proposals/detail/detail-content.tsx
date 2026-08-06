@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import type { FunctionReturnType } from 'convex/server'
 import { Building2, CalendarClock, Coins, Users } from 'lucide-react'
 import { api } from '../../../../convex/_generated/api'
@@ -82,7 +82,7 @@ export function ProposalDetailContent({
             <p className="text-sm text-fg-muted">{STATUS_HINT[status]}</p>
           </div>
           <ProposalDetailActions
-            proposal={proposalDoc}
+            proposal={proposal}
             onEdit={() => setEditOpen(true)}
           />
         </div>

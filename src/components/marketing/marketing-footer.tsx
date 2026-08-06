@@ -1,10 +1,11 @@
 import { Link } from '@tanstack/react-router'
 import { KanbanSquare, Mail } from 'lucide-react'
 import { m } from '~/lib/paraglide/messages'
+import { CONTACT } from '~/lib/contact'
 
-const GITHUB_URL = 'https://github.com/James10192'
-const EMAIL = 'djedjelipatrick@gmail.com'
-const WHATSAPP_URL = 'https://wa.me/2250141540178'
+const GITHUB_URL = CONTACT.github
+const EMAIL = CONTACT.email
+const WHATSAPP_URL = CONTACT.whatsapp
 
 type FooterLink = { label: string; to?: string; href?: string; hash?: string }
 
@@ -40,9 +41,9 @@ export function MarketingFooter() {
     {
       title: m.footer_col_legal(),
       links: [
-        { label: m.footer_link_privacy(), to: '/', hash: 'tarifs' },
-        { label: m.footer_link_terms(), to: '/', hash: 'tarifs' },
-        { label: m.footer_link_legal_notice(), to: '/', hash: 'tarifs' },
+        { label: m.footer_link_privacy(), to: '/confidentialite' },
+        { label: m.footer_link_terms(), to: '/conditions' },
+        { label: m.footer_link_legal_notice(), to: '/mentions-legales' },
       ],
     },
   ]

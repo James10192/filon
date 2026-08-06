@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+﻿import { useMemo, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
 import { AlertTriangle, FileText, Library, Link2 } from 'lucide-react'
@@ -45,6 +45,8 @@ function DocumentsPage() {
       lettre: 0,
       portfolio: 0,
       contrat: 0,
+      proforma: 0,
+      devis: 0,
       autre: 0,
     }
     if (!documents) return base
@@ -259,3 +261,4 @@ export function DocumentsError({ onRetry }: { onRetry: () => void }) {
     </div>
   )
 }
+

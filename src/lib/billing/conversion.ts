@@ -129,10 +129,14 @@ export function requiredPlanLabel(requires: RequiredPlan): string {
  */
 const UPSELL_RANK: Record<Plan, number> = {
   free: 0,
-  pro: 1,
-  pro_ai: 2,
-  copilot: 3,
-  copilot_max: 4,
+  discovery_v2: 1,
+  pro: 2,
+  pro_ai: 3,
+  copilot: 4,
+  copilot_max: 5,
+  pro_v2: 6,
+  copilot_v2: 7,
+  team_v2: 8,
 }
 
 export function planUnlocks(current: Plan, requires: RequiredPlan): boolean {

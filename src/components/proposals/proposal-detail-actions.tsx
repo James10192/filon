@@ -1,6 +1,7 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useMutation } from 'convex/react'
+import type { FunctionReturnType } from 'convex/server'
 import {
   CheckCircle2,
   Eye,
@@ -16,7 +17,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
-import type { Doc } from '../../../convex/_generated/dataModel'
+
 import { m } from '~/lib/paraglide/messages'
 import { Button } from '~/components/ui/button'
 import {
@@ -44,6 +45,8 @@ import {
   downloadProposalXlsx,
 } from '~/lib/export/proposal-spreadsheet'
 
+type LoadedProposal = FunctionReturnType<typeof api.proposals.withRecipients>
+
 /**
  * Barre d'actions de la page détail : actions de statut contextuelles,
  * conversion en mission, édition, suppression. Confirmations via AlertDialog.
@@ -52,7 +55,7 @@ export function ProposalDetailActions({
   proposal,
   onEdit,
 }: {
-  proposal: Doc<'proposals'>
+  proposal: LoadedProposal
   onEdit: () => void
 }) {
   const navigate = useNavigate()
@@ -118,7 +121,7 @@ export function ProposalDetailActions({
     if (exporting) return
     setExporting('xlsx')
     try {
-      await downloadProposalXlsx(proposalDetail)
+      await downloadProposalXlsx(proposal)
     } catch {
       toast.error("L'export Excel a échoué.")
     } finally {
@@ -130,7 +133,7 @@ export function ProposalDetailActions({
     if (exporting) return
     setExporting('csv')
     try {
-      downloadProposalCsv(proposalDetail)
+      downloadProposalCsv(proposal)
     } catch {
       toast.error("L'export CSV a échoué.")
     } finally {
@@ -313,3 +316,4 @@ function StatusActions({
   }
   return null
 }
+

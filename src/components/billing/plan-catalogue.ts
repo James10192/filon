@@ -10,10 +10,12 @@ import type { PaidPlan } from '~/lib/billing/plan'
  * accesseurs (`() => …`) résolus au rendu pour suivre la langue active.
  */
 
-export type PlanKey = 'free' | PaidPlan
+export type PlanKey = 'discovery_v2' | 'pro_v2' | 'copilot_v2' | 'team_v2'
 
 export type PlanCard = {
   key: PlanKey
+  priceKey?: PaidPlan
+  quoteOnly?: boolean
   name: () => string
   tagline: () => string
   /** Palier mis en avant (bordure accent, badge « Recommandé »). */
@@ -24,98 +26,49 @@ export type PlanCard = {
 
 export const PLAN_CARDS: PlanCard[] = [
   {
-    key: 'free',
-    name: m.app_plan_free_name,
-    tagline: m.app_plan_free_tagline,
+    key: 'discovery_v2',
+    name: () => 'Découverte',
+    tagline: () => 'Pour organiser votre prospection',
     features: () => [
-      m.app_plan_free_feat_1(),
-      m.app_plan_free_feat_2(),
-      m.app_plan_free_feat_3(),
-      m.app_plan_free_feat_4(),
-      m.app_plan_free_feat_team(),
+      '25 opportunités actives',
+      '1 veille enregistrée',
+      'Carnet privé par défaut',
     ],
   },
   {
-    key: 'pro',
-    name: m.app_plan_pro_name,
-    tagline: m.app_plan_pro_tagline,
+    key: 'pro_v2',
+    priceKey: 'pro_v2',
+    name: () => 'Pro',
+    tagline: () => 'Pour piloter votre activité commerciale',
+    features: () => [
+      'Pipeline et veille illimités',
+      '5 000 crédits IA par mois',
+      'Exports et analyses',
+    ],
+  },
+  {
+    key: 'copilot_v2',
+    priceKey: 'copilot_v2',
+    name: () => 'Copilot',
+    tagline: () => 'Pour déléguer les tâches répétitives',
     featured: true,
     features: () => [
-      m.app_plan_pro_feat_1(),
-      m.app_plan_pro_feat_2(),
-      m.app_plan_pro_feat_3(),
-      m.app_plan_pro_feat_4(),
-      m.app_plan_pro_feat_team(),
+      '12 000 crédits IA par mois',
+      'Actions guidées et agent',
+      'Routage qualité et BYOK',
     ],
   },
   {
-    key: 'pro_ai',
-    name: m.app_plan_pro_ai_name,
-    tagline: m.app_plan_pro_ai_tagline,
+    key: 'team_v2',
+    quoteOnly: true,
+    name: () => 'Équipe',
+    tagline: () => 'Pour déployer Filon à plusieurs',
     features: () => [
-      m.app_plan_pro_ai_feat_1(),
-      m.app_plan_pro_ai_feat_2(),
-      m.app_plan_pro_ai_feat_3(),
-      m.app_plan_pro_ai_feat_4(),
-    ],
-  },
-  {
-    key: 'copilot',
-    name: m.app_plan_copilot_name,
-    tagline: m.app_plan_copilot_tagline,
-    features: () => [
-      m.app_plan_copilot_feat_1(),
-      m.app_plan_copilot_feat_2(),
-      m.app_plan_copilot_feat_3(),
-      m.app_plan_copilot_feat_4(),
-      m.app_plan_copilot_feat_5(),
-    ],
-  },
-  {
-    key: 'copilot_max',
-    name: m.app_plan_copilot_max_name,
-    tagline: m.app_plan_copilot_max_tagline,
-    features: () => [
-      m.app_plan_copilot_max_feat_1(),
-      m.app_plan_copilot_max_feat_2(),
-      m.app_plan_copilot_max_feat_3(),
-      m.app_plan_copilot_max_feat_4(),
-      m.app_plan_copilot_max_feat_5(),
+      'Espaces et accès d’équipe',
+      'Accompagnement au déploiement',
+      'Conditions adaptées à l’organisation',
     ],
   },
 ]
 
 /** Tableau comparatif : lignes de fonctionnalités × paliers. */
-export type CompareRow = {
-  label: () => string
-  free: string | boolean
-  pro: string | boolean
-  pro_ai: string | boolean
-  copilot: string | boolean
-  copilot_max: string | boolean
-}
-
-export const COMPARE_ROWS: CompareRow[] = [
-  { label: m.app_compare_active_opps, free: '25', pro: m.app_unlimited(), pro_ai: m.app_unlimited(), copilot: m.app_unlimited(), copilot_max: m.app_unlimited() },
-  { label: m.app_compare_watch_searches, free: '1', pro: m.app_unlimited(), pro_ai: m.app_unlimited(), copilot: m.app_unlimited(), copilot_max: m.app_unlimited() },
-  { label: m.app_compare_auto_watch, free: false, pro: true, pro_ai: true, copilot: true, copilot_max: true },
-  { label: m.app_compare_views, free: true, pro: true, pro_ai: true, copilot: true, copilot_max: true },
-  { label: m.app_compare_followups_analytics, free: false, pro: true, pro_ai: true, copilot: true, copilot_max: true },
-  { label: m.app_compare_export, free: false, pro: true, pro_ai: true, copilot: true, copilot_max: true },
-  { label: m.app_compare_ai_credits, free: '25', pro: '100', pro_ai: '300', copilot: '6000', copilot_max: '20000' },
-  { label: m.app_compare_ai_assistant, free: true, pro: true, pro_ai: true, copilot: true, copilot_max: true },
-  { label: m.app_compare_scoring, free: false, pro: false, pro_ai: true, copilot: true, copilot_max: true },
-  { label: m.app_compare_drafts, free: false, pro: false, pro_ai: true, copilot: true, copilot_max: true },
-  { label: m.app_compare_agentic, free: false, pro: false, pro_ai: false, copilot: true, copilot_max: true },
-  { label: m.app_compare_action_log, free: false, pro: false, pro_ai: false, copilot: true, copilot_max: true },
-  { label: m.app_compare_fair_use_byok, free: false, pro: false, pro_ai: false, copilot: true, copilot_max: true },
-  // --- Écart Copilot Max (flagship : ce qui justifie le palier supérieur) ---
-  { label: m.app_compare_brief, free: false, pro: false, pro_ai: false, copilot: false, copilot_max: true },
-  { label: m.app_compare_team_intel, free: false, pro: false, pro_ai: false, copilot: false, copilot_max: true },
-  { label: m.app_compare_deep_reasoning, free: false, pro: false, pro_ai: false, copilot: false, copilot_max: true },
-  { label: m.app_compare_priority_routing, free: false, pro: false, pro_ai: false, copilot: false, copilot_max: true },
-  // --- Équipe (org ouverte à tous, limite de membres = levier free) ---
-  { label: m.app_compare_org_team, free: m.app_members_3(), pro: m.app_unlimited(), pro_ai: m.app_unlimited(), copilot: m.app_unlimited(), copilot_max: m.app_unlimited() },
-  { label: m.app_compare_priority_flag, free: true, pro: true, pro_ai: true, copilot: true, copilot_max: true },
-  { label: m.app_compare_member_reports, free: false, pro: true, pro_ai: true, copilot: true, copilot_max: true },
-]

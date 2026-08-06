@@ -102,10 +102,10 @@ function Cell({
   action?: ReactNode
 }) {
   return (
-    <div className="flex min-w-0 flex-1 items-center gap-3 p-3.5 md:p-4">
+    <div className="flex min-w-0 flex-1 items-center gap-2.5 px-3 py-2.5">
       <span
         className={cn(
-          'flex size-9 shrink-0 items-center justify-center rounded-[var(--radius)]',
+          'flex size-8 shrink-0 items-center justify-center rounded-[var(--radius)]',
           tone,
         )}
       >
@@ -158,9 +158,10 @@ function RadarCell({ radar }: { radar: RadarData }) {
       action={
         <AskCopilotButton
           seed={m.radar_seed()}
-          label={m.radar_cta()}
+          variant="icon"
+          ariaLabel={m.radar_cta()}
           size="sm"
-          buttonVariant="default"
+          buttonVariant="ghost"
         />
       }
     />
@@ -352,14 +353,16 @@ function GoalCell({ data }: { data: RankProgress }) {
           title={m.rank_goal_hint()}
           action={
             <Button
-              variant="default"
-              size="sm"
+              variant="ghost"
+              size="icon-sm"
+              title={m.rank_goal_define_cta()}
+              aria-label={m.rank_goal_define_cta()}
               onClick={() => {
                 setEditing(true)
                 setOpen(true)
               }}
             >
-              {m.rank_goal_define_cta()}
+              <Target className="size-4 text-accent" />
             </Button>
           }
         />

@@ -1,4 +1,4 @@
-import { v, ConvexError } from 'convex/values'
+﻿import { v, ConvexError } from 'convex/values'
 import { action, internalAction } from './_generated/server'
 import { requireUserFromAction } from './lib/withUser'
 import { priceXof, toPaystackSubunit, type Interval, type PaidPlan } from './lib/pricing'
@@ -31,7 +31,9 @@ const PAYSTACK_BASE = 'https://api.paystack.co'
 const paidPlanValidator = v.union(
   v.literal('pro'),
   v.literal('pro_ai'),
+  v.literal('pro_v2'),
   v.literal('copilot'),
+  v.literal('copilot_v2'),
   v.literal('copilot_max'),
 )
 const intervalValidator = v.union(v.literal('monthly'), v.literal('annual'))

@@ -208,7 +208,12 @@ function InscriptionPage() {
         </Button>
 
         <p className="text-center text-xs text-fg-subtle">
-          {m.signup_terms()}
+          <Link
+            to="/conditions"
+            className="underline underline-offset-2 transition-colors hover:text-fg"
+          >
+            {m.signup_terms()}
+          </Link>
         </p>
       </form>
     </AuthShell>

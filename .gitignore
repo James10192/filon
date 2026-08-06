@@ -22,3 +22,9 @@ data/
 
 # Worktrees locaux Claude/Codex
 .claude/worktrees/
+
+# Logs transitoires d'agents / dev server (jamais committés)
+.codex-filon-*.err.log
+.codex-filon-*.out.log
+devserver*.err
+devserver*.out

@@ -4,6 +4,7 @@ import { action } from './_generated/server'
 import { internal } from './_generated/api'
 import type { DataModel } from './_generated/dataModel'
 import { requireUserFromAction } from './lib/withUser'
+import { enforceRateLimit } from './lib/rateLimiter'
 import {
   creditPackById,
   priceXof,
@@ -47,6 +48,8 @@ const paidPlanValidator = v.union(
   v.literal('pro_ai'),
   v.literal('copilot'),
   v.literal('copilot_max'),
+  v.literal('pro_v2'),
+  v.literal('copilot_v2'),
 )
 const intervalValidator = v.union(
   v.literal('monthly'),
@@ -108,6 +111,7 @@ export const startCheckout = action({
     args,
   ): Promise<{ authorizationUrl: string; reference: string }> => {
     const { userId, email } = await requireUserFromAction(ctx)
+    await enforceRateLimit(ctx, 'startCheckout', userId)
     if (!email) {
       throw billingError(
         'E-mail introuvable : impossible de lancer le paiement.',
@@ -255,6 +259,7 @@ type VerifyResponse = {
       brand?: string
     }
     plan?: string | null
+    reference?: string
   }
 }
 
@@ -282,7 +287,7 @@ export const verifyCheckout = action({
     plan: PaidPlan | null
     credits: number | null
   }> => {
-    await requireUserFromAction(ctx)
+    const currentUser = await requireUserFromAction(ctx)
 
     const res = await fetch(
       `${PAYSTACK_BASE}/transaction/verify/${encodeURIComponent(args.reference)}`,
@@ -300,6 +305,9 @@ export const verifyCheckout = action({
     }
 
     const userId = data.metadata?.userId
+    if (userId && userId !== currentUser.userId) {
+      return { ok: false, kind: null, plan: null, credits: null }
+    }
     const kind = data.metadata?.kind ?? 'subscription'
 
     if (kind === 'credit_pack') {
@@ -311,6 +319,7 @@ export const verifyCheckout = action({
         ...(userId ? { userId } : {}),
         ...(data.customer?.email ? { email: data.customer.email } : {}),
         credits,
+        reference: args.reference,
       })
       return { ok: true, kind: 'credit_pack', plan: null, credits }
     }

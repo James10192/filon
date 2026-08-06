@@ -28,7 +28,14 @@ const statusValidator = v.union(
   v.literal('done'),
 )
 
-const PAID_PLANS: PaidPlan[] = ['pro', 'pro_ai', 'copilot', 'copilot_max']
+const PAID_PLANS: PaidPlan[] = [
+  'pro',
+  'pro_ai',
+  'copilot',
+  'copilot_max',
+  'pro_v2',
+  'copilot_v2',
+]
 
 /** Lecture cross-tenant de tous les users (réservée admin). */
 async function allUsers(ctx: QueryCtx): Promise<Doc<'users'>[]> {
@@ -129,10 +136,14 @@ export const metrics = query({
 
     const planDistribution: Record<Plan, number> = {
       free: 0,
+      discovery_v2: 0,
       pro: 0,
       pro_ai: 0,
       copilot: 0,
       copilot_max: 0,
+      pro_v2: 0,
+      copilot_v2: 0,
+      team_v2: 0,
     }
     let estimatedMrrXof = 0
     const now = Date.now()
@@ -768,10 +779,14 @@ export const aiThreadDetail = query({
 
 const planValidator = v.union(
   v.literal('free'),
+  v.literal('discovery_v2'),
   v.literal('pro'),
   v.literal('pro_ai'),
+  v.literal('pro_v2'),
   v.literal('copilot'),
   v.literal('copilot_max'),
+  v.literal('copilot_v2'),
+  v.literal('team_v2'),
 )
 
 /** MRR mensuel équivalent d'un user (0 si free/expiré ; annuel ramené au mois). */

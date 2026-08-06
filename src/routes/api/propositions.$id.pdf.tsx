@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto'
+﻿import { createHash } from 'node:crypto'
 import { createFileRoute } from '@tanstack/react-router'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
@@ -72,7 +72,7 @@ export const Route = createFileRoute('/api/propositions/$id/pdf')({
             pdf = await page.pdf({ format: 'A4', printBackground: true, preferCSSPageSize: true })
           } finally { await browser.close() }
           const uploadUrl = await fetchAuthMutation(api.documents.generateUploadUrl, {})
-          const uploadResponse = await fetch(uploadUrl, { method: 'POST', headers: { 'Content-Type': PDF_CONTENT_TYPE }, body: pdf })
+          const uploadResponse = await fetch(uploadUrl, { method: 'POST', headers: { 'Content-Type': PDF_CONTENT_TYPE }, body: Uint8Array.from(pdf).buffer })
           if (!uploadResponse.ok) throw new Error('storage_upload_failed')
           const upload = await uploadResponse.json() as { storageId?: Id<'_storage'> }
           if (!upload.storageId) throw new Error('storage_id_missing')
@@ -87,3 +87,4 @@ export const Route = createFileRoute('/api/propositions/$id/pdf')({
     },
   },
 })
+

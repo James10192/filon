@@ -8,7 +8,14 @@
  * l'API — voir le commentaire dans `convex/paystack.ts`.
  */
 
-export type PaidPlan = 'pro' | 'pro_ai' | 'copilot' | 'copilot_max'
+/** IDs historiques conservés, plus les paliers commerciaux v2. */
+export type PaidPlan =
+  | 'pro'
+  | 'pro_ai'
+  | 'copilot'
+  | 'copilot_max'
+  | 'pro_v2'
+  | 'copilot_v2'
 export type Interval = 'monthly' | 'annual'
 
 export type PriceEntry = {
@@ -26,6 +33,8 @@ export const PRICING: Record<PaidPlan, PriceEntry> = {
   copilot: { monthly: 19000, annual: 190000 },
   // Copilot Max : puissance maximale du copilote, quota XXL, au-dessus de Copilot.
   copilot_max: { monthly: 35000, annual: 350000 },
+  pro_v2: { monthly: 5000, annual: 50000 },
+  copilot_v2: { monthly: 12000, annual: 120000 },
 }
 
 /** Montant XOF (entiers) pour un palier payant et un intervalle donnés. */
@@ -46,12 +55,16 @@ export function toPaystackSubunit(amountXof: number): number {
 }
 
 /** Libellés FR des paliers (partagés client/serveur). */
-export const PLAN_LABELS: Record<'free' | PaidPlan, string> = {
+export const PLAN_LABELS: Record<'free' | 'discovery_v2' | 'team_v2' | PaidPlan, string> = {
   free: 'Découverte',
   pro: 'Pro',
   pro_ai: 'Pro+ IA',
   copilot: 'Copilot',
   copilot_max: 'Copilot Max',
+  discovery_v2: 'Découverte',
+  pro_v2: 'Pro',
+  copilot_v2: 'Copilot',
+  team_v2: 'Équipe',
 }
 
 /**

@@ -11,6 +11,7 @@ import {
   type Plan,
 } from './lib/plan'
 import { aiBudgetStatus, type AiBudgetStatus } from './lib/aiGate'
+import { claimPaymentEvent } from './domain/billing/paymentEvents'
 
 /**
  * Domaine aiCredits · solde et consommation des crédits IA du copilote.
@@ -158,6 +159,7 @@ export const creditPack = internalMutation({
     userId: v.optional(v.string()),
     email: v.optional(v.string()),
     credits: v.number(),
+    reference: v.optional(v.string()),
   },
   handler: async (ctx, args): Promise<boolean> => {
     let userDoc: Doc<'users'> | null = null
@@ -170,6 +172,15 @@ export const creditPack = internalMutation({
     }
     if (!userDoc) return false
     const userId = userDoc.authId
+    if (args.reference) {
+      const claimed = await claimPaymentEvent(
+        ctx,
+        userId,
+        args.reference,
+        'credit_pack',
+      )
+      if (!claimed) return false
+    }
 
     const row = await creditsOf(ctx, userId)
     const now = Date.now()

@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Filon · Note de validation de la refonte produit</title>
+<style>
+  @font-face {
+    font-family: 'Hanken Grotesk';
+    src: url('../../node_modules/@fontsource/hanken-grotesk/files/hanken-grotesk-latin-400-normal.woff2') format('woff2');
+    font-weight: 400;
+  }
+  @font-face {
+    font-family: 'Hanken Grotesk';
+    src: url('../../node_modules/@fontsource/hanken-grotesk/files/hanken-grotesk-latin-500-normal.woff2') format('woff2');
+    font-weight: 500;
+  }
+  @font-face {
+    font-family: 'Hanken Grotesk';
+    src: url('../../node_modules/@fontsource/hanken-grotesk/files/hanken-grotesk-latin-600-normal.woff2') format('woff2');
+    font-weight: 600;
+  }
+  @font-face {
+    font-family: 'Hanken Grotesk';
+    src: url('../../node_modules/@fontsource/hanken-grotesk/files/hanken-grotesk-latin-700-normal.woff2') format('woff2');
+    font-weight: 700;
+  }
+  @font-face {
+    font-family: 'JetBrains Mono';
+    src: url('../../node_modules/@fontsource/jetbrains-mono/files/jetbrains-mono-latin-500-normal.woff2') format('woff2');
+    font-weight: 500;
+  }
+
+  :root {
+    --ink: #18181b;
+    --ink-2: #27272a;
+    --muted: #52525b;
+    --subtle: #71717a;
+    --line: #e4e4e7;
+    --surface: #f4f4f5;
+    --paper: #ffffff;
+    --accent: #4f46e5;
+    --accent-dark: #3730a3;
+    --accent-soft: #eef2ff;
+    --success: #15803d;
+    --success-soft: #f0fdf4;
+    --warning: #b45309;
+    --warning-soft: #fffbeb;
+    --danger: #b91c1c;
+    --danger-soft: #fef2f2;
+    --sans: 'Hanken Grotesk', sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  @page { size: A4; margin: 0; }
+  html, body {
+    background: #d4d4d8;
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 10.2pt;
+    line-height: 1.42;
+    -webkit-font-smoothing: antialiased;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .page {
+    width: 210mm;
+    height: 297mm;
+    max-height: 297mm;
+    padding: 17mm 18mm 34mm;
+    background: var(--paper);
+    position: relative;
+    overflow: hidden;
+    page-break-after: always;
+    break-after: page;
+    display: flex;
+    flex-direction: column;
+  }
+  .page:last-child { page-break-after: auto; break-after: auto; }
+  .page:not(.cover):not(.approval)::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 24mm;
+    background: linear-gradient(to top, #fff 0%, #fff 72%, rgba(255,255,255,.94) 90%, rgba(255,255,255,0) 100%);
+    z-index: 10;
+    pointer-events: none;
+  }
+  .page-footer, .page-number, .section-label {
+    position: absolute;
+    z-index: 20;
+    font-family: var(--mono);
+    font-size: 7pt;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--subtle);
+  }
+  .page-footer { left: 18mm; bottom: 9mm; }
+  .page-number { right: 18mm; bottom: 9mm; }
+  .section-label { right: 18mm; top: 9mm; color: var(--accent); }
+  .footer-line {
+    position: absolute;
+    z-index: 18;
+    left: 18mm;
+    right: 18mm;
+    bottom: 15mm;
+    height: 1px;
+    background: var(--line);
+  }
+
+  .cover {
+    padding: 0;
+    background: var(--ink);
+    color: white;
+  }
+  .cover-inner {
+    height: 100%;
+    padding: 20mm 20mm 18mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+  }
+  .cover-inner::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 7mm;
+    background: var(--accent);
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    margin-left: 4mm;
+  }
+  .brand img { width: 13mm; height: 13mm; }
+  .brand-name { font-size: 18pt; font-weight: 700; letter-spacing: -.03em; }
+  .confidential {
+    display: inline-block;
+    margin-left: 4mm;
+    margin-top: 7mm;
+    border: 1px solid rgba(255,255,255,.28);
+    border-radius: 999px;
+    padding: 5px 10px;
+    font-family: var(--mono);
+    font-size: 7.5pt;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: #c7d2fe;
+  }
+  .cover-title { margin-left: 4mm; max-width: 150mm; }
+  .cover-title h1 {
+    font-size: 42pt;
+    line-height: .98;
+    letter-spacing: -.055em;
+    font-weight: 600;
+    margin-bottom: 8mm;
+  }
+  .cover-title p {
+    font-size: 15pt;
+    line-height: 1.34;
+    color: #d4d4d8;
+    max-width: 125mm;
+  }
+  .cover-meta {
+    margin-left: 4mm;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8mm;
+    border-top: 1px solid rgba(255,255,255,.18);
+    padding-top: 7mm;
+  }
+  .meta-label {
+    font-family: var(--mono);
+    font-size: 7pt;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    color: #a1a1aa;
+    margin-bottom: 4px;
+  }
+  .meta-value { font-size: 10pt; color: #f4f4f5; }
+
+  h2 {
+    font-size: 28pt;
+    line-height: 1.04;
+    letter-spacing: -.04em;
+    font-weight: 600;
+    max-width: 155mm;
+    margin: 7mm 0 4mm;
+  }
+  h3 {
+    font-size: 15pt;
+    line-height: 1.15;
+    letter-spacing: -.02em;
+    margin-bottom: 2.5mm;
+  }
+  h4 {
+    font-size: 10pt;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--accent-dark);
+    margin-bottom: 2mm;
+  }
+  p { color: var(--muted); margin-bottom: 3mm; max-width: 165mm; }
+  strong { color: var(--ink); }
+  .lead { font-size: 13pt; line-height: 1.42; color: var(--ink-2); max-width: 155mm; }
+  .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .accent { color: var(--accent); }
+  .small { font-size: 8.5pt; }
+  .muted { color: var(--subtle); }
+
+  .decision-banner {
+    margin: 5mm 0;
+    padding: 6mm;
+    border-left: 4px solid var(--accent);
+    background: var(--accent-soft);
+  }
+  .decision-banner p { margin: 0; color: var(--accent-dark); font-size: 14pt; font-weight: 600; line-height: 1.3; }
+  .quote {
+    margin: 6mm 0;
+    padding: 6mm 7mm;
+    border-radius: 3mm;
+    background: var(--ink);
+    color: white;
+    font-size: 18pt;
+    line-height: 1.25;
+    letter-spacing: -.02em;
+  }
+  .quote small { display: block; margin-top: 3mm; color: #a5b4fc; font-size: 8pt; font-family: var(--mono); text-transform: uppercase; letter-spacing: .1em; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3.5mm; }
+  .card {
+    border: 1px solid var(--line);
+    border-radius: 3mm;
+    padding: 4.5mm;
+    background: white;
+    break-inside: avoid;
+  }
+  .card.soft { background: var(--surface); border-color: transparent; }
+  .card.accent-card { background: var(--accent-soft); border-color: #c7d2fe; }
+  .card.success-card { background: var(--success-soft); border-color: #bbf7d0; }
+  .card.warning-card { background: var(--warning-soft); border-color: #fde68a; }
+  .card.danger-card { background: var(--danger-soft); border-color: #fecaca; }
+  .card p:last-child { margin-bottom: 0; }
+  .number {
+    font-family: var(--mono);
+    font-size: 22pt;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 2mm;
+  }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 7.5pt;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    color: var(--accent);
+    margin-bottom: 2mm;
+  }
+
+  ul { list-style: none; display: grid; gap: 2mm; }
+  li { position: relative; padding-left: 5mm; color: var(--muted); }
+  li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: .52em;
+    width: 2mm;
+    height: 2mm;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  .check-list li::before {
+    width: 3mm;
+    height: 3mm;
+    top: .2em;
+    border-radius: .7mm;
+    background: var(--success);
+  }
+
+  table { width: 100%; border-collapse: collapse; font-size: 8.8pt; }
+  th {
+    padding: 2.5mm 2mm;
+    text-align: left;
+    color: var(--subtle);
+    font-family: var(--mono);
+    font-size: 7pt;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    border-bottom: 1.5px solid var(--ink);
+  }
+  td { padding: 2.4mm 2mm; vertical-align: top; color: var(--muted); border-bottom: 1px solid var(--line); }
+  td strong { font-weight: 600; }
+  tr:last-child td { border-bottom: 0; }
+
+  .flow {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    align-items: stretch;
+    gap: 2mm;
+    margin: 5mm 0;
+  }
+  .flow-step {
+    position: relative;
+    min-height: 28mm;
+    padding: 4mm 3mm;
+    border-radius: 2.5mm;
+    background: var(--surface);
+    font-size: 9pt;
+  }
+  .flow-step:not(:last-child)::after {
+    content: '›';
+    position: absolute;
+    right: -2.1mm;
+    top: 9mm;
+    color: var(--accent);
+    font-size: 17pt;
+    z-index: 2;
+  }
+  .flow-step b { display: block; margin-bottom: 2mm; color: var(--ink); }
+
+  .stage-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1.5mm; margin: 4mm 0; }
+  .stage {
+    min-height: 21mm;
+    padding: 3mm 2mm;
+    border-top: 3px solid var(--accent);
+    background: var(--surface);
+    font-size: 7.8pt;
+    font-weight: 600;
+  }
+  .stage.win { border-color: var(--success); }
+  .stage.loss { border-color: var(--danger); }
+
+  .nav-map { display: grid; grid-template-columns: 1fr 1.3fr; gap: 3mm; }
+  .nav-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 3mm;
+    padding: 3mm 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .nav-item:last-child { border-bottom: 0; }
+  .nav-code {
+    width: 8mm;
+    height: 8mm;
+    display: grid;
+    place-items: center;
+    flex: none;
+    background: var(--accent);
+    color: white;
+    border-radius: 2mm;
+    font-family: var(--mono);
+    font-size: 7pt;
+  }
+
+  .price-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4mm; margin-top: 4mm; }
+  .price-card { border: 1px solid var(--line); border-radius: 3mm; padding: 5mm; }
+  .price-card.featured { border: 2px solid var(--accent); background: var(--accent-soft); }
+  .price { font-family: var(--mono); font-size: 20pt; color: var(--ink); margin: 3mm 0; }
+  .price span { font-family: var(--sans); font-size: 8pt; color: var(--subtle); }
+  .price-card ul { gap: 1.4mm; font-size: 8.1pt; }
+
+  .timeline { display: grid; gap: 2.7mm; margin-top: 3mm; }
+  .wave { display: grid; grid-template-columns: 18mm 1fr 36mm; gap: 4mm; align-items: start; padding: 3mm 0; border-bottom: 1px solid var(--line); }
+  .wave:last-child { border-bottom: 0; }
+  .wave-id { font-family: var(--mono); color: var(--accent); font-size: 8pt; }
+  .wave-title { font-weight: 600; color: var(--ink); }
+  .wave-gate { font-size: 7.5pt; color: var(--subtle); }
+
+  .screenshot-frame {
+    margin-top: 4mm;
+    padding: 3mm;
+    border: 1px solid var(--line);
+    border-radius: 3mm;
+    background: var(--surface);
+  }
+  .screenshot-frame img { width: 100%; max-height: 132mm; object-fit: contain; display: block; border-radius: 1.5mm; }
+  .screenshot-caption { margin-top: 2mm; font-size: 7.5pt; color: var(--subtle); font-family: var(--mono); }
+  .screens-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; margin-top: 4mm; }
+  .screens-2 .screenshot-frame { margin-top: 0; }
+  .screens-2 img { height: 94mm; object-fit: contain; }
+
+  .approval { padding-bottom: 18mm; }
+  .approval::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 8mm;
+    background: var(--accent);
+  }
+  .choice-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4mm; margin: 5mm 0; }
+  .choice {
+    min-height: 25mm;
+    padding: 4mm;
+    border: 1px solid var(--line);
+    border-radius: 2.5mm;
+    font-weight: 600;
+  }
+  .box { display: inline-block; width: 4mm; height: 4mm; border: 1.5px solid var(--ink); margin-right: 2mm; vertical-align: -.5mm; }
+  .comment-area { height: 42mm; border: 1px solid var(--line); border-radius: 2.5mm; margin: 3mm 0 6mm; }
+  .signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 10mm; }
+  .signature { min-height: 34mm; border-top: 1px solid var(--ink); padding-top: 2mm; margin-top: 16mm; color: var(--subtle); font-size: 8pt; }
+
+  @media print {
+    html, body { background: white; }
+  }
+</style>
+</head>
+<body>
+
+<section class="page cover">
+  <div class="cover-inner">
+    <div>
+      <div class="brand">
+        <img src="../../public/favicon.svg" alt="Logo Filon">
+        <div class="brand-name">Filon</div>
+      </div>
+      <div class="confidential">Document confidentiel · Pour validation</div>
+    </div>
+
+    <div class="cover-title">
+      <h1>Note de validation de la refonte produit</h1>
+      <p>Transformation de Filon en système personnel de suivi relationnel, avant engagement du développement.</p>
+    </div>
+
+    <div class="cover-meta">
+      <div>
+        <div class="meta-label">Référence</div>
+        <div class="meta-value">MDL-PRJ-PRD-2026-01</div>
+      </div>
+      <div>
+        <div class="meta-label">Date</div>
+        <div class="meta-value">21 juillet 2026</div>
+      </div>
+      <div>
+        <div class="meta-label">Émetteur</div>
+        <div class="meta-value">N'Guessan Marcel Jacques Patrick DJEDJE-LI</div>
+      </div>
+      <div>
+        <div class="meta-label">Destinataires</div>
+        <div class="meta-value">Hiérarchie · Expert produit · Expert métier</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="page">
+  <div class="section-label">01 · Décision demandée</div>
+  <h2>Valider une transformation du cœur produit.</h2>
+  <p class="lead">La décision demandée ne porte pas sur l'ajout de quelques fonctionnalités. Elle porte sur un nouveau modèle d'usage, une nouvelle architecture de l'information et une nouvelle promesse commerciale.</p>
+
+  <div class="decision-banner">
+    <p>Autoriser la conception détaillée et le développement progressif de la nouvelle boucle Filon, sous réserve des observations consignées par la hiérarchie et l'expert.</p>
+  </div>
+
+  <div class="grid-3">
+    <div class="card accent-card">
+      <div class="number">23</div>
+      <h3>Décisions validées</h3>
+      <p>Positionnement, modèle métier, navigation, IA, prix, migration et gouvernance.</p>
+    </div>
+    <div class="card">
+      <div class="number">08</div>
+      <h3>Vagues de livraison</h3>
+      <p>Chaque vague produit un résultat utilisateur complet et vérifiable.</p>
+    </div>
+    <div class="card">
+      <div class="number">01</div>
+      <h3>Règle centrale</h3>
+      <p>Aucune opportunité active sans prochaine action datée.</p>
+    </div>
+  </div>
+
+  <div class="quote">
+    Chaque relation. La bonne action. Au bon moment.
+    <small>Promesse cible de Filon</small>
+  </div>
+
+  <h3>Points soumis à confirmation</h3>
+  <ul class="check-list">
+    <li>La relation devient la mémoire permanente et l'opportunité un épisode.</li>
+    <li>Aujourd'hui devient le poste de travail principal.</li>
+    <li>Les pages fonctionnelles actuelles sont réorganisées autour des intentions.</li>
+    <li>Le copilote devient contextuel, traçable et proportionné au risque.</li>
+    <li>La tarification est simplifiée avant migration contrôlée des abonnés.</li>
+  </ul>
+
+  <div class="footer-line"></div><div class="page-footer">Filon · Note de validation · Confidentiel</div><div class="page-number">02</div>
+</section>
+
+<section class="page">
+  <div class="section-label">02 · Pourquoi changer</div>
+  <h2>Une application riche, mais encore fragmentée.</h2>
+  <p class="lead">Filon possède déjà les briques nécessaires. Le problème principal réside dans leur organisation et dans l'effort demandé à l'utilisateur pour reconstruire lui-même le sens de son activité.</p>
+
+  <div class="grid-2">
+    <div class="card danger-card">
+      <h3>Constat actuel</h3>
+      <ul>
+        <li>Relances séparées des relations et opportunités.</li>
+        <li>Entreprises et carnet traités comme des espaces distincts.</li>
+        <li>Propositions et documents isolés du contexte de décision.</li>
+        <li>Veille principalement adaptée à l'emploi.</li>
+        <li>Copilote encore perçu comme une page de chat.</li>
+        <li>Tarification fondée sur des mécanismes techniques.</li>
+      </ul>
+    </div>
+    <div class="card success-card">
+      <h3>Transformation recherchée</h3>
+      <ul>
+        <li>Une vue quotidienne qui indique quoi faire.</li>
+        <li>Une mémoire relationnelle durable.</li>
+        <li>Des opportunités liées à un résultat explicite.</li>
+        <li>Des parcours adaptés à chaque contexte métier.</li>
+        <li>Une assistance intégrée au moment de l'action.</li>
+        <li>Une offre commerciale alignée sur la valeur produite.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="screenshot-frame">
+    <img src="filon--app.png" alt="Dashboard actuel de Filon">
+    <div class="screenshot-caption">ÉTAT ACTUEL · Dashboard de l'application, capture de référence</div>
+  </div>
+
+  <div class="footer-line"></div><div class="page-footer">Filon · Diagnostic de l'existant</div><div class="page-number">03</div>
+</section>
+
+<section class="page">
+  <div class="section-label">03 · Vision cible</div>
+  <h2>Un système personnel de suivi relationnel.</h2>
+  <p class="lead">Filon sert les personnes dont une relation bien suivie peut produire une opportunité. Le métier change, mais la discipline essentielle reste la même : se souvenir, prioriser, agir et apprendre.</p>
+
+  <div class="flow">
+    <div class="flow-step"><b>1. Capturer</b>Une personne, une entreprise, une URL, une recommandation ou un signal.</div>
+    <div class="flow-step"><b>2. Qualifier</b>Décider si cette relation porte un résultat à poursuivre.</div>
+    <div class="flow-step"><b>3. Agir</b>Programmer et exécuter la bonne prochaine action.</div>
+    <div class="flow-step"><b>4. Obtenir</b>Faire progresser l'opportunité vers un résultat observable.</div>
+    <div class="flow-step"><b>5. Développer</b>Entretenir, renouveler, recommander ou ouvrir un nouveau cycle.</div>
+  </div>
+
+  <div class="grid-3">
+    <div class="card accent-card">
+      <div class="eyebrow">Cycle 1</div>
+      <h3>Relation</h3>
+      <p>Mémoire permanente d'une personne ou organisation, même sans opportunité active.</p>
+    </div>
+    <div class="card accent-card">
+      <div class="eyebrow">Cycle 2</div>
+      <h3>Opportunité</h3>
+      <p>Épisode temporaire orienté vers un résultat, une échéance et une action.</p>
+    </div>
+    <div class="card accent-card">
+      <div class="eyebrow">Cycle 3</div>
+      <h3>Développement</h3>
+      <p>Continuité après la victoire : fidélisation, recommandation, renouvellement ou réachat.</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:6mm">Cibles naturellement couvertes</h3>
+  <table>
+    <tr><th>Profils</th><th>Résultat poursuivi</th><th>Continuité possible</th></tr>
+    <tr><td>Freelance, consultant</td><td>Mission ou contrat</td><td>Renouvellement, recommandation</td></tr>
+    <tr><td>Commercial, agent</td><td>Vente ou mandat</td><td>Réachat, portefeuille</td></tr>
+    <tr><td>Marketing relationnel</td><td>Présentation ou parrainage</td><td>Activation, accompagnement</td></tr>
+    <tr><td>Chercheur d'emploi</td><td>Emploi obtenu</td><td>Réseau ou sortie propre</td></tr>
+    <tr><td>Recruteur</td><td>Poste pourvu</td><td>Suivi d'intégration</td></tr>
+  </table>
+
+  <div class="footer-line"></div><div class="page-footer">Filon · Vision et modèle métier</div><div class="page-number">04</div>
+</section>
+
+<section class="page">
+  <div class="section-label">04 · Pipeline</div>
+  <h2>Un pipeline commun, des parcours adaptés.</h2>
+  <p class="lead">Les phases internes restent comparables. Les libellés, jalons et preuves s'adaptent à l'opportunité, sans enfermer l'utilisateur dans un seul métier.</p>
+
+  <div class="stage-row">
+    <div class="stage">À qualifier</div>
+    <div class="stage">Contact établi</div>
+    <div class="stage">Besoin confirmé</div>
+    <div class="stage">Solution envisagée</div>
+    <div class="stage">Décision en cours</div>
+    <div class="stage win">Gagnée</div>
+    <div class="stage loss">Perdue</div>
+  </div>
+
+  <table>
+    <tr><th>Parcours</th><th>Jalons visibles possibles</th><th>Preuve de progression</th></tr>
+    <tr><td><strong>Emploi</strong></td><td>Candidature · Entretien · Décision</td><td>Échange réel, entretien réalisé, réponse attendue</td></tr>
+    <tr><td><strong>Mission</strong></td><td>Découverte · Proposition · Négociation</td><td>Besoin confirmé, offre envoyée, décideur connu</td></tr>
+    <tr><td><strong>Vente relationnelle</strong></td><td>Contact · Présentation · Décision · Intégration</td><td>Présentation effectuée, retour recueilli</td></tr>
+    <tr><td><strong>Immobilier</strong></td><td>Qualification · Visite · Offre · Signature</td><td>Critères validés, visite faite, offre formelle</td></tr>
+    <tr><td><strong>Recrutement</strong></td><td>Identification · Entretien · Validation</td><td>Candidat rencontré, validation obtenue</td></tr>
+  </table>
+
+  <div class="grid-2" style="margin-top:5mm">
+    <div class="card">
+      <h3>Personnalisation autorisée</h3>
+      <ul>
+        <li>Renommer ou masquer des étapes visibles.</li>
+        <li>Ajouter jalons, champs et délais.</li>
+        <li>Créer des modèles personnels.</li>
+        <li>Combiner plusieurs parcours dans un seul compte.</li>
+      </ul>
+    </div>
+    <div class="card warning-card">
+      <h3>Socle non supprimable</h3>
+      <ul>
+        <li>Relation et résultat poursuivi.</li>
+        <li>Prochaine action datée.</li>
+        <li>Historique des transitions.</li>
+        <li>Raison de clôture.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="decision-banner"><p>Une étape représente un fait observable. Un passage forcé reste possible avec un motif.</p></div>
+
+  <div class="footer-line"></div><div class="page-footer">Filon · Pipeline et parcours métier</div><div class="page-number">05</div>
+</section>
+
+<section class="page">
+  <div class="section-label">05 · Expérience quotidienne</div>
+  <h2>Aujourd'hui devient le cœur de l'application.</h2>
+  <p class="lead">Le dashboard ne doit plus seulement informer. Il doit permettre de comprendre, décider et agir sans naviguer entre plusieurs modules.</p>
+
+  <div class="grid-2">
+    <div class="card accent-card">
+      <h3>À traiter maintenant</h3>
+      <p>Engagements en retard, décisions imminentes et actions dont l'inaction menace directement le résultat.</p>
+    </div>
+    <div class="card">
+      <h3>À faire aujourd'hui</h3>
+      <p>Actions datées, rendez-vous, messages à préparer et réponses à enregistrer.</p>
+    </div>
+    <div class="card">
+      <h3>À préparer cette semaine</h3>
+      <p>Échéances proches, opportunités importantes et relations nécessitant une préparation.</p>
+    </div>
+    <div class="card soft">
+      <h3>Sous surveillance</h3>
+      <p>Relations qui refroidissent et opportunités sans signal récent.</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:6mm">Moteur de priorité explicable</h3>
+  <div class="grid-3">
+    <div class="card soft"><h4>Urgence</h4><p>Retard, échéance et engagement pris.</p></div>
+    <div class="card soft"><h4>Potentiel</h4><p>Importance, probabilité et valeur facultative.</p></div>
+    <div class="card soft"><h4>Momentum</h4><p>Progression récente et réponse attendue.</p></div>
+    <div class="card soft"><h4>Relation</h4><p>Température et temps depuis le dernier échange.</p></div>
+    <div class="card soft"><h4>Risque</h4><p>Refroidissement, blocage ou absence de prochaine action.</p></div>
+    <div class="card soft"><h4>Choix humain</h4><p>Priorité manuelle, report ou exception motivée.</p></div>
+  </div>
+
+  <div class="quote" style="font-size:14pt">
+    Prioritaire aujourd'hui : décision attendue dans deux jours, aucun échange depuis sept jours et proposition déjà consultée.
+    <small>Exemple d'explication fournie par Filon</small>
+  </div>
+
+  <div class="footer-line"></div><div class="page-footer">Filon · Boucle quotidienne</div><div class="page-number">06</div>
+</section>
+
+<section class="page">
+  <div class="section-label">06 · Architecture de l'information</div>
+  <h2>Une navigation organisée autour des intentions.</h2>
+  <div class="nav-map">
+    <div class="card accent-card">
+      <div class="nav-item"><div class="nav-code">01</div><div><h3>Aujourd'hui</h3><p>Que dois-je faire maintenant ?</p></div></div>
+      <div class="nav-item"><div class="nav-code">02</div><div><h3>Captures</h3><p>Qu'est-ce qui mérite mon attention ?</p></div></div>
+      <div class="nav-item"><div class="nav-code">03</div><div><h3>Relations</h3><p>Qui est-ce que je connais ?</p></div></div>
+      <div class="nav-item"><div class="nav-code">04</div><div><h3>Opportunités</h3><p>Quels résultats sont poursuivis ?</p></div></div>
+      <div class="nav-item"><div class="nav-code">05</div><div><h3>Développement</h3><p>Que faire après une victoire ?</p></div></div>
+    </div>
+    <div>
+      <table>
+        <tr><th>Page actuelle</th><th>Nouvelle place</th></tr>
+        <tr><td>Dashboard</td><td>Aujourd'hui</td></tr>
+        <tr><td>Relances</td><td>Actions dans Aujourd'hui et les fiches</td></tr>
+        <tr><td>Entreprises</td><td>Vue organisationnelle de Relations</td></tr>
+        <tr><td>Veille</td><td>Source automatique de Captures</td></tr>
+        <tr><td>Propositions</td><td>Jalon d'opportunité et Bibliothèque</td></tr>
+        <tr><td>Documents</td><td>Bibliothèque et pièces contextuelles</td></tr>
+        <tr><td>Copilot</td><td>Assistant global et contextuel</td></tr>
+        <tr><td>Pipeline</td><td>Vue Kanban d'Opportunités</td></tr>
+      </table>
+
+      <div class="card soft" style="margin-top:4mm">
+        <h3>Navigation secondaire</h3>
+        <p>Analyses · Bibliothèque · Organisation · Paramètres</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="screens-2">
+    <div class="screenshot-frame"><img src="filon--app-opportunites.png" alt="Opportunités actuelles"><div class="screenshot-caption">OPPORTUNITÉS · État actuel</div></div>
+    <div class="screenshot-frame"><img src="filon--app-relances.png" alt="Relances actuelles"><div class="screenshot-caption">RELANCES · À intégrer dans l'action</div></div>
+  </div>
+
+  <div class="footer-line"></div><div class="page-footer">Filon · Navigation cible</div><div class="page-number">07</div>
+</section>
+
+<section class="page">
+  <div class="section-label">07 · Captures et relations</div>
+  <h2>Une entrée unique, une mémoire durable.</h2>
+  <p class="lead">Toute nouvelle piste entre dans une boîte de capture avant de devenir une relation ou une opportunité. Cette étape protège le pipeline contre le bruit et les doublons.</p>
+
+  <div class="flow">
+    <div class="flow-step"><b>Signal</b>Saisie, URL, import, veille ou recommandation.</div>
+    <div class="flow-step"><b>Capture</b>File de qualification commune.</div>
+    <div class="flow-step"><b>Rapprocher</b>Détection des relations existantes.</div>
+    <div class="flow-step"><b>Décider</b>Relation seule ou résultat poursuivi.</div>
+    <div class="flow-step"><b>Planifier</b>Parcours et prochaine action.</div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3>Fiche relation</h3>
+      <ul>
+        <li>Identité, coordonnées et organisation.</li>
+        <li>Contexte de rencontre et source.</li>
+        <li>Historique des interactions.</li>
+        <li>Opportunités passées et actives.</li>
+        <li>Engagements, documents et notes.</li>
+        <li>Température et prochaine action.</li>
+      </ul>
+    </div>
+    <div class="card success-card">
+      <h3>Résultat attendu</h3>
+      <ul>
+        <li>Capture en moins de dix secondes.</li>
+        <li>Aucun doublon créé silencieusement.</li>
+        <li>Aucun résultat de veille injecté automatiquement dans le pipeline.</li>
+        <li>Une relation peut survivre à plusieurs opportunités.</li>
+        <li>Un ancien client peut redevenir prospect sans recréation.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="screens-2">
+    <div class="screenshot-frame"><img src="filon--app-entreprises.png" alt="Entreprises actuelles"><div class="screenshot-caption">ENTREPRISES · Futur onglet de Relations</div></div>
+    <div class="screenshot-frame"><img src="filon-opportunite-form-open.png" alt="Formulaire actuel"><div class="screenshot-caption">CRÉATION · À simplifier et contextualiser</div></div>
+  </div>
+
+  <div class="footer-line"></div><div class="page-footer">Filon · Captures et mémoire relationnelle</div><div class="page-number">08</div>
+</section>
+
+<section class="page">
+  <div class="section-label">08 · Copilote et confiance</div>
+  <h2>Une assistance contextuelle, pas un chat de plus.</h2>
+  <table>
+    <tr><th>Contexte</th><th>Assistance attendue</th><th>Niveau d'autonomie</th></tr>
+    <tr><td>Capture</td><td>Identifier, enrichir, dédupliquer</td><td>Suggestion puis confirmation</td></tr>
+    <tr><td>Relation</td><td>Résumer l'histoire, signaler un refroidissement</td><td>Analyse automatique</td></tr>
+    <tr><td>Opportunité</td><td>Proposer l'action et expliquer la priorité</td><td>Suggestion automatique</td></tr>
+    <tr><td>Rendez-vous</td><td>Préparer objectifs et questions</td><td>Brouillon automatique</td></tr>
+    <tr><td>Interaction</td><td>Extraire résultat, engagements et dates</td><td>Confirmation légère</td></tr>
+    <tr><td>Communication</td><td>Rédiger un message contextuel</td><td>Envoi confirmé obligatoirement</td></tr>
+  </table>
+
+  <div class="grid-2" style="margin-top:5mm">
+    <div class="card accent-card">
+      <h3>Moindre accès nécessaire</h3>
+      <p>Le copilote reçoit la page, les relations et les opportunités strictement utiles à la tâche. Il n'aspire pas automatiquement tout le carnet.</p>
+    </div>
+    <div class="card">
+      <h3>Traçabilité</h3>
+      <p>Les accès, suggestions, modifications et confirmations sont journalisés. Les éléments utilisés pour recommander restent identifiables.</p>
+    </div>
+    <div class="card">
+      <h3>Séparation des espaces</h3>
+      <p>Les notes et relations personnelles ne sont jamais exposées implicitement dans une analyse d'équipe.</p>
+    </div>
+    <div class="card warning-card">
+      <h3>Actions sensibles</h3>
+      <p>Envoi externe, suppression, fermeture ou partage nécessitent une confirmation adaptée au risque.</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:6mm">Filon orchestre, les canaux communiquent</h3>
+  <p>WhatsApp, e-mail, téléphone et agenda restent les canaux habituels. Filon prépare l'action, ouvre le bon canal, mémorise le résultat et programme la suite.</p>
+
+  <div class="decision-banner"><p>Le chat reste disponible pour les demandes libres, mais il n'est plus le centre de l'expérience.</p></div>
+
+  <div class="footer-line"></div><div class="page-footer">Filon · Copilote et protection des données</div><div class="page-number">09</div>
+</section>
+
+<section class="page">
+  <div class="section-label">09 · Modèle économique</div>
+  <h2>Trois offres lisibles, une offre Équipe séparée.</h2>
+  <p>La grille actuelle comporte cinq paliers de 0 à 35 000 XOF par mois. La nouvelle proposition vend des résultats et non des mécanismes techniques.</p>
+
+  <div class="price-grid">
+    <div class="price-card">
+      <div class="eyebrow">Découverte</div>
+      <div class="price">0 XOF</div>
+      <ul>
+        <li>50 relations</li>
+        <li>10 opportunités actives</li>
+        <li>1 parcours métier</li>
+        <li>Aujourd'hui et prochaine action</li>
+        <li>Capture manuelle</li>
+        <li>Aucun espace d'équipe</li>
+      </ul>
+    </div>
+    <div class="price-card featured">
+      <div class="eyebrow">Pro</div>
+      <div class="price">5 000 XOF <span>/ mois</span></div>
+      <ul>
+        <li>Relations et opportunités illimitées</li>
+        <li>Plusieurs parcours</li>
+        <li>Imports et déduplication</li>
+        <li>Automatisations et analyses</li>
+        <li>Documents, propositions, export</li>
+        <li>50 000 XOF par an</li>
+      </ul>
+    </div>
+    <div class="price-card">
+      <div class="eyebrow">Copilot</div>
+      <div class="price">12 000 XOF <span>/ mois</span></div>
+      <ul>
+        <li>Tout Pro</li>
+        <li>Brief enrichi</li>
+        <li>Résumés et préparation</li>
+        <li>Extraction des engagements</li>
+        <li>Brouillons contextuels</li>
+        <li>120 000 XOF par an</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="grid-2" style="margin-top:5mm">
+    <div class="card soft">
+      <h3>Équipe</h3>
+      <p>Offre distincte, initialement sur demande. Espaces partagés, rôles, affectations, supervision et rapports. Prix final après observation de vrais usages.</p>
+    </div>
+    <div class="card warning-card">
+      <h3>Migration</h3>
+      <p>Maintien temporaire des droits et prix existants. Nouvelle grille d'abord appliquée aux nouveaux abonnements, puis bascule contrôlée.</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:5mm">Principes conservés</h3>
+  <ul class="check-list">
+    <li>Deux mois offerts sur l'annuel.</li>
+    <li>Carte récurrente et mobile money ponctuel.</li>
+    <li>Découverte sans carte bancaire.</li>
+    <li>Crédits IA relégués au suivi de consommation, pas à la promesse principale.</li>
+  </ul>
+
+  <div class="footer-line"></div><div class="page-footer">Filon · Tarification cible</div><div class="page-number">10</div>
+</section>
+
+<section class="page">
+  <div class="section-label">10 · Feuille de route</div>
+  <h2>Huit vagues, une migration sans perte.</h2>
+  <div class="timeline">
+    <div class="wave"><div class="wave-id">VAGUE 01</div><div><div class="wave-title">Fondations métier</div><p class="small">Relation permanente, opportunité épisodique, parcours, phases communes, prochaines actions et historique.</p></div><div class="wave-gate">Sortie : données migrées et action possible sur chaque opportunité.</div></div>
+    <div class="wave"><div class="wave-id">VAGUE 02</div><div><div class="wave-title">Boucle quotidienne</div><p class="small">Aujourd'hui, moteur de priorité, actions rapides, résultat et onboarding orienté action.</p></div><div class="wave-gate">Sortie : traiter sa journée depuis une page.</div></div>
+    <div class="wave"><div class="wave-id">VAGUE 03</div><div><div class="wave-title">Acquisition relationnelle</div><p class="small">Captures, déduplication, relations, entreprises, imports et veille comme source.</p></div><div class="wave-gate">Sortie : circuit unique de qualification.</div></div>
+    <div class="wave"><div class="wave-id">VAGUE 04</div><div><div class="wave-title">Conversion mesurable</div><p class="small">Critères de sortie, jalons, personnalisation encadrée et analyses.</p></div><div class="wave-gate">Sortie : indicateurs fondés sur des faits.</div></div>
+    <div class="wave"><div class="wave-id">VAGUE 05</div><div><div class="wave-title">Continuité relationnelle</div><p class="small">Parcours post-victoire, renouvellement, recommandation, intégration et réachat.</p></div><div class="wave-gate">Sortie : suite adaptée après chaque victoire.</div></div>
+    <div class="wave"><div class="wave-id">VAGUE 06</div><div><div class="wave-title">Copilote contextuel</div><p class="small">Assistance intégrée, résumés, préparation, extraction, permissions et traçabilité.</p></div><div class="wave-gate">Sortie : assistance sans chat générique obligatoire.</div></div>
+    <div class="wave"><div class="wave-id">VAGUE 07</div><div><div class="wave-title">Offre et acquisition</div><p class="small">Landing, positionnement, tarifs, migration des abonnements et conversion.</p></div><div class="wave-gate">Sortie : offres compréhensibles et limites appliquées.</div></div>
+    <div class="wave"><div class="wave-id">VAGUE 08</div><div><div class="wave-title">Équipe</div><p class="small">Espaces, rôles, affectations, supervision, rapports et offre dédiée.</p></div><div class="wave-gate">Sortie : partage sans exposition des données privées.</div></div>
+  </div>
+
+  <div class="decision-banner"><p>La première livraison visible réunit les fondations, Aujourd'hui et la règle de prochaine action. Elle ne se limite pas à une nouvelle page.</p></div>
+
+  <div class="footer-line"></div><div class="page-footer">Filon · Séquence de transformation</div><div class="page-number">11</div>
+</section>
+
+<section class="page">
+  <div class="section-label">11 · Gouvernance</div>
+  <h2>Mesurer la valeur et contenir le périmètre.</h2>
+  <div class="grid-2">
+    <div>
+      <h3>Indicateurs de réussite</h3>
+      <table>
+        <tr><th>Niveau</th><th>Mesures</th></tr>
+        <tr><td>Activation</td><td>Première relation, opportunité, action et délai jusqu'à exécution</td></tr>
+        <tr><td>Discipline</td><td>Taux de couverture du suivi et actions réalisées à temps</td></tr>
+        <tr><td>Progression</td><td>Opportunités ayant avancé et durée par phase</td></tr>
+        <tr><td>Résultat</td><td>Victoires, conversion, raisons de perte</td></tr>
+        <tr><td>Économie</td><td>Conversion payante, coût IA, marge et rétention</td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>Risques et réponses</h3>
+      <table>
+        <tr><th>Risque</th><th>Réponse</th></tr>
+        <tr><td>Universalité excessive</td><td>Modèle commun, parcours par opportunité</td></tr>
+        <tr><td>Surcharge de saisie</td><td>Capture rapide et enrichissement progressif</td></tr>
+        <tr><td>Priorité arbitraire</td><td>Règles explicables et choix humain</td></tr>
+        <tr><td>IA intrusive</td><td>Accès minimal et confirmation</td></tr>
+        <tr><td>Migration destructrice</td><td>Schéma additif et compatibilité</td></tr>
+        <tr><td>Refonte interminable</td><td>Critère de sortie par vague</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="grid-2" style="margin-top:6mm">
+    <div class="card danger-card">
+      <h3>Chantiers temporairement gelés</h3>
+      <ul>
+        <li>Nouveaux connecteurs de veille.</li>
+        <li>Nouveaux modes IA.</li>
+        <li>Raffinements isolés du chat.</li>
+        <li>Fonctions avancées d'équipe.</li>
+        <li>Nouveaux formats documentaires.</li>
+      </ul>
+    </div>
+    <div class="card success-card">
+      <h3>Travaux maintenus</h3>
+      <ul>
+        <li>Corrections de production.</li>
+        <li>Sécurité et paiements.</li>
+        <li>Accessibilité et performance.</li>
+        <li>Instrumentation.</li>
+        <li>Migrations de données.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="quote" style="font-size:13pt">
+    Un nouvel utilisateur capture une relation, crée une opportunité, planifie une action, la retrouve dans Aujourd'hui, l'exécute et enregistre le résultat sans se perdre.
+    <small>Critère de reprise des chantiers périphériques</small>
+  </div>
+
+  <div class="footer-line"></div><div class="page-footer">Filon · Mesure, risques et périmètre</div><div class="page-number">12</div>
+</section>
+
+<section class="page">
+  <div class="section-label">12 · Points d'expertise</div>
+  <h2>Ce que l'expert doit encore challenger.</h2>
+  <p class="lead">Les orientations structurantes sont proposées pour validation. L'expert est invité à renforcer leur exécution à partir de preuves, d'entretiens et de tests d'utilisabilité.</p>
+
+  <div class="grid-2">
+    <div class="card"><div class="eyebrow">Positionnement</div><h3>Promesse et vocabulaire</h3><p>Tester la compréhension de « système personnel de suivi relationnel » et les variantes de formulation.</p></div>
+    <div class="card"><div class="eyebrow">Segments</div><h3>Parcours initiaux</h3><p>Identifier les parcours réellement prioritaires à partir des utilisateurs et prospects disponibles.</p></div>
+    <div class="card"><div class="eyebrow">Aujourd'hui</div><h3>Hiérarchie des actions</h3><p>Déterminer l'ordre, la densité et les explications qui facilitent la décision sans surcharge.</p></div>
+    <div class="card"><div class="eyebrow">Données</div><h3>Température relationnelle</h3><p>Calibrer les signaux, exceptions et possibilités de correction manuelle.</p></div>
+    <div class="card"><div class="eyebrow">Économie</div><h3>Limites et équipe</h3><p>Valider les plafonds Découverte et la volonté de payer pour la collaboration.</p></div>
+    <div class="card"><div class="eyebrow">Migration</div><h3>Abonnés historiques</h3><p>Définir les avantages, messages et conditions de bascule sans créer de défiance.</p></div>
+  </div>
+
+  <h3 style="margin-top:6mm">Informations attendues avant développement détaillé</h3>
+  <ul class="check-list">
+    <li>Avis formel sur le modèle métier et la navigation.</li>
+    <li>Risques ou dépendances non identifiés.</li>
+    <li>Hypothèses nécessitant une recherche utilisateur.</li>
+    <li>Critères de priorité entre les vagues.</li>
+    <li>Contraintes organisationnelles, juridiques ou commerciales.</li>
+    <li>Décision de lancement, ajustement ou suspension.</li>
+  </ul>
+
+  <div class="footer-line"></div><div class="page-footer">Filon · Mandat de revue expert</div><div class="page-number">13</div>
+</section>
+
+<section class="page approval">
+  <div class="section-label">13 · Validation</div>
+  <h2>Avis avant engagement du développement.</h2>
+  <p class="lead">Cette validation autorise la préparation des spécifications détaillées et de la première vague. Elle ne constitue pas une autorisation de déploiement global sans les contrôles prévus.</p>
+
+  <div class="choice-row">
+    <div class="choice"><span class="box"></span> Accord de principe</div>
+    <div class="choice"><span class="box"></span> Accord avec réserves</div>
+    <div class="choice"><span class="box"></span> Reprise nécessaire</div>
+  </div>
+
+  <h3>Observations, conditions ou réserves</h3>
+  <div class="comment-area"></div>
+
+  <h3>Décisions spécifiques</h3>
+  <table>
+    <tr><th>Élément</th><th>Validé</th><th>À revoir</th><th>Commentaire</th></tr>
+    <tr><td>Positionnement et promesse</td><td>□</td><td>□</td><td></td></tr>
+    <tr><td>Modèle Relation · Opportunité · Développement</td><td>□</td><td>□</td><td></td></tr>
+    <tr><td>Navigation et boucle Aujourd'hui</td><td>□</td><td>□</td><td></td></tr>
+    <tr><td>Politique du copilote et des données</td><td>□</td><td>□</td><td></td></tr>
+    <tr><td>Tarification cible</td><td>□</td><td>□</td><td></td></tr>
+    <tr><td>Feuille de route et gel du périmètre</td><td>□</td><td>□</td><td></td></tr>
+  </table>
+
+  <div class="signatures">
+    <div class="signature">Nom, fonction, date et signature de la hiérarchie</div>
+    <div class="signature">Nom, qualité, date et signature de l'expert</div>
+  </div>
+
+  <div style="margin-top:auto;display:flex;justify-content:space-between;align-items:end;color:var(--subtle);font-size:8pt">
+    <div><strong>Réf. MDL-PRJ-PRD-2026-01</strong><br>Document confidentiel</div>
+    <div style="text-align:right">Filon · Note de validation<br>Version 1 · 21 juillet 2026</div>
+  </div>
+</section>
+
+</body>
+</html>

@@ -1,6 +1,7 @@
 import { ConvexError, v } from 'convex/values'
 import { mutation } from './_generated/server'
 import { requireUser } from './lib/withUser'
+import { enforceRateLimit } from './lib/rateLimiter'
 
 /**
  * Domaine feedback · soumission depuis le widget in-app.
@@ -49,6 +50,7 @@ export const submit = mutation({
   },
   handler: async (ctx, args) => {
     const { userId } = await requireUser(ctx)
+    await enforceRateLimit(ctx, 'feedbackSubmit', userId)
     const message = args.message.trim()
     if (message.length === 0) {
       throw validationError('Le message ne peut pas être vide.')

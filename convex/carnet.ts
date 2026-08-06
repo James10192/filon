@@ -8,8 +8,8 @@ import { attachOpportunityTitles } from './followups'
 
 /**
  * Domaine carnet partagé · lecture seule, par un MANAGER, du carnet
- * (contacts / entreprises / relances) d'un membre de SON organisation qui n'a
- * pas désactivé le partage (défaut ON). Source de vérité d'accès = `withOrg`
+ * (contacts / entreprises / relances) d'un membre de SON organisation qui a
+ * explicitement activé le partage. Source de vérité d'accès = `withOrg`
  * (`requireOrgManagerCanReadCarnet`). N'affecte PAS la visibilité pipeline
  * (team.pipeline / team.metrics restent inchangés).
  *
@@ -27,7 +27,8 @@ const memberArgs = {
 /**
  * UNIQUE point d'accès au carnet d'un membre. Vérifie le droit (manager + même
  * org + partage activé) PUIS exécute le `reader`. Ne JAMAIS lire le carnet d'un
- * `targetUserId` autrement que via ce wrapper.
+ * `targetUserId` autrement que via ce wrapper. Les notes ne font volontairement
+ * pas partie du carnet partageable : elles restent privées, sans exception.
  */
 async function readCarnetForMember<T>(
   ctx: QueryCtx,

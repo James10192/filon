@@ -56,6 +56,15 @@ import type * as crons from "../crons.js";
 import type * as dashboard from "../dashboard.js";
 import type * as demo from "../demo.js";
 import type * as documents from "../documents.js";
+import type * as domain_actions from "../domain/actions.js";
+import type * as domain_billing_paymentEvents from "../domain/billing/paymentEvents.js";
+import type * as domain_closing from "../domain/closing.js";
+import type * as domain_deals from "../domain/deals.js";
+import type * as domain_growth from "../domain/growth.js";
+import type * as domain_needs from "../domain/needs.js";
+import type * as domain_ownership from "../domain/ownership.js";
+import type * as domain_relationships from "../domain/relationships.js";
+import type * as featureFlags from "../featureFlags.js";
 import type * as feedback from "../feedback.js";
 import type * as followups from "../followups.js";
 import type * as http from "../http.js";
@@ -66,10 +75,12 @@ import type * as lib_assistant from "../lib/assistant.js";
 import type * as lib_copilotRouting from "../lib/copilotRouting.js";
 import type * as lib_credits from "../lib/credits.js";
 import type * as lib_crypto from "../lib/crypto.js";
+import type * as lib_email from "../lib/email.js";
 import type * as lib_flagPriority from "../lib/flagPriority.js";
 import type * as lib_paystackPlans from "../lib/paystackPlans.js";
 import type * as lib_plan from "../lib/plan.js";
 import type * as lib_pricing from "../lib/pricing.js";
+import type * as lib_rateLimiter from "../lib/rateLimiter.js";
 import type * as lib_recoveryCaseHelpers from "../lib/recoveryCaseHelpers.js";
 import type * as lib_referral from "../lib/referral.js";
 import type * as lib_teamMetrics from "../lib/teamMetrics.js";
@@ -78,6 +89,7 @@ import type * as lib_withOrg from "../lib/withOrg.js";
 import type * as lib_withUser from "../lib/withUser.js";
 import type * as members from "../members.js";
 import type * as memory from "../memory.js";
+import type * as migrations from "../migrations.js";
 import type * as mlm from "../mlm.js";
 import type * as notifications from "../notifications.js";
 import type * as observability from "../observability.js";
@@ -108,6 +120,7 @@ import type * as veille_aiData from "../veille/aiData.js";
 import type * as veille_connectors from "../veille/connectors.js";
 import type * as veille_monitor from "../veille/monitor.js";
 import type * as veille_parser from "../veille/parser.js";
+import type * as veille_urlGuard from "../veille/urlGuard.js";
 
 import type {
   ApiFromModules,
@@ -164,6 +177,15 @@ declare const fullApi: ApiFromModules<{
   dashboard: typeof dashboard;
   demo: typeof demo;
   documents: typeof documents;
+  "domain/actions": typeof domain_actions;
+  "domain/billing/paymentEvents": typeof domain_billing_paymentEvents;
+  "domain/closing": typeof domain_closing;
+  "domain/deals": typeof domain_deals;
+  "domain/growth": typeof domain_growth;
+  "domain/needs": typeof domain_needs;
+  "domain/ownership": typeof domain_ownership;
+  "domain/relationships": typeof domain_relationships;
+  featureFlags: typeof featureFlags;
   feedback: typeof feedback;
   followups: typeof followups;
   http: typeof http;
@@ -174,10 +196,12 @@ declare const fullApi: ApiFromModules<{
   "lib/copilotRouting": typeof lib_copilotRouting;
   "lib/credits": typeof lib_credits;
   "lib/crypto": typeof lib_crypto;
+  "lib/email": typeof lib_email;
   "lib/flagPriority": typeof lib_flagPriority;
   "lib/paystackPlans": typeof lib_paystackPlans;
   "lib/plan": typeof lib_plan;
   "lib/pricing": typeof lib_pricing;
+  "lib/rateLimiter": typeof lib_rateLimiter;
   "lib/recoveryCaseHelpers": typeof lib_recoveryCaseHelpers;
   "lib/referral": typeof lib_referral;
   "lib/teamMetrics": typeof lib_teamMetrics;
@@ -186,6 +210,7 @@ declare const fullApi: ApiFromModules<{
   "lib/withUser": typeof lib_withUser;
   members: typeof members;
   memory: typeof memory;
+  migrations: typeof migrations;
   mlm: typeof mlm;
   notifications: typeof notifications;
   observability: typeof observability;
@@ -216,6 +241,7 @@ declare const fullApi: ApiFromModules<{
   "veille/connectors": typeof veille_connectors;
   "veille/monitor": typeof veille_monitor;
   "veille/parser": typeof veille_parser;
+  "veille/urlGuard": typeof veille_urlGuard;
 }>;
 
 /**
@@ -247,4 +273,5 @@ export declare const internal: FilterApi<
 export declare const components: {
   betterAuth: import("@convex-dev/better-auth/_generated/component.js").ComponentApi<"betterAuth">;
   agent: import("@convex-dev/agent/_generated/component.js").ComponentApi<"agent">;
+  rateLimiter: import("@convex-dev/rate-limiter/_generated/component.js").ComponentApi<"rateLimiter">;
 };

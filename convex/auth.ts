@@ -9,6 +9,7 @@ import { components, internal } from './_generated/api'
 import type { DataModel, Id } from './_generated/dataModel'
 import authConfig from './auth.config'
 import { trackServer, SERVER_EVENTS } from './lib/track'
+import { sendPasswordResetEmail } from './lib/email'
 
 const siteUrl = process.env.SITE_URL ?? 'http://localhost:3000'
 
@@ -150,6 +151,14 @@ export const createAuth = (ctx: GenericCtx<DataModel>) =>
       autoSignIn: true,
       minPasswordLength: 8,
       requireEmailVerification: false,
+      // Réinitialisation de mot de passe. Sans ce handler, un utilisateur
+      // e-mail/mot de passe qui oublie son mot de passe perd définitivement son
+      // compte. Le lien pointe vers la page front qui appelle `resetPassword`
+      // avec le jeton. Échoue bruyamment si Resend n'est pas configuré.
+      sendResetPassword: async ({ user, token }) => {
+        const resetUrl = `${siteUrl}/reinitialiser-mot-de-passe?token=${encodeURIComponent(token)}`
+        await sendPasswordResetEmail({ to: user.email, resetUrl })
+      },
     },
     // Providers OAuth (Google, GitHub) ajoutés seulement si leurs secrets sont
     // posés (cf. buildSocialProviders). Les boutons sociaux côté client

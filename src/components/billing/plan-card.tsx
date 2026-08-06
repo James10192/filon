@@ -33,8 +33,7 @@ export function PlanCardShell({
   isCurrent?: boolean
   cta: ReactNode
 }) {
-  const isPaid = data.key !== 'free'
-  const price = isPaid ? PRICING[data.key as PaidPlan][interval] : null
+  const price = data.priceKey ? PRICING[data.priceKey][interval] : null
 
   return (
     <div
@@ -56,7 +55,9 @@ export function PlanCardShell({
       <p className="mt-1 min-h-10 text-sm text-fg-muted">{data.tagline()}</p>
 
       <div className="mt-4 flex min-h-9 items-baseline gap-1.5">
-        {price === null ? (
+        {data.quoteOnly ? (
+          <span className="text-xl font-semibold text-fg">Sur demande</span>
+        ) : price === null ? (
           <span className="assay text-3xl font-semibold text-fg">0 XOF</span>
         ) : (
           <>
@@ -101,7 +102,7 @@ export function PlanCard({
   pendingPlan: PaidPlan | null
   onUpgrade: (plan: PaidPlan) => void
 }) {
-  const isPaid = data.key !== 'free'
+  const isPaid = Boolean(data.priceKey)
 
   return (
     <PlanCardShell
@@ -111,6 +112,8 @@ export function PlanCard({
       cta={
         <PlanCta
           planKey={data.key}
+          priceKey={data.priceKey}
+          quoteOnly={data.quoteOnly ?? false}
           isCurrent={isCurrent}
           isPaid={isPaid}
           featured={data.featured ?? false}
@@ -124,6 +127,8 @@ export function PlanCard({
 
 function PlanCta({
   planKey,
+  priceKey,
+  quoteOnly,
   isCurrent,
   isPaid,
   featured,
@@ -131,6 +136,8 @@ function PlanCta({
   onUpgrade,
 }: {
   planKey: PlanCardData['key']
+  priceKey?: PaidPlan
+  quoteOnly: boolean
   isCurrent: boolean
   isPaid: boolean
   featured: boolean
@@ -144,6 +151,9 @@ function PlanCta({
       </Button>
     )
   }
+  if (quoteOnly) {
+    return <Button variant="outline" className="w-full" asChild><a href="mailto:bonjour@filon.ci?subject=Filon%20Équipe">Parler à l’équipe</a></Button>
+  }
   if (!isPaid) {
     return (
       <Button variant="outline" className="w-full" disabled>
@@ -151,7 +161,7 @@ function PlanCta({
       </Button>
     )
   }
-  const plan = planKey as PaidPlan
+  const plan = priceKey ?? (planKey as PaidPlan)
   const isPending = pendingPlan === plan
   return (
     <Button

@@ -135,7 +135,15 @@ function ConnexionPage() {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="password">{m.login_label_password()}</Label>
+          <div className="flex items-center justify-between gap-2">
+            <Label htmlFor="password">{m.login_label_password()}</Label>
+            <Link
+              to="/mot-de-passe-oublie"
+              className="text-xs text-fg-subtle underline-offset-2 transition-colors hover:text-fg hover:underline"
+            >
+              Mot de passe oublié ?
+            </Link>
+          </div>
           <Input
             id="password"
             name="password"

@@ -14,7 +14,7 @@ import {
 } from './lib/recoveryCaseHelpers'
 
 const DEFAULT_DELAY_DAYS = 3
-const FOLLOWUP_LABEL = 'VÃ©rifier si le paiement a Ã©tÃ© reÃ§u'
+const FOLLOWUP_LABEL = 'Vérifier si le paiement a été reçu'
 const DEFAULT_MAILPULSE_URL = 'https://mailpulse-two.vercel.app'
 const MAILPULSE_RECOVERY_STATUSES = new Set([
   'mailpulse_pending',
@@ -123,7 +123,7 @@ export const markPrompted = mutation({
     const { userId } = await requireUser(ctx)
     const opportunity = await ownedOpportunity(ctx, userId, args.opportunityId)
     if (opportunity.stage !== 'won') {
-      throw validationError('Le recouvrement concerne une opportunitÃ© gagnÃ©e')
+      throw validationError('Le recouvrement concerne une opportunité gagnée')
     }
     if (opportunity.recoveryStatus !== undefined) return null
 
@@ -143,7 +143,7 @@ export const createManualFollowup = mutation({
     const { userId } = await requireUser(ctx)
     const opportunity = await ownedOpportunity(ctx, userId, args.opportunityId)
     if (opportunity.stage !== 'won') {
-      throw validationError('Le recouvrement concerne une opportunitÃ© gagnÃ©e')
+      throw validationError('Le recouvrement concerne une opportunité gagnée')
     }
     if (opportunity.recoveryFollowupId) return opportunity.recoveryFollowupId
 
@@ -179,7 +179,7 @@ export const markMailpulsePending = mutation({
     const { userId } = await requireUser(ctx)
     const opportunity = await ownedOpportunity(ctx, userId, args.opportunityId)
     if (opportunity.stage !== 'won') {
-      throw validationError('Le recouvrement concerne une opportunitÃ© gagnÃ©e')
+      throw validationError('Le recouvrement concerne une opportunité gagnée')
     }
     const now = Date.now()
     const caseId = await ensureRecoveryCase(ctx, userId, opportunity)
@@ -210,7 +210,7 @@ export const loadMailpulseRecoveryContext = internalQuery({
       throw forbiddenError('Non autorise')
     }
     if (opportunity.stage !== 'won') {
-      throw validationError('Le recouvrement concerne une opportunitÃ© gagnÃ©e')
+      throw validationError('Le recouvrement concerne une opportunité gagnée')
     }
 
     const settings = await ctx.db
@@ -219,7 +219,7 @@ export const loadMailpulseRecoveryContext = internalQuery({
       .unique()
     const apiKey = settings?.mailpulseApiKey?.trim()
     if (!apiKey) {
-      throw validationError('Configurez une clÃ© API MailPulse avant de lancer le recouvrement')
+      throw validationError('Configurez une clé API MailPulse avant de lancer le recouvrement')
     }
 
     const contact = opportunity.contactId
@@ -327,7 +327,7 @@ export const startMailpulseRecovery = action({
       .catch(() => null)) as MailpulseRecoveryResponse | null
     if (!response.ok) {
       throw validationError(
-        body?.error?.message ?? "MailPulse n'a pas acceptÃ© cette opportunitÃ©",
+        body?.error?.message ?? "MailPulse n'a pas accepté cette opportunité",
       )
     }
 

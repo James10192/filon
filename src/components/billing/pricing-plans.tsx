@@ -25,7 +25,6 @@ import {
 } from '~/lib/billing/plan'
 import { IntervalToggle } from './interval-toggle'
 import { PlanCard } from './plan-card'
-import { PlanComparison } from './plan-comparison'
 import { PLAN_CARDS } from './plan-catalogue'
 
 /**
@@ -94,36 +93,13 @@ export function PricingPlans() {
 
       <IntervalToggle value={interval} onChange={setInterval} />
 
-      <div className="grid items-stretch gap-4 sm:auto-rows-fr sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-        {PLAN_CARDS.map((card, i) => (
-          <div
-            key={card.key}
-            className="reveal h-full"
-            style={{ '--reveal-i': i } as React.CSSProperties}
-          >
-            <PlanCard
-              data={card}
-              interval={interval}
-              isCurrent={card.key === currentPlan}
-              pendingPlan={pendingPlan}
-              onUpgrade={(plan) => {
-                track(EVENTS.upgrade_cta_clicked, {
-                  plan,
-                  current_plan: currentPlan,
-                  interval,
-                })
-                setChoicePlan(plan)
-              }}
-            />
-          </div>
-        ))}
+      <div className="grid items-stretch gap-4 sm:auto-rows-fr sm:grid-cols-2 xl:grid-cols-4">
+        {PLAN_CARDS.map((card) => <PlanCard key={card.key} data={card} interval={interval} isCurrent={card.key === currentPlan || (card.key === 'discovery_v2' && currentPlan === 'free')} pendingPlan={pendingPlan} onUpgrade={(plan) => setChoicePlan(plan)} />)}
       </div>
 
       <p className="text-center text-sm text-fg-subtle">
         {m.app_payment_methods_hint()}
       </p>
-
-      <PlanComparison />
 
       <PaymentChannelDialog
         plan={choicePlan}

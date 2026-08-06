@@ -14,7 +14,27 @@
 
 import { ConvexError } from 'convex/values'
 
-export type Plan = 'free' | 'pro' | 'pro_ai' | 'copilot' | 'copilot_max'
+export type LegacyPlan = 'free' | 'pro' | 'pro_ai' | 'copilot' | 'copilot_max'
+export type V2Plan = 'discovery_v2' | 'pro_v2' | 'copilot_v2' | 'team_v2'
+export type Plan = LegacyPlan | V2Plan
+
+export type PlanEntitlements = {
+  aiCredits: number
+  team: boolean
+  quoteOnly: boolean
+}
+
+export const PLAN_ENTITLEMENTS: Record<Plan, PlanEntitlements> = {
+  free: { aiCredits: 25, team: false, quoteOnly: false },
+  pro: { aiCredits: 100, team: true, quoteOnly: false },
+  pro_ai: { aiCredits: 300, team: true, quoteOnly: false },
+  copilot: { aiCredits: 6000, team: true, quoteOnly: false },
+  copilot_max: { aiCredits: 20000, team: true, quoteOnly: false },
+  discovery_v2: { aiCredits: 0, team: false, quoteOnly: false },
+  pro_v2: { aiCredits: 5000, team: false, quoteOnly: false },
+  copilot_v2: { aiCredits: 12000, team: false, quoteOnly: false },
+  team_v2: { aiCredits: 12000, team: true, quoteOnly: true },
+}
 
 /** Limites par palier. `null` = illimité. */
 export type PlanLimits = {
@@ -58,6 +78,30 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
     orgMembers: null,
   },
   copilot_max: {
+    activeOpportunities: null,
+    savedSearches: null,
+    veilleAutoMonitor: true,
+    orgMembers: null,
+  },
+  discovery_v2: {
+    activeOpportunities: 25,
+    savedSearches: 1,
+    veilleAutoMonitor: false,
+    orgMembers: 1,
+  },
+  pro_v2: {
+    activeOpportunities: null,
+    savedSearches: null,
+    veilleAutoMonitor: true,
+    orgMembers: 1,
+  },
+  copilot_v2: {
+    activeOpportunities: null,
+    savedSearches: null,
+    veilleAutoMonitor: true,
+    orgMembers: 1,
+  },
+  team_v2: {
     activeOpportunities: null,
     savedSearches: null,
     veilleAutoMonitor: true,
@@ -115,6 +159,17 @@ export function forbiddenError(
   return new ConvexError({ kind: 'FORBIDDEN', message })
 }
 
+/**
+ * Erreur « compte suspendu ». `ConvexError` typée (kind FORBIDDEN) : le message
+ * traverse jusqu'au client même en production. Émise par les gardes d'auth
+ * lorsqu'un administrateur a posé `users.suspended = true`.
+ */
+export function suspendedError(
+  message = 'Votre compte a été suspendu. Contactez le support.',
+): ConvexError<AppErrorData> {
+  return new ConvexError({ kind: 'FORBIDDEN', message })
+}
+
 /** Stages considérés « actifs » (comptés dans le cap freemium). */
 export const ACTIVE_STAGES = [
   'lead',
@@ -143,6 +198,10 @@ export const AI_MONTHLY_CREDITS: Record<Plan, number> = {
   pro_ai: 300,
   copilot: 6000,
   copilot_max: 20000,
+  discovery_v2: 0,
+  pro_v2: 5000,
+  copilot_v2: 12000,
+  team_v2: 12000,
 }
 
 /**
@@ -162,6 +221,8 @@ export function aiAccess(plan: Plan | undefined | null): boolean {
 export const FAIR_USE_PLANS: ReadonlySet<Plan> = new Set<Plan>([
   'copilot',
   'copilot_max',
+  'copilot_v2',
+  'team_v2',
 ])
 
 /** Plafond anti-abus en fair-use : multiple de l'allocation mensuelle. */
@@ -187,7 +248,8 @@ export const SAFE_PERM_MODE: PermMode = 'ask'
 
 /** Le palier autorise-t-il les modes autonomes Auto / Bypass ? */
 export function allowsAutonomousMode(plan: Plan | undefined | null): boolean {
-  return planOf(plan) === 'copilot_max'
+  const current = planOf(plan)
+  return current === 'copilot_max' || current === 'team_v2'
 }
 
 /** Le palier peut-il sélectionner ce mode de permission ? */
@@ -218,12 +280,13 @@ export function effectivePermMode(
  */
 export function allowsQualityModel(plan: Plan | undefined | null): boolean {
   const p = planOf(plan)
-  return p === 'copilot' || p === 'copilot_max'
+  return p === 'copilot' || p === 'copilot_max' || p === 'copilot_v2' || p === 'team_v2'
 }
 
 /** Le palier bénéficie-t-il du routage prioritaire (débit OpenRouter) ? */
 export function allowsPriorityRouting(plan: Plan | undefined | null): boolean {
-  return planOf(plan) === 'copilot_max'
+  const current = planOf(plan)
+  return current === 'copilot_max' || current === 'team_v2'
 }
 
 /**
@@ -235,7 +298,7 @@ export function allowsPriorityRouting(plan: Plan | undefined | null): boolean {
  */
 export function allowsByok(plan: Plan | undefined | null): boolean {
   const p = planOf(plan)
-  return p === 'copilot' || p === 'copilot_max'
+  return p === 'copilot' || p === 'copilot_max' || p === 'copilot_v2' || p === 'team_v2'
 }
 
 /** Préfixe historique (compat dev/logs) ; le mécanisme réel est `data.kind`. */

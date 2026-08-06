@@ -75,6 +75,7 @@ type PaystackEvent = {
   event: string
   data?: {
     status?: string
+    reference?: string
     amount?: number
     customer?: { email?: string; customer_code?: string }
     metadata?: {
@@ -277,6 +278,7 @@ export const handlePaystackWebhook = httpAction(async (ctx, request) => {
               : {}),
             ...(data?.customer?.email ? { email: data.customer.email } : {}),
             credits,
+            ...(data?.reference ? { reference: data.reference } : {}),
           })
         }
         break

@@ -62,7 +62,12 @@ export function LinkedAccountsSection() {
       return
     }
     setLoadError(false)
-    setAccounts(data.map((a) => ({ providerId: a.providerId, accountId: a.accountId })))
+    setAccounts(
+      data.map((a: { providerId: string; accountId: string }) => ({
+        providerId: a.providerId,
+        accountId: a.accountId,
+      })),
+    )
   }, [])
 
   useEffect(() => {

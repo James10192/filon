@@ -9,46 +9,47 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as InscriptionRouteImport } from './routes/inscription'
-import { Route as DocsRouteImport } from './routes/docs'
-import { Route as ConnexionRouteImport } from './routes/connexion'
-import { Route as AppRouteRouteImport } from './routes/app/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppRouteRouteImport } from './routes/app/route'
+import { Route as ConditionsRouteImport } from './routes/conditions'
+import { Route as ConfidentialiteRouteImport } from './routes/confidentialite'
+import { Route as ConnexionRouteImport } from './routes/connexion'
+import { Route as DocsRouteImport } from './routes/docs'
+import { Route as InscriptionRouteImport } from './routes/inscription'
+import { Route as MentionsLegalesRouteImport } from './routes/mentions-legales'
+import { Route as MotDePasseOublieRouteImport } from './routes/mot-de-passe-oublie'
+import { Route as ReinitialiserMotDePasseRouteImport } from './routes/reinitialiser-mot-de-passe'
 import { Route as AppIndexRouteImport } from './routes/app/index'
-import { Route as DocsSlugRouteImport } from './routes/docs_.$slug'
-import { Route as AppVeilleRouteImport } from './routes/app/veille'
-import { Route as AppTarifsRouteImport } from './routes/app/tarifs'
-import { Route as AppRelancesRouteImport } from './routes/app/relances'
-import { Route as AppPropositionsRouteImport } from './routes/app/propositions'
-import { Route as AppPipelineRouteImport } from './routes/app/pipeline'
-import { Route as AppParrainageRouteImport } from './routes/app/parrainage'
-import { Route as AppParametresRouteImport } from './routes/app/parametres'
-import { Route as AppOrganisationRouteImport } from './routes/app/organisation'
-import { Route as AppOpportunitesRouteImport } from './routes/app/opportunites'
-import { Route as AppEntreprisesRouteImport } from './routes/app/entreprises'
-import { Route as AppDocumentsRouteImport } from './routes/app/documents'
-import { Route as AppCopilotRouteImport } from './routes/app/copilot'
 import { Route as AppAdminRouteImport } from './routes/app/admin'
-import { Route as AppPropositionsIdRouteImport } from './routes/app/propositions.$id'
-import { Route as AppOpportunitesIdRouteImport } from './routes/app/opportunites.$id'
-import { Route as ApiPhSplatRouteImport } from './routes/api/ph.$'
+import { Route as AppAnalysesRouteImport } from './routes/app/analyses'
+import { Route as AppBesoinsRouteImport } from './routes/app/besoins'
+import { Route as AppCapturesRouteImport } from './routes/app/captures'
+import { Route as AppClientsRouteImport } from './routes/app/clients'
+import { Route as AppCopilotRouteImport } from './routes/app/copilot'
+import { Route as AppDealsRouteImport } from './routes/app/deals'
+import { Route as AppDocumentsRouteImport } from './routes/app/documents'
+import { Route as AppEntreprisesRouteImport } from './routes/app/entreprises'
+import { Route as AppOpportunitesRouteImport } from './routes/app/opportunites'
+import { Route as AppOrganisationRouteImport } from './routes/app/organisation'
+import { Route as AppParametresRouteImport } from './routes/app/parametres'
+import { Route as AppParrainageRouteImport } from './routes/app/parrainage'
+import { Route as AppPipelineRouteImport } from './routes/app/pipeline'
+import { Route as AppPropositionsRouteImport } from './routes/app/propositions'
+import { Route as AppRelancesRouteImport } from './routes/app/relances'
+import { Route as AppRelationsRouteImport } from './routes/app/relations'
+import { Route as AppTarifsRouteImport } from './routes/app/tarifs'
+import { Route as AppVeilleRouteImport } from './routes/app/veille'
+import { Route as DocsSlugRouteImport } from './routes/docs_.$slug'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth.$'
-import { Route as AppPropositionsIdApercuPdfRouteImport } from './routes/app/propositions.$id.apercu-pdf'
+import { Route as ApiPhSplatRouteImport } from './routes/api/ph.$'
+import { Route as AppOpportunitesIdRouteImport } from './routes/app/opportunites.$id'
+import { Route as AppPropositionsIdRouteImport } from './routes/app/propositions.$id'
 import { Route as ApiPropositionsIdPdfRouteImport } from './routes/api/propositions.$id.pdf'
+import { Route as AppPropositionsIdApercuPdfRouteImport } from './routes/app/propositions.$id.apercu-pdf'
 
-const InscriptionRoute = InscriptionRouteImport.update({
-  id: '/inscription',
-  path: '/inscription',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DocsRoute = DocsRouteImport.update({
-  id: '/docs',
-  path: '/docs',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ConnexionRoute = ConnexionRouteImport.update({
-  id: '/connexion',
-  path: '/connexion',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppRouteRoute = AppRouteRouteImport.update({
@@ -56,9 +57,44 @@ const AppRouteRoute = AppRouteRouteImport.update({
   path: '/app',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const ConditionsRoute = ConditionsRouteImport.update({
+  id: '/conditions',
+  path: '/conditions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConfidentialiteRoute = ConfidentialiteRouteImport.update({
+  id: '/confidentialite',
+  path: '/confidentialite',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConnexionRoute = ConnexionRouteImport.update({
+  id: '/connexion',
+  path: '/connexion',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocsRoute = DocsRouteImport.update({
+  id: '/docs',
+  path: '/docs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InscriptionRoute = InscriptionRouteImport.update({
+  id: '/inscription',
+  path: '/inscription',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MentionsLegalesRoute = MentionsLegalesRouteImport.update({
+  id: '/mentions-legales',
+  path: '/mentions-legales',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MotDePasseOublieRoute = MotDePasseOublieRouteImport.update({
+  id: '/mot-de-passe-oublie',
+  path: '/mot-de-passe-oublie',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReinitialiserMotDePasseRoute = ReinitialiserMotDePasseRouteImport.update({
+  id: '/reinitialiser-mot-de-passe',
+  path: '/reinitialiser-mot-de-passe',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppIndexRoute = AppIndexRouteImport.update({
@@ -66,64 +102,29 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRouteRoute,
 } as any)
-const DocsSlugRoute = DocsSlugRouteImport.update({
-  id: '/docs_/$slug',
-  path: '/docs/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AppVeilleRoute = AppVeilleRouteImport.update({
-  id: '/veille',
-  path: '/veille',
+const AppAdminRoute = AppAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => AppRouteRoute,
 } as any)
-const AppTarifsRoute = AppTarifsRouteImport.update({
-  id: '/tarifs',
-  path: '/tarifs',
+const AppAnalysesRoute = AppAnalysesRouteImport.update({
+  id: '/analyses',
+  path: '/analyses',
   getParentRoute: () => AppRouteRoute,
 } as any)
-const AppRelancesRoute = AppRelancesRouteImport.update({
-  id: '/relances',
-  path: '/relances',
+const AppBesoinsRoute = AppBesoinsRouteImport.update({
+  id: '/besoins',
+  path: '/besoins',
   getParentRoute: () => AppRouteRoute,
 } as any)
-const AppPropositionsRoute = AppPropositionsRouteImport.update({
-  id: '/propositions',
-  path: '/propositions',
+const AppCapturesRoute = AppCapturesRouteImport.update({
+  id: '/captures',
+  path: '/captures',
   getParentRoute: () => AppRouteRoute,
 } as any)
-const AppPipelineRoute = AppPipelineRouteImport.update({
-  id: '/pipeline',
-  path: '/pipeline',
-  getParentRoute: () => AppRouteRoute,
-} as any)
-const AppParrainageRoute = AppParrainageRouteImport.update({
-  id: '/parrainage',
-  path: '/parrainage',
-  getParentRoute: () => AppRouteRoute,
-} as any)
-const AppParametresRoute = AppParametresRouteImport.update({
-  id: '/parametres',
-  path: '/parametres',
-  getParentRoute: () => AppRouteRoute,
-} as any)
-const AppOrganisationRoute = AppOrganisationRouteImport.update({
-  id: '/organisation',
-  path: '/organisation',
-  getParentRoute: () => AppRouteRoute,
-} as any)
-const AppOpportunitesRoute = AppOpportunitesRouteImport.update({
-  id: '/opportunites',
-  path: '/opportunites',
-  getParentRoute: () => AppRouteRoute,
-} as any)
-const AppEntreprisesRoute = AppEntreprisesRouteImport.update({
-  id: '/entreprises',
-  path: '/entreprises',
-  getParentRoute: () => AppRouteRoute,
-} as any)
-const AppDocumentsRoute = AppDocumentsRouteImport.update({
-  id: '/documents',
-  path: '/documents',
+const AppClientsRoute = AppClientsRouteImport.update({
+  id: '/clients',
+  path: '/clients',
   getParentRoute: () => AppRouteRoute,
 } as any)
 const AppCopilotRoute = AppCopilotRouteImport.update({
@@ -131,29 +132,99 @@ const AppCopilotRoute = AppCopilotRouteImport.update({
   path: '/copilot',
   getParentRoute: () => AppRouteRoute,
 } as any)
-const AppAdminRoute = AppAdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
+const AppDealsRoute = AppDealsRouteImport.update({
+  id: '/deals',
+  path: '/deals',
   getParentRoute: () => AppRouteRoute,
 } as any)
-const AppPropositionsIdRoute = AppPropositionsIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AppPropositionsRoute,
+const AppDocumentsRoute = AppDocumentsRouteImport.update({
+  id: '/documents',
+  path: '/documents',
+  getParentRoute: () => AppRouteRoute,
 } as any)
-const AppOpportunitesIdRoute = AppOpportunitesIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AppOpportunitesRoute,
+const AppEntreprisesRoute = AppEntreprisesRouteImport.update({
+  id: '/entreprises',
+  path: '/entreprises',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppOpportunitesRoute = AppOpportunitesRouteImport.update({
+  id: '/opportunites',
+  path: '/opportunites',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppOrganisationRoute = AppOrganisationRouteImport.update({
+  id: '/organisation',
+  path: '/organisation',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppParametresRoute = AppParametresRouteImport.update({
+  id: '/parametres',
+  path: '/parametres',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppParrainageRoute = AppParrainageRouteImport.update({
+  id: '/parrainage',
+  path: '/parrainage',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppPipelineRoute = AppPipelineRouteImport.update({
+  id: '/pipeline',
+  path: '/pipeline',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppPropositionsRoute = AppPropositionsRouteImport.update({
+  id: '/propositions',
+  path: '/propositions',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppRelancesRoute = AppRelancesRouteImport.update({
+  id: '/relances',
+  path: '/relances',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppRelationsRoute = AppRelationsRouteImport.update({
+  id: '/relations',
+  path: '/relations',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppTarifsRoute = AppTarifsRouteImport.update({
+  id: '/tarifs',
+  path: '/tarifs',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppVeilleRoute = AppVeilleRouteImport.update({
+  id: '/veille',
+  path: '/veille',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const DocsSlugRoute = DocsSlugRouteImport.update({
+  id: '/docs_/$slug',
+  path: '/docs/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
+  id: '/api/auth/$',
+  path: '/api/auth/$',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPhSplatRoute = ApiPhSplatRouteImport.update({
   id: '/api/ph/$',
   path: '/api/ph/$',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
-  id: '/api/auth/$',
-  path: '/api/auth/$',
+const AppOpportunitesIdRoute = AppOpportunitesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AppOpportunitesRoute,
+} as any)
+const AppPropositionsIdRoute = AppPropositionsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AppPropositionsRoute,
+} as any)
+const ApiPropositionsIdPdfRoute = ApiPropositionsIdPdfRouteImport.update({
+  id: '/api/propositions/$id/pdf',
+  path: '/api/propositions/$id/pdf',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppPropositionsIdApercuPdfRoute =
@@ -162,20 +233,25 @@ const AppPropositionsIdApercuPdfRoute =
     path: '/apercu-pdf',
     getParentRoute: () => AppPropositionsIdRoute,
   } as any)
-const ApiPropositionsIdPdfRoute = ApiPropositionsIdPdfRouteImport.update({
-  id: '/api/propositions/$id/pdf',
-  path: '/api/propositions/$id/pdf',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteRouteWithChildren
+  '/conditions': typeof ConditionsRoute
+  '/confidentialite': typeof ConfidentialiteRoute
   '/connexion': typeof ConnexionRoute
   '/docs': typeof DocsRoute
   '/inscription': typeof InscriptionRoute
+  '/mentions-legales': typeof MentionsLegalesRoute
+  '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
+  '/reinitialiser-mot-de-passe': typeof ReinitialiserMotDePasseRoute
   '/app/admin': typeof AppAdminRoute
+  '/app/analyses': typeof AppAnalysesRoute
+  '/app/besoins': typeof AppBesoinsRoute
+  '/app/captures': typeof AppCapturesRoute
+  '/app/clients': typeof AppClientsRoute
   '/app/copilot': typeof AppCopilotRoute
+  '/app/deals': typeof AppDealsRoute
   '/app/documents': typeof AppDocumentsRoute
   '/app/entreprises': typeof AppEntreprisesRoute
   '/app/opportunites': typeof AppOpportunitesRouteWithChildren
@@ -185,6 +261,7 @@ export interface FileRoutesByFullPath {
   '/app/pipeline': typeof AppPipelineRoute
   '/app/propositions': typeof AppPropositionsRouteWithChildren
   '/app/relances': typeof AppRelancesRoute
+  '/app/relations': typeof AppRelationsRoute
   '/app/tarifs': typeof AppTarifsRoute
   '/app/veille': typeof AppVeilleRoute
   '/docs/$slug': typeof DocsSlugRoute
@@ -198,11 +275,21 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/conditions': typeof ConditionsRoute
+  '/confidentialite': typeof ConfidentialiteRoute
   '/connexion': typeof ConnexionRoute
   '/docs': typeof DocsRoute
   '/inscription': typeof InscriptionRoute
+  '/mentions-legales': typeof MentionsLegalesRoute
+  '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
+  '/reinitialiser-mot-de-passe': typeof ReinitialiserMotDePasseRoute
   '/app/admin': typeof AppAdminRoute
+  '/app/analyses': typeof AppAnalysesRoute
+  '/app/besoins': typeof AppBesoinsRoute
+  '/app/captures': typeof AppCapturesRoute
+  '/app/clients': typeof AppClientsRoute
   '/app/copilot': typeof AppCopilotRoute
+  '/app/deals': typeof AppDealsRoute
   '/app/documents': typeof AppDocumentsRoute
   '/app/entreprises': typeof AppEntreprisesRoute
   '/app/opportunites': typeof AppOpportunitesRouteWithChildren
@@ -212,6 +299,7 @@ export interface FileRoutesByTo {
   '/app/pipeline': typeof AppPipelineRoute
   '/app/propositions': typeof AppPropositionsRouteWithChildren
   '/app/relances': typeof AppRelancesRoute
+  '/app/relations': typeof AppRelationsRoute
   '/app/tarifs': typeof AppTarifsRoute
   '/app/veille': typeof AppVeilleRoute
   '/docs/$slug': typeof DocsSlugRoute
@@ -227,11 +315,21 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/app': typeof AppRouteRouteWithChildren
+  '/conditions': typeof ConditionsRoute
+  '/confidentialite': typeof ConfidentialiteRoute
   '/connexion': typeof ConnexionRoute
   '/docs': typeof DocsRoute
   '/inscription': typeof InscriptionRoute
+  '/mentions-legales': typeof MentionsLegalesRoute
+  '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
+  '/reinitialiser-mot-de-passe': typeof ReinitialiserMotDePasseRoute
   '/app/admin': typeof AppAdminRoute
+  '/app/analyses': typeof AppAnalysesRoute
+  '/app/besoins': typeof AppBesoinsRoute
+  '/app/captures': typeof AppCapturesRoute
+  '/app/clients': typeof AppClientsRoute
   '/app/copilot': typeof AppCopilotRoute
+  '/app/deals': typeof AppDealsRoute
   '/app/documents': typeof AppDocumentsRoute
   '/app/entreprises': typeof AppEntreprisesRoute
   '/app/opportunites': typeof AppOpportunitesRouteWithChildren
@@ -241,6 +339,7 @@ export interface FileRoutesById {
   '/app/pipeline': typeof AppPipelineRoute
   '/app/propositions': typeof AppPropositionsRouteWithChildren
   '/app/relances': typeof AppRelancesRoute
+  '/app/relations': typeof AppRelationsRoute
   '/app/tarifs': typeof AppTarifsRoute
   '/app/veille': typeof AppVeilleRoute
   '/docs_/$slug': typeof DocsSlugRoute
@@ -257,11 +356,21 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/app'
+    | '/conditions'
+    | '/confidentialite'
     | '/connexion'
     | '/docs'
     | '/inscription'
+    | '/mentions-legales'
+    | '/mot-de-passe-oublie'
+    | '/reinitialiser-mot-de-passe'
     | '/app/admin'
+    | '/app/analyses'
+    | '/app/besoins'
+    | '/app/captures'
+    | '/app/clients'
     | '/app/copilot'
+    | '/app/deals'
     | '/app/documents'
     | '/app/entreprises'
     | '/app/opportunites'
@@ -271,6 +380,7 @@ export interface FileRouteTypes {
     | '/app/pipeline'
     | '/app/propositions'
     | '/app/relances'
+    | '/app/relations'
     | '/app/tarifs'
     | '/app/veille'
     | '/docs/$slug'
@@ -284,11 +394,21 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/conditions'
+    | '/confidentialite'
     | '/connexion'
     | '/docs'
     | '/inscription'
+    | '/mentions-legales'
+    | '/mot-de-passe-oublie'
+    | '/reinitialiser-mot-de-passe'
     | '/app/admin'
+    | '/app/analyses'
+    | '/app/besoins'
+    | '/app/captures'
+    | '/app/clients'
     | '/app/copilot'
+    | '/app/deals'
     | '/app/documents'
     | '/app/entreprises'
     | '/app/opportunites'
@@ -298,6 +418,7 @@ export interface FileRouteTypes {
     | '/app/pipeline'
     | '/app/propositions'
     | '/app/relances'
+    | '/app/relations'
     | '/app/tarifs'
     | '/app/veille'
     | '/docs/$slug'
@@ -312,11 +433,21 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/app'
+    | '/conditions'
+    | '/confidentialite'
     | '/connexion'
     | '/docs'
     | '/inscription'
+    | '/mentions-legales'
+    | '/mot-de-passe-oublie'
+    | '/reinitialiser-mot-de-passe'
     | '/app/admin'
+    | '/app/analyses'
+    | '/app/besoins'
+    | '/app/captures'
+    | '/app/clients'
     | '/app/copilot'
+    | '/app/deals'
     | '/app/documents'
     | '/app/entreprises'
     | '/app/opportunites'
@@ -326,6 +457,7 @@ export interface FileRouteTypes {
     | '/app/pipeline'
     | '/app/propositions'
     | '/app/relances'
+    | '/app/relations'
     | '/app/tarifs'
     | '/app/veille'
     | '/docs_/$slug'
@@ -341,9 +473,14 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRouteRoute: typeof AppRouteRouteWithChildren
+  ConditionsRoute: typeof ConditionsRoute
+  ConfidentialiteRoute: typeof ConfidentialiteRoute
   ConnexionRoute: typeof ConnexionRoute
   DocsRoute: typeof DocsRoute
   InscriptionRoute: typeof InscriptionRoute
+  MentionsLegalesRoute: typeof MentionsLegalesRoute
+  MotDePasseOublieRoute: typeof MotDePasseOublieRoute
+  ReinitialiserMotDePasseRoute: typeof ReinitialiserMotDePasseRoute
   DocsSlugRoute: typeof DocsSlugRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiPhSplatRoute: typeof ApiPhSplatRoute
@@ -352,25 +489,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/inscription': {
-      id: '/inscription'
-      path: '/inscription'
-      fullPath: '/inscription'
-      preLoaderRoute: typeof InscriptionRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/docs': {
-      id: '/docs'
-      path: '/docs'
-      fullPath: '/docs'
-      preLoaderRoute: typeof DocsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/connexion': {
-      id: '/connexion'
-      path: '/connexion'
-      fullPath: '/connexion'
-      preLoaderRoute: typeof ConnexionRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app': {
@@ -380,11 +503,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/conditions': {
+      id: '/conditions'
+      path: '/conditions'
+      fullPath: '/conditions'
+      preLoaderRoute: typeof ConditionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confidentialite': {
+      id: '/confidentialite'
+      path: '/confidentialite'
+      fullPath: '/confidentialite'
+      preLoaderRoute: typeof ConfidentialiteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/connexion': {
+      id: '/connexion'
+      path: '/connexion'
+      fullPath: '/connexion'
+      preLoaderRoute: typeof ConnexionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs': {
+      id: '/docs'
+      path: '/docs'
+      fullPath: '/docs'
+      preLoaderRoute: typeof DocsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/inscription': {
+      id: '/inscription'
+      path: '/inscription'
+      fullPath: '/inscription'
+      preLoaderRoute: typeof InscriptionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mentions-legales': {
+      id: '/mentions-legales'
+      path: '/mentions-legales'
+      fullPath: '/mentions-legales'
+      preLoaderRoute: typeof MentionsLegalesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mot-de-passe-oublie': {
+      id: '/mot-de-passe-oublie'
+      path: '/mot-de-passe-oublie'
+      fullPath: '/mot-de-passe-oublie'
+      preLoaderRoute: typeof MotDePasseOublieRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reinitialiser-mot-de-passe': {
+      id: '/reinitialiser-mot-de-passe'
+      path: '/reinitialiser-mot-de-passe'
+      fullPath: '/reinitialiser-mot-de-passe'
+      preLoaderRoute: typeof ReinitialiserMotDePasseRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app/': {
@@ -394,88 +566,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRouteRoute
     }
-    '/docs_/$slug': {
-      id: '/docs_/$slug'
-      path: '/docs/$slug'
-      fullPath: '/docs/$slug'
-      preLoaderRoute: typeof DocsSlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/app/veille': {
-      id: '/app/veille'
-      path: '/veille'
-      fullPath: '/app/veille'
-      preLoaderRoute: typeof AppVeilleRouteImport
+    '/app/admin': {
+      id: '/app/admin'
+      path: '/admin'
+      fullPath: '/app/admin'
+      preLoaderRoute: typeof AppAdminRouteImport
       parentRoute: typeof AppRouteRoute
     }
-    '/app/tarifs': {
-      id: '/app/tarifs'
-      path: '/tarifs'
-      fullPath: '/app/tarifs'
-      preLoaderRoute: typeof AppTarifsRouteImport
+    '/app/analyses': {
+      id: '/app/analyses'
+      path: '/analyses'
+      fullPath: '/app/analyses'
+      preLoaderRoute: typeof AppAnalysesRouteImport
       parentRoute: typeof AppRouteRoute
     }
-    '/app/relances': {
-      id: '/app/relances'
-      path: '/relances'
-      fullPath: '/app/relances'
-      preLoaderRoute: typeof AppRelancesRouteImport
+    '/app/besoins': {
+      id: '/app/besoins'
+      path: '/besoins'
+      fullPath: '/app/besoins'
+      preLoaderRoute: typeof AppBesoinsRouteImport
       parentRoute: typeof AppRouteRoute
     }
-    '/app/propositions': {
-      id: '/app/propositions'
-      path: '/propositions'
-      fullPath: '/app/propositions'
-      preLoaderRoute: typeof AppPropositionsRouteImport
+    '/app/captures': {
+      id: '/app/captures'
+      path: '/captures'
+      fullPath: '/app/captures'
+      preLoaderRoute: typeof AppCapturesRouteImport
       parentRoute: typeof AppRouteRoute
     }
-    '/app/pipeline': {
-      id: '/app/pipeline'
-      path: '/pipeline'
-      fullPath: '/app/pipeline'
-      preLoaderRoute: typeof AppPipelineRouteImport
-      parentRoute: typeof AppRouteRoute
-    }
-    '/app/parrainage': {
-      id: '/app/parrainage'
-      path: '/parrainage'
-      fullPath: '/app/parrainage'
-      preLoaderRoute: typeof AppParrainageRouteImport
-      parentRoute: typeof AppRouteRoute
-    }
-    '/app/parametres': {
-      id: '/app/parametres'
-      path: '/parametres'
-      fullPath: '/app/parametres'
-      preLoaderRoute: typeof AppParametresRouteImport
-      parentRoute: typeof AppRouteRoute
-    }
-    '/app/organisation': {
-      id: '/app/organisation'
-      path: '/organisation'
-      fullPath: '/app/organisation'
-      preLoaderRoute: typeof AppOrganisationRouteImport
-      parentRoute: typeof AppRouteRoute
-    }
-    '/app/opportunites': {
-      id: '/app/opportunites'
-      path: '/opportunites'
-      fullPath: '/app/opportunites'
-      preLoaderRoute: typeof AppOpportunitesRouteImport
-      parentRoute: typeof AppRouteRoute
-    }
-    '/app/entreprises': {
-      id: '/app/entreprises'
-      path: '/entreprises'
-      fullPath: '/app/entreprises'
-      preLoaderRoute: typeof AppEntreprisesRouteImport
-      parentRoute: typeof AppRouteRoute
-    }
-    '/app/documents': {
-      id: '/app/documents'
-      path: '/documents'
-      fullPath: '/app/documents'
-      preLoaderRoute: typeof AppDocumentsRouteImport
+    '/app/clients': {
+      id: '/app/clients'
+      path: '/clients'
+      fullPath: '/app/clients'
+      preLoaderRoute: typeof AppClientsRouteImport
       parentRoute: typeof AppRouteRoute
     }
     '/app/copilot': {
@@ -485,32 +608,102 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCopilotRouteImport
       parentRoute: typeof AppRouteRoute
     }
-    '/app/admin': {
-      id: '/app/admin'
-      path: '/admin'
-      fullPath: '/app/admin'
-      preLoaderRoute: typeof AppAdminRouteImport
+    '/app/deals': {
+      id: '/app/deals'
+      path: '/deals'
+      fullPath: '/app/deals'
+      preLoaderRoute: typeof AppDealsRouteImport
       parentRoute: typeof AppRouteRoute
     }
-    '/app/propositions/$id': {
-      id: '/app/propositions/$id'
-      path: '/$id'
-      fullPath: '/app/propositions/$id'
-      preLoaderRoute: typeof AppPropositionsIdRouteImport
-      parentRoute: typeof AppPropositionsRoute
+    '/app/documents': {
+      id: '/app/documents'
+      path: '/documents'
+      fullPath: '/app/documents'
+      preLoaderRoute: typeof AppDocumentsRouteImport
+      parentRoute: typeof AppRouteRoute
     }
-    '/app/opportunites/$id': {
-      id: '/app/opportunites/$id'
-      path: '/$id'
-      fullPath: '/app/opportunites/$id'
-      preLoaderRoute: typeof AppOpportunitesIdRouteImport
-      parentRoute: typeof AppOpportunitesRoute
+    '/app/entreprises': {
+      id: '/app/entreprises'
+      path: '/entreprises'
+      fullPath: '/app/entreprises'
+      preLoaderRoute: typeof AppEntreprisesRouteImport
+      parentRoute: typeof AppRouteRoute
     }
-    '/api/ph/$': {
-      id: '/api/ph/$'
-      path: '/api/ph/$'
-      fullPath: '/api/ph/$'
-      preLoaderRoute: typeof ApiPhSplatRouteImport
+    '/app/opportunites': {
+      id: '/app/opportunites'
+      path: '/opportunites'
+      fullPath: '/app/opportunites'
+      preLoaderRoute: typeof AppOpportunitesRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/app/organisation': {
+      id: '/app/organisation'
+      path: '/organisation'
+      fullPath: '/app/organisation'
+      preLoaderRoute: typeof AppOrganisationRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/app/parametres': {
+      id: '/app/parametres'
+      path: '/parametres'
+      fullPath: '/app/parametres'
+      preLoaderRoute: typeof AppParametresRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/app/parrainage': {
+      id: '/app/parrainage'
+      path: '/parrainage'
+      fullPath: '/app/parrainage'
+      preLoaderRoute: typeof AppParrainageRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/app/pipeline': {
+      id: '/app/pipeline'
+      path: '/pipeline'
+      fullPath: '/app/pipeline'
+      preLoaderRoute: typeof AppPipelineRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/app/propositions': {
+      id: '/app/propositions'
+      path: '/propositions'
+      fullPath: '/app/propositions'
+      preLoaderRoute: typeof AppPropositionsRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/app/relances': {
+      id: '/app/relances'
+      path: '/relances'
+      fullPath: '/app/relances'
+      preLoaderRoute: typeof AppRelancesRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/app/relations': {
+      id: '/app/relations'
+      path: '/relations'
+      fullPath: '/app/relations'
+      preLoaderRoute: typeof AppRelationsRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/app/tarifs': {
+      id: '/app/tarifs'
+      path: '/tarifs'
+      fullPath: '/app/tarifs'
+      preLoaderRoute: typeof AppTarifsRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/app/veille': {
+      id: '/app/veille'
+      path: '/veille'
+      fullPath: '/app/veille'
+      preLoaderRoute: typeof AppVeilleRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/docs_/$slug': {
+      id: '/docs_/$slug'
+      path: '/docs/$slug'
+      fullPath: '/docs/$slug'
+      preLoaderRoute: typeof DocsSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/auth/$': {
@@ -520,12 +713,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/app/propositions/$id/apercu-pdf': {
-      id: '/app/propositions/$id/apercu-pdf'
-      path: '/apercu-pdf'
-      fullPath: '/app/propositions/$id/apercu-pdf'
-      preLoaderRoute: typeof AppPropositionsIdApercuPdfRouteImport
-      parentRoute: typeof AppPropositionsIdRoute
+    '/api/ph/$': {
+      id: '/api/ph/$'
+      path: '/api/ph/$'
+      fullPath: '/api/ph/$'
+      preLoaderRoute: typeof ApiPhSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app/opportunites/$id': {
+      id: '/app/opportunites/$id'
+      path: '/$id'
+      fullPath: '/app/opportunites/$id'
+      preLoaderRoute: typeof AppOpportunitesIdRouteImport
+      parentRoute: typeof AppOpportunitesRoute
+    }
+    '/app/propositions/$id': {
+      id: '/app/propositions/$id'
+      path: '/$id'
+      fullPath: '/app/propositions/$id'
+      preLoaderRoute: typeof AppPropositionsIdRouteImport
+      parentRoute: typeof AppPropositionsRoute
     }
     '/api/propositions/$id/pdf': {
       id: '/api/propositions/$id/pdf'
@@ -533,6 +740,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/propositions/$id/pdf'
       preLoaderRoute: typeof ApiPropositionsIdPdfRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/app/propositions/$id/apercu-pdf': {
+      id: '/app/propositions/$id/apercu-pdf'
+      path: '/apercu-pdf'
+      fullPath: '/app/propositions/$id/apercu-pdf'
+      preLoaderRoute: typeof AppPropositionsIdApercuPdfRouteImport
+      parentRoute: typeof AppPropositionsIdRoute
     }
   }
 }
@@ -574,7 +788,12 @@ const AppPropositionsRouteWithChildren = AppPropositionsRoute._addFileChildren(
 
 interface AppRouteRouteChildren {
   AppAdminRoute: typeof AppAdminRoute
+  AppAnalysesRoute: typeof AppAnalysesRoute
+  AppBesoinsRoute: typeof AppBesoinsRoute
+  AppCapturesRoute: typeof AppCapturesRoute
+  AppClientsRoute: typeof AppClientsRoute
   AppCopilotRoute: typeof AppCopilotRoute
+  AppDealsRoute: typeof AppDealsRoute
   AppDocumentsRoute: typeof AppDocumentsRoute
   AppEntreprisesRoute: typeof AppEntreprisesRoute
   AppOpportunitesRoute: typeof AppOpportunitesRouteWithChildren
@@ -584,6 +803,7 @@ interface AppRouteRouteChildren {
   AppPipelineRoute: typeof AppPipelineRoute
   AppPropositionsRoute: typeof AppPropositionsRouteWithChildren
   AppRelancesRoute: typeof AppRelancesRoute
+  AppRelationsRoute: typeof AppRelationsRoute
   AppTarifsRoute: typeof AppTarifsRoute
   AppVeilleRoute: typeof AppVeilleRoute
   AppIndexRoute: typeof AppIndexRoute
@@ -591,7 +811,12 @@ interface AppRouteRouteChildren {
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppAdminRoute: AppAdminRoute,
+  AppAnalysesRoute: AppAnalysesRoute,
+  AppBesoinsRoute: AppBesoinsRoute,
+  AppCapturesRoute: AppCapturesRoute,
+  AppClientsRoute: AppClientsRoute,
   AppCopilotRoute: AppCopilotRoute,
+  AppDealsRoute: AppDealsRoute,
   AppDocumentsRoute: AppDocumentsRoute,
   AppEntreprisesRoute: AppEntreprisesRoute,
   AppOpportunitesRoute: AppOpportunitesRouteWithChildren,
@@ -601,6 +826,7 @@ const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppPipelineRoute: AppPipelineRoute,
   AppPropositionsRoute: AppPropositionsRouteWithChildren,
   AppRelancesRoute: AppRelancesRoute,
+  AppRelationsRoute: AppRelationsRoute,
   AppTarifsRoute: AppTarifsRoute,
   AppVeilleRoute: AppVeilleRoute,
   AppIndexRoute: AppIndexRoute,
@@ -613,9 +839,14 @@ const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRouteRoute: AppRouteRouteWithChildren,
+  ConditionsRoute: ConditionsRoute,
+  ConfidentialiteRoute: ConfidentialiteRoute,
   ConnexionRoute: ConnexionRoute,
   DocsRoute: DocsRoute,
   InscriptionRoute: InscriptionRoute,
+  MentionsLegalesRoute: MentionsLegalesRoute,
+  MotDePasseOublieRoute: MotDePasseOublieRoute,
+  ReinitialiserMotDePasseRoute: ReinitialiserMotDePasseRoute,
   DocsSlugRoute: DocsSlugRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiPhSplatRoute: ApiPhSplatRoute,

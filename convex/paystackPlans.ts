@@ -49,7 +49,9 @@ export const upsertPlanCode = internalMutation({
     plan: v.union(
       v.literal('pro'),
       v.literal('pro_ai'),
+      v.literal('pro_v2'),
       v.literal('copilot'),
+      v.literal('copilot_v2'),
       v.literal('copilot_max'),
     ),
     interval: v.union(v.literal('monthly'), v.literal('annual')),

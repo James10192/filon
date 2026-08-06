@@ -1,4 +1,4 @@
-import { defineSchema, defineTable } from 'convex/server'
+﻿import { defineSchema, defineTable } from 'convex/server'
 import { v } from 'convex/values'
 import { assistantKindValidator } from './lib/assistant'
 
@@ -41,10 +41,14 @@ export default defineSchema({
     plan: v.optional(
       v.union(
         v.literal('free'),
+        v.literal('discovery_v2'),
         v.literal('pro'),
         v.literal('pro_ai'),
+        v.literal('pro_v2'),
         v.literal('copilot'),
+        v.literal('copilot_v2'),
         v.literal('copilot_max'),
+        v.literal('team_v2'),
       ),
     ),
     planInterval: v.optional(
@@ -89,10 +93,14 @@ export default defineSchema({
     pendingPlan: v.optional(
       v.union(
         v.literal('free'),
+        v.literal('discovery_v2'),
         v.literal('pro'),
         v.literal('pro_ai'),
+        v.literal('pro_v2'),
         v.literal('copilot'),
+        v.literal('copilot_v2'),
         v.literal('copilot_max'),
+        v.literal('team_v2'),
       ),
     ),
     // Horodatage de la dernière relance d'échéance envoyée/flaggée (epoch ms),
@@ -185,7 +193,9 @@ export default defineSchema({
     plan: v.union(
       v.literal('pro'),
       v.literal('pro_ai'),
+      v.literal('pro_v2'),
       v.literal('copilot'),
+      v.literal('copilot_v2'),
       v.literal('copilot_max'),
     ),
     interval: v.union(v.literal('monthly'), v.literal('annual')),
@@ -376,6 +386,17 @@ export default defineSchema({
     mailpulseContactId: v.optional(v.string()),
     mailpulseSequenceId: v.optional(v.string()),
     mailpulseLastSyncAt: v.optional(v.number()),
+    // --- Deal v2 (additif) ---
+    relationshipId: v.optional(v.id('relationships')),
+    needId: v.optional(v.id('needs')),
+    visibility: v.optional(v.union(v.literal('private'), v.literal('shared'))),
+    dealStatus: v.optional(v.union(v.literal('open'), v.literal('won'), v.literal('lost'))),
+    valueAmount: v.optional(v.number()),
+    valueCurrency: v.optional(v.string()),
+    expectedCloseAt: v.optional(v.number()),
+    closedAt: v.optional(v.number()),
+    closingSummary: v.optional(v.string()),
+    lossReason: v.optional(v.string()),
     // Position dans la colonne kanban (tri intra-stage).
     order: v.number(),
     createdAt: v.number(),
@@ -681,6 +702,10 @@ export default defineSchema({
       v.literal('pro_ai'),
       v.literal('copilot'),
       v.literal('copilot_max'),
+      v.literal('discovery_v2'),
+      v.literal('pro_v2'),
+      v.literal('copilot_v2'),
+      v.literal('team_v2'),
     ),
     brandMode: v.union(v.literal('cobranded'), v.literal('white_label')),
     language: v.union(v.literal('fr'), v.literal('en')),
@@ -1440,4 +1465,218 @@ export default defineSchema({
   })
     .index('by_target_day', ['targetUserId', 'dayKey'])
     .index('by_viewer_target_day', ['viewerUserId', 'targetUserId', 'dayKey']),
+
+  // --- Filon v2: relationship intelligence (additive) ---
+  relationships: defineTable({
+    userId: v.string(),
+    contactId: v.optional(v.id('contacts')),
+    companyId: v.optional(v.id('companies')),
+    label: v.string(),
+    kind: v.union(
+      v.literal('prospect'),
+      v.literal('client'),
+      v.literal('partner'),
+      v.literal('referrer'),
+      v.literal('other'),
+    ),
+    visibility: v.union(v.literal('private'), v.literal('shared')),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_user', ['userId'])
+    .index('by_user_contact', ['userId', 'contactId'])
+    .index('by_user_company', ['userId', 'companyId']),
+
+  relationshipShares: defineTable({
+    relationshipId: v.id('relationships'),
+    ownerUserId: v.string(),
+    sharedWithUserId: v.string(),
+    permission: v.union(v.literal('read'), v.literal('write')),
+    createdAt: v.number(),
+  })
+    .index('by_relationship', ['relationshipId'])
+    .index('by_owner_recipient', ['ownerUserId', 'sharedWithUserId'])
+    .index('by_recipient', ['sharedWithUserId']),
+
+  relationshipNotes: defineTable({
+    userId: v.string(),
+    relationshipId: v.id('relationships'),
+    body: v.string(),
+    visibility: v.union(v.literal('private'), v.literal('shared')),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_user_relationship', ['userId', 'relationshipId'])
+    .index('by_relationship_visibility', ['relationshipId', 'visibility']),
+
+  needs: defineTable({
+    userId: v.string(),
+    relationshipId: v.optional(v.id('relationships')),
+    title: v.string(),
+    status: v.union(v.literal('open'), v.literal('validated'), v.literal('closed')),
+    visibility: v.union(v.literal('private'), v.literal('shared')),
+    latestVersion: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_user', ['userId'])
+    .index('by_user_status', ['userId', 'status'])
+    .index('by_relationship', ['relationshipId']),
+
+  needVersions: defineTable({
+    userId: v.string(),
+    needId: v.id('needs'),
+    version: v.number(),
+    statement: v.string(),
+    priority: v.union(v.literal('low'), v.literal('medium'), v.literal('high')),
+    context: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index('by_need_version', ['needId', 'version'])
+    .index('by_user_created', ['userId', 'createdAt']),
+
+  needProofs: defineTable({
+    userId: v.string(),
+    needId: v.id('needs'),
+    needVersionId: v.optional(v.id('needVersions')),
+    kind: v.union(v.literal('note'), v.literal('url'), v.literal('file'), v.literal('interaction')),
+    value: v.string(),
+    createdAt: v.number(),
+  })
+    .index('by_need', ['needId'])
+    .index('by_version', ['needVersionId']),
+
+  needLinks: defineTable({
+    userId: v.string(),
+    needId: v.id('needs'),
+    relationshipId: v.optional(v.id('relationships')),
+    opportunityId: v.optional(v.id('opportunities')),
+    label: v.string(),
+    url: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index('by_need', ['needId'])
+    .index('by_relationship', ['relationshipId'])
+    .index('by_opportunity', ['opportunityId']),
+
+  dealTransitions: defineTable({
+    userId: v.string(),
+    opportunityId: v.id('opportunities'),
+    fromStage: v.string(),
+    toStage: v.string(),
+    reason: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index('by_deal_created', ['opportunityId', 'createdAt'])
+    .index('by_user_created', ['userId', 'createdAt']),
+
+  dealMilestones: defineTable({
+    userId: v.string(),
+    opportunityId: v.id('opportunities'),
+    kind: v.union(v.literal('created'), v.literal('stage_changed'), v.literal('closed')),
+    label: v.string(),
+    occurredAt: v.number(),
+    createdAt: v.number(),
+  })
+    .index('by_deal_occurred', ['opportunityId', 'occurredAt'])
+    .index('by_user_created', ['userId', 'createdAt']),
+
+  actionItems: defineTable({
+    userId: v.string(),
+    opportunityId: v.optional(v.id('opportunities')),
+    relationshipId: v.optional(v.id('relationships')),
+    label: v.string(),
+    dueAt: v.optional(v.number()),
+    status: v.union(v.literal('open'), v.literal('done'), v.literal('cancelled')),
+    createdAt: v.number(),
+    completedAt: v.optional(v.number()),
+  })
+    .index('by_user_status', ['userId', 'status'])
+    .index('by_user_due', ['userId', 'dueAt'])
+    .index('by_deal_status', ['opportunityId', 'status']),
+
+  lifecycleEvents: defineTable({
+    userId: v.string(),
+    opportunityId: v.optional(v.id('opportunities')),
+    relationshipId: v.optional(v.id('relationships')),
+    event: v.string(),
+    source: v.union(v.literal('system'), v.literal('user'), v.literal('migration')),
+    metadata: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index('by_user_created', ['userId', 'createdAt'])
+    .index('by_deal_created', ['opportunityId', 'createdAt'])
+    .index('by_relationship_created', ['relationshipId', 'createdAt']),
+
+  growthEvents: defineTable({
+    userId: v.string(),
+    event: v.string(),
+    source: v.string(),
+    metadata: v.optional(v.string()),
+    createdAt: v.number(),
+  }).index('by_user_created', ['userId', 'createdAt']),
+
+  migrationRuns: defineTable({
+    name: v.string(),
+    status: v.union(v.literal('running'), v.literal('completed'), v.literal('failed')),
+    cursor: v.optional(v.string()),
+    processedCount: v.number(),
+    error: v.optional(v.string()),
+    startedAt: v.number(),
+    completedAt: v.optional(v.number()),
+  }).index('by_name', ['name']),
+
+  featureFlags: defineTable({
+    key: v.string(),
+    enabled: v.boolean(),
+    rolloutPercent: v.number(),
+    description: v.optional(v.string()),
+    updatedAt: v.number(),
+  }).index('by_key', ['key']),
+
+  featureFlagOverrides: defineTable({
+    flagKey: v.string(),
+    userId: v.string(),
+    enabled: v.boolean(),
+    createdAt: v.number(),
+  }).index('by_flag_user', ['flagKey', 'userId']),
+
+  billingEvents: defineTable({
+    userId: v.string(),
+    provider: v.string(),
+    providerEventId: v.optional(v.string()),
+    type: v.string(),
+    status: v.union(v.literal('received'), v.literal('processed'), v.literal('failed')),
+    payload: v.optional(v.string()),
+    createdAt: v.number(),
+    processedAt: v.optional(v.number()),
+  })
+    .index('by_user_created', ['userId', 'createdAt'])
+    .index('by_provider_event', ['provider', 'providerEventId']),
+
+  offers: defineTable({
+    code: v.string(),
+    name: v.string(),
+    active: v.boolean(),
+    priceXof: v.optional(v.number()),
+    features: v.array(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index('by_code', ['code']),
+
+  entitlements: defineTable({
+    userId: v.string(),
+    offerId: v.id('offers'),
+    status: v.union(v.literal('active'), v.literal('expired'), v.literal('revoked')),
+    source: v.union(v.literal('billing'), v.literal('admin'), v.literal('migration')),
+    startsAt: v.number(),
+    endsAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index('by_user_status', ['userId', 'status'])
+    .index('by_offer', ['offerId']),
 })
+
+
+
+
