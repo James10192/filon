@@ -1,5 +1,5 @@
 
-import { useControllableState } from "@radix-ui/react-use-controllable-state";
+import { useControllableState } from "radix-ui/internal";
 import {
   Collapsible,
   CollapsibleContent,
