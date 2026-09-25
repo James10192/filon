@@ -39,6 +39,9 @@ async function proxy(request: Request): Promise<Response> {
   const resHeaders = new Headers(upstream.headers)
   // content-length peut diverger après re-streaming ; on laisse Nitro le poser.
   resHeaders.delete('content-length')
+  // fetch (undici) décompresse déjà gzip/br : garder content-encoding ferait
+  // re-décoder le corps par le navigateur (ERR_CONTENT_DECODING_FAILED).
+  resHeaders.delete('content-encoding')
   return new Response(upstream.body, {
     status: upstream.status,
     headers: resHeaders,
