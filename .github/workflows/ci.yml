@@ -10,6 +10,8 @@ jobs:
   verify:
     name: Verify
     runs-on: ubuntu-latest
+    env:
+      CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
 
     steps:
       - name: Checkout
@@ -29,11 +31,18 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Le codegen Convex exige un déploiement. Sans clé, typecheck, tests et
+      # build tournent quand même sur les fichiers `convex/_generated` versionnés.
       - name: Generate Convex API types
+        if: env.CONVEX_DEPLOY_KEY != ''
         run: pnpm exec convex codegen
 
       - name: Verify generated Convex files are committed
+        if: env.CONVEX_DEPLOY_KEY != ''
         run: git diff --exit-code convex/_generated
+
+      - name: Compile i18n messages
+        run: pnpm i18n
 
       - name: Typecheck
         run: pnpm typecheck
