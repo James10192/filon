@@ -28,3 +28,4 @@ data/
 .codex-filon-*.out.log
 devserver*.err
 devserver*.out
+.env*
